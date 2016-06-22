@@ -832,44 +832,128 @@ class Cube(ArithmeticMixin, DataArray):
         else:
             raise ValueError('Invalid axis argument')
 
-    def mean(self, axis=None):
-        """Return the mean over the given axis.
+    def mean(self, axis=None, weighted=False, weights=None):
+        """Return a weighted or unweighted mean over a given axis or axes.
+
+        The mean is computed as follows. Note that weights of 1.0 are
+        used for each data-point if the weighted option is False.
+        Given N data points of values, d[i], with weights, w[i], the
+        weighted mean of d[0..N-1] is given by:
+
+          mean = Sum(d[i] * w[i]) / Sum(w[i])  for i=0..N-1
+
+        If data point d[i] has a variance of v[i], then the variance
+        of the mean is given by:
+
+          variance = Sum(v[i] * w[i]**2) / Sum(w[i])**2   for i=0..N-1
+
+        Note that if one substitutes 1/v[i] for w[i] in this equation,
+        the result is a variance of 1/Sum(1/v[i]). If all the
+        variances, v[i], happen to have the same value, v, then this
+        further simplifies to v / N, which is equivalent to a standard
+        deviation of sigma/sqrt(N).  This is the familiar result that
+        the signal-to-noise ratio of a mean of N samples increases as
+        sqrt(N).
 
         Parameters
         ----------
         axis : None or int or tuple of ints
-            Axis or axes along which a mean is performed.
-
-            - The default (axis = None) is perform a mean over all the
+            The axis or axes along which the mean is to be performed.
+            - The default (axis = None) performs a mean over all the
               dimensions of the cube and returns a float.
-            - axis = 0 is perform a mean over the wavelength dimension and
+            - axis = 0 performs a mean over the wavelength dimension and
               returns an image.
-            - axis = (1,2) is perform a mean over the (X,Y) axes and
+            - axis = (1,2) performs a mean over the (X,Y) axes and
               returns a spectrum.
-
             Other cases return None.
+        weighted : bool
+            By default an unweighted mean of the data is performed.
+            However if weighted=True, a weighted mean is performed.
+            The weights are usually the reciprocal of the variances
+            associated with each data-point, but alternative weights
+            can be passed via the weights argument. If no weights are
+            been provided, and no variances are stored in the cube,
+            then an unweighted mean is performed. Note that an
+            unweighted mean is equivalent to a weigthed mean in which
+            the weight of each data-point is 1.0
+        weights : numpy.ndarray or numpy.ma.core.MaskedArray
+            An alternate array of weights to use when the weighted
+            argument is True. By default the weights argument is None,
+            and this indicates that each data-point should be weighted
+            by the reciprocal of its variance.
+
+            The weights array must have the same shape as the cube.
+
+            This argument is ignored when the weighted argument
+            is False.
 
         """
+
+        # If a weighted mean has been requested, obtain the selected
+        # array of weights.
+        if weighted:
+
+            # Weight the array using the variance of each data-point?
+            if weights is None:
+                if self._var is not None:
+                    weights = 1.0 / self.var
+
+            # If an array of weights is provided, complain if it
+            # doesn't have the same shape as the cube.
+            elif not np.array_equal(np.asarray(weights.shape),
+                                    np.asarray(self.shape)):
+                raise ValueError('The weight array has the wrong shape')
+        else:
+            weights = None
+
+        # Average the whole array to a single number?
         if axis is None:
-            return self.data.mean()
+            return ma.average(self.data, weights=weights)
+
+        # Get the data and variances to be processed.
+        data = self.data
+        var = None if self._var is None else self.var
+
+        # To average over the two dimensions of an image, it is
+        # necessary to combine the two image dimensions into a single
+        # dimension and average over that axis, because
+        # np.ma.average() can only average along one axis.
+        if axis == (1,2) or axis == [1,2]:
+            shape = (self.shape[0], self.shape[1] * self.shape[2])
+            data = data.reshape(shape)
+            if weights is not None:
+                weights = weights.reshape(shape)
+            if var is not None:
+                var = var.reshape(shape)
+            axis = 1
+
+        # Average the data over the specified axis. Note that the
+        # wsum return value holds the sum of weights for each of the
+        # returned data points. When weights=None, this is the
+        # number of unmasked points that contributed to the
+        # average.
+        data, wsum = ma.average(data, axis=axis, weights=weights,
+                                returned=True)
+
+        # Does the input cube have variances to be updated?
+        if var is not None:
+
+            # Compute the variance of each averaged data-point,
+            # using the equation given in the docstring of
+            # this function. When weights=None, the effective
+            # weights are all unity, so we don't need to multiply
+            # the data by the square of the weights in that case.
+            if weights is None:
+                var = ma.sum(var, axis=axis) / wsum**2
+            else:
+                var = ma.sum(var * weights**2, axis=axis) / wsum**2
+
+        # Return the average in an appropriate object.
+        if axis is None:
+            return data
         elif axis == 0:
-            # return an image
-            data = ma.mean(self.data, axis)
-            if self._var is not None:
-                var = ma.sum(self.var, axis).filled(np.inf) \
-                    / ma.count(self.data, axis) ** 2
-            else:
-                var = None
             return Image.new_from_obj(self, data=data, var=var)
-        elif axis == (1, 2):
-            # return a spectrum
-            count = np.sum(np.sum(~self.mask, axis=1), axis=1)
-            data = (ma.sum(ma.sum(self.data, axis=1), axis=1)) / count
-            if self._var is not None:
-                var = ma.sum(ma.sum(self.var, axis=1), axis=1).filled(np.inf) \
-                    / (count**2)
-            else:
-                var = None
+        elif axis == 1:
             return Spectrum.new_from_obj(self, data=data, var=var)
         else:
             raise ValueError('Invalid axis argument')
