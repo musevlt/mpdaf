@@ -317,6 +317,8 @@ class DataArray(object):
                     # Workaround for
                     # https://github.com/astropy/astropy/issues/887
                     self._logger.warning(e)
+                    if 'IRAF-B/P' in hdr:
+                        hdr.remove('IRAF-B/P')
                     self.wcs = WCS(hdr)
 
             # Get the wavelength coordinates.
