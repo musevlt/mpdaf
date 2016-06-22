@@ -832,13 +832,13 @@ class Cube(ArithmeticMixin, DataArray):
         else:
             raise ValueError('Invalid axis argument')
 
-    def mean(self, axis=None, weighted=False, weights=None):
+    def mean(self, axis=None, weights=None):
         """Return a weighted or unweighted mean over a given axis or axes.
 
         The mean is computed as follows. Note that weights of 1.0 are
-        used for each data-point if the weighted option is False.
-        Given N data points of values, d[i], with weights, w[i], the
-        weighted mean of d[0..N-1] is given by:
+        implicitly used for each data-point if the weights option is
+        None.  Given N data points of values, d[i], with weights,
+        w[i], the weighted mean of d[0..N-1] is given by:
 
           mean = Sum(d[i] * w[i]) / Sum(w[i])  for i=0..N-1
 
@@ -866,45 +866,26 @@ class Cube(ArithmeticMixin, DataArray):
             - axis = (1,2) performs a mean over the (X,Y) axes and
               returns a spectrum.
             Other cases return None.
-        weighted : bool
-            By default an unweighted mean of the data is performed.
-            However if weighted=True, a weighted mean is performed.
-            The weights are usually the reciprocal of the variances
-            associated with each data-point, but alternative weights
-            can be passed via the weights argument. If no weights are
-            been provided, and no variances are stored in the cube,
-            then an unweighted mean is performed. Note that an
-            unweighted mean is equivalent to a weigthed mean in which
-            the weight of each data-point is 1.0
         weights : numpy.ndarray or numpy.ma.core.MaskedArray
-            An alternate array of weights to use when the weighted
-            argument is True. By default the weights argument is None,
-            and this indicates that each data-point should be weighted
-            by the reciprocal of its variance.
-
-            The weights array must have the same shape as the cube.
-
-            This argument is ignored when the weighted argument
-            is False.
+            When an array of weights is provided via this argument, it
+            used to perform a weighted mean, as described in the
+            introductory documentation above. If the Cube provides an
+            array of variances for each data-point, then a good choice
+            for the array of weights is the reciprocal of this array,
+            (ie. weights=1.0/cube.var). However beware that not all
+            data-sets provide variance information. If a different
+            weighting array is provided, note that it must have the
+            same shape as the cube. The default value of this argument
+            is None, which indicates that an unweighted mean should be
+            performed.
 
         """
 
-        # If a weighted mean has been requested, obtain the selected
-        # array of weights.
-        if weighted:
-
-            # Weight the array using the variance of each data-point?
-            if weights is None:
-                if self._var is not None:
-                    weights = 1.0 / self.var
-
-            # If an array of weights is provided, complain if it
-            # doesn't have the same shape as the cube.
-            elif not np.array_equal(np.asarray(weights.shape),
-                                    np.asarray(self.shape)):
-                raise ValueError('The weight array has the wrong shape')
-        else:
-            weights = None
+        # Check the shape of any weighting array that is provided.
+        if(weights is not None and
+           not np.array_equal(np.asarray(weights.shape),
+                              np.asarray(self.shape))):
+            raise ValueError('The weights array has the wrong shape')
 
         # Average the whole array to a single number?
         if axis is None:

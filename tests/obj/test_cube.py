@@ -317,23 +317,17 @@ def test_mean():
     # Test the mean over each of the supported axes.
     for axis in (None, 0, (1,2)):
 
-        # Get the unweighted mean.
-        mean = cube.mean(axis=axis, weighted=False)
-
-        # Test each of the weighting options.
-        # Each tuple gives the values of the weighting and weights
-        # arguments of cube.mean(), plus a masked array of the
-        # weights that are expected to be used.
-        for weighted,weights,w in [
-                # An unweighted mean:
-                (False, None, ma.array(np.ones(shape), mask=m)),
-                # A mean weighted implicitly by 1/var:
-                (True, None, ma.array(1.0/var, mask=m)),
-                # A mean weighted by user-specified weights:
-                (True, np.sqrt(d), ma.array(np.sqrt(d), mask=m))]:
+        # Test the two weighting options. The loop-variable tuple
+        # specifies the weights argument of cube.mean(), and a masked
+        # array of the weights that are expected to be used.
+        for weights, w in [(None, np.ones(shape, dtype=float)), # Unweighted
+                           (np.sqrt(d), np.sqrt(d))]:           # Weighted
 
             # Compute the mean.
-            mean = cube.mean(axis=axis, weighted=weighted, weights=weights)
+            mean = cube.mean(axis=axis, weights=weights)
+
+            # Mask the array of the expected weights.
+            w = ma.array(w, mask=m)
 
             # Compute the expected values of the mean and its variance,
             # using a different implementation to cube.mean().
@@ -343,7 +337,7 @@ def test_mean():
             # In the case any of the following tests fail, provide an
             # error message that indicates which arguments were passed
             # to cube.mean()
-            errmsg = "Failure of cube.mean(axis=%s, weighted=%s, weights=%s)" % (axis, weighted, weights)
+            errmsg = "Failure of cube.mean(axis=%s, weights=%s)" % (axis, weights)
 
             # See if the mean pixels and variances of these pixels have the
             # expected values.
