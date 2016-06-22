@@ -27,10 +27,6 @@ astropy10:
   allow_failure: true
   script: tox -v -e astropy10
 
-numpy110:
-  stage: test
-  script: tox -v -e numpy110
-
 coverage-report:
   stage: report
   script:
