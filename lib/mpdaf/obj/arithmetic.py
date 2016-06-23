@@ -121,10 +121,11 @@ def _arithmetic(operation, a, b):
         _check_compatible_shapes(a, b)
         newshape = None
 
-    res = a.clone()
-    res.data = _arithmetic_data(operation, a, b, newshape=newshape)
-    res.var = _arithmetic_var(operation, a, b, newshape=newshape)
-    return res
+    return a.__class__.new_from_obj(
+        a, copy=False,
+        data=_arithmetic_data(operation, a, b, newshape=newshape),
+        var=_arithmetic_var(operation, a, b, newshape=newshape)
+    )
 
 
 class ArithmeticMixin(object):

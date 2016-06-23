@@ -59,8 +59,6 @@ class LazyData(object):
             return obj.__dict__[self.label]
         except KeyError:
             if obj.filename is None:
-                # if self.label == '_data':
-                #     raise ValueError('empty data array')
                 return
 
             if self.label in ('_data', '_mask'):
@@ -420,8 +418,10 @@ class DataArray(object):
         data = obj.data if data is None else data
         var = obj._var if var is None else var
         kwargs = dict(filename=obj.filename, data=data, unit=obj.unit, var=var,
-                      dtype=obj.dtype, copy=copy, data_header=obj.data_header,
-                      primary_header=obj.primary_header)
+                      dtype=obj.dtype, copy=copy,
+                      ext=(obj._data_ext, obj._var_ext),
+                      data_header=obj.data_header.copy(),
+                      primary_header=obj.primary_header.copy())
         if cls._has_wcs:
             kwargs['wcs'] = obj.wcs
         if cls._has_wave:
@@ -578,12 +578,7 @@ class DataArray(object):
 
     def copy(self):
         """Return a copy of the object."""
-        return self.__class__(
-            filename=self.filename, data=self._data, mask=self._mask,
-            var=self._var, unit=self.unit, wcs=self.wcs, wave=self.wave,
-            copy=True, data_header=self.data_header.copy(),
-            primary_header=self.primary_header.copy(),
-            ext=(self._data_ext, self._var_ext), dtype=self.dtype)
+        return self.__class__.new_from_obj(self, copy=True)
 
     def clone(self, var=None, data_init=None, var_init=None):
         """Return a shallow copy with the same header and coordinates.
@@ -613,8 +608,14 @@ class DataArray(object):
         # Update the NAXIS keywords because an object without data relies on
         # this to get the shape
         data_header = self.data_header.copy()
-        for i in range(1, self.ndim + 1):
-            data_header['NAXIS%d' % i] = self.shape[-i]
+        data_header['NAXIS'] = self.ndim
+        for i in range(1, 4):
+            key = 'NAXIS%d' % i
+            if i > self.ndim:
+                if key in data_header:
+                    data_header.remove(key)
+            else:
+                data_header[key] = self.shape[-i]
 
         return self.__class__(
             unit=self.unit, dtype=None, copy=False,
@@ -622,8 +623,8 @@ class DataArray(object):
                                                           dtype=self.dtype),
             var=None if var_init is None else var_init(self.shape,
                                                        dtype=self.dtype),
-            wcs=None if self.wcs is None else self.wcs.copy(),
-            wave=None if self.wave is None else self.wave.copy(),
+            wcs=None if self.wcs is None else self.wcs,
+            wave=None if self.wave is None else self.wave,
             data_header=data_header,
             primary_header=self.primary_header.copy()
         )
@@ -966,9 +967,6 @@ class DataArray(object):
             By default, a new array is created.
 
         """
-        if self._data is None:
-            raise ValueError('empty data array')
-
         if out is None:
             out = self.clone()
 

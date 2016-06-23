@@ -25,6 +25,7 @@ from ..utils import (generate_image, generate_cube, generate_spectrum,
 DATADIR = join(os.path.abspath(os.path.dirname(__file__)), '..', '..')
 TESTIMG = join(DATADIR, 'data', 'obj', 'a370II.fits')
 TESTSPE = join(DATADIR, 'data', 'obj', 'Spectrum_lines.fits')
+TESTCUBE = join(DATADIR, 'data', 'sdetect', 'minicube.fits')
 
 
 @attr(speed='fast')
@@ -156,13 +157,27 @@ def test_copy():
 @attr(speed='fast')
 def test_clone():
     """DataArray class: Testing the clone method"""
-    cube1 = generate_cube()
+    cube1 = generate_cube(shape=(10, 6, 5))
     cube2 = cube1.clone()
     assert_true(cube1.wcs.isEqual(cube2.wcs))
     assert_true(cube1.wave.isEqual(cube2.wave))
     assert_true(cube2._data is None)
     assert_true(cube2._var is None)
     assert_true(cube2._mask is None)
+
+
+@attr(speed='fast')
+def test_clone_fits():
+    """DataArray class: Testing the clone method with a FITS file"""
+    cube = Cube(filename=TESTCUBE)
+    im = cube[0].clone()
+    assert_equal(im.ndim, 2)
+    assert_equal(im.data_header['NAXIS'], 2)
+    assert_equal(im.shape, cube.shape[1:])
+    assert_true('NAXIS3' not in im.data_header)
+
+    sp = cube[:, 20, 20]
+    assert_array_equal(sp.abs().data, np.abs(sp._data))
 
 
 @attr(speed='fast')
