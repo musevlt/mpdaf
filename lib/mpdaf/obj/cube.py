@@ -1924,24 +1924,22 @@ class Cube(ArithmeticMixin, DataArray):
             If True, compute the sum of the images, otherwise compute
             the arithmetic mean of the images.
         subtract_off : bool
-
             If True, subtract off a background image that is estimated
             from combining some images from both below and above the
             chosen wavelength range. If the number of images between
-            lbda1 and lbda2 is denoted, N, then the number of images,
-            nbg, that are combined to form a background image is:
+            lbda1 and lbda2 is denoted, N, then the number of
+            background images taken from below and above the wavelength
+            range are:
 
-              nbg = fband * N  (rounded up to be a multiple of 2)
+              nbelow = nabove = (fband * N) / 2   [rounded up to an integer]
 
-            Note that fband is an optional argument of this function.
-            Half of the nbg background images are taken from below the
-            chosen wavelength range, and the other half from above the
-            wavelength range. Hence the need to round nbg up to an
-            even number. The wavelength ranges of the two groups of
-            background images below and above the chosen wavelength
-            range are a distance, margin, below and above the
-            lower and upper edges of the chosen wavelength range. Note
-            that, margin, is an optional argument of this function.
+            where fband is an optional argument of this function.
+
+            The wavelength ranges of the two groups of background
+            images below and above the chosen wavelength range are
+            separated from lower and upper edges of the chosen
+            wavelength range by a value, margin, which is an argument
+            of this function.
 
             When is_sum is True, the sum of the background images is
             multiplied by N/nbg to produce a background image that has
@@ -1953,7 +1951,9 @@ class Cube(ArithmeticMixin, DataArray):
             The wavelength or pixel offset of the centers of the
             ranges of background images below and above the chosen
             wavelength range. This has the units specified by the
-            unit_wave argument. The default value is 10 angstroms.
+            unit_wave argument. The zero points of the margin are one
+            pixel below and above the chosen wavelength range.
+            The default value is 10 angstroms.
         fband : float
             The ratio of the number of images used to form a
             background image and the number of images that are being
