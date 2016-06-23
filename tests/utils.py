@@ -288,4 +288,3 @@ def generate_cube(data=2.3, var=1.0, mask=None, shape=None, uwave=u.angstrom,
     return _generate_test_data(data=data, var=var, mask=mask, shape=shape,
                                unit=unit, uwave=uwave, wcs=wcs, wave=wave,
                                copy=copy, ndim=3)
-

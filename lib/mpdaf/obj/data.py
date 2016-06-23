@@ -613,8 +613,13 @@ class DataArray(object):
         # Update the NAXIS keywords because an object without data relies on
         # this to get the shape
         data_header = self.data_header.copy()
-        for i in range(1, self.ndim + 1):
-            data_header['NAXIS%d' % i] = self.shape[-i]
+        data_header['NAXIS'] = self.ndim
+        for i in range(1, 4):
+            key = 'NAXIS%d' % i
+            if i > self.ndim and key in data_header:
+                data_header.remove(key)
+            else:
+                data_header[key] = self.shape[-i]
 
         return self.__class__(
             unit=self.unit, dtype=None, copy=False,
