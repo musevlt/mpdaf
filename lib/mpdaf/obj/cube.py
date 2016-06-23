@@ -618,14 +618,18 @@ class Cube(ArithmeticMixin, DataArray):
                          wave_range[1], wcs_range[2], wcs_range[3]])
 
     def get_start(self, unit_wave=None, unit_wcs=None):
-        """Return [lbda,y,x] corresponding to pixel (0,0,0).
+        """Return [lbda,y,x] at the center of pixel (0,0,0).
 
         Parameters
         ----------
         unit_wave : `astropy.units.Unit`
-            wavelengths unit.
+            The wavelenth units to use for the starting wavelength.
+            The default value, None, selects the intrinsic wavelength
+            units of the cube.
         unit_wcs : `astropy.units.Unit`
-            world coordinates unit.
+            The world coordinates units to use for the spatial
+            starting position. The default value, None, selects
+            the intrinsic world coordinates of the cube.
 
         """
         start = np.empty(3)
@@ -634,14 +638,18 @@ class Cube(ArithmeticMixin, DataArray):
         return start
 
     def get_end(self, unit_wave=None, unit_wcs=None):
-        """Return [lbda,y,x] corresponding to pixel (-1,-1,-1).
+        """Return [lbda,y,x] at the center of pixel (-1,-1,-1).
 
         Parameters
         ----------
         unit_wave : `astropy.units.Unit`
-            wavelengths unit.
+            The wavelenth units to use for the starting wavelength.
+            The default value, None, selects the intrinsic wavelength
+            units of the cube.
         unit_wcs : `astropy.units.Unit`
-            world coordinates unit.
+            The world coordinates units to use for the spatial
+            starting position. The default value, None, selects
+            the intrinsic world coordinates of the cube.
 
         """
         end = np.empty(3)
@@ -650,13 +658,29 @@ class Cube(ArithmeticMixin, DataArray):
         return end
 
     def get_rot(self, unit=u.deg):
-        """Return the rotation angle.
+        """Return the rotation angle of the images of the cube,
+        defined such that a rotation angle of zero aligns north
+        along the positive Y axis, and a positive rotation angle
+        rotates north away from the Y axis, in the sense of a
+        rotation from north to east.
+
+        Note that the rotation angle is defined in a flat
+        map-projection of the sky. It is what would be seen if
+        the pixels of the image were drawn with their pixel
+        widths scaled by the angular pixel increments returned
+        by the get_axis_increments() method.
 
         Parameters
         ----------
         unit : `astropy.units.Unit`
-            type of the angle coordinate
-            degree by default
+            The unit to give the returned angle (degrees by default).
+
+        Returns
+        -------
+        out : float
+            The angle between celestial north and the Y axis of
+            the image, in the sense of an eastward rotation of
+            celestial north from the Y-axis.
 
         """
         return self.wcs.get_rot(unit)
