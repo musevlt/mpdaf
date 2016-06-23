@@ -1858,12 +1858,6 @@ class Cube(ArithmeticMixin, DataArray):
             wavelength range by a value, margin, which is an argument
             of this function.
 
-            If there are insufficient images above or below the chosen
-            wavelength range for the background estimation, the number
-            at the other end of the wavelength range is increased to
-            keep the number of images that contribute to the backround
-            unchanged.
-
             When is_sum is True, the sum of the background images is
             multiplied by N/nbg to produce a background image that has
             the same flux scale as the N images being combined.
@@ -1924,8 +1918,8 @@ class Cube(ArithmeticMixin, DataArray):
             # Calculate the indexes of the last pixel of the lower range
             # of background images and the first pixel of the upper range
             # of background images.
-            lower_maxpix = k1 - 1 - margin
-            upper_minpix = k2 + 1 + margin
+            lower_maxpix = max(k1 - 1 - margin, 0)
+            upper_minpix = min(k2 + 1 + margin, self.shape[0])
 
             # Calculate the number of images to separately select from
             # below and above the chosen wavelength range.
@@ -1937,15 +1931,11 @@ class Cube(ArithmeticMixin, DataArray):
             nbelow = nhalf
 
             # If the chosen wavelength range is too close to one edge of
-            # the cube's wavelength range, it may be necessary to trade-off
-            # images taken from above for images taken from below, or
-            # vice-versa.
+            # the cube's wavelength range, reduce the number to fit.
             if lower_maxpix - nbelow < 0:
-                nbelow = max(lower_maxpix, 0)
-                nabove += nhalf - nbelow
+                nbelow = lower_maxpix
             elif upper_minpix + nabove > self.shape[0]:
-                nabove = max(self.shape[0] - upper_minpix, 0)
-                nbelow += nhalf - nabove
+                nabove = self.shape[0] - upper_minpix
 
             # If there was too little room both below and above the
             # chosen wavelength range to compute the background, give up.
@@ -1955,15 +1945,15 @@ class Cube(ArithmeticMixin, DataArray):
 
             # Calculate slices that select the wavelength pixels below
             # and above the chosen wavelength range.
-            below = slice(lower_maxpix - nhalf, lower_maxpix)
-            above = slice(upper_minpix, upper_minpix + nhalf)
+            below = slice(lower_maxpix - nbelow, lower_maxpix)
+            above = slice(upper_minpix, upper_minpix + nabove)
 
             # Combine the background images, rescaling when summing, to
             # obtain the same unit scaling as the combination of the 'nim'
             # foreground images.
             if is_sum:
                 off_im = (self[below, :, :].sum(axis=0) +
-                          self[above, :, :].sum(axis=0)) * float(nim)/float(2*nhalf)
+                          self[above, :, :].sum(axis=0)) * float(nim)/float(nbelow + nabove)
             else:
                 off_im = (self[below, :, :].mean(axis=0) +
                           self[above, :, :].mean(axis=0)) / 2.0
