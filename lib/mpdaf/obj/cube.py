@@ -1910,74 +1910,119 @@ class Cube(ArithmeticMixin, DataArray):
 
     def get_image(self, wave, is_sum=False, subtract_off=False, margin=10.,
                   fband=3., unit_wave=u.angstrom):
-        """Extracts an image from the datacube.
+        """Form the average or sum of images over given wavelength range.
 
         Parameters
         ----------
         wave : (float, float)
-            (lbda1,lbda2) interval of wavelength in angstrom.
+            The (lbda1,lbda2) interval of wavelength in angstrom.
         unit_wave : `astropy.units.Unit`
-            wavelengths unit (angstrom by default).
-            If None, inputs are in pixels
+            The wavelength units of the lbda1, lbda2 and margin
+            arguments (angstrom by default). If None, lbda1, lbda2,
+            and margin should be in pixels.
         is_sum : bool
-            if True, compute the sum, otherwise compute the average.
+            If True, compute the sum of the images, otherwise compute
+            the arithmetic mean of the images.
         subtract_off : bool
-            If True, subtracting off nearby data.
-            The method computes the subtracted flux by using the algorithm
-            from Jarle Brinchmann (jarle@strw.leidenuniv.nl)::
 
-                # if is_sum is False
-                sub_flux = mean(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
-                                flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2])
-                # or if is_sum is True:
-                sub_flux = sum(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
-                                flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2]) /fband
+            If True, subtract off a background image that is estimated
+            from combining some images from both below and above the
+            chosen wavelength range. If the number of images between
+            lbda1 and lbda2 is denoted, N, then the number of images,
+            nbg, that are combined to form a background image is:
 
+              nbg = fband * N  (rounded up to be a multiple of 2)
+
+            Note that fband is an optional argument of this function.
+            Half of the nbg background images are taken from below the
+            chosen wavelength range, and the other half from above the
+            wavelength range. Hence the need to round nbg up to an
+            even number. The wavelength ranges of the two groups of
+            background images below and above the chosen wavelength
+            range are a distance, margin, below and above the
+            lower and upper edges of the chosen wavelength range. Note
+            that, margin, is an optional argument of this function.
+
+            When is_sum is True, the sum of the background images is
+            multiplied by N/nbg to produce a background image that has
+            the same flux scale as the N images being combined.
+
+            This scheme was developed by Jarle Brinchmann
+            (jarle@strw.leidenuniv.nl)
         margin : float
-            This off-band is offseted by margin wrt narrow-band limit.
+            The wavelength or pixel offset of the centers of the
+            ranges of background images below and above the chosen
+            wavelength range. This has the units specified by the
+            unit_wave argument. The default value is 10 angstroms.
         fband : float
-            The size of the off-band is fband*narrow-band width.
+            The ratio of the number of images used to form a
+            background image and the number of images that are being
+            combined.  The default value is 3.0.
 
         Returns
         -------
         out : `~mpdaf.obj.Image`
 
         """
+
+        # Convert the wavelength range to pixel indexes.
         if unit_wave is None:
             k1, k2 = wave
-            l1, l2 = self.wave.coord(wave)
         else:
-            l1, l2 = wave
-            k1, k2 = self.wave.pixel(wave, unit=unit_wave)
+            k1, k2 = np.rint(self.wave.pixel(wave, unit=unit_wave)).astype(int)
 
-        if k1 - int(k1) > 0.01:
-            k1 = int(k1) + 1
-        else:
-            k1 = int(k1)
-        k2 = int(k2)
-
+        # Clip the wavelength range to the available range of pixels.
         k1 = max(k1, 0)
         k2 = min(k2, self.shape[0] - 1)
 
+        # Obtain the effective wavelength range of the chosen
+        # wavelength pixels.
+        l1 = self.wave.coord(k1 - 0.5)
+        l2 = self.wave.coord(k1 + 0.5)
+
+        # Obtain the sum of the images within the specified range
+        # of wavelength pixels.
         if is_sum:
             ima = self[k1:k2 + 1, :, :].sum(axis=0)
         else:
             ima = self[k1:k2 + 1, :, :].mean(axis=0)
 
+        # Subtract off a background image?
         if subtract_off:
+
+            # Convert the margin to a number of pixels.
             if unit_wave is not None:
-                margin /= self.wave.get_step(unit=unit_wave)
-            dl = (k2 + 1 - k1) * fband
-            lbdas = np.arange(self.shape[0], dtype=float)
-            is_off = np.where(((lbdas < k1 - margin) &
-                               (lbdas > k1 - margin - dl / 2)) |
-                              ((lbdas > k2 + margin) &
-                               (lbdas < k2 + margin + dl / 2)))
+                margin = np.rint(
+                    margin / self.wave.get_step(unit=unit_wave)).astype(int)
+
+            # How many images were combined above?
+            nim = k2 + 1 - k1
+
+            # Calculate the number of images to separately select from
+            # below and above the chosen wavelength range.
+            nhalf = np.ceil(nim * fband / 2.0).astype(int)
+
+            # Check that the background image ranges are within the
+            # wavelength range of the cube.
+            if k1 - margin - nhalf < 0 or k2 + margin + nhalf >= self.shape[0]:
+                raise ValueError("Wavelength range too close to edge to estimate background")
+
+            # Calculate slices that select the wavelength pixels below
+            # and above the chosen wavelength range.
+            below = slice(k1-1 - margin - nhalf, k1-1 - margin)
+            above = slice(k2+1 + margin, k2+1 + margin + nhalf)
+
+            # Combine the background images, rescaling when summing, to
+            # obtain the same unit scaling as the combination of the 'nim'
+            # foreground images.
             if is_sum:
-                off_im = self[is_off[0], :, :].sum(axis=0) / (
-                    1.0 * len(is_off[0]) * fband / dl)
+                off_im = (self[below, :, :].sum(axis=0) +
+                          self[above, :, :].sum(axis=0)) * float(nim)/float(2*nhalf)
             else:
-                off_im = self[is_off[0], :, :].mean(axis=0)
+                off_im = (self[below, :, :].mean(axis=0) +
+                          self[above, :, :].mean(axis=0)) / 2.0
+
+            # Subtract the background image from the combined images.
             ima.data -= off_im.data
             if ima._var is not None:
                 ima._var += off_im._var

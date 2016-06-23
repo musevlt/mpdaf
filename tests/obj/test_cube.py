@@ -383,25 +383,65 @@ def test_rebin():
 def test_get_image():
     """Cube class: testing get_image method"""
     shape = (2000, 6, 5)
-    wave = WaveCoord(crpix=1, cdelt=0.3, crval=200, cunit=u.nm, shape=shape[0])
+    wave = WaveCoord(crpix=1, cdelt=3.0, crval=2000, cunit=u.angstrom, shape=shape[0])
     wcs = WCS(crval=(0, 0))
     data = np.ones(shape=shape) * 2
     cube1 = Cube(data=data, wave=wave, wcs=wcs)
-    cube1[:, 2, 2].add_gaussian(5000, 1200, 20, unit=u.angstrom)
-    ima = cube1.get_image(wave=(4800, 5200), is_sum=False, subtract_off=True)
+
+    # Add a gaussian shaped spectral line at image pixel 2,2.
+    cube1[:, 2, 2].add_gaussian(5000, 1200, 20)
+
+    # Specify the range of wavelengths to be combined and the corresponding
+    # slice along the wavelength axis. The wavelength range is chosen to
+    # include all wavelengths affected by add_gaussian().
+    lrange = (4800, 5200)
+    lslice = slice(np.rint(cube1.wave.pixel(lrange[0])).astype(int),
+                   np.rint(cube1.wave.pixel(lrange[1])).astype(int) + 1)
+
+    # Get an image that is the mean of all images in the above wavelength
+    # range, minus a background image estimated from outside this range,
+    # where all image values are 2.0.
+    ima = cube1.get_image(wave=lrange, is_sum=False, subtract_off=True)
+
+    # In the cube, all spectral pixels of image pixel 0,0 were 2.0,
+    # so the mean over the desired wavelength range, minus the mean
+    # over background ranges either side of this should be zero.
     assert_equal(ima[0, 0], 0)
+
+    # Spectral pixels of image pixel 2,2 in the original cube were all
+    # 2.0 everywhere except where the gaussian was added to 2.0. Hence
+    # pixel 2,2 of the mean image should be the mean of the gaussian
+    # minus the average 2.0 background.
     nose.tools.assert_almost_equal(ima[2, 2],
-                                   cube1[934:1067, 2, 2].mean() - 2, 3)
-    ima = cube1.get_image(wave=(4800, 5200), is_sum=False, subtract_off=False)
+                                   cube1[lslice, 2, 2].mean() - 2, 3)
+
+    # Get another mean image, but this time without subtracting off a
+    # background.  Image pixel 0,0 should have a mean of 2.0, and
+    # pixel 2,2 should equal the mean of the gaussian added to 2.0
+    ima = cube1.get_image(wave=lrange, is_sum=False, subtract_off=False)
     assert_equal(ima[0, 0], 2)
-    nose.tools.assert_almost_equal(ima[2, 2], cube1[934:1067, 2, 2].mean(), 3)
-    ima = cube1.get_image(wave=(4800, 5200), is_sum=True, subtract_off=True)
+    nose.tools.assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].mean(), 3)
+
+    # For this test, perform a sum over the chosen wavelength range,
+    # and subtract off a background image taken from wavelength
+    # regions above and below the wavelength range. Pixel 0,0 of the
+    # summed image should be zero, since both the summed wavelength
+    # range and the background image wavelength ranges have the same
+    # pixel values, and the background sum is scaled to have the same
+    # units as the output image. Check the background subtraction of
+    # pixel 2,2 using an equal number of pixels that were not affected
+    # by the addition of the gaussian.
+    ima = cube1.get_image(wave=lrange, is_sum=True, subtract_off=True)
     assert_equal(ima[0, 0], 0)
-    nose.tools.assert_almost_equal(ima[2, 2], cube1[934:1067, 2, 2].sum() -
-                                   cube1[934:1067, 0, 0].sum(), 3)
-    ima = cube1.get_image(wave=(4800, 5200), is_sum=True, subtract_off=False)
-    assert_equal(ima[0, 0], cube1[934:1067, 0, 0].sum())
-    nose.tools.assert_almost_equal(ima[2, 2], cube1[934:1067, 2, 2].sum())
+    nose.tools.assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].sum() -
+                                   cube1[lslice, 0, 0].sum(), 3)
+
+    # Finally, perform a sum of the chosen wavelength range without
+    # subtracting a background image. This is easy to test by doing
+    # equivalent sums through the cube over the chosen wavelength range.
+    ima = cube1.get_image(wave=lrange, is_sum=True, subtract_off=False)
+    assert_equal(ima[0, 0], cube1[lslice, 0, 0].sum())
+    nose.tools.assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].sum())
 
 
 @attr(speed='fast')
