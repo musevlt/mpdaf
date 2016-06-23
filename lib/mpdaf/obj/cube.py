@@ -1615,107 +1615,6 @@ class Cube(ArithmeticMixin, DataArray):
         res._rebin_mean(factor, margin, flux)
         return res
 
-    def _med_(self, k, p, q, kfactor, pfactor, qfactor):
-        return np.ma.median(self.data[k * kfactor:(k + 1) * kfactor,
-                                      p * pfactor:(p + 1) * pfactor,
-                                      q * qfactor:(q + 1) * qfactor])
-
-    def _rebin_median_(self, factor):
-        """Shrink the size of the cube by factor. New size must be an integer
-        multiple of the original size.
-
-        Parameter
-        ---------
-        factor : (int,int,int)
-            Factor in z, y and x.  Python notation: (nz,ny,nx)
-
-        """
-        assert np.array_equal(np.mod(self.shape, factor), [0, 0, 0])
-        self.shape /= np.asarray(factor)
-        # data
-        grid = np.lib.index_tricks.nd_grid()
-        g = grid[0:self.shape[0], 0:self.shape[1], 0:self.shape[2]]
-        vfunc = np.vectorize(self._med_)
-        data = vfunc(g[0], g[1], g[2], factor[0], factor[1], factor[2])
-        mask = self._mask.reshape(self.shape[0], factor[0],
-                                  self.shape[1], factor[1],
-                                  self.shape[2], factor[2])\
-            .sum(1).sum(2).sum(3)
-        self._data = data
-        self._mask = mask
-        # variance
-        self._var = None
-        # coordinates
-        self.wcs = self.wcs.rebin(factor[1:])
-        self.wave.rebin(factor[0])
-
-    def rebin_median(self, factor, margin='center'):
-        """Shrink the size of the cube by factor.
-
-        Parameters
-        ----------
-        factor : int or (int,int,int)
-            Factor in z, y and x. Python notation: (nz,ny,nx).
-
-        margin : 'center' or 'origin'
-            This parameters is used if new size is not an
-            integer multiple of the original size.
-
-            In 'center' case, cube is truncated on the left and on the right,
-            on the bottom and of the top of the cube.
-
-            In 'origin'case, cube is truncated at the end along each direction
-
-        Returns
-        -------
-        out : `~mpdaf.obj.Cube`
-        """
-        if is_int(factor):
-            factor = (factor, factor, factor)
-        factor = np.clip(factor, (1, 1, 1), self.shape)
-        if not np.any(np.mod(self.shape, factor)):
-            # new size is an integer multiple of the original size
-            res = self.copy()
-        else:
-            newshape = self.shape // factor
-            n = self.shape - newshape * factor
-
-            if n[0] == 0:
-                n0_left = 0
-                n0_right = self.shape[0]
-            else:
-                if margin == 'origin' or n[0] == 1:
-                    n0_left = 0
-                    n0_right = -n[0]
-                else:
-                    n0_left = n[0] // 2
-                    n0_right = self.shape[0] - n[0] + n0_left
-            if n[1] == 0:
-                n1_left = 0
-                n1_right = self.shape[1]
-            else:
-                if margin == 'origin' or n[1] == 1:
-                    n1_left = 0
-                    n1_right = -n[1]
-                else:
-                    n1_left = n[1] // 2
-                    n1_right = self.shape[1] - n[1] + n1_left
-            if n[2] == 0:
-                n2_left = 0
-                n2_right = self.shape[2]
-            else:
-                if margin == 'origin' or n[2] == 1:
-                    n2_left = 0
-                    n2_right = -n[2]
-                else:
-                    n2_left = n[2] // 2
-                    n2_right = self.shape[2] - n[2] + n2_left
-
-            res = self[n0_left:n0_right, n1_left:n1_right, n2_left:n2_right]
-
-        res._rebin_median_(factor)
-        return res
-
     def loop_spe_multiprocessing(self, f, cpu=None, verbose=True, **kargs):
         """loops over all spectra to apply a function/method. Returns the
         resulting cube. Multiprocessing is used.
@@ -2456,6 +2355,10 @@ class Cube(ArithmeticMixin, DataArray):
             spec = self[:, int(center[0] + 0.5), int(center[1] + 0.5)]
             self._logger.info('returning spectrum at nearest spaxel')
         return spec
+
+    @deprecated('rebin_median method is deprecated, use rebin_mean instead')
+    def rebin_median(self, factor, margin='center'):
+        return self.rebin_mean(factor, margin)
 
     @deprecated('rebin_factor method is deprecated, use rebin_mean instead')
     def rebin_factor(self, factor, margin='center'):
