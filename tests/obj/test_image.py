@@ -515,23 +515,6 @@ def test_rebin_mean():
     nose.tools.assert_equal(start[0], 0.5)
     nose.tools.assert_equal(start[1], 0.5)
 
-
-@attr(speed='fast')
-def test_add():
-    """Image class: testing add method."""
-    ima = astronomical_image()
-    # Extract a 40x40 area of the above image, centered at pixel
-    # position 790.5, 875.5. This should select a square arrea that is
-    # 20 pixels either side of this position and 20 pixel above and
-    # below this position. This should be the sub-image
-    # ima[771:811, 856:896]. Thus when we add this back to the original
-    # image, multiplied by 4, that area of ima should be 5 times its original
-    # value.
-    subima = ima.subimage(center=(790.5, 875.5), size=40, unit_center=None, unit_size=None)
-    ima.add(subima * 4)
-    assert_allclose(ima.data[771:811, 856:896], subima.data * 5)
-
-
 @attr(speed='fast')
 def test_fftconvolve():
     """Image class: testing convolution methods."""
