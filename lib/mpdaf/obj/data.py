@@ -59,8 +59,6 @@ class LazyData(object):
             return obj.__dict__[self.label]
         except KeyError:
             if obj.filename is None:
-                # if self.label == '_data':
-                #     raise ValueError('empty data array')
                 return
 
             if self.label in ('_data', '_mask'):
@@ -969,9 +967,6 @@ class DataArray(object):
             By default, a new array is created.
 
         """
-        if self._data is None:
-            raise ValueError('empty data array')
-
         if out is None:
             out = self.clone()
 
