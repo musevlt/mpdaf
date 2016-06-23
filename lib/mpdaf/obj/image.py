@@ -3754,26 +3754,6 @@ class Image(ArithmeticMixin, DataArray):
         else:
             self._var *= (sigma * sigma)
 
-    def add_poisson_noise(self, interp='no'):
-        """Add Poisson noise to image in place.
-
-        Parameters
-        ----------
-        interp : 'no' | 'linear' | 'spline'
-                if 'no', data median value replaced masked values.
-                if 'linear', linear interpolation of the masked values.
-                if 'spline', spline interpolation of the masked values.
-        """
-        # Get a copy of the data array with masked values filled.
-        data = self._prepare_data(interp)
-
-        self._data = np.random.poisson(data).astype(float)
-
-        if self._var is None:
-            self._var = self._data.__copy__()
-        else:
-            self._var += self._data
-
     def inside(self, coord, unit=u.deg):
         """Return True if coord is inside image.
 
