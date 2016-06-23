@@ -1858,6 +1858,12 @@ class Cube(ArithmeticMixin, DataArray):
             wavelength range by a value, margin, which is an argument
             of this function.
 
+            If there are insufficient images above or below the chosen
+            wavelength range for the background estimation, the number
+            at the other end of the wavelength range is increased to
+            keep the number of images that contribute to the backround
+            unchanged.
+
             When is_sum is True, the sum of the background images is
             multiplied by N/nbg to produce a background image that has
             the same flux scale as the N images being combined.
@@ -1915,19 +1921,42 @@ class Cube(ArithmeticMixin, DataArray):
             # How many images were combined above?
             nim = k2 + 1 - k1
 
+            # Calculate the indexes of the last pixel of the lower range
+            # of background images and the first pixel of the upper range
+            # of background images.
+            lower_maxpix = k1 - 1 - margin
+            upper_minpix = k2 + 1 + margin
+
             # Calculate the number of images to separately select from
             # below and above the chosen wavelength range.
             nhalf = np.ceil(nim * fband / 2.0).astype(int)
 
-            # Check that the background image ranges are within the
-            # wavelength range of the cube.
-            if k1 - margin - nhalf < 0 or k2 + margin + nhalf >= self.shape[0]:
-                raise ValueError("Wavelength range too close to edge to estimate background")
+            # Start by assuming that we will be combining equal numbers
+            # of images from below and above the chosen wavelength range.
+            nabove = nhalf
+            nbelow = nhalf
+
+            # If the chosen wavelength range is too close to one edge of
+            # the cube's wavelength range, it may be necessary to trade-off
+            # images taken from above for images taken from below, or
+            # vice-versa.
+            if lower_maxpix - nbelow < 0:
+                nbelow = max(lower_maxpix, 0)
+                nabove += nhalf - nbelow
+            elif upper_minpix + nabove > self.shape[0]:
+                nabove = max(self.shape[0] - upper_minpix, 0)
+                nbelow += nhalf - nabove
+
+            # If there was too little room both below and above the
+            # chosen wavelength range to compute the background, give up.
+            if(lower_maxpix - nbelow < 0 or
+               upper_minpix + nabove > self.shape[0]):
+                raise ValueError("Insufficient space outside the wavelength range to estimate a background")
 
             # Calculate slices that select the wavelength pixels below
             # and above the chosen wavelength range.
-            below = slice(k1-1 - margin - nhalf, k1-1 - margin)
-            above = slice(k2+1 + margin, k2+1 + margin + nhalf)
+            below = slice(lower_maxpix - nhalf, lower_maxpix)
+            above = slice(upper_minpix, upper_minpix + nhalf)
 
             # Combine the background images, rescaling when summing, to
             # obtain the same unit scaling as the combination of the 'nim'
