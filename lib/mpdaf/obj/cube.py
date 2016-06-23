@@ -963,20 +963,23 @@ class Cube(ArithmeticMixin, DataArray):
             raise ValueError('Invalid axis argument')
 
     def median(self, axis=None):
-        """Return the median over the given axis.
+        """Return the median over a given axis.
+
+        Beware that if the pixels of the cube have associated
+        variances, these are discarded by this function, because
+        there is no way to estimate the effects of a median on
+        the variance.
 
         Parameters
         ----------
         axis : None or int or tuple of ints
-            Axis or axes along which a median is performed.
-
-            - The default (axis = None) is perform a median over all the
+            The axis or axes along which a median is performed.
+            - The default (axis = None) performs a median over all the
               dimensions of the cube and returns a float.
-            - axis = 0 is perform a median over the wavelength dimension and
+            - axis = 0 performs a median over the wavelength dimension and
               returns an image.
-            - axis = (1,2) is perform a median over the (X,Y) axes and
+            - axis = (1,2) performs a median over the (X,Y) axes and
               returns a spectrum.
-
             Other cases return None.
 
         """
@@ -985,21 +988,12 @@ class Cube(ArithmeticMixin, DataArray):
         elif axis == 0:
             # return an image
             data = np.ma.median(self.data, axis)
-            if self._var is not None:
-                var = np.ma.median(self.var, axis).filled(np.inf)
-            else:
-                var = None
-            return Image.new_from_obj(self, data=data, var=var)
+            return Image.new_from_obj(self, data=data, var=None)
         elif axis == (1, 2):
             # return a spectrum
             data = np.ma.median(np.ma.median(self.data, axis=1), axis=1)
-            if self._var is not None:
-                var = np.ma.median(np.ma.median(self.var, axis=1),
-                                   axis=1).filled(np.inf)
-            else:
-                var = None
-            return Spectrum(wave=self.wave, unit=self.unit, data=data, var=var,
-                            copy=False)
+            return Spectrum(wave=self.wave, unit=self.unit, data=data,
+                            var=None, copy=False)
         else:
             raise ValueError('Invalid axis argument')
 
