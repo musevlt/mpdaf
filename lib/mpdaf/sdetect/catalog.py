@@ -503,8 +503,7 @@ class Catalog(Table):
         out : `mpdaf.sdetect.Catalog`
 
         """
-        arr = self[[dec, ra]].as_array()
-        arr = arr.view(float).reshape(arr.shape + (-1,))
+        arr = np.vstack([self[dec].data, self[ra].data]).T
         cen = wcs.sky2pix(arr, unit=u.deg).T
         sel = ((cen[0] > margin) & (cen[0] < wcs.naxis1 - margin) &
                (cen[1] > margin) & (cen[1] < wcs.naxis2 - margin))
