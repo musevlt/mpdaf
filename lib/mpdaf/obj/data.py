@@ -407,7 +407,7 @@ class DataArray(object):
 
         Parameters
         ----------
-        obj  : ``mpdaf.obj.DataArray``
+        obj  : `mpdaf.obj.DataArray`
             The object to use as the template for the new object. This
             should be an object based on DataArray, such as an Image,
             Cube or Spectrum.
