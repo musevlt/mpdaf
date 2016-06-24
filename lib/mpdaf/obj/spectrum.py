@@ -377,7 +377,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         """
         self.data = np.ma.masked_invalid(self._interp_data(spline))
 
-    def _rebin_mean_(self, factor):
+    def _rebin_(self, factor):
         """Shrink the size of the spectrum by factor. New size is an integer
         multiple of the original size.
 
@@ -408,7 +408,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         except:
             self.wave = None
 
-    def _rebin_mean(self, factor, margin='center'):
+    def _rebin(self, factor, margin='center'):
         """Shrink the size of the spectrum by factor.
 
         Parameters
@@ -509,7 +509,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         except:
             self.wave = None
 
-    def rebin_mean(self, factor, margin='center', inplace=False):
+    def rebin(self, factor, margin='center', inplace=False):
         """Return a spectrum that shrinks the size of the current spectrum by
         factor.
 
@@ -539,7 +539,7 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         # Rebin the result object in-place.
 
-        res._rebin_mean(factor, margin)
+        res._rebin(factor, margin)
         return res
 
     def _resample(self, step, start=None, shape=None,
@@ -2393,15 +2393,14 @@ class Spectrum(ArithmeticMixin, DataArray):
             except:
                 pass
 
-    @deprecated('rebin_median method is deprecated in favor of rebin_mean')
+    @deprecated('rebin_mean method is deprecated in favor of rebin')
+    def rebin_mean(self, factor, margin='center'):
+        return self.rebin(factor, margin)
+
+    @deprecated('rebin_median method is deprecated in favor of rebin')
     def rebin_median(self, factor, margin='center'):
-        return self.rebin_mean(factor, margin)
+        return self.rebin(factor, margin)
 
-    @deprecated('rebin_factor method is deprecated in favor of rebin_mean')
+    @deprecated('rebin_factor method is deprecated in favor of rebin')
     def rebin_factor(self, factor, margin='center'):
-        return self.rebin_mean(factor, margin)
-
-    @deprecated('rebin method is deprecated in favor of resample')
-    def rebin(self, step, start=None, shape=None,
-              spline=False, notnoise=False, unit=u.angstrom):
-        return self.resample(step, start, shape, spline, notnoise, unit)
+        return self.rebin(factor, margin)
