@@ -149,7 +149,7 @@ class FieldsMap(object):
             i0 = fields[0]
             FSF = weights[i0] * kernels[i0]
             for i in fields[1:]:
-                FSF *= weights[i] * kernels[i]
+                FSF += weights[i] * kernels[i]
             return FSF
 
     def variable_PSF_convolution(self, img, kernels, weights=None):
