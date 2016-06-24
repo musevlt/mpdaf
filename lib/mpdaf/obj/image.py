@@ -2670,7 +2670,7 @@ class Image(ArithmeticMixin, DataArray):
             moffat.ima = ima
         return moffat
 
-    def _rebin_mean(self, factor, margin='center'):
+    def _rebin(self, factor, margin='center'):
         if margin not in ('center', 'origin'):
             raise ValueError('Unknown margin parameter: %s' % margin)
 
@@ -2764,7 +2764,7 @@ class Image(ArithmeticMixin, DataArray):
         # record this.
         self.update_spatial_fmax(0.5 / self.wcs.get_step())
 
-    def rebin_mean(self, factor, margin='center', inplace=False):
+    def rebin(self, factor, margin='center', inplace=False):
         """Return an image that shrinks the size of the current image by
         an integer division factor.
 
@@ -2794,12 +2794,16 @@ class Image(ArithmeticMixin, DataArray):
         """
 
         res = self if inplace else self.copy()
-        res._rebin_mean(factor, margin)
+        res._rebin(factor, margin)
         return res
 
-    @deprecated('rebin_median method is deprecated: use rebin_mean instead')
+    @deprecated('rebin_mean method is deprecated: use rebin instead')
+    def rebin_mean(self, factor, margin='center'):
+        return self.rebin(factor, margin)
+
+    @deprecated('rebin_median method is deprecated: use rebin instead')
     def rebin_median(self, factor, margin='center'):
-        return self.rebin_mean(factor, margin)
+        return self.rebin(factor, margin)
 
     def resample(self, newdim, newstart, newstep, flux=False,
                  order=1, interp='no', unit_start=u.deg, unit_step=u.arcsec,
@@ -4175,17 +4179,10 @@ class Image(ArithmeticMixin, DataArray):
         else:
             return 'x=%1.4f, y=%1.4f' % (x, y)
 
-    @deprecated('The rebin_factor method is deprecated: Use rebin_mean '
+    @deprecated('The rebin_factor method is deprecated: Use rebin '
                 'instead')
     def rebin_factor(self, factor, margin='center'):
-        return self.rebin_mean(factor, margin)
-
-    @deprecated('The rebin method is deprecated: Use resample or regrid '
-                'instead')
-    def rebin(self, newdim, newstart, newstep, flux=False,
-              order=3, interp='no', unit_start=u.deg, unit_step=u.arcsec):
-        return self.resample(newdim, newstart, newstep, flux,
-                             order, interp, unit_start, unit_step)
+        return self.rebin(factor, margin)
 
     def get_spatial_fmax(self, rot=None):
         """Return the spatial-frequency band-limits of the image along

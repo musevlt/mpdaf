@@ -1147,7 +1147,7 @@ class RawFile(object):
                                              bias=False)
                 if area is not None:
                     ima = ima[area[0]:area[1], area[2]:area[3]]
-                ima = ima.rebin_mean(6)
+                ima = ima.rebin(6)
                 ichan = int(name[-2:])
                 fig.add_subplot(4, 6, ichan)
                 ima.plot(None, scale, vmin, vmax, zscale, colorbar, **kargs)
@@ -1168,7 +1168,7 @@ class RawFile(object):
                                              bias_substract=False, bias=False)
                 if area is not None:
                     ima = ima[area[0]:area[1], area[2]:area[3]]
-                ima = ima.rebin_mean(6)
+                ima = ima.rebin(6)
                 ichan = int(name[-2:])
                 fig.add_subplot(nrows, ncols, i + 1)
                 ima.plot(None, scale, vmin, vmax, zscale, colorbar, **kargs)
