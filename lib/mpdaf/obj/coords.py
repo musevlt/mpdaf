@@ -781,6 +781,9 @@ class WCS(object):
 
         if not isinstance(item, (tuple, list)) or len(item) != 2:
             raise ValueError('Invalid index, a 2D slice is expected')
+        
+        if not isinstance(item[1], slice) and not isinstance(item[0], slice):
+            return None
 
         # See if a slice object was sent for the X axis.
         if isinstance(item[1], slice):
