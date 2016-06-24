@@ -685,33 +685,6 @@ class Cube(ArithmeticMixin, DataArray):
         """
         return self.wcs.get_rot(unit)
 
-    def set_wcs(self, wcs=None, wave=None):
-        """Set the world coordinates (spatial and/or spectral).
-
-        Parameters
-        ----------
-        wcs : `mpdaf.obj.WCS`
-            World coordinates.
-        wave : `mpdaf.obj.WaveCoord`
-            Wavelength coordinates.
-
-        """
-        if wcs is not None:
-            self.wcs = wcs.copy()
-            self.wcs.naxis1 = self.shape[2]
-            self.wcs.naxis2 = self.shape[1]
-            if wcs.naxis1 != 0 and wcs.naxis2 != 0 \
-                and (wcs.naxis1 != self.shape[2] or
-                     wcs.naxis2 != self.shape[1]):
-                self._logger.warning('world coordinates and data have not the '
-                                     'same dimensions')
-        if wave is not None:
-            if wave.shape is not None and wave.shape != self.shape[0]:
-                self._logger.warning('wavelength coordinates and data have '
-                                     'not the same dimensions')
-            self.wave = wave.copy()
-            self.wave.shape = self.shape[0]
-
     def sum(self, axis=None, weights=None):
         """Return the sum over the given axis.
 

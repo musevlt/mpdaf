@@ -368,42 +368,10 @@ class DataArray(object):
                 else:
                     self._var = np.array(var, dtype=np.float64, copy=copy)
 
-        # If a WCS object was specified as an optional parameter, install it.
-        wcs = kwargs.pop('wcs', None)
-        if self._has_wcs and wcs is not None:
-            try:
-                self.wcs = wcs.copy()
-                if self.shape is not None:
-                    if (wcs.naxis1 != 0 and wcs.naxis2 != 0 and
-                        (wcs.naxis1 != self.shape[-1] or
-                         wcs.naxis2 != self.shape[-2])):
-                        self._logger.warning(
-                            'The world coordinates and data have different '
-                            'dimensions: Modifying the shape of the WCS '
-                            'object')
-                    self.wcs.naxis1 = self.shape[-1]
-                    self.wcs.naxis2 = self.shape[-2]
-            except:
-                self._logger.warning('world coordinates not copied',
-                                     exc_info=True)
-
-        # If a wavelength coordinate object was specified as an
-        # optional parameter, install it.
-        wave = kwargs.pop('wave', None)
-        if self._has_wave and wave is not None and wave.shape != 1:
-            try:
-                self.wave = wave.copy()
-                if self.shape is not None:
-                    if wave.shape is not None and \
-                            wave.shape != self.shape[0]:
-                        self._logger.warning(
-                            'wavelength coordinates and data have different '
-                            'dimensions: Modifying the shape of the WaveCoord '
-                            'object')
-                    self.wave.shape = self.shape[0]
-            except:
-                self._logger.warning('wavelength solution not copied',
-                                     exc_info=True)
+        # Where WCS and/or wavelength objects are specified as optional
+        # parameters, install them.
+        self.set_wcs(wcs=kwargs.pop('wcs', None),
+                     wave=kwargs.pop('wave', None))
 
     @classmethod
     def new_from_obj(cls, obj, data=None, var=None, copy=False):
@@ -1113,3 +1081,58 @@ class DataArray(object):
     @deprecated('The resize method is deprecated. Please use crop instead.')
     def resize(self):
         return self.crop()
+
+    def set_wcs(self, wcs=None, wave=None):
+        """Set the world coordinates (spatial and/or spectral where pertinent).
+
+        Parameters
+        ----------
+        wcs : `mpdaf.obj.WCS`
+            Spatial world coordinates. This argument is ignored when
+            self is a Spectrum.
+        wave : `mpdaf.obj.WaveCoord`
+            Spectral wavelength coordinates. This argument is ignored when
+            self is an Image.
+
+        """
+
+        # Install spatial world-corrdinates?
+        # Note that we have to test the length of self.shape in
+        # addition to _has_wcs, because of functions like
+        # Cube.__getitem__(), which creates a temporary cube to hold a
+        # spectrum before converting this to a Spectrum object.
+        if self._has_wcs and wcs is not None and len(self.shape) > 1:
+            try:
+                self.wcs = wcs.copy()
+                if self.shape is not None:
+                    if (wcs.naxis1 != 0 and wcs.naxis2 != 0 and
+                        (wcs.naxis1 != self.shape[-1] or
+                         wcs.naxis2 != self.shape[-2])):
+                        self._logger.warning(
+                            'The world coordinates and data have different '
+                            'dimensions. Modifying the shape of the WCS '
+                            'object')
+                    self.wcs.naxis1 = self.shape[-1]
+                    self.wcs.naxis2 = self.shape[-2]
+            except:
+                self._logger.warning('Unable to install world coordinates',
+                                     exc_info=True)
+
+        # Install spectral world coordinates?
+        # Note that we have to test the length of self.shape in
+        # addition to _has_wave, because of functions like
+        # Cube.__getitem__(), which creates a temporary cube to hold a
+        # image before converting this to an Image object.
+        if self._has_wave and wave is not None and len(self.shape) != 2:
+            try:
+                self.wave = wave.copy()
+                if self.shape is not None:
+                    if wave.shape is not None and wave.shape != self.shape[0]:
+                        self._logger.warning(
+                            'The wavelength coordinates and data have '
+                            'different dimensions. Modifying the shape of '
+                            'the WaveCoord object')
+                    self.wave.shape = self.shape[0]
+            except:
+                self._logger.warning('Unable to install wavelength coordinates',
+                                     exc_info=True)

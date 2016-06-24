@@ -256,20 +256,6 @@ class Spectrum(ArithmeticMixin, DataArray):
         if self.wave is not None:
             return self.wave.get_range(unit)
 
-    def set_wcs(self, wave):
-        """Set the world coordinates.
-
-        Parameters
-        ----------
-        wave : `mpdaf.obj.WaveCoord`
-            Wavelength coordinates.
-        """
-        if wave.shape is not None and wave.shape != self.shape:
-            self._logger.warning('wavelength coordinates and data have '
-                                 'not the same dimensions')
-        self.wave = wave.copy()
-        self.wave.shape = self.shape
-
     def mask_region(self, lmin=None, lmax=None, inside=True, unit=u.angstrom):
         """Mask the spectrum inside/outside [lmin,lmax].
 

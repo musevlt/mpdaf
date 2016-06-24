@@ -433,23 +433,6 @@ class Image(ArithmeticMixin, DataArray):
         if self.wcs is not None:
             return self.wcs.get_rot(unit)
 
-    def set_wcs(self, wcs):
-        """Set the world coordinates.
-
-        Parameters
-        ----------
-        wcs : `mpdaf.obj.WCS`
-            World coordinates.
-        """
-        self.wcs = wcs.copy()
-        self.wcs.set_naxis1(self.shape[1])
-        self.wcs.set_naxis2(self.shape[0])
-        if wcs.naxis1 != 0 and wcs.naxis2 != 0 and (
-                wcs.naxis1 != self.shape[1] or
-                wcs.naxis2 != self.shape[0]):
-            self._logger.warning('world coordinates and data have not '
-                                 'the same dimensions')
-
     def mask_region(self, center, radius, unit_center=u.deg,
                     unit_radius=u.arcsec, inside=True, posangle=0.0):
         """Mask values inside or outside a circular or rectangular region.
