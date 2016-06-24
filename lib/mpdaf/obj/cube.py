@@ -618,14 +618,18 @@ class Cube(ArithmeticMixin, DataArray):
                          wave_range[1], wcs_range[2], wcs_range[3]])
 
     def get_start(self, unit_wave=None, unit_wcs=None):
-        """Return [lbda,y,x] corresponding to pixel (0,0,0).
+        """Return [lbda,y,x] at the center of pixel (0,0,0).
 
         Parameters
         ----------
         unit_wave : `astropy.units.Unit`
-            wavelengths unit.
+            The wavelenth units to use for the starting wavelength.
+            The default value, None, selects the intrinsic wavelength
+            units of the cube.
         unit_wcs : `astropy.units.Unit`
-            world coordinates unit.
+            The world coordinates units to use for the spatial
+            starting position. The default value, None, selects
+            the intrinsic world coordinates of the cube.
 
         """
         start = np.empty(3)
@@ -634,14 +638,18 @@ class Cube(ArithmeticMixin, DataArray):
         return start
 
     def get_end(self, unit_wave=None, unit_wcs=None):
-        """Return [lbda,y,x] corresponding to pixel (-1,-1,-1).
+        """Return [lbda,y,x] at the center of pixel (-1,-1,-1).
 
         Parameters
         ----------
         unit_wave : `astropy.units.Unit`
-            wavelengths unit.
+            The wavelenth units to use for the starting wavelength.
+            The default value, None, selects the intrinsic wavelength
+            units of the cube.
         unit_wcs : `astropy.units.Unit`
-            world coordinates unit.
+            The world coordinates units to use for the spatial
+            starting position. The default value, None, selects
+            the intrinsic world coordinates of the cube.
 
         """
         end = np.empty(3)
@@ -650,13 +658,29 @@ class Cube(ArithmeticMixin, DataArray):
         return end
 
     def get_rot(self, unit=u.deg):
-        """Return the rotation angle.
+        """Return the rotation angle of the images of the cube,
+        defined such that a rotation angle of zero aligns north
+        along the positive Y axis, and a positive rotation angle
+        rotates north away from the Y axis, in the sense of a
+        rotation from north to east.
+
+        Note that the rotation angle is defined in a flat
+        map-projection of the sky. It is what would be seen if
+        the pixels of the image were drawn with their pixel
+        widths scaled by the angular pixel increments returned
+        by the get_axis_increments() method.
 
         Parameters
         ----------
         unit : `astropy.units.Unit`
-            type of the angle coordinate
-            degree by default
+            The unit to give the returned angle (degrees by default).
+
+        Returns
+        -------
+        out : float
+            The angle between celestial north and the Y axis of
+            the image, in the sense of an eastward rotation of
+            celestial north from the Y-axis.
 
         """
         return self.wcs.get_rot(unit)
@@ -939,20 +963,23 @@ class Cube(ArithmeticMixin, DataArray):
             raise ValueError('Invalid axis argument')
 
     def median(self, axis=None):
-        """Return the median over the given axis.
+        """Return the median over a given axis.
+
+        Beware that if the pixels of the cube have associated
+        variances, these are discarded by this function, because
+        there is no way to estimate the effects of a median on
+        the variance.
 
         Parameters
         ----------
         axis : None or int or tuple of ints
-            Axis or axes along which a median is performed.
-
-            - The default (axis = None) is perform a median over all the
+            The axis or axes along which a median is performed.
+            - The default (axis = None) performs a median over all the
               dimensions of the cube and returns a float.
-            - axis = 0 is perform a median over the wavelength dimension and
+            - axis = 0 performs a median over the wavelength dimension and
               returns an image.
-            - axis = (1,2) is perform a median over the (X,Y) axes and
+            - axis = (1,2) performs a median over the (X,Y) axes and
               returns a spectrum.
-
             Other cases return None.
 
         """
@@ -961,21 +988,11 @@ class Cube(ArithmeticMixin, DataArray):
         elif axis == 0:
             # return an image
             data = np.ma.median(self.data, axis)
-            if self._var is not None:
-                var = np.ma.median(self.var, axis).filled(np.inf)
-            else:
-                var = None
-            return Image.new_from_obj(self, data=data, var=var)
+            return Image.new_from_obj(self, data=data, var=False)
         elif axis == (1, 2):
             # return a spectrum
             data = np.ma.median(np.ma.median(self.data, axis=1), axis=1)
-            if self._var is not None:
-                var = np.ma.median(np.ma.median(self.var, axis=1),
-                                   axis=1).filled(np.inf)
-            else:
-                var = None
-            return Spectrum(wave=self.wave, unit=self.unit, data=data, var=var,
-                            copy=False)
+            return Spectrum.new_from_obj(self, data=data, var=False)
         else:
             raise ValueError('Invalid axis argument')
 
@@ -1591,107 +1608,6 @@ class Cube(ArithmeticMixin, DataArray):
         res._rebin_mean(factor, margin, flux)
         return res
 
-    def _med_(self, k, p, q, kfactor, pfactor, qfactor):
-        return np.ma.median(self.data[k * kfactor:(k + 1) * kfactor,
-                                      p * pfactor:(p + 1) * pfactor,
-                                      q * qfactor:(q + 1) * qfactor])
-
-    def _rebin_median_(self, factor):
-        """Shrink the size of the cube by factor. New size must be an integer
-        multiple of the original size.
-
-        Parameter
-        ---------
-        factor : (int,int,int)
-            Factor in z, y and x.  Python notation: (nz,ny,nx)
-
-        """
-        assert np.array_equal(np.mod(self.shape, factor), [0, 0, 0])
-        self.shape /= np.asarray(factor)
-        # data
-        grid = np.lib.index_tricks.nd_grid()
-        g = grid[0:self.shape[0], 0:self.shape[1], 0:self.shape[2]]
-        vfunc = np.vectorize(self._med_)
-        data = vfunc(g[0], g[1], g[2], factor[0], factor[1], factor[2])
-        mask = self._mask.reshape(self.shape[0], factor[0],
-                                  self.shape[1], factor[1],
-                                  self.shape[2], factor[2])\
-            .sum(1).sum(2).sum(3)
-        self._data = data
-        self._mask = mask
-        # variance
-        self._var = None
-        # coordinates
-        self.wcs = self.wcs.rebin(factor[1:])
-        self.wave.rebin(factor[0])
-
-    def rebin_median(self, factor, margin='center'):
-        """Shrink the size of the cube by factor.
-
-        Parameters
-        ----------
-        factor : int or (int,int,int)
-            Factor in z, y and x. Python notation: (nz,ny,nx).
-
-        margin : 'center' or 'origin'
-            This parameters is used if new size is not an
-            integer multiple of the original size.
-
-            In 'center' case, cube is truncated on the left and on the right,
-            on the bottom and of the top of the cube.
-
-            In 'origin'case, cube is truncated at the end along each direction
-
-        Returns
-        -------
-        out : `~mpdaf.obj.Cube`
-        """
-        if is_int(factor):
-            factor = (factor, factor, factor)
-        factor = np.clip(factor, (1, 1, 1), self.shape)
-        if not np.any(np.mod(self.shape, factor)):
-            # new size is an integer multiple of the original size
-            res = self.copy()
-        else:
-            newshape = self.shape // factor
-            n = self.shape - newshape * factor
-
-            if n[0] == 0:
-                n0_left = 0
-                n0_right = self.shape[0]
-            else:
-                if margin == 'origin' or n[0] == 1:
-                    n0_left = 0
-                    n0_right = -n[0]
-                else:
-                    n0_left = n[0] // 2
-                    n0_right = self.shape[0] - n[0] + n0_left
-            if n[1] == 0:
-                n1_left = 0
-                n1_right = self.shape[1]
-            else:
-                if margin == 'origin' or n[1] == 1:
-                    n1_left = 0
-                    n1_right = -n[1]
-                else:
-                    n1_left = n[1] // 2
-                    n1_right = self.shape[1] - n[1] + n1_left
-            if n[2] == 0:
-                n2_left = 0
-                n2_right = self.shape[2]
-            else:
-                if margin == 'origin' or n[2] == 1:
-                    n2_left = 0
-                    n2_right = -n[2]
-                else:
-                    n2_left = n[2] // 2
-                    n2_right = self.shape[2] - n[2] + n2_left
-
-            res = self[n0_left:n0_right, n1_left:n1_right, n2_left:n2_right]
-
-        res._rebin_median_(factor)
-        return res
-
     def loop_spe_multiprocessing(self, f, cpu=None, verbose=True, **kargs):
         """loops over all spectra to apply a function/method. Returns the
         resulting cube. Multiprocessing is used.
@@ -1910,74 +1826,138 @@ class Cube(ArithmeticMixin, DataArray):
 
     def get_image(self, wave, is_sum=False, subtract_off=False, margin=10.,
                   fband=3., unit_wave=u.angstrom):
-        """Extracts an image from the datacube.
+        """Form the average or sum of images over given wavelength range.
 
         Parameters
         ----------
         wave : (float, float)
-            (lbda1,lbda2) interval of wavelength in angstrom.
+            The (lbda1,lbda2) interval of wavelength in angstrom.
         unit_wave : `astropy.units.Unit`
-            wavelengths unit (angstrom by default).
-            If None, inputs are in pixels
+            The wavelength units of the lbda1, lbda2 and margin
+            arguments (angstrom by default). If None, lbda1, lbda2,
+            and margin should be in pixels.
         is_sum : bool
-            if True, compute the sum, otherwise compute the average.
+            If True, compute the sum of the images, otherwise compute
+            the arithmetic mean of the images.
         subtract_off : bool
-            If True, subtracting off nearby data.
-            The method computes the subtracted flux by using the algorithm
-            from Jarle Brinchmann (jarle@strw.leidenuniv.nl)::
+            If True, subtract off a background image that is estimated
+            from combining some images from both below and above the
+            chosen wavelength range. If the number of images between
+            lbda1 and lbda2 is denoted, N, then the number of
+            background images taken from below and above the wavelength
+            range are:
 
-                # if is_sum is False
-                sub_flux = mean(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
-                                flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2])
-                # or if is_sum is True:
-                sub_flux = sum(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
-                                flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2]) /fband
+              nbelow = nabove = (fband * N) / 2   [rounded up to an integer]
 
+            where fband is an optional argument of this function.
+
+            The wavelength ranges of the two groups of background
+            images below and above the chosen wavelength range are
+            separated from lower and upper edges of the chosen
+            wavelength range by a value, margin, which is an argument
+            of this function.
+
+            When is_sum is True, the sum of the background images is
+            multiplied by N/nbg to produce a background image that has
+            the same flux scale as the N images being combined.
+
+            This scheme was developed by Jarle Brinchmann
+            (jarle@strw.leidenuniv.nl)
         margin : float
-            This off-band is offseted by margin wrt narrow-band limit.
+            The wavelength or pixel offset of the centers of the
+            ranges of background images below and above the chosen
+            wavelength range. This has the units specified by the
+            unit_wave argument. The zero points of the margin are one
+            pixel below and above the chosen wavelength range.
+            The default value is 10 angstroms.
         fband : float
-            The size of the off-band is fband*narrow-band width.
+            The ratio of the number of images used to form a
+            background image and the number of images that are being
+            combined.  The default value is 3.0.
 
         Returns
         -------
         out : `~mpdaf.obj.Image`
 
         """
+
+        # Convert the wavelength range to pixel indexes.
         if unit_wave is None:
             k1, k2 = wave
-            l1, l2 = self.wave.coord(wave)
         else:
-            l1, l2 = wave
-            k1, k2 = self.wave.pixel(wave, unit=unit_wave)
+            k1, k2 = np.rint(self.wave.pixel(wave, unit=unit_wave)).astype(int)
 
-        if k1 - int(k1) > 0.01:
-            k1 = int(k1) + 1
-        else:
-            k1 = int(k1)
-        k2 = int(k2)
-
+        # Clip the wavelength range to the available range of pixels.
         k1 = max(k1, 0)
         k2 = min(k2, self.shape[0] - 1)
 
+        # Obtain the effective wavelength range of the chosen
+        # wavelength pixels.
+        l1 = self.wave.coord(k1 - 0.5)
+        l2 = self.wave.coord(k1 + 0.5)
+
+        # Obtain the sum of the images within the specified range
+        # of wavelength pixels.
         if is_sum:
             ima = self[k1:k2 + 1, :, :].sum(axis=0)
         else:
             ima = self[k1:k2 + 1, :, :].mean(axis=0)
 
+        # Subtract off a background image?
         if subtract_off:
+
+            # Convert the margin to a number of pixels.
             if unit_wave is not None:
-                margin /= self.wave.get_step(unit=unit_wave)
-            dl = (k2 + 1 - k1) * fband
-            lbdas = np.arange(self.shape[0], dtype=float)
-            is_off = np.where(((lbdas < k1 - margin) &
-                               (lbdas > k1 - margin - dl / 2)) |
-                              ((lbdas > k2 + margin) &
-                               (lbdas < k2 + margin + dl / 2)))
+                margin = np.rint(
+                    margin / self.wave.get_step(unit=unit_wave)).astype(int)
+
+            # How many images were combined above?
+            nim = k2 + 1 - k1
+
+            # Calculate the indexes of the last pixel of the lower range
+            # of background images and the first pixel of the upper range
+            # of background images.
+            lower_maxpix = max(k1 - 1 - margin, 0)
+            upper_minpix = min(k2 + 1 + margin, self.shape[0])
+
+            # Calculate the number of images to separately select from
+            # below and above the chosen wavelength range.
+            nhalf = np.ceil(nim * fband / 2.0).astype(int)
+
+            # Start by assuming that we will be combining equal numbers
+            # of images from below and above the chosen wavelength range.
+            nabove = nhalf
+            nbelow = nhalf
+
+            # If the chosen wavelength range is too close to one edge of
+            # the cube's wavelength range, reduce the number to fit.
+            if lower_maxpix - nbelow < 0:
+                nbelow = lower_maxpix
+            elif upper_minpix + nabove > self.shape[0]:
+                nabove = self.shape[0] - upper_minpix
+
+            # If there was too little room both below and above the
+            # chosen wavelength range to compute the background, give up.
+            if(lower_maxpix - nbelow < 0 or
+               upper_minpix + nabove > self.shape[0]):
+                raise ValueError("Insufficient space outside the wavelength range to estimate a background")
+
+            # Calculate slices that select the wavelength pixels below
+            # and above the chosen wavelength range.
+            below = slice(lower_maxpix - nbelow, lower_maxpix)
+            above = slice(upper_minpix, upper_minpix + nabove)
+
+            # Combine the background images, rescaling when summing, to
+            # obtain the same unit scaling as the combination of the 'nim'
+            # foreground images.
             if is_sum:
-                off_im = self[is_off[0], :, :].sum(axis=0) / (
-                    1.0 * len(is_off[0]) * fband / dl)
+                off_im = (self[below, :, :].sum(axis=0) +
+                          self[above, :, :].sum(axis=0)) * float(nim)/float(nbelow + nabove)
             else:
-                off_im = self[is_off[0], :, :].mean(axis=0)
+                off_im = (self[below, :, :].mean(axis=0) +
+                          self[above, :, :].mean(axis=0)) / 2.0
+
+            # Subtract the background image from the combined images.
             ima.data -= off_im.data
             if ima._var is not None:
                 ima._var += off_im._var
@@ -2387,6 +2367,10 @@ class Cube(ArithmeticMixin, DataArray):
             spec = self[:, int(center[0] + 0.5), int(center[1] + 0.5)]
             self._logger.info('returning spectrum at nearest spaxel')
         return spec
+
+    @deprecated('rebin_median method is deprecated, use rebin_mean instead')
+    def rebin_median(self, factor, margin='center'):
+        return self.rebin_mean(factor, margin)
 
     @deprecated('rebin_factor method is deprecated, use rebin_mean instead')
     def rebin_factor(self, factor, margin='center'):

@@ -556,73 +556,6 @@ class Spectrum(ArithmeticMixin, DataArray):
         res._rebin_mean(factor, margin)
         return res
 
-    def _rebin_median_(self, factor):
-        """Shrink the size of the spectrum by factor. Median values used. New
-        size is an integer multiple of the original size.
-
-        Parameters
-        ----------
-        factor : int
-            factor
-        """
-        assert not np.sometrue(np.mod(self.shape[0], factor))
-        # new size is an integer multiple of the original size
-        shape = self.shape[0] // factor
-        self._data = np.ma.median(self.data.reshape(shape, factor), 1)
-        if self._mask is not np.ma.nomask:
-            self._mask = ((~self._mask).reshape(shape, factor).sum(1) == 0)
-        self.var = None
-        self._ndim = self._data.ndim
-        try:
-            self.wave.rebin(factor)
-        except:
-            self.wave = None
-
-    def rebin_median(self, factor, margin='center'):
-        """Shrink the size of the spectrum by factor. Median values are used.
-
-        Parameters
-        ----------
-        factor : int
-            factor
-        margin : string in 'center'|'right'|'left'
-            This parameters is used if new size is not
-            an integer multiple of the original size.
-
-            - 'center' : data lost on the left
-              and on the right of the spectrum.
-            - 'right': data lost on the right of the spectrum.
-            - 'left': data lost on the left of the spectrum.
-
-        Returns
-        -------
-        out: `~mpdaf.obj.Spectrum`
-
-        """
-        if factor <= 1 or factor >= self.shape[0]:
-            raise ValueError('factor must be in ]1,shape[')
-
-        if self.shape[0] % factor == 0:
-            # new size is an integer multiple of the original size
-            res = self.copy()
-        else:
-            newshape = self.shape[0] // factor
-            n = self.shape[0] - newshape * factor
-            if margin == 'center' and n == 1:
-                margin = 'right'
-            if margin == 'center':
-                n_left = n // 2
-                n_right = self.shape[0] - n + n_left
-                res = self[n_left:n_right]
-            elif margin == 'right':
-                res = self[0:self.shape[0] - n]
-            elif margin == 'left':
-                res = self[n:]
-            else:
-                raise ValueError('margin must be center|right|left')
-        res._rebin_median_(factor)
-        return res
-
     def _resample(self, step, start=None, shape=None,
                   spline=False, notnoise=False, unit=u.angstrom):
         """Resample spectrum data to different wavelength step size.
@@ -2042,59 +1975,6 @@ class Spectrum(ArithmeticMixin, DataArray):
         return Gauss1D(lpeak, peak, flux, fwhm, cont0, err_lpeak,
                        err_peak, err_flux, err_fwhm, chisq, dof)
 
-    def _median_filter(self, kernel_size=1., spline=False, unit=u.angstrom):
-        """Perform a median filter on the spectrum.
-
-        Uses `scipy.signal.medfilt`.
-
-        Parameters
-        ----------
-        kernel_size : float
-            Size of the median filter window.
-        unit : `astropy.units.Unit`
-            unit ot the kernekl size. If None, inputs are in pixels.
-        """
-        if unit is not None:
-            kernel_size = kernel_size / self.get_step(unit=unit)
-        ks = int(kernel_size / 2) * 2 + 1
-
-        data = np.empty(self.shape[0] + 2 * ks)
-        data[ks:-ks] = self._interp_data(spline)
-        data[:ks] = data[ks:2 * ks][::-1]
-        data[-ks:] = data[-2 * ks:-ks][::-1]
-        data = signal.medfilt(data, ks)
-        self._data = data[ks:-ks]
-
-    def median_filter(self, kernel_size=1., spline=False, unit=u.angstrom,
-                      inplace=False):
-        """Return a spectrum resulted on a median filter on the current
-        spectrum.
-
-        Uses `scipy.signal.medfilt`.
-
-        Parameters
-        ----------
-        kernel_size : float
-            Size of the median filter window.
-        unit : `astropy.units.Unit`
-            unit ot the kernel size
-        inplace : bool
-            If False, return a filtered copy of the spectrum (the default).
-            If True, filter the original spectrum in-place, and return that.
-
-        Returns
-        -------
-        out : Spectrum
-        """
-        # Should we filter the spectrum in-place, or filter a copy?
-
-        res = self if inplace else self.copy()
-
-        # Filter the result object in-place.
-
-        res._median_filter(kernel_size, spline, unit)
-        return res
-
     def _convolve(self, other):
         """Convolve the spectrum with a other spectrum or an array.
 
@@ -2526,6 +2406,10 @@ class Spectrum(ArithmeticMixin, DataArray):
                 self._fig.toolbar.set_message(s)
             except:
                 pass
+
+    @deprecated('rebin_median method is deprecated in favor of rebin_mean')
+    def rebin_median(self, factor, margin='center'):
+        return self.rebin_mean(factor, margin)
 
     @deprecated('rebin_factor method is deprecated in favor of rebin_mean')
     def rebin_factor(self, factor, margin='center'):
