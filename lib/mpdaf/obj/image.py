@@ -1366,7 +1366,7 @@ class Image(ArithmeticMixin, DataArray):
         return np.array(pos)
 
     def peak(self, center=None, radius=0, unit_center=u.deg,
-             unit_radius=u.angstrom, dpix=2, background=None, plot=False):
+             unit_radius=u.arcsec, dpix=2, background=None, plot=False):
         """Find image peak location.
 
         Used `scipy.ndimage.measurements.maximum_position` and
@@ -1451,7 +1451,7 @@ class Image(ArithmeticMixin, DataArray):
         return {'x': ra, 'y': dec, 'p': ic, 'q': jc, 'data': maxv}
 
     def fwhm(self, center=None, radius=0, unit_center=u.deg,
-             unit_radius=u.angstrom):
+             unit_radius=u.arcsec):
         """Compute the fwhm.
 
         Parameters
@@ -1495,7 +1495,7 @@ class Image(ArithmeticMixin, DataArray):
         return sigma * 2. * np.sqrt(2. * np.log(2.0))
 
     def ee(self, center=None, radius=0, unit_center=u.deg,
-           unit_radius=u.angstrom, frac=False, cont=0):
+           unit_radius=u.arcsec, frac=False, cont=0):
         """Compute ensquared/encircled energy.
 
         Parameters
@@ -1626,7 +1626,7 @@ class Image(ArithmeticMixin, DataArray):
 
         radius = np.arange(0, nmax)
         if unit_radius is not None:
-            step = self.get_step(unit=unit_radius)
+            step = np.mean(self.get_step(unit=unit_radius))
             radius = radius * step
 
         return radius, ee
