@@ -132,23 +132,27 @@ class DataArray(object):
         obj.data[20:22] *= numpy.ma.array([2.0,2.0], mask=[True,True])
 
     The data and variance arrays can be completely replaced by assigning new
-    arrays to the ``obj.data`` and ``obj.var`` properties. In general, when
-    doing this, the new data array should be assigned before the new variance
-    array. This is because assigning a new data array completely replaces the
-    current shared mask, whereas assigning a new variance array combines the
-    mask of the variance array with the existing shared mask.
+    arrays to the ``obj.data`` and ``obj.var`` properties, but these must have
+    the same shape as before (ie. obj.shape).  New arrays that are assigned to
+    ``obj.data`` or ``obj.var`` can be simple numpy arrays, or a numpy masked
+    arrays.
 
-    More specifically, when a new data array is assigned to ``obj.data``, the
-    shared mask becomes a copy of the mask array of the input data array, if it
-    has one.  If the new data array is not a masked array, the mask is created
-    by masking any elements that are Inf or Nan in the new data array.
+    When a normal numpy array is assigned to ``obj.data``, the ``obj.mask``
+    array is also assigned a mask array, whose elements are True wherever NaN
+    or Inf values are found in the data array. An exception to this rule is if
+    the mask has previously been disabled by assigning ``numpy.ma.nomask`` to
+    ``obj.mask``. In this case a mask array is not constructed.
 
-    When a new variance array is assigned to ``obj.var``, the shared mask
-    becomes the union of the mask of the current data array and the mask of the
-    new variance array, if it has a mask.
+    When a numpy masked array is assigned to ``obj.data``, then its mask is
+    also assigned, unchanged, to ``obj.mask``.
 
-    Note that the ability to record variances for each element is optional.
-    When no variances are stored, ``obj.var`` has the value None. To discard an
+    Assigning a normal numpy array to the ``obj.var`` attribute, has no effect
+    on the contents of ``obj.mask``. On the other hand, when a numpy masked
+    array is assigned to ``obj.var`` the ``obj.mask`` array becomes the union
+    of its current value and the mask of the provided array.
+
+    The ability to record variances for each element is optional.  When no
+    variances are stored, ``obj.var`` has the value None. To discard an
     unwanted variance array, None can be subsequently assigned to ``obj.var``.
 
     For cubes and spectra, the wavelengths of the spectral pixels are specified
@@ -476,10 +480,8 @@ class DataArray(object):
         elements of the data property, then these change both the values of the
         data property and the shared mask of the data and var properties.
 
-        Completely new arrays can also be assigned to the data property. If the
-        new array has the same shape as the existing data array, then the
-        results are as though the elements were assigned one by one to the data
-        array, with the behavior described above for element assignments.
+        Completely new arrays can also be assigned to the data property,
+        provided that they have the same shape as before.
 
         """
         res = ma.MaskedArray(self._data, mask=self._mask, copy=False)
