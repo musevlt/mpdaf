@@ -1060,7 +1060,7 @@ class Cube(ArithmeticMixin, DataArray):
                              inside=False)
         return res
 
-    def _rebin_mean_(self, factor):
+    def _rebin_(self, factor):
         """Shrink the size of the cube by factor. New size must be an integer
         multiple of the original size.
 
@@ -1093,7 +1093,7 @@ class Cube(ArithmeticMixin, DataArray):
         self.wcs = self.wcs.rebin(factor[1:])
         self.wave.rebin(factor[0])
 
-    def _rebin_mean(self, factor, margin='center', flux=False):
+    def _rebin(self, factor, margin='center', flux=False):
         """Shrink the size of the cube by factor.
 
         Parameters
@@ -1125,7 +1125,7 @@ class Cube(ArithmeticMixin, DataArray):
 
         if not np.any(np.mod(self.shape, factor)):
             # new size is an integer multiple of the original size
-            self._rebin_mean_(factor)
+            self._rebin_(factor)
             return None
         else:
             factor = np.array(factor)
@@ -1166,7 +1166,7 @@ class Cube(ArithmeticMixin, DataArray):
                     n2_right = self.shape[2] - n[2] + n2_left
 
             cub = self[n0_left:n0_right, n1_left:n1_right, n2_left:n2_right]
-            cub._rebin_mean_(factor)
+            cub._rebin_(factor)
 
             if flux is False:
                 self._data = cub._data
@@ -1543,7 +1543,7 @@ class Cube(ArithmeticMixin, DataArray):
                 self._var = var
                 return None
 
-    def rebin_mean(self, factor, margin='center', flux=False, inplace=False):
+    def rebin(self, factor, margin='center', flux=False, inplace=False):
         """Shrink the size of the cube by factor.
 
         Parameters
@@ -1578,7 +1578,7 @@ class Cube(ArithmeticMixin, DataArray):
             factor = (factor, factor, factor)
         factor = np.clip(factor, (1, 1, 1), self.shape)
         res = self if inplace else self.copy()
-        res._rebin_mean(factor, margin, flux)
+        res._rebin(factor, margin, flux)
         return res
 
     def loop_spe_multiprocessing(self, f, cpu=None, verbose=True, **kargs):
@@ -2341,13 +2341,17 @@ class Cube(ArithmeticMixin, DataArray):
             self._logger.info('returning spectrum at nearest spaxel')
         return spec
 
-    @deprecated('rebin_median method is deprecated, use rebin_mean instead')
-    def rebin_median(self, factor, margin='center'):
-        return self.rebin_mean(factor, margin)
+    @deprecated('rebin_mean method is deprecated, use rebin instead')
+    def rebin_mean(self, factor, margin='center'):
+        return self.rebin(factor, margin)
 
-    @deprecated('rebin_factor method is deprecated, use rebin_mean instead')
+    @deprecated('rebin_median method is deprecated, use rebin instead')
+    def rebin_median(self, factor, margin='center'):
+        return self.rebin(factor, margin)
+
+    @deprecated('rebin_factor method is deprecated, use rebin instead')
     def rebin_factor(self, factor, margin='center'):
-        return self.rebin_mean(factor, margin)
+        return self.rebin(factor, margin)
 
     @deprecated('subcube_aperture method is deprecated: use '
                 'subcube_circle_aperture instead')
