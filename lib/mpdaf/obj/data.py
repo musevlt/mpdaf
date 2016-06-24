@@ -407,16 +407,27 @@ class DataArray(object):
 
         Parameters
         ----------
+        obj  : ``mpdaf.obj.DataArray``
+            The object to use as the template for the new object. This
+            should be an object based on DataArray, such as an Image,
+            Cube or Spectrum.
         data : ndarray-like
-            Optional data array, otherwise ``obj.data`` is used.
+            An optional data array, or None to indicate that
+            ``obj.data`` should be used. The default is None.
         var : ndarray-like
-            Optional variance array, otherwise ``obj.var`` is used.
+            An optional variance array, or None to indicate that
+            ``obj.var`` should be used, or False to indicate that the
+            new object should not have any variances. The default
+            is None.
         copy : bool
-            Copy the data and variance if True (default False).
+            Copy the data and variance arrays if True (default False).
 
         """
         data = obj.data if data is None else data
-        var = obj._var if var is None else var
+        if var is None:
+            var = obj._var
+        elif var is False:
+            var = None
         kwargs = dict(filename=obj.filename, data=data, unit=obj.unit, var=var,
                       dtype=obj.dtype, copy=copy,
                       ext=(obj._data_ext, obj._var_ext),
