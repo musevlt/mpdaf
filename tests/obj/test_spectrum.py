@@ -268,16 +268,6 @@ def test_rebin_mean():
 
 
 @attr(speed='fast')
-def test_rebin_median():
-    """Spectrum class: testing rebin_median function"""
-    wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm)
-    spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
-                         wave=wave)
-    spectrum2 = spectrum1.rebin_median(3, margin='right')
-    nose.tools.assert_equal(spectrum2[1], 4)
-
-
-@attr(speed='fast')
 def test_truncate():
     """Spectrum class: testing truncate function"""
     sig = fits.getdata("data/obj/g9-124Tsigspec.fits")
