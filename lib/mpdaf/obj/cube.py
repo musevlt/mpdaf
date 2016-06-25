@@ -47,16 +47,36 @@ __all__ = ('iter_spe', 'iter_ima', 'Cube')
 
 
 def iter_spe(cube, index=False):
-    """An iterator for iterating over the spectra in a Cube object.
+    """An iterator over the spectra of successive image pixels in a Cube
+
+    Each call to the iterator returns the spectrum of one pixel of the
+    image. The first spectrum to be returned, is the spectrum of image
+    pixel 0,0. Thereafter the X-axis pixel index is incremented by one
+    at each call (modulus the length of the X-axis), and the Y-axis
+    pixel index is incremented by one each time that the X-axis index
+    wraps back to zero.
+
+    The return value of iter_spe() is a python generator that can be
+    used in loops, such as in the following example:
+
+      from mpdaf.obj import iter_spe
+      for sp,(y,x) in iter_spe(mycube, index=True):
+          print("Peak flux in pixel [%d,%d] = %g" % (y, x, sp.data.max()))
 
     Parameters
     ----------
     cube : `~mpdaf.obj.Cube`
-       The cube that contains the spectra to be returned one after another.
+       The cube that contains the spectra to be returned.
     index : bool
-       If False, only return a spectrum at each iteration.
-       If True, return both a spectrum and the position of that spectrum in the
-       image (a tuple of image-array indexes along the axes (y,x)).
+       If False, return just a spectrum at each iteration.
+       If True, return both a spectrum and the pixel index
+       of that spectrum in the image (a tuple of image-array
+       indexes along the axes (y,x)).
+
+    Returns
+    -------
+    out : generator
+       A python generator object, suitable for using in a loop.
 
     """
     if index:
@@ -68,15 +88,33 @@ def iter_spe(cube, index=False):
 
 
 def iter_ima(cube, index=False):
-    """An iterator for iterating over the images of a Cube object.
+    """An iterator over the images of successive spectral pixels in a Cube
+
+    Each call to the iterator returns the image of the next spectral
+    pixel of the cube. The first image to be returned, is the image of
+    spectral pixel 0, followed, on the next call, by the image of
+    spectral pixel 1 etc.
+
+    The return value of iter_ima() is a python generator that can be
+    used in loops, such as in the following example:
+
+      from mpdaf.obj import iter_ima
+      for im,channel in iter_ima(mycube, index=True):
+          print("Total flux in channel %d = %g" % (channel, im.data.sum()))
 
     Parameters
     ----------
     cube : `~mpdaf.obj.Cube`
-       The cube that contains the images to be returned one after another.
+       The cube that contains the images to be returned.
     index : bool
-       If False, only return an image at each iteration.
-       If True, return both the image and the spectral index.
+       If False, return just an image at each iteration.
+       If True, return both an image and the index of that image along
+       the wavelength axis of the cube.
+
+    Returns
+    -------
+    out : generator
+       A python generator object, suitable for using in a loop.
 
     """
     if index:
