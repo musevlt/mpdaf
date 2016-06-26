@@ -2324,8 +2324,8 @@ class Spectrum(ArithmeticMixin, DataArray):
         else:
             raise ValueError("Unknow stretch '{}'".format(stretch))
 
-        lmin, lmax = res.get_range()
-        ax.set_xlim(lmin, lmax)
+#         lmin, lmax = res.get_range()
+#         ax.set_xlim(lmin, lmax)
 
         if noise:
             sigma = np.sqrt(res.var)
