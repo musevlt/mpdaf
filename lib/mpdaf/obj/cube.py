@@ -57,7 +57,7 @@ def iter_spe(cube, index=False):
     wraps back to zero.
 
     The return value of iter_spe() is a python generator that can be
-    used in loops, such as in the following example:
+    used in loops, such as in the following example::
 
       from mpdaf.obj import iter_spe
       for sp,(y,x) in iter_spe(mycube, index=True):
@@ -96,7 +96,7 @@ def iter_ima(cube, index=False):
     spectral pixel 1 etc.
 
     The return value of iter_ima() is a python generator that can be
-    used in loops, such as in the following example:
+    used in loops, such as in the following example::
 
       from mpdaf.obj import iter_ima
       for im,channel in iter_ima(mycube, index=True):
