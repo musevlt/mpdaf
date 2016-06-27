@@ -112,15 +112,29 @@ def test_crop():
 @attr(speed='fast')
 def test_multiprocess():
     """Cube class: tests multiprocess"""
-    cube1 = generate_cube()
-    f = Image.get_rot
-    list_spe = cube1.loop_ima_multiprocessing(f, cpu=2, verbose=False)
-    assert_equal(list_spe[8], cube1[8, :, :].get_rot())
+    data_value = 2.2
+    cube1 = generate_cube(data=data_value)
 
-    f = Spectrum.mean
-    out = cube1.loop_spe_multiprocessing(f, cpu=2, verbose=False)
-    assert_equal(out[2, 3], cube1[:, 2, 3].mean())
+    # A normal function that takes an Image or a Spectrum object as its
+    # argument and returns 10 times the mean of the data in that object.
+    def myfunc(obj):
+        return obj.data.mean() * 10.0
 
+    # Test image processing using an Image method.
+    spe = cube1.loop_ima_multiprocessing(Image.get_rot, cpu=2, verbose=False)
+    assert_allclose(spe.data, cube1.get_rot())
+
+    # Test image processing using a normal function.
+    spe = cube1.loop_ima_multiprocessing(myfunc, cpu=2, verbose=False)
+    assert_allclose(spe.data, data_value * 10.0)
+
+    # Test spectrum processing using a Spectrum method.
+    im = cube1.loop_spe_multiprocessing(Spectrum.mean, cpu=2, verbose=False)
+    assert_allclose(im.data[2, 3], cube1[:, 2, 3].mean())
+
+    # Test spectrum processing using a normal function.
+    im = cube1.loop_spe_multiprocessing(myfunc, cpu=2, verbose=False)
+    assert_allclose(im.data, data_value * 10.0)
 
 @attr(speed='fast')
 def test_multiprocess2():
