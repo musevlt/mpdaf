@@ -1766,7 +1766,7 @@ class Cube(ArithmeticMixin, DataArray):
         # If the provided function is not an Image method, serialize its
         # code, so that it can be recreated in the worker processes.
         else:
-            func = ("Function", marshal.dumps(f.func_code))
+            func = ("Function", marshal.dumps(f.__code__))
 
         # Get the attributes that will be passed to the _process_ima()
         # in the worker processes.
@@ -1961,7 +1961,7 @@ class Cube(ArithmeticMixin, DataArray):
         # If the provided function is not an Image method, serialize its
         # code, so that it can be recreated in the worker processes.
         else:
-            func = ("Function", marshal.dumps(f.func_code))
+            func = ("Function", marshal.dumps(f.__code__))
 
         # Get the attributes that will be passed to the _process_ima()
         # in the worker processes.
