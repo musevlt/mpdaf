@@ -266,10 +266,8 @@ class FSF(object):
         
     def get_FSF_cube(self, cube, size, **kargs):
         """Return a cube of FSFs corresponding to the MUSE data cube
-        given in input:
-        - a FSF per MUSE spectral pixels,
-        - the step of the FSF pixel is equal to the spatial step of the
-          MUSE data cube.
+        given in input: a FSF per MUSE spectral pixels, the step of
+        the FSF pixel is equal to the spatial step of the MUSE data cube.
 
         Parameters
         ----------

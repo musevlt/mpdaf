@@ -3978,7 +3978,7 @@ class Image(ArithmeticMixin, DataArray):
         pixel value, pv, is normalized over the range vmin to vmax,
         to have a value nv, that goes from 0 to 1, as follows:
 
-           nv = (pv - vmin) / (vmax - vmin)
+        nv = (pv - vmin) / (vmax - vmin)
 
         This value is then mapped to another number between 0 and 1
         which determines a position along the colorbar, and thus the
@@ -3986,10 +3986,10 @@ class Image(ArithmeticMixin, DataArray):
         values to colorbar position, color, can be chosen using the
         scale argument, from the following options:
 
-           'linear'   =>  color = nv
-           'log'      =>  color = log(1000 * nv + 1) / log(1000 + 1)
-           'sqrt'     =>  color = sqrt(nv)
-           'arcsinh'  =>  color = arcsinh(10*nv) / arcsinh(10.0)
+        'linear'   =>  color = nv
+        'log'      =>  color = log(1000 * nv + 1) / log(1000 + 1)
+        'sqrt'     =>  color = sqrt(nv)
+        'arcsinh'  =>  color = arcsinh(10*nv) / arcsinh(10.0)
 
         A colorbar can optionally be drawn. If the colorbar
         argument is given the value 'h', then a colorbar is drawn
@@ -4006,8 +4006,8 @@ class Image(ArithmeticMixin, DataArray):
         window appears as soon as Image.plot() is called, do the
         following before the first call to Image.plot().
 
-           import matplotlib.pyplot as plt
-           plt.ion()
+        import matplotlib.pyplot as plt
+        plt.ion()
 
         Parameters
         ----------
@@ -4020,10 +4020,10 @@ class Image(ArithmeticMixin, DataArray):
             to 1 for values >= vmax, then the stretch algorithm maps
             these normalized values, nv, to a position p from 0 to 1
             along the colorbar, as follows:
-               linear:  p = nv
-               log:     p = log(1000 * nv + 1) / log(1000 + 1)
-               sqrt:    p = sqrt(nv)
-               arcsinh: p = arcsinh(10*nv) / arcsinh(10.0)
+            linear:  p = nv
+            log:     p = log(1000 * nv + 1) / log(1000 + 1)
+            sqrt:    p = sqrt(nv)
+            arcsinh: p = arcsinh(10*nv) / arcsinh(10.0)
         vmin : float
             Pixels that have values <= vmin are given the color
             at the dark end of the color bar. Pixel values between

@@ -874,12 +874,12 @@ class Cube(ArithmeticMixin, DataArray):
         None.  Given N data points of values, d[i], with weights,
         w[i], the weighted mean of d[0..N-1] is given by:
 
-          mean = Sum(d[i] * w[i]) / Sum(w[i])  for i=0..N-1
+        mean = Sum(d[i] * w[i]) / Sum(w[i])  for i=0..N-1
 
         If data point d[i] has a variance of v[i], then the variance
         of the mean is given by:
 
-          variance = Sum(v[i] * w[i]**2) / Sum(w[i])**2   for i=0..N-1
+        variance = Sum(v[i] * w[i]**2) / Sum(w[i])**2   for i=0..N-1
 
         Note that if one substitutes 1/v[i] for w[i] in this equation,
         the result is a variance of 1/Sum(1/v[i]). If all the
@@ -893,12 +893,16 @@ class Cube(ArithmeticMixin, DataArray):
         ----------
         axis : None or int or tuple of ints
             The axis or axes along which the mean is to be performed.
-            - The default (axis = None) performs a mean over all the
-              dimensions of the cube and returns a float.
-            - axis = 0 performs a mean over the wavelength dimension and
-              returns an image.
-            - axis = (1,2) performs a mean over the (X,Y) axes and
-              returns a spectrum.
+            
+            The default (axis = None) performs a mean over all the
+            dimensions of the cube and returns a float.
+            
+            axis = 0 performs a mean over the wavelength dimension and
+            returns an image.
+            
+            axis = (1,2) performs a mean over the (X,Y) axes and
+            returns a spectrum.
+            
             Other cases return None.
         weights : numpy.ndarray or numpy.ma.core.MaskedArray
             When an array of weights is provided via this argument, it
@@ -985,12 +989,16 @@ class Cube(ArithmeticMixin, DataArray):
         ----------
         axis : None or int or tuple of ints
             The axis or axes along which a median is performed.
-            - The default (axis = None) performs a median over all the
-              dimensions of the cube and returns a float.
-            - axis = 0 performs a median over the wavelength dimension and
-              returns an image.
-            - axis = (1,2) performs a median over the (X,Y) axes and
-              returns a spectrum.
+            
+            The default (axis = None) performs a median over all the
+            dimensions of the cube and returns a float.
+            
+            axis = 0 performs a median over the wavelength dimension and
+            returns an image.
+            
+            axis = (1,2) performs a median over the (X,Y) axes and
+            returns a spectrum.
+            
             Other cases return None.
 
         """
