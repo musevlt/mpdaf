@@ -463,7 +463,7 @@ def test_ee():
 
 
 @attr(speed='fast')
-def test_rebin_mean():
+def test_rebin():
     """Image class: testing rebin methods."""
     wcs = WCS(crval=(0, 0))
     data = np.arange(30).reshape(6, 5)
@@ -497,7 +497,7 @@ def test_rebin_mean():
     expected = np.ma.array(
         data=[[6.0, 7.5], [13.5, 15], [0.0, 0.0]],
         mask=[[False, False], [False, False], [True, True]])
-    image2 = image1.rebin_mean(2)
+    image2 = image1.rebin(2)
     assert_masked_allclose(image2.data, expected)
 
     # The variances of the original pixels were all 0.5, so taking the

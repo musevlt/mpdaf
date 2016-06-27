@@ -225,8 +225,8 @@ def test_resampling_slow():
 
 
 @attr(speed='fast')
-def test_rebin_mean():
-    """Spectrum class: testing rebin_mean function"""
+def test_rebin():
+    """Spectrum class: testing rebin function"""
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, shape=10)
     spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]) * 2.3,
                          wave=wave)
@@ -234,7 +234,7 @@ def test_rebin_mean():
     factor = 3
     s = slice(0,factor*(spectrum1.shape[0] // factor)) # The rebinned slice
     flux1 = spectrum1[s].sum() * spectrum1[s].wave.get_step(unit=unit)
-    spectrum2 = spectrum1.rebin_mean(factor, margin='left')
+    spectrum2 = spectrum1.rebin(factor, margin='left')
     flux2 = spectrum2.sum() * spectrum2.wave.get_step(unit=unit)
     nose.tools.assert_almost_equal(flux1, flux2)
 
@@ -244,7 +244,7 @@ def test_rebin_mean():
     factor = 3
     s = slice(0,factor*(spe.shape[0] // factor))
     flux1 = spe[s].sum() * spe[s].wave.get_step(unit=unit)
-    spe2 = spe.rebin_mean(factor, margin='left')
+    spe2 = spe.rebin(factor, margin='left')
     flux2 = spe2.sum() * spe2.wave.get_step(unit=unit)
     nose.tools.assert_almost_equal(flux1, flux2)
 
@@ -253,7 +253,7 @@ def test_rebin_mean():
     factor = 4
     s = slice(0,factor*(spnovar.shape[0] // factor))
     flux1 = spnovar[s].sum() * spnovar[s].wave.get_step(unit=unit)
-    spnovar2 = spnovar.rebin_mean(factor, margin='left')
+    spnovar2 = spnovar.rebin(factor, margin='left')
     flux2 = spnovar2.sum() * spnovar2.wave.get_step(unit=unit)
     nose.tools.assert_almost_equal(flux1, flux2)
 
@@ -262,7 +262,7 @@ def test_rebin_mean():
     factor = 4
     s = slice(0,factor*(spvar.shape[0] // factor))
     flux1 = spvar[s].sum(weight=False) * spvar[s].wave.get_step(unit=unit)
-    spvar2 = spvar.rebin_mean(factor, margin='left')
+    spvar2 = spvar.rebin(factor, margin='left')
     flux2 = spvar2.sum(weight=False) * spvar2.wave.get_step(unit=unit)
     nose.tools.assert_almost_equal(flux1, flux2)
 

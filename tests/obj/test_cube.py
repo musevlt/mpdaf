@@ -371,10 +371,10 @@ def test_median():
 def test_rebin():
     """Cube class: testing rebin methods"""
     cube1 = generate_cube(data=1.0, wave=WaveCoord(crval=1))
-    cube2 = cube1.rebin_mean(factor=2)
+    cube2 = cube1.rebin(factor=2)
     assert_equal(cube2[0, 0, 0], 1)
     assert_array_equal(cube2.get_start(), (1.5, 0.5, 0.5))
-    cube2 = cube1.rebin_mean(factor=2, flux=True, margin='origin')
+    cube2 = cube1.rebin(factor=2, flux=True, margin='origin')
     assert_equal(cube2[-1, -1, -1], 0.5)
     assert_array_equal(cube2.get_start(), (1.5, 0.5, 0.5))
 

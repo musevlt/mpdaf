@@ -132,23 +132,27 @@ class DataArray(object):
         obj.data[20:22] *= numpy.ma.array([2.0,2.0], mask=[True,True])
 
     The data and variance arrays can be completely replaced by assigning new
-    arrays to the ``obj.data`` and ``obj.var`` properties. In general, when
-    doing this, the new data array should be assigned before the new variance
-    array. This is because assigning a new data array completely replaces the
-    current shared mask, whereas assigning a new variance array combines the
-    mask of the variance array with the existing shared mask.
+    arrays to the ``obj.data`` and ``obj.var`` properties, but these must have
+    the same shape as before (ie. obj.shape).  New arrays that are assigned to
+    ``obj.data`` or ``obj.var`` can be simple numpy arrays, or a numpy masked
+    arrays.
 
-    More specifically, when a new data array is assigned to ``obj.data``, the
-    shared mask becomes a copy of the mask array of the input data array, if it
-    has one.  If the new data array is not a masked array, the mask is created
-    by masking any elements that are Inf or Nan in the new data array.
+    When a normal numpy array is assigned to ``obj.data``, the ``obj.mask``
+    array is also assigned a mask array, whose elements are True wherever NaN
+    or Inf values are found in the data array. An exception to this rule is if
+    the mask has previously been disabled by assigning ``numpy.ma.nomask`` to
+    ``obj.mask``. In this case a mask array is not constructed.
 
-    When a new variance array is assigned to ``obj.var``, the shared mask
-    becomes the union of the mask of the current data array and the mask of the
-    new variance array, if it has a mask.
+    When a numpy masked array is assigned to ``obj.data``, then its mask is
+    also assigned, unchanged, to ``obj.mask``.
 
-    Note that the ability to record variances for each element is optional.
-    When no variances are stored, ``obj.var`` has the value None. To discard an
+    Assigning a normal numpy array to the ``obj.var`` attribute, has no effect
+    on the contents of ``obj.mask``. On the other hand, when a numpy masked
+    array is assigned to ``obj.var`` the ``obj.mask`` array becomes the union
+    of its current value and the mask of the provided array.
+
+    The ability to record variances for each element is optional.  When no
+    variances are stored, ``obj.var`` has the value None. To discard an
     unwanted variance array, None can be subsequently assigned to ``obj.var``.
 
     For cubes and spectra, the wavelengths of the spectral pixels are specified
@@ -364,42 +368,10 @@ class DataArray(object):
                 else:
                     self._var = np.array(var, dtype=np.float64, copy=copy)
 
-        # If a WCS object was specified as an optional parameter, install it.
-        wcs = kwargs.pop('wcs', None)
-        if self._has_wcs and wcs is not None:
-            try:
-                self.wcs = wcs.copy()
-                if self.shape is not None:
-                    if (wcs.naxis1 != 0 and wcs.naxis2 != 0 and
-                        (wcs.naxis1 != self.shape[-1] or
-                         wcs.naxis2 != self.shape[-2])):
-                        self._logger.warning(
-                            'The world coordinates and data have different '
-                            'dimensions: Modifying the shape of the WCS '
-                            'object')
-                    self.wcs.naxis1 = self.shape[-1]
-                    self.wcs.naxis2 = self.shape[-2]
-            except:
-                self._logger.warning('world coordinates not copied',
-                                     exc_info=True)
-
-        # If a wavelength coordinate object was specified as an
-        # optional parameter, install it.
-        wave = kwargs.pop('wave', None)
-        if self._has_wave and wave is not None and wave.shape != 1:
-            try:
-                self.wave = wave.copy()
-                if self.shape is not None:
-                    if wave.shape is not None and \
-                            wave.shape != self.shape[0]:
-                        self._logger.warning(
-                            'wavelength coordinates and data have different '
-                            'dimensions: Modifying the shape of the WaveCoord '
-                            'object')
-                    self.wave.shape = self.shape[0]
-            except:
-                self._logger.warning('wavelength solution not copied',
-                                     exc_info=True)
+        # Where WCS and/or wavelength objects are specified as optional
+        # parameters, install them.
+        self.set_wcs(wcs=kwargs.pop('wcs', None),
+                     wave=kwargs.pop('wave', None))
 
     @classmethod
     def new_from_obj(cls, obj, data=None, var=None, copy=False):
@@ -476,10 +448,8 @@ class DataArray(object):
         elements of the data property, then these change both the values of the
         data property and the shared mask of the data and var properties.
 
-        Completely new arrays can also be assigned to the data property. If the
-        new array has the same shape as the existing data array, then the
-        results are as though the elements were assigned one by one to the data
-        array, with the behavior described above for element assignments.
+        Completely new arrays can also be assigned to the data property,
+        provided that they have the same shape as before.
 
         """
         res = ma.MaskedArray(self._data, mask=self._mask, copy=False)
@@ -1111,3 +1081,58 @@ class DataArray(object):
     @deprecated('The resize method is deprecated. Please use crop instead.')
     def resize(self):
         return self.crop()
+
+    def set_wcs(self, wcs=None, wave=None):
+        """Set the world coordinates (spatial and/or spectral where pertinent).
+
+        Parameters
+        ----------
+        wcs : `mpdaf.obj.WCS`
+            Spatial world coordinates. This argument is ignored when
+            self is a Spectrum.
+        wave : `mpdaf.obj.WaveCoord`
+            Spectral wavelength coordinates. This argument is ignored when
+            self is an Image.
+
+        """
+
+        # Install spatial world-corrdinates?
+        # Note that we have to test the length of self.shape in
+        # addition to _has_wcs, because of functions like
+        # Cube.__getitem__(), which creates a temporary cube to hold a
+        # spectrum before converting this to a Spectrum object.
+        if self._has_wcs and wcs is not None and len(self.shape) > 1:
+            try:
+                self.wcs = wcs.copy()
+                if self.shape is not None:
+                    if (wcs.naxis1 != 0 and wcs.naxis2 != 0 and
+                        (wcs.naxis1 != self.shape[-1] or
+                         wcs.naxis2 != self.shape[-2])):
+                        self._logger.warning(
+                            'The world coordinates and data have different '
+                            'dimensions. Modifying the shape of the WCS '
+                            'object')
+                    self.wcs.naxis1 = self.shape[-1]
+                    self.wcs.naxis2 = self.shape[-2]
+            except:
+                self._logger.warning('Unable to install world coordinates',
+                                     exc_info=True)
+
+        # Install spectral world coordinates?
+        # Note that we have to test the length of self.shape in
+        # addition to _has_wave, because of functions like
+        # Cube.__getitem__(), which creates a temporary cube to hold a
+        # image before converting this to an Image object.
+        if self._has_wave and wave is not None and len(self.shape) != 2:
+            try:
+                self.wave = wave.copy()
+                if self.shape is not None:
+                    if wave.shape is not None and wave.shape != self.shape[0]:
+                        self._logger.warning(
+                            'The wavelength coordinates and data have '
+                            'different dimensions. Modifying the shape of '
+                            'the WaveCoord object')
+                    self.wave.shape = self.shape[0]
+            except:
+                self._logger.warning('Unable to install wavelength coordinates',
+                                     exc_info=True)

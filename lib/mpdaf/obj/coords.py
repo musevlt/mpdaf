@@ -1513,7 +1513,7 @@ class WCS(object):
     def rebin(self, factor):
         """Rebin to a new coordinate system.
 
-        This is a helper function for the Image.rebin_mean() function.
+        This is a helper function for the Image and Cube rebin() methods.
 
         Parameters
         ----------
