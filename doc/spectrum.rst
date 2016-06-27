@@ -154,8 +154,8 @@ The results of the interpolations are shown below:
   In [6]: spvarcut.plot(lmin=4600, lmax=6200, title='Spectrum after interpolation', unit=spvar.wave.unit)
 
 Last, we will resample the extracted spectrum using the 2 dedicated functions
-(rebin_mean and resample).  The function `rebin_mean
-<mpdaf.obj.Spectrum.rebin_mean>` rebins the Spectrum using an integer number of
+(rebin and resample).  The function `rebin
+<mpdaf.obj.Spectrum.rebin>` rebins the Spectrum using an integer number of
 pixels per bin. The corresponding variance is updated accordingly. We can
 overplot the rebinned Spectrum and show the corresponding variance as follows:
 
@@ -164,7 +164,7 @@ overplot the rebinned Spectrum and show the corresponding variance as follows:
 
   In [5]: plt.figure()
   
-  In [6]: sprebin1 = spvarcut.rebin_mean(5)
+  In [6]: sprebin1 = spvarcut.rebin(5)
   
   In [7]: spvarcut.plot()
   

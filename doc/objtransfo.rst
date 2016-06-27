@@ -62,7 +62,7 @@ The ranges x_min to x_max and y_min to y_max, specify a rectangular region of th
 truncate function returns the sub-image that just encloses this region. In this case, the world coordinate axes are not
 parallel to the array axes, the region appears to be a rotated rectangle within the sub-image.
 
-The methods `Spectrum.rebin_mean <mpdaf.obj.Spectrum.rebin_mean>`, `Image.rebin_mean <mpdaf.obj.Image.rebin_mean>` and `Cube.rebin_mean <mpdaf.obj.Cube.rebin_mean>` 
+The methods `Spectrum.rebin <mpdaf.obj.Spectrum.rebin>`, `Image.rebin <mpdaf.obj.Image.rebin>` and `Cube.rebin <mpdaf.obj.Cube.rebin>` 
 return a object that shrinks the size of the current object by an integer division factor:
 
 .. ipython::
@@ -86,7 +86,7 @@ return a object that shrinks the size of the current object by an integer divisi
   @savefig Obj_transfo4.png width=3.5in
   In [3]: ima.plot()
 
-  In [4]: ima2 = ima.rebin_mean(factor=10)
+  In [4]: ima2 = ima.rebin(factor=10)
   
   In [9]: ima2.info()
 
