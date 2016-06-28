@@ -1,10 +1,6 @@
 name: mpdaf
 
-channels:
-  - pkgw
-
 dependencies:
-  - cfitsio
   - astropy
   - numpy
   - scipy

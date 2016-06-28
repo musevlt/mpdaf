@@ -71,11 +71,15 @@ try:
 except subprocess.CalledProcessError as e:
     sys.exit(e.output)
 except OSError:
-    sys.exit('pkg-config is required to install MPDAF. Please check if it '
-             'is installed and in your $PATH.')
+    print('pkg-config is required to build C extensions for some MPDAF '
+          'features (cube combination). Continuing the installation without '
+          'building these extensions. Please check if pkg-config is installed '
+          'and in your $PATH and rebuild MPDAF if you need them.')
+    HAVE_PKG_CONFIG = False
 else:
     print('Found pkg-config {}'.format(out))
     del out
+    HAVE_PKG_CONFIG = True
 
 # Generate version.py
 __version__ = None
@@ -168,12 +172,15 @@ cmdclass = {'test': UnitTest}
 
 ext = '.pyx' if HAVE_CYTHON else '.c'
 ext_modules = [
-    Extension('libCmethods', [
-        'src/tools.c', 'src/subtract_slice_median.c', 'src/merging.c'],
-        **options('cfitsio')),
     Extension('merging', ['src/tools.c', './lib/mpdaf/obj/merging' + ext],
               include_dirs=[numpy.get_include()]),
 ]
+if HAVE_PKG_CONFIG:
+    ext_modules.append(
+        Extension('tools._ctools', [
+            'src/tools.c', 'src/subtract_slice_median.c', 'src/merging.c'],
+            **options('cfitsio')),
+    )
 if HAVE_CYTHON:
     cmdclass.update({'build_ext': build_ext})
     ext_modules = cythonize(ext_modules)
