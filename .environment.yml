@@ -1,0 +1,14 @@
+name: mpdaf
+
+dependencies:
+  - astropy
+  - numpy
+  - scipy
+  - cython
+  - matplotlib
+  - numexpr
+  - six
+  - joblib
+  - ipython
+  - pip:
+    - numpydoc
