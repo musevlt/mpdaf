@@ -21,7 +21,6 @@ cube.py manages Cube objects.
 
 from __future__ import absolute_import, division
 
-import ctypes
 import logging
 import numpy as np
 import os
@@ -230,25 +229,15 @@ class CubeList(object):
               pixels per exposures (columns are FILENAME and NPIX_NAN)
 
         """
-        # load the library, using numpy mechanisms
-        path = os.path.dirname(__file__)[:-4]
-        libCmethods = np.ctypeslib.load_library("libCmethods", path)
-        # define argument types
-        charptr = ctypes.POINTER(ctypes.c_char)
-        array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1,
-                                                 flags='CONTIGUOUS')
-        array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1,
-                                              flags='CONTIGUOUS')
-        # setup argument types
-        libCmethods.mpdaf_merging_median.argtypes = [
-            charptr, array_1d_double, array_1d_int, array_1d_int]
+        from ..tools.ctools import ctools
+
         # run C method
         npixels = np.prod(self.shape)
         data = np.empty(npixels, dtype=np.float64)
         expmap = np.empty(npixels, dtype=np.int32)
         valid_pix = np.zeros(self.nfiles, dtype=np.int32)
-        libCmethods.mpdaf_merging_median(c_char_p('\n'.join(self.files)), data,
-                                         expmap, valid_pix)
+        ctools.mpdaf_merging_median(c_char_p('\n'.join(self.files)), data,
+                                    expmap, valid_pix)
 
         # no valid pixels
         no_valid_pix = npixels - valid_pix
@@ -304,22 +293,14 @@ class CubeList(object):
               NPIX_NAN and NPIX_REJECTED)
 
         """
+        from ..tools.ctools import ctools
+
         if np.isscalar(nclip):
             nclip_low = nclip
             nclip_up = nclip
         else:
             nclip_low = nclip[0]
             nclip_up = nclip[1]
-
-        # load the library, using numpy mechanisms
-        path = os.path.dirname(__file__)[:-4]
-        libCmethods = np.ctypeslib.load_library("libCmethods", path)
-        # define argument types
-        charptr = ctypes.POINTER(ctypes.c_char)
-        array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1,
-                                                 flags='CONTIGUOUS')
-        array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1,
-                                              flags='CONTIGUOUS')
 
         # returned arrays
         npixels = self.shape[0] * self.shape[1] * self.shape[2]
@@ -336,14 +317,8 @@ class CubeList(object):
         else:
             var_mean = 2
 
-        # setup argument types
-        libCmethods.mpdaf_merging_sigma_clipping.argtypes = [
-            charptr, array_1d_double, array_1d_double, array_1d_int,
-            array_1d_double, array_1d_int, array_1d_int, ctypes.c_int,
-            ctypes.c_double, ctypes.c_double, ctypes.c_int, ctypes.c_int,
-            ctypes.c_int]
         # run C method
-        libCmethods.mpdaf_merging_sigma_clipping(
+        ctools.mpdaf_merging_sigma_clipping(
             c_char_p('\n'.join(self.files)), data, vardata, expmap,
             self.scales, select_pix, valid_pix, nmax, np.float64(nclip_low),
             np.float64(nclip_up), nstop, np.int32(var_mean), np.int32(mad))

@@ -21,7 +21,6 @@ pixtable.py Manages MUSE pixel table files.
 
 from __future__ import absolute_import, division
 
-import ctypes
 import datetime
 import logging
 import os.path
@@ -1668,6 +1667,9 @@ class PixTable(object):
         -------
         out : `~mpdaf.obj.Spectrum`
         """
+
+        from ..tools.ctools import ctools
+
         # mask
         if pixmask is None:
             maskfile = ''
@@ -1688,35 +1690,17 @@ class PixTable(object):
         lmax = np.max(lbda) + dlbda / 2.0
         n = (int)((lmax - lmin) / dlbda)
 
-        # load the library, using numpy mechanisms
-        path = os.path.dirname(__file__)[:-4]
-        libCmethods = np.ctypeslib.load_library("libCmethods", path)
-        # define argument types
-        array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1,
-                                                 flags='CONTIGUOUS')
-        array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1,
-                                              flags='CONTIGUOUS')
-        # setup argument types
-        libCmethods.mpdaf_sky_ref.argtypes = \
-            [array_1d_double, array_1d_double, array_1d_int, ctypes.c_int,
-             ctypes.c_double, ctypes.c_double, ctypes.c_int,
-             ctypes.c_int, ctypes.c_double, ctypes.c_double, ctypes.c_int,
-             array_1d_double]
-
-        # setup return type
-        libCmethods.mpdaf_sky_ref.restype = None
-
         data = self.get_data()
         data = data.astype(np.float64)
         lbda = lbda.astype(np.float64)
         mask = mask.astype(np.int32)
         result = np.empty(n, dtype=np.float64)
         # run C method
-        libCmethods.mpdaf_sky_ref(data, lbda, mask, data.shape[0],
-                                  np.float64(lmin),
-                                  np.float64(dlbda), n, nmax,
-                                  np.float64(nclip_low),
-                                  np.float64(nclip_up), nstop, result)
+        ctools.mpdaf_sky_ref(data, lbda, mask, data.shape[0],
+                             np.float64(lmin),
+                             np.float64(dlbda), n, nmax,
+                             np.float64(nclip_low),
+                             np.float64(nclip_up), nstop, result)
         wave = WaveCoord(crpix=1.0, cdelt=dlbda, crval=np.min(lbda),
                          cunit=u.angstrom, shape=n)
 
@@ -1756,6 +1740,8 @@ class PixTable(object):
         out : `mpdaf.drs.PixTableAutoCalib`
 
         """
+        from ..tools.ctools import ctools
+
         origin = self.get_origin()
         ifu = self.origin2ifu(origin)
         sli = self.origin2slice(origin)
@@ -1769,24 +1755,6 @@ class PixTable(object):
         else:
             maskfile = os.path.basename(pixmask.maskfile)
             maskcol = pixmask.maskcol
-
-        # load the library, using numpy mechanisms
-        path = os.path.dirname(__file__)[:-4]
-        libCmethods = np.ctypeslib.load_library("libCmethods", path)
-
-        # define argument types
-        array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1,
-                                                 flags='CONTIGUOUS')
-        array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1,
-                                              flags='CONTIGUOUS')
-
-        # setup the return types and argument types
-        libCmethods.mpdaf_slice_median.restype = None
-        libCmethods.mpdaf_slice_median.argtypes = \
-            [array_1d_double, array_1d_double, array_1d_double, array_1d_int,
-             array_1d_int, array_1d_int, array_1d_double, array_1d_double,
-             ctypes.c_int, array_1d_int, array_1d_double, array_1d_double,
-             ctypes.c_int, array_1d_int, array_1d_int, ctypes.c_int]
 
         data = self.get_data()
         ifu = ifu.astype(np.int32)
@@ -1807,7 +1775,7 @@ class PixTable(object):
         corr = np.full(24 * 48 * 4, np.nan, dtype=np.float64)
         npts = np.zeros(24 * 48 * 4, dtype=np.int32) - 1
 
-        libCmethods.mpdaf_slice_median(
+        ctools.mpdaf_slice_median(
             result, stat_result, corr, npts, ifu, sli, data, lbda,
             data.shape[0], mask, skyref_flux, skyref_lbda, skyref_n, xpix,
             ypix, 1)
@@ -1842,14 +1810,6 @@ class PixTable(object):
 
         self._logger.info('pixtable %s updated',
                           os.path.basename(self.filename))
-
-        # close libray
-        # import _ctypes
-        # _ctypes.dlclose(libCmethods._handle)
-        # libCmethods._handle = None
-        # libCmethods._name = None
-        # libCmethods._FuncPtr = None
-        # del libCmethods
         return autocalib
 
     def divide_slice_median(self, skyref, pixmask):
@@ -1874,6 +1834,8 @@ class PixTable(object):
         out : `mpdaf.drs.PixTableAutoCalib`
 
         """
+        from ..tools.ctools import ctools
+
         origin = self.get_origin()
         ifu = self.origin2ifu(origin)
         sli = self.origin2slice(origin)
@@ -1887,24 +1849,6 @@ class PixTable(object):
         else:
             maskfile = os.path.basename(pixmask.maskfile)
             maskcol = pixmask.maskcol
-
-        # load the library, using numpy mechanisms
-        path = os.path.dirname(__file__)[:-4]
-        libCmethods = np.ctypeslib.load_library("libCmethods", path)
-
-        # define argument types
-        array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1,
-                                                 flags='CONTIGUOUS')
-        array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1,
-                                              flags='CONTIGUOUS')
-
-        # setup the return types and argument types
-        libCmethods.mpdaf_slice_median.restype = None
-        libCmethods.mpdaf_slice_median.argtypes = \
-            [array_1d_double, array_1d_double, array_1d_double, array_1d_int,
-             array_1d_int, array_1d_int, array_1d_double, array_1d_double,
-             ctypes.c_int, array_1d_int, array_1d_double, array_1d_double,
-             ctypes.c_int, array_1d_int, array_1d_int, ctypes.c_int]
 
         data = self.get_data()
         ifu = ifu.astype(np.int32)
@@ -1925,7 +1869,7 @@ class PixTable(object):
         corr = np.full(24 * 48 * 4, np.nan, dtype=np.float64)
         npts = np.zeros(24 * 48 * 4, dtype=np.int32) - 1
 
-        libCmethods.mpdaf_slice_median(
+        ctools.mpdaf_slice_median(
             result, result_stat, corr, npts, ifu, sli, data, lbda,
             data.shape[0], mask, skyref_flux, skyref_lbda, skyref_n,
             xpix, ypix, 0)
