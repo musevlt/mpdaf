@@ -86,8 +86,8 @@ def bounding_box(form, center, radii, posangle, shape, step):
     form   : str
        The type of region whose rectangle image bounds are needed,
        chosen from:
-         "rectangle" -  A rotated rectangle or square.
-         "ellipse"   -  A rotated ellipse or circle.
+       rectangle, a rotated rectangle or square.
+       ellipse, a rotated ellipse or circle.
     center : float, float
        The floating point array indexes of the centre of the circle,
        in the order, y,x.
