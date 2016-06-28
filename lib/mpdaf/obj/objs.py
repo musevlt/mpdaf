@@ -70,7 +70,6 @@ def mag2flux(mag, wave):
 
 
 def bounding_box(form, center, radii, posangle, shape, step):
-
     """Return Y-axis and X-axis slice objects that bound a rectangular
     image region that just encloses either an ellipse or a rectangle,
     where the rectangle has a specified center position, Y-axis and X-axis
@@ -154,14 +153,14 @@ def bounding_box(form, center, radii, posangle, shape, step):
     cos_pa = np.cos(pa)
 
     # Get the bounding box of a rotated rectangle?
-    if form=="rectangle":
+    if form == "rectangle":
         # Calculate the maximum of the X-axis and Y-axis distances of the
         # corners of the rotated rectangle from the rectangle's center.
         xmax = abs(rx * cos_pa) + abs(ry * sin_pa)
         ymax = abs(rx * sin_pa) + abs(ry * cos_pa)
 
     # Get the bounding box of a rotated ellipse?
-    elif form=="ellipse":
+    elif form == "ellipse":
         # We use the following parametric equations for an unrotated
         # ellipse with x and y along the image-array X and Y axes, where t
         # is a parametric angle with no physical equivalent:
@@ -174,7 +173,7 @@ def bounding_box(form, center, radii, posangle, shape, step):
         # dt and setting the derivatives to zero, we obtain the following
         # values for the angle t at which x(pa) and y(pa) are maximized.
         t_xmax = np.arctan2(-ry * sin_pa, rx * cos_pa)
-        t_ymax = np.arctan2( ry * cos_pa, rx * sin_pa)
+        t_ymax = np.arctan2(ry * cos_pa, rx * sin_pa)
 
         # Compute the half-width and half-height of the rectangle that
         # encloses the ellipse, by computing the X and Y values,
@@ -189,7 +188,7 @@ def bounding_box(form, center, radii, posangle, shape, step):
     # Put the height and width in an array, divide them by
     # the pixel sizes along the Y and X axes to convert them to pixel
     # counts, then convert them to the nearest integers.
-    w = np.floor(np.abs(np.array([2*ymax, 2*xmax]) / step) + 0.5).astype(int)
+    w = np.floor(np.abs(np.array([2 * ymax, 2 * xmax]) / step) + 0.5).astype(int)
 
     # Are the members of w even numbers of pixels?
     iseven = np.mod(w, 2) == 0
@@ -197,12 +196,12 @@ def bounding_box(form, center, radii, posangle, shape, step):
     # For each axis calculate the pixel index of the central pixel of
     # the region where w is odd, or the index of the first of the two
     # central pixels when w is even.
-    c = np.where(iseven, np.floor(center), np.floor(center+0.5)).astype(int)
+    c = np.where(iseven, np.floor(center), np.floor(center + 0.5)).astype(int)
 
     # Determine the indexes of the first and last pixels of the region
     # along each axis, using integer arithmetic to avoid surprises.
-    first = np.where(iseven, c - w//2 + 1,  c - (w - 1)//2)
-    last  = np.where(iseven, c + w//2,      c + (w - 1)//2)
+    first = np.where(iseven, c - w // 2 + 1, c - (w - 1) // 2)
+    last = np.where(iseven, c + w // 2, c + (w - 1) // 2)
 
     # Calculate the effective center of the bounded region.
     center = (first + last) / 2.0
@@ -217,7 +216,7 @@ def bounding_box(form, center, radii, posangle, shape, step):
     # Clip the first and last pixels to ensure that they lie within
     # the bounds of the image.
     imin, jmin = np.clip(first, (0, 0), max_indexes)
-    imax, jmax = np.clip(last,  (0, 0), max_indexes)
+    imax, jmax = np.clip(last, (0, 0), max_indexes)
 
     # Compute the corresponding slices, replacing the clipped
     # values by a zero-pixel range where the pre-clipped indexes
