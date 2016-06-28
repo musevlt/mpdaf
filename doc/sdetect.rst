@@ -12,7 +12,6 @@ Contents:
    source
    catalog
    muselet
-   origin
 
 
 Reference/API
