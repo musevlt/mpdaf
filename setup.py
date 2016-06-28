@@ -133,7 +133,9 @@ def options(*packages, **kw):
             out = subprocess.check_output(['pkg-config', '--modversion',
                                            package])
         except subprocess.CalledProcessError:
-            sys.exit("package '{}' not found.".format(package))
+            msg = "package '{}' not found.".format(package)
+            print(msg)
+            raise Exception(msg)
         else:
             if not PY2:
                 out = out.decode('utf8')
@@ -176,11 +178,14 @@ ext_modules = [
               include_dirs=[numpy.get_include()]),
 ]
 if HAVE_PKG_CONFIG:
-    ext_modules.append(
-        Extension('tools._ctools', [
-            'src/tools.c', 'src/subtract_slice_median.c', 'src/merging.c'],
-            **options('cfitsio')),
-    )
+    try:
+        ext_modules.append(
+            Extension('tools._ctools', [
+                'src/tools.c', 'src/subtract_slice_median.c', 'src/merging.c'],
+                **options('cfitsio')),
+        )
+    except Exception:
+        pass
 if HAVE_CYTHON:
     cmdclass.update({'build_ext': build_ext})
     ext_modules = cythonize(ext_modules)
