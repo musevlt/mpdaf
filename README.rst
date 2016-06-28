@@ -7,20 +7,23 @@ objects (raw data, pixel tables, etc.) and spectra, images and data cubes.
 
 The current existing sub-packages are:
 
-+---------------+-------------------------------------------------+-----------+
-|  sub-packages | description                                     |  status   |
-+===============+=================================================+===========+
-| mpdaf.obj     | Interface for the MUSE datacube                 | Mature    |
-+---------------+-------------------------------------------------+-----------+
-| mpdaf.drs     | Interface for the MUSE raw file and pixel table | Stable    |
-+---------------+-------------------------------------------------+-----------+
-| mpdaf.MUSE    | - slicer: MUSE slicer numbering scheme          | - Mature  |
-|               | - PSF: MUSE PSF models                          | - Dev     |
-+---------------+-------------------------------------------------+-----------+
-| mpdaf.sdetect | - Source: storing source file                   | - Dev     |
-|               | - Catalog: storing catalog file                 | - Dev     |    
-|               | - MUSELET:  MUSE Line Emission Tracker          | - Mature  |
-+---------------+-------------------------------------------------+-----------+
++---------------+-------------------------------------------------+---------+
+|  sub-packages | description                                     |  status |
++===============+=================================================+=========+
+| mpdaf.obj     | Interface for the MUSE datacube                 | Mature  |
++---------------+-------------------------------------------------+---------+
+| mpdaf.drs     | Interface for the MUSE raw file and pixel table | Stable  |
++---------------+-------------------------------------------------+---------+
+| mpdaf.MUSE    | slicer: MUSE slicer numbering scheme            | Mature  |
+|               +-------------------------------------------------+---------+
+|               | PSF: MUSE PSF models                            | Dev     |
++---------------+-------------------------------------------------+---------+
+| mpdaf.sdetect | Source: storing source file                     | Dev     |
+|               +-------------------------------------------------+---------+
+|               | Catalog: storing catalog file                   | Dev     | 
+|               +-------------------------------------------------+---------+
+|               | MUSELET: MUSE Line Emission Tracker             | Mature  |
++---------------+-------------------------------------------------+---------+
 
 The classification is as follows:
 
