@@ -959,16 +959,16 @@ class Cube(ArithmeticMixin, DataArray):
         ----------
         axis : None or int or tuple of ints
             The axis or axes along which the mean is to be performed.
-            
+
             The default (axis = None) performs a mean over all the
             dimensions of the cube and returns a float.
-            
+
             axis = 0 performs a mean over the wavelength dimension and
             returns an image.
-            
+
             axis = (1,2) performs a mean over the (X,Y) axes and
             returns a spectrum.
-            
+
             Other cases return None.
         weights : numpy.ndarray or numpy.ma.core.MaskedArray
             When an array of weights is provided via this argument, it
@@ -1055,16 +1055,16 @@ class Cube(ArithmeticMixin, DataArray):
         ----------
         axis : None or int or tuple of ints
             The axis or axes along which a median is performed.
-            
+
             The default (axis = None) performs a median over all the
             dimensions of the cube and returns a float.
-            
+
             axis = 0 performs a median over the wavelength dimension and
             returns an image.
-            
+
             axis = (1,2) performs a median over the (X,Y) axes and
             returns a spectrum.
-            
+
             Other cases return None.
 
         """
@@ -1811,7 +1811,7 @@ class Cube(ArithmeticMixin, DataArray):
         # Report what is being done.
         if verbose:
             self._logger.info('loop_spe_multiprocessing (%s): %i tasks',
-                              f.__name__, ntasks)
+                              f, ntasks)
             reporter = _MultiprocessReporter(ntask=ntasks)
 
         # Wait for the results from each task and collect them into the
@@ -1999,7 +1999,7 @@ class Cube(ArithmeticMixin, DataArray):
         # Report what is being done.
         if verbose:
             self._logger.info('loop_ima_multiprocessing (%s): %i tasks',
-                              f.__name__, ntasks)
+                              f, ntasks)
             reporter = _MultiprocessReporter(ntask=ntasks)
 
 
