@@ -115,40 +115,66 @@ class Gauss1D(object):
 
 class Spectrum(ArithmeticMixin, DataArray):
 
-    """Manages spectrum, optionally including a variance and a bad pixel mask.
+    """Spectrum objects contain 1D arrays of numbers, optionally
+    accompanied by corresponding variances. These numbers represent
+    sample fluxes along a regularly spaced grid of wavelengths.
+
+    The spectral pixel values and their variances, if any, are
+    available as arrays[q that can be accessed via properties of the
+    Spectrum object called .data and .var, respectively. These arrays
+    are usually masked arrays, which share a boolean masking array
+    that can be accessed via a property called .mask. In principle,
+    these arrays can also be normal numpy arrays without masks, in
+    which case the .mask property holds the value,
+    numpy.ma.nomask. However non-masked arrays are only supported by a
+    subset of mpdaf functions at this time, so masked arrays should be
+    used where possible.
+
+    When a new Spectrum object is created, the data, variance and mask
+    arrays can either be specified as arguments, or the name of a FITS
+    file can be provided to load them from.
 
     Parameters
     ----------
     filename : string
-        Possible FITS filename.
+        An optional FITS file name from which to load the spectrum.
+        None by default. This argument is ignored if the data
+        argument is not None.
     ext : int or (int,int) or string or (string,string)
-        Number/name of the data extension or numbers/names
-        of the data and variance extensions.
+        The optional number/name of the data extension
+        or the numbers/names of the data and variance extensions.
     wave : `mpdaf.obj.WaveCoord`
-        Wavelength coordinates.
+        The wavelength coordinates of the spectrum.
     unit : str or `astropy.units.Unit`
         The physical units of the data values. Defaults to
         `astropy.units.dimensionless_unscaled`.
     data : float array
-        Array containing the pixel values of the spectrum. None by default.
+        An optional 1 dimensional array containing the values of each
+        pixel of the spectrum, stored in ascending order of wavelength
+        (None by default). Where given, this array should be 1
+        dimensional.
     var : float array
-        Array containing the variance. None by default.
+        An optional 1 dimensional array containing the estimated
+        variances of each pixel of the spectrum, stored in ascending
+        order of wavelength (None by default).
 
     Attributes
     ----------
     filename : string
-        Possible FITS filename.
+        The name of the originating FITS file, if any. Otherwise None.
     unit : `astropy.units.Unit`
-        Data unit type.
+        The physical units of the data values.
     primary_header : `astropy.io.fits.Header`
-        Possible FITS primary header instance.
+        The FITS primary header instance, if a FITS file was provided.
     data_header : `astropy.io.fits.Header`
-        Possible FITS data header instance.
+        The FITS header of the DATA extension.
     wave : `mpdaf.obj.WaveCoord`
-        Wavelength coordinates.
+        The wavelength coordinates of the spectrum.
 
     """
 
+    # Tell the DataArray base-class that Spectrum objects require 1 dimensional
+    # data arrays and wavelength coordinates.
     _ndim_required = 1
     _has_wave = True
 
