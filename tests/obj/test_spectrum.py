@@ -105,12 +105,12 @@ def test_get_Spectrum():
                          wave=wave)
     a = spectrum1[1:7]
     nose.tools.assert_equal(a.shape[0], 6)
-    a = spectrum1.get_lambda(1.2, 15.6, unit=u.nm)
+    a = spectrum1.subspec(1.2, 15.6, unit=u.nm)
     nose.tools.assert_equal(a.shape[0], 6)
 
     spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
     unit = spvar.wave.unit
-    spvarcut = spvar.get_lambda(5560, 5590, unit=unit)
+    spvarcut = spvar.subspec(5560, 5590, unit=unit)
     nose.tools.assert_equal(spvarcut.shape[0], 48)
     nose.tools.assert_almost_equal(spvarcut.get_start(unit=unit), 5560.25, 2)
     nose.tools.assert_almost_equal(spvarcut.get_end(unit=unit), 5589.89, 2)
@@ -294,10 +294,10 @@ def test_interpolation():
     spm1.interp_mask()
     spm2 = spvar.copy()
     spm2.interp_mask(spline=True)
-    spvarcut1 = spvar.get_lambda(5550, 5590, unit=uspvar)
-    spvarcut2 = spnovar.get_lambda(5550, 5590, unit=uspnovar)
-    spvarcut3 = spm1.get_lambda(5550, 5590, unit=uspvar)
-    spvarcut4 = spm2.get_lambda(5550, 5590, unit=uspvar)
+    spvarcut1 = spvar.subspec(5550, 5590, unit=uspvar)
+    spvarcut2 = spnovar.subspec(5550, 5590, unit=uspnovar)
+    spvarcut3 = spm1.subspec(5550, 5590, unit=uspvar)
+    spvarcut4 = spm2.subspec(5550, 5590, unit=uspvar)
     nose.tools.assert_almost_equal(spvar.mean(5550, 5590, unit=uspvar),
                                    spvarcut1.mean())
     nose.tools.assert_almost_equal(spnovar.mean(5550, 5590, unit=uspnovar),

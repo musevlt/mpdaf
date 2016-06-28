@@ -185,18 +185,27 @@ class Spectrum(ArithmeticMixin, DataArray):
             filename=filename, ext=ext, wave=wave, unit=unit, data=data,
             var=var, copy=copy, dtype=dtype, **kwargs)
 
-    def get_lambda(self, lmin, lmax=None, unit=u.angstrom):
-        """ Return the flux value corresponding to a wavelength,
-        or return the sub-spectrum corresponding to a wavelength range.
+    def subspec(self, lmin, lmax=None, unit=u.angstrom):
+        """Return the flux at a given wavelength, or the sub-spectrum
+        of a specified wavelength range.
+
+        A single flux value is returned if the lmax argument is None
+        (the default), or if the wavelengths assigned to the lmin and
+        lmax arguments are both within the same pixel. The value that
+        is returned is the value of the pixel whose wavelength is
+        closest to the wavelength specified by the lmin argument.
 
         Parameters
         ----------
         lmin : float
-            minimum wavelength.
-        lmax : float
-            maximum wavelength.
+            The minimum wavelength of a wavelength range, or the wavelength
+            of a single pixel if lmax is None.
+        lmax : float or None
+            The maximum wavelength of the wavelength range.
         unit : `astropy.units.Unit`
-            type of the wavelength coordinates. if None, inputs are in pixels.
+            The wavelength units of the lmin and lmax arguments. The
+            default is angstroms. If unit is None, then lmin and lmax
+            are interpreted as array indexes within the spectrum.
 
         Returns
         -------
@@ -210,15 +219,21 @@ class Spectrum(ArithmeticMixin, DataArray):
         if lmax is None:
             lmax = lmin
 
+        # Are lmin and lmax array indexes?
         if unit is None:
             pix_min = max(0, int(lmin + 0.5))
             pix_max = min(self.shape[0], int(lmax + 0.5))
+        # Convert wavelengths to the nearest spectrum array indexes.
         else:
             pix_min = max(0, self.wave.pixel(lmin, nearest=True, unit=unit))
             pix_max = min(self.shape[0],
                           self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
+
+        # If the start and end of the wavelength range select the same pixel,
+        # return just the value of that pixel.
         if (pix_min + 1) == pix_max:
             return self[pix_min]
+        # Otherwise return a sub-spectrum.
         else:
             return self[pix_min:pix_max]
 
@@ -1249,7 +1264,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             lmax = (lmax[0] + lmax[1]) / 2.
 
         # spec = self.truncate(lmin, lmax)
-        spec = self.get_lambda(lmin, lmax, unit=unit)
+        spec = self.subspec(lmin, lmax, unit=unit)
         data = spec._interp_data(spline)
         if unit is None:
             l = np.arange(self.shape, dtype=float)
@@ -1479,7 +1494,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             lmax = lmax[0]
 
         # spec = self.truncate(lmin, lmax)
-        spec = self.get_lambda(lmin, lmax, unit=unit)
+        spec = self.subspec(lmin, lmax, unit=unit)
         data = spec._interp_data(spline)
         if unit is None:
             l = np.arange(self.shape, dtype=float)
@@ -1661,7 +1676,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             fmax = self.mean(lmax[0], lmax[1], weight=False, unit=unit)
             lmax = lmax[0]
 
-        spec = self.get_lambda(lmin, lmax, unit=unit)
+        spec = self.subspec(lmin, lmax, unit=unit)
         data = spec._interp_data(spline)
         if unit is None:
             l = np.arange(self.shape, dtype=float)
@@ -1883,7 +1898,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             lmax = (lmax[0] + lmax[1]) / 2.
 
         # spec = self.truncate(lmin, lmax)
-        spec = self.get_lambda(lmin, lmax, unit=unit)
+        spec = self.subspec(lmin, lmax, unit=unit)
         data = spec._interp_data(spline)
         l = spec.wave.coord(unit=unit)
         d = data
