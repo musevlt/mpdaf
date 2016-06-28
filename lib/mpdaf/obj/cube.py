@@ -39,7 +39,7 @@ from .arithmetic import ArithmeticMixin
 from .coords import WCS, WaveCoord
 from .data import DataArray
 from .image import Image
-from .objs import is_int, bounding_box
+from .objs import is_int, bounding_box, is_number
 from .spectrum import Spectrum
 from ..tools import deprecated, add_mpdaf_method_keywords
 
@@ -124,6 +124,72 @@ def iter_ima(cube, index=False):
         for l in range(cube.shape[0]):
             yield cube[l, :, :]
 
+# A class that is used by loop_ima_multiprocessing and loop_spe_multiprocessing
+# to make periodic completion reports to the terminal while tasks are being
+# performed by external processes.
+class _MultiprocessReporter(object):
+    def __init__(self, ntask, interval=5.0):
+        """Prepare to report the progress of a multi-process job.
+
+        Parameters
+        ----------
+        ntask : int
+           The number of tasks to be completed.
+        interval : float
+           The interval between reports (seconds).
+        """
+
+        # Record the configuration parameters.
+        self.interval = interval
+        self.ntask = ntask
+
+        # Record the approximate start time of the multiple processes.
+        self.start_time = time.time()
+
+        # The number of reports so far.
+        self.reports = 0
+
+        # The number of tasks completed so far.
+        self.completed = 0
+
+        # Calculate the time of the first report.
+        self._update_report_time()
+
+    def countdown(self):
+        """Obtain the remaining time before the next report is due."""
+        return self.report_time - time.time()
+
+    def note_completed_task(self):
+        """Tell the reporter that another task has been completed."""
+        self.completed += 1
+
+        # Once all tasks have been completed, if any reports have been
+        # made, erase the progress line.
+        if self.completed == self.ntask and self.reports > 0:
+            sys.stdout.write("\r\x1b[K")
+            sys.stdout.flush()
+
+    def report_if_needed(self):
+        """Report the progress of the tasks if the time for the next report
+        has been reached."""
+
+        # Have we reached the time for the next report?
+        now = time.time()
+        if now >= self.report_time and self.completed < self.ntask:
+
+            # Count the number of reports made, and calculate the time of
+            # of the next report.
+            self.reports += 1
+            self._update_report_time()
+
+            # Inform the user of the progress through the task list.
+            output = "\r Completed %d of %d tasks (%d%%) in %.1fs" % (self.completed, self.ntask, self.completed * 100.0 / self.ntask, now - self.start_time)
+            sys.stdout.write("\r\x1b[K" + output.__str__())
+            sys.stdout.flush()
+
+    def _update_report_time(self):
+        """Calculate the time at which the next report should be made."""
+        self.report_time = self.start_time + (self.reports+1) * self.interval
 
 def _print_multiprocessing_progress(processresult, num_tasks):
     while True:
@@ -1628,42 +1694,87 @@ class Cube(ArithmeticMixin, DataArray):
         return res
 
     def loop_spe_multiprocessing(self, f, cpu=None, verbose=True, **kargs):
-        """loops over all spectra to apply a function/method. Returns the
-        resulting cube. Multiprocessing is used.
+        """Use multiple processes to run a function on each spectrum of a cube.
+
+        The provided function must accept a Spectrum object as its
+        first argument, such as a method function of the Spectrum
+        class. There are three options for the return value of the
+        function.
+
+        1. The return value of the provided function can be another
+           Spectrum, in which case loop_spe_multiprocessing() returns
+           a Cube of the processed spectra.
+
+        2. Alternatively if each call to the function returns a scalar
+           number, then these numbers are assembled into an Image that
+           has the same world coordinates as the Cube. This Cube is
+           returned by loop_spe_multiprocessing().
+
+        3. Finally, if each call to the provided function returns a
+           value that can be stored as an element of a numpy array,
+           then a numpy array of these values is returned. This array
+           has the shape of the images in the cube, such that pixel of
+           [i,j] of the returned array contains the result of processing
+           the spectrum of pixel [i,j] in the cube.
 
         Parameters
         ----------
         f : function or `~mpdaf.obj.Spectrum` method
-            Spectrum method or function that the first argument
-            is a spectrum object.
+            The function to be applied to each spectrum of the cube.
+            This function must either be a method of the Spectrum
+            class, or it must be a top-level function that accepts an
+            Spectrum object as its first argument. It should return
+            either an Spectrum, a number, or a value that can be
+            recorded as an element of a numpy array. Note that the
+            function must not be a lambda function, or a function
+            that is defined within another function.
         cpu : int
-            number of CPUs. It is also possible to set
-            the mpdaf.CPU global variable.
+            The desired number of CPUs to use, or None to select
+            the number of available CPUs. By default, the available
+            number of CPUs is equal to the number of CPU cores on the
+            computer, minus 1 CPU for the main process. However
+            the variable, `mpdaf.CPU` can be assigned a smaller number
+            by the user to limit the number that are available to MPDAF.
         verbose : bool
-            if True, progression is printed.
+            If True, a progress report is printed every 5 seconds.
         kargs : kargs
-            can be used to set function arguments.
+            An optional list of arguments to be passed to the function
+            f(). The datatypes of all of the arguments in this list
+            must support python pickling.
 
         Returns
         -------
         out : `~mpdaf.obj.Cube` if f returns `~mpdaf.obj.Spectrum`,
-        out : `~mpdaf.obj.Image` if f returns a number,
-        out : np.array(dtype=object) in others cases.
+        out : `~mpdaf.obj.Image` if f returns a float or int,
+        out : np.array(dtype=object) for all others cases.
 
         """
         from mpdaf import CPU
-        if cpu is not None and cpu < multiprocessing.cpu_count():
-            cpu_count = cpu
-        elif CPU != 0 and CPU < multiprocessing.cpu_count():
-            cpu_count = CPU
-        else:
-            cpu_count = multiprocessing.cpu_count() - 1
 
+        # Start by assuming that child processes will be created for
+        # all CPUs except one.
+        cpu_count = multiprocessing.cpu_count() - 1
+
+        # If mpdaf.CPU has been given a smaller value, limit the available
+        # CPUs to this number.
+        if CPU > 0 and CPU < cpu_count:
+            cpu_count = CPU
+
+        # If a smaller number of CPUs has been specified, use this number.
+        if cpu is not None and cpu < cpu_count:
+            cpu_count = cpu
+
+        # Create a pool of cpu_count worker processes.
         pool = multiprocessing.Pool(processes=cpu_count)
 
+        # If the provided function is an Spectrum method, get its name
+        # without the object that it is attached to, so that it can be
+        # attached to new Spectrum objects in _process_spe().
         if _is_method(f, Spectrum):
             f = f.__name__
 
+        # Get the attributes that will be passed to the _process_ima()
+        # in the worker processes.
         data = self._data
         var = self._var
         mask = self._mask
@@ -1673,6 +1784,10 @@ class Cube(ArithmeticMixin, DataArray):
                              sparse=False, indexing='ij')
         pv = pv.ravel()
         qv = qv.ravel()
+
+        # There will be one task per image of the cube. Assemble a
+        # list of the argument-lists that will be passed to each of
+        # these tasks.
         if var is None:
             processlist = [((p, q), f, header, data[:, p, q], mask[:, p, q],
                             None, self.unit, kargs)
@@ -1682,43 +1797,64 @@ class Cube(ArithmeticMixin, DataArray):
                             var[:, p, q], self.unit, kargs)
                            for p, q in zip(pv, qv)]
 
-        processresult = pool.imap_unordered(_process_spe, processlist)
+        # Start passing tasks to the worker processes. The return
+        # value is an iterator that will hereafter return a new value
+        # each time that a worker process finishes one task.
+        results = pool.imap_unordered(_process_spe, processlist)
+
+        # Tell the worker pool that no more tasks will be passed to it.
         pool.close()
 
+        # How many spectra are there to be processed as individual tasks?
+        ntasks = len(processlist)
+
+        # Report what is being done.
         if verbose:
-            ntasks = len(processlist)
-            self._logger.info('loop_spe_multiprocessing (%s): %i tasks', f,
-                              ntasks)
-            _print_multiprocessing_progress(processresult, ntasks)
+            self._logger.info('loop_spe_multiprocessing (%s): %i tasks',
+                              f.__name__, ntasks)
+            reporter = _MultiprocessReporter(ntask=ntasks)
 
+        # Wait for the results from each task and collect them into the
+        # appropriate object. If verbose is True, also emit a progress
+        # report every few seconds.
         init = True
-        for pos, dtype, out in processresult:
-            p, q = pos
-            if dtype == 'spectrum':
-                # f return a Spectrum -> iterator return a cube
-                header, data, mask, var, unit = out
-                wave = WaveCoord(header, shape=data.shape[0])
-                spe = Spectrum(wave=wave, unit=unit, data=data, var=var,
-                               mask=mask, copy=False)
+        while True:
+            try:
+                # Wait for the next result. When verbose=True, interrupt
+                # this wait every few seconds to allow a progress-report
+                # to be written to the user's terminal.
+                if verbose:
+                    (p, q), dtype, out = results.next(timeout=reporter.countdown())
+                    reporter.note_completed_task()
+                else:
+                    (p, q), dtype, out = results.next()
 
-                if init:
-                    cshape = (data.shape[0], self.shape[1], self.shape[2])
-                    if self.var is None:
-                        result = Cube(wcs=self.wcs.copy(), wave=wave,
-                                      data=np.zeros(cshape), unit=unit)
-                    else:
-                        result = Cube(wcs=self.wcs.copy(), wave=wave,
-                                      data=np.zeros(cshape),
-                                      var=np.zeros(cshape), unit=unit)
-                    init = False
+                # If the function returns spectra, then accumulate a cube
+                # of these spectra.
+                if dtype == 'spectrum':
+                    header, data, mask, var, unit = out
+                    wave = WaveCoord(header, shape=data.shape[0])
+                    spe = Spectrum(wave=wave, unit=unit, data=data, var=var,
+                                   mask=mask, copy=False)
 
-                result.data_header = self.data_header.copy()
-                result.primary_header = self.primary_header.copy()
-                result[:, p, q] = spe
+                    if init:
+                        cshape = (data.shape[0], self.shape[1], self.shape[2])
+                        if self.var is None:
+                            result = Cube(wcs=self.wcs.copy(), wave=wave,
+                                          data=np.zeros(cshape), unit=unit)
+                        else:
+                            result = Cube(wcs=self.wcs.copy(), wave=wave,
+                                          data=np.zeros(cshape),
+                                          var=np.zeros(cshape), unit=unit)
+                        init = False
 
-            else:
-                if np.isscalar(out[0]):
-                    # f returns a number -> iterator returns an image
+                    result.data_header = self.data_header.copy()
+                    result.primary_header = self.primary_header.copy()
+                    result[:, p, q] = spe
+
+                # If the function returns numbers, assemble these into
+                # an image.
+                elif is_number(out[0]):
                     if init:
                         result = Image(wcs=self.wcs.copy(),
                                        data=np.zeros((self.shape[1],
@@ -1726,56 +1862,120 @@ class Cube(ArithmeticMixin, DataArray):
                                        unit=self.unit)
                         init = False
                     result[p, q] = out[0]
+
+                # If the function returns anything else, make a numpy
+                # array of them, giving this array the shape of the
+                # images in the cube.
                 else:
-                    # f returns dtype -> iterator returns an array of dtype
                     if init:
                         result = np.empty((self.shape[1], self.shape[2]),
                                           dtype=type(out[0]))
                         init = False
                     result[p, q] = out[0]
 
+            # Is it time for a new report to be made to the terminal?
+            except multiprocessing.TimeoutError:
+                pass
+
+            # Have we now processed the last of the images?
+            except StopIteration:
+                break
+
+            # If the time for the next report has been reached, report
+            # the progress through the tasks to the terminal.
+            if verbose:
+                reporter.report_if_needed()
+
         return result
 
     def loop_ima_multiprocessing(self, f, cpu=None, verbose=True, **kargs):
-        """loops over all images to apply a function/method. Returns the
-        resulting cube. Multiprocessing is used.
+        """Use multiple processes to run a function on each image of a cube.
+
+        The provided function must accept an Image object as its first
+        argument, such as a method function of the Image class. There are
+        three options for the return value of the function.
+
+        1. The return value of the provided function can be another
+           Image, in which case loop_ima_multiprocessing() returns a Cube
+           of the processed images.
+
+        2. Alternatively if each call to the function returns a scalar
+           number, then these numbers are assembled into a Spectrum
+           that has the same spectral coordinates as the Cube.
+           This Cube is returned by loop_ima_multiprocessing().
+
+        3. Finally, if each call to the provided function returns a
+           value that can be stored as an element of a numpy array,
+           then a numpy array of these values is returned, ordered
+           such that element k of the array contains the return value
+           for spectral channel k of the cube.
 
         Parameters
         ----------
         f : function or `~mpdaf.obj.Image` method
-            Image method or function that the first argument
-            is a Image object. It should return an Image object.
+            The function to be applied to each image of the cube.
+            This function must either be a method of the Image class,
+            or it must be a top-level function that accepts an Image object
+            as its first argument. It should return either an Image,
+            a number, or a value that can be recorded as an element
+            of a numpy array. Note that the function must not be a
+            lambda function, or a function that is defined within
+            another function.
         cpu : int
-            number of CPUs. It is also possible to set
+            The desired number of CPUs to use, or None to select
+            the number of available CPUs. By default, the available
+            number of CPUs is equal to the number of CPU cores on the
+            computer, minus 1 CPU for the main process. However
+            the variable, `mpdaf.CPU` can be assigned a smaller number
+            by the user to limit the number that are available to MPDAF.
         verbose : bool
-            if True, progression is printed.
+            If True, a progress report is printed every 5 seconds.
         kargs : kargs
-            can be used to set function arguments.
+            An optional list of arguments to be passed to the function
+            f(). The datatypes of all of the arguments in this list
+            must support python pickling.
 
         Returns
         -------
         out : `~mpdaf.obj.Cube` if f returns `~mpdaf.obj.Image`,
-        out : `~mpdaf.obj.Spectrum` if f returns a number,
-        out : np.array(dtype=object) in others cases.
+        out : `~mpdaf.obj.Spectrum` if f returns a float or int.
+        out : np.array(dtype=object) for all others cases.
 
         """
         from mpdaf import CPU
-        if cpu is not None and cpu < multiprocessing.cpu_count():
-            cpu_count = cpu
-        elif CPU != 0 and CPU < multiprocessing.cpu_count():
-            cpu_count = CPU
-        else:
-            cpu_count = multiprocessing.cpu_count() - 1
 
+        # Start by assuming that child processes will be created for
+        # all CPUs except one.
+        cpu_count = multiprocessing.cpu_count() - 1
+
+        # If mpdaf.CPU has been given a smaller value, limit the available
+        # CPUs to this number.
+        if CPU > 0 and CPU < cpu_count:
+            cpu_count = CPU
+
+        # If a smaller number of CPUs has been specified, use this number.
+        if cpu is not None and cpu < cpu_count:
+            cpu_count = cpu
+
+        # Create a pool of cpu_count worker processes.
         pool = multiprocessing.Pool(processes=cpu_count)
 
+        # If the provided function is an Image method, get its name
+        # without the object that it is attached to, so that it can be
+        # attached to new Image objects in _process_ima().
         if _is_method(f, Image):
             f = f.__name__
 
+        # Get the attributes that will be passed to the _process_ima()
+        # in the worker processes.
         header = self.wcs.to_header()
         data = self._data
         mask = self._mask
         var = self._var
+
+        # There will be one task per image of the cube. Assemble a
+        # list of the argument-lists that will be passed to each of
+        # these tasks.
         if var is None:
             processlist = [(k, f, header, data[k, :, :], mask[k, :, :],
                             None, self.unit, kargs)
@@ -1785,62 +1985,92 @@ class Cube(ArithmeticMixin, DataArray):
                             var[k, :, :], self.unit, kargs)
                            for k in range(self.shape[0])]
 
-        processresult = pool.imap_unordered(_process_ima, processlist)
+        # Start passing tasks to the worker processes. The return
+        # value is an iterator that will hereafter return a new value
+        # each time that a worker process finishes one task.
+        results = pool.imap_unordered(_process_ima, processlist)
+
+        # Tell the worker pool that no more tasks will be passed to it.
         pool.close()
 
-        if verbose:
-            ntasks = len(processlist)
-            self._logger.info('loop_ima_multiprocessing (%s): %i tasks', f,
-                              ntasks)
-            _print_multiprocessing_progress(processresult, ntasks)
+        # How many images are there to be processed as individual tasks?
+        ntasks = len(processlist)
 
+        # Report what is being done.
+        if verbose:
+            self._logger.info('loop_ima_multiprocessing (%s): %i tasks',
+                              f.__name__, ntasks)
+            reporter = _MultiprocessReporter(ntask=ntasks)
+
+
+        # Wait for the results from each task and collect them into the
+        # appropriate object. If verbose is True, also emit a progress
+        # report every few seconds.
         init = True
-        for k, dtype, out in processresult:
-            if dtype == 'image':
-                # f returns an image -> iterator returns a cube
-                header, data, mask, var, unit = out
-                if init:
-                    wcs = WCS(header, shape=data.shape)
-                    cshape = (self.shape[0], data.shape[0], data.shape[1])
-                    if self.var is None:
-                        result = Cube(wcs=wcs, wave=self.wave.copy(),
-                                      data=np.zeros(cshape), unit=unit)
-                    else:
-                        result = Cube(wcs=wcs, wave=self.wave.copy(),
-                                      data=np.zeros(cshape),
-                                      var=np.zeros(cshape), unit=unit)
-                    init = False
-                result._data[k, :, :] = data
-                result._mask[k, :, :] = mask
-                if self.var is not None:
-                    result._var[k, :, :] = var
-                result.data_header = self.data_header.copy()
-                result.primary_header = self.primary_header.copy()
-            elif dtype == 'spectrum':
-                # f return a Spectrum -> iterator return a list of spectra
-                header, data, mask, var, unit = out
-                wave = WaveCoord(header, shape=data.shape[0])
-                spe = Spectrum(wave=wave, unit=unit, data=data, var=var,
-                               mask=mask, copy=False)
-                if init:
-                    result = np.empty(self.shape[0], dtype=type(spe))
-                    init = False
-                result[k] = spe
-            else:
-                if np.isscalar(out[0]):
-                    # f returns a number -> iterator returns a spectrum
+        while True:
+            try:
+                # Wait for the next result. When verbose=True, interrupt
+                # this wait every few seconds to allow a progress-report
+                # to be written to the user's terminal.
+                if verbose:
+                    k, dtype, out = results.next(timeout=reporter.countdown())
+                    reporter.note_completed_task()
+                else:
+                    k, dtype, out = results.next()
+
+                # If the function returns images, then accumulate a cube
+                # of these images.
+                if dtype == 'image':
+                    header, data, mask, var, unit = out
+                    if init:
+                        wcs = WCS(header, shape=data.shape)
+                        cshape = (self.shape[0], data.shape[0], data.shape[1])
+                        if self.var is None:
+                            result = Cube(wcs=wcs, wave=self.wave.copy(),
+                                          data=np.zeros(cshape), unit=unit)
+                        else:
+                            result = Cube(wcs=wcs, wave=self.wave.copy(),
+                                          data=np.zeros(cshape),
+                                          var=np.zeros(cshape), unit=unit)
+                        init = False
+                    result._data[k, :, :] = data
+                    result._mask[k, :, :] = mask
+                    if self.var is not None:
+                        result._var[k, :, :] = var
+                    result.data_header = self.data_header.copy()
+                    result.primary_header = self.primary_header.copy()
+
+                # If the function returns numbers, assemble these into
+                # a spectrum.
+                elif is_number(out[0]):
                     if init:
                         result = Spectrum(wave=self.wave.copy(),
                                           data=np.zeros(self.shape[0]),
                                           unit=self.unit)
                         init = False
-                    result[k] = out[0]
+                    result[k] = float(out[0])
+
+                # If the function returns anything else, make a numpy
+                # array of them.
                 else:
-                    # f returns dtype -> iterator returns an array of dtype
                     if init:
                         result = np.empty(self.shape[0], dtype=type(out[0]))
                         init = False
                     result[k] = out[0]
+
+            # Is it time for a new report to be made to the terminal?
+            except multiprocessing.TimeoutError:
+                pass
+
+            # Have we now processed the last of the images?
+            except StopIteration:
+                break
+
+            # If the time for the next report has been reached, report
+            # the progress through the tasks to the terminal.
+            if verbose:
+                reporter.report_if_needed()
+
         return result
 
     def get_image(self, wave, is_sum=False, subtract_off=False, margin=10.,
@@ -2425,11 +2655,19 @@ def _is_method(func, cls):
 
 
 def _process_spe(arglist):
+    """This function is the function that is executed in worker processes
+    by pool.imap_unordered() to do the work of loop_spe_multiprocessing()."""
+
     try:
+        # Expand the argument-list that was passed to pool.imap_unordered().
         pos, f, header, data, mask, var, unit, kargs = arglist
+
+        # Reconstruct the world coordinate information and the Spectrum object.
         wave = WaveCoord(header, shape=data.shape[0])
         spe = Spectrum(wave=wave, unit=unit, data=data, var=var, mask=mask)
 
+        # If the function is an Spectrum method, attach it to the spectrum
+        # object that we are processing and execute this.
         if isinstance(f, types.FunctionType):
             out = f(spe, **kargs)
         else:
@@ -2443,16 +2681,25 @@ def _process_spe(arglist):
             return pos, 'other', [out]
     except Exception as inst:
         raise type(inst)(str(inst) +
-                         '\n The error occurred for the spectrum '
+                         '\n The error occurred while processing spectrum '
                          '[:,%i,%i]' % (pos[0], pos[1]))
 
 
 def _process_ima(arglist):
+    """This function is the function that is executed in worker processes
+    by pool.imap_unordered() to do the work of loop_ima_multiprocessing()."""
+
     try:
+
+        # Expand the argument-list that was passed to pool.imap_unordered().
         k, f, header, data, mask, var, unit, kargs = arglist
+
+        # Reconstruct the world coordinate information and the Image object.
         wcs = WCS(header, shape=data.shape)
         obj = Image(wcs=wcs, unit=unit, data=data, var=var, mask=mask)
 
+        # If the function is an Image method, attach it to the image
+        # object that we are processing and execute this.
         if isinstance(f, types.FunctionType):
             out = f(obj, **kargs)
         else:
@@ -2470,4 +2717,4 @@ def _process_ima(arglist):
             return k, 'other', [out]
     except Exception as inst:
         raise type(inst)(str(inst) + '\n The error occurred '
-                         'for the image [%i,:,:]' % k)
+                         'while processing image [%i,:,:]' % k)
