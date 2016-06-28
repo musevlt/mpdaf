@@ -28,7 +28,6 @@ import os.path
 import sys
 import time
 import types
-import marshal
 
 from astropy.io import fits
 from matplotlib.path import Path
@@ -1714,11 +1713,13 @@ class Cube(ArithmeticMixin, DataArray):
         ----------
         f : function or `~mpdaf.obj.Spectrum` method
             The function to be applied to each spectrum of the cube.
-            This function must either be a method of the Spectrum class,
-            or it must be a function that accepts an Spectrum object
-            as its first argument. It should return either an Spectrum,
-            a number, or a value that can be recorded as an element
-            of a numpy array.
+            This function must either be a method of the Spectrum
+            class, or it must be a top-level function that accepts an
+            Spectrum object as its first argument. It should return
+            either an Spectrum, a number, or a value that can be
+            recorded as an element of a numpy array. Note that the
+            function must not be a lambda function, or a function
+            that is defined within another function.
         cpu : int
             The desired number of CPUs to use, or None to select
             the number of available CPUs. By default, the available
@@ -1762,11 +1763,7 @@ class Cube(ArithmeticMixin, DataArray):
         # without the object that it is attached to, so that it can be
         # attached to new Spectrum objects in _process_spe().
         if _is_method(f, Spectrum):
-            func = ("Method", f.__name__)
-        # If the provided function is not an Image method, serialize its
-        # code, so that it can be recreated in the worker processes.
-        else:
-            func = ("Function", marshal.dumps(f.__code__))
+            f = f.__name__
 
         # Get the attributes that will be passed to the _process_ima()
         # in the worker processes.
@@ -1784,11 +1781,11 @@ class Cube(ArithmeticMixin, DataArray):
         # list of the argument-lists that will be passed to each of
         # these tasks.
         if var is None:
-            processlist = [((p, q), func, header, data[:, p, q], mask[:, p, q],
+            processlist = [((p, q), f, header, data[:, p, q], mask[:, p, q],
                             None, self.unit, kargs)
                            for p, q in zip(pv, qv)]
         else:
-            processlist = [((p, q), func, header, data[:, p, q], mask[:, p, q],
+            processlist = [((p, q), f, header, data[:, p, q], mask[:, p, q],
                             var[:, p, q], self.unit, kargs)
                            for p, q in zip(pv, qv)]
 
@@ -1910,10 +1907,12 @@ class Cube(ArithmeticMixin, DataArray):
         f : function or `~mpdaf.obj.Image` method
             The function to be applied to each image of the cube.
             This function must either be a method of the Image class,
-            or it must be a function that accepts an Image object
+            or it must be a top-level function that accepts an Image object
             as its first argument. It should return either an Image,
             a number, or a value that can be recorded as an element
-            of a numpy array.
+            of a numpy array. Note that the function must not be a
+            lambda function, or a function that is defined within
+            another function.
         cpu : int
             The desired number of CPUs to use, or None to select
             the number of available CPUs. By default, the available
@@ -1957,11 +1956,7 @@ class Cube(ArithmeticMixin, DataArray):
         # without the object that it is attached to, so that it can be
         # attached to new Image objects in _process_ima().
         if _is_method(f, Image):
-            func = ("Method", f.__name__)
-        # If the provided function is not an Image method, serialize its
-        # code, so that it can be recreated in the worker processes.
-        else:
-            func = ("Function", marshal.dumps(f.__code__))
+            f = f.__name__
 
         # Get the attributes that will be passed to the _process_ima()
         # in the worker processes.
@@ -1974,11 +1969,11 @@ class Cube(ArithmeticMixin, DataArray):
         # list of the argument-lists that will be passed to each of
         # these tasks.
         if var is None:
-            processlist = [(k, func, header, data[k, :, :], mask[k, :, :],
+            processlist = [(k, f, header, data[k, :, :], mask[k, :, :],
                             None, self.unit, kargs)
                            for k in range(self.shape[0])]
         else:
-            processlist = [(k, func, header, data[k, :, :], mask[k, :, :],
+            processlist = [(k, f, header, data[k, :, :], mask[k, :, :],
                             var[k, :, :], self.unit, kargs)
                            for k in range(self.shape[0])]
 
@@ -2663,20 +2658,12 @@ def _process_spe(arglist):
         wave = WaveCoord(header, shape=data.shape[0])
         spe = Spectrum(wave=wave, unit=unit, data=data, var=var, mask=mask)
 
-        # Get the function to be applied to the image.
-        ftype, func = f
-
         # If the function is an Spectrum method, attach it to the spectrum
         # object that we are processing and execute this.
-        if ftype == "Method":
-            out = getattr(spe, func)(**kargs)
-
-        # If the function is not an Spectrum method, then it's code will
-        # have been sent. Unserialize this, create a new function
-        # from it and apply this to the spectrum.
+        if isinstance(f, types.FunctionType):
+            out = f(spe, **kargs)
         else:
-            code = marshal.loads(func)
-            out = types.FunctionType(code, globals())(spe, **kargs)
+            out = getattr(spe, f)(**kargs)
 
         if isinstance(out, Spectrum):
             return pos, 'spectrum', [
@@ -2703,20 +2690,12 @@ def _process_ima(arglist):
         wcs = WCS(header, shape=data.shape)
         obj = Image(wcs=wcs, unit=unit, data=data, var=var, mask=mask)
 
-        # Get the function to be applied to the image.
-        ftype, func = f
-
         # If the function is an Image method, attach it to the image
         # object that we are processing and execute this.
-        if ftype == "Method":
-            out = getattr(obj, func)(**kargs)
-
-        # If the function is not an Image method, then it's code will
-        # have been sent. Unserialize this, create a new function
-        # from it and apply this to the image.
+        if isinstance(f, types.FunctionType):
+            out = f(obj, **kargs)
         else:
-            code = marshal.loads(func)
-            out = types.FunctionType(code, globals())(obj, **kargs)
+            out = getattr(obj, f)(**kargs)
 
         if isinstance(out, Image):
             # f returns an image -> iterator returns a cube
