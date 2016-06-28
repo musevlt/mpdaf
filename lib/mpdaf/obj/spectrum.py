@@ -238,79 +238,86 @@ class Spectrum(ArithmeticMixin, DataArray):
             return self[pix_min:pix_max]
 
     def get_step(self, unit=None):
-        """Return the wavelength step.
+        """Return the wavelength step size.
 
         Parameters
         ----------
         unit : `astropy.units.Unit`
-            Type of the wavelength coordinates
+            The units of the returned step-size.
 
         Returns
         -------
         out : float
+            The width of a spectrum pixel.
         """
         if self.wave is not None:
             return self.wave.get_step(unit)
 
     def get_start(self, unit=None):
-        """Return the wavelength value of the first pixel.
+        """Return the wavelength value of the first pixel of the spectrum.
 
         Parameters
         ----------
         unit : `astropy.units.Unit`
-            Type of the wavelength coordinates
+            The units of the returned wavelength.
 
         Returns
         -------
         out : float
+            The wavelength of the first pixel of the spectrum.
         """
         if self.wave is not None:
             return self.wave.get_start(unit)
 
     def get_end(self, unit=None):
-        """Return the wavelength value of the last pixel.
+        """Return the wavelength of the last pixel of the spectrum.
 
         Parameters
         ----------
         unit : `astropy.units.Unit`
-            Type of the wavelength coordinates
+            The units of the returned wavelength.
 
         Returns
         -------
         out : float
+            The wavelength of the final pixel of the spectrum.
         """
         if self.wave is not None:
             return self.wave.get_end(unit)
 
     def get_range(self, unit=None):
-        """Return the wavelength range (Lambda_min, Lambda_max).
+        """Return the wavelength range (Lambda_min, Lambda_max) of the spectrum.
 
         Parameters
         ----------
         unit : `astropy.units.Unit`
-            Type of the wavelength coordinates
+            The units of the returned wavelengths.
 
         Returns
         -------
         out : float array
+            The minimum and maximum wavelengths.
         """
         if self.wave is not None:
             return self.wave.get_range(unit)
 
     def mask_region(self, lmin=None, lmax=None, inside=True, unit=u.angstrom):
-        """Mask the spectrum inside/outside [lmin,lmax].
+        """Mask spectrum pixels inside or outside a wavelength range, [lmin,lmax].
 
         Parameters
         ----------
         lmin : float
-            minimum wavelength.
+            The minimum wavelength of the range, or None to choose the
+            wavelength of the first pixel in the spectrum.
         lmax : float
-            maximum wavelength.
+            The maximum wavelength of the range, or None to choose the
+            wavelength of the last pixel in the spectrum.
         unit : `astropy.units.Unit`
-            Type of the wavelength coordinates. If None, inputs are in pixels.
+            The wavelength units of lmin and lmax. If None, lmin and
+            lmax are assumed to be pixel indexes.
         inside : bool
-            If inside is True, pixels inside [lmin,lmax] are masked.
-            If inside is False, pixels outside [lmin,lmax] are masked.
+            If inside is True, pixels inside the range [lmin,lmax] are masked.
+            If inside is False, pixels outside the range [lmin,lmax] are masked.
         """
         if self.wave is None:
             raise ValueError('Operation forbidden without world coordinates '
@@ -450,20 +457,24 @@ class Spectrum(ArithmeticMixin, DataArray):
             self.wave = None
 
     def _rebin(self, factor, margin='center'):
-        """Shrink the size of the spectrum by factor.
+        """Shrink the size of a spectrum by an integer factor, by summing
+        neighboring pixels.
 
         Parameters
         ----------
         factor : int
-            factor
+            The integer division factor.
         margin : string in 'center'|'right'|'left'
-            This parameters is used if new size is not an integer multiple of
-            the original size.
-
-            - 'center' : two pixels added, on the left and on the right of
-              the spectrum.
-            - 'right': one pixel added on the right of the spectrum.
-            - 'left': one pixel added on the left of the spectrum.
+            When the dimension of the spectrum is not an integer
+            multiple of the division factor, a sub-spectrum is chosen
+            for rebinning. The dimension of this sub-spectrum is an
+            integer multiple of the division factor. The margin
+            parameter determines how the sub-spectrum is chosen. If
+            'center' is selected, then the sub-spectrum is taken from the
+            center of the spectrum. If 'right' is selected, then the
+            start of the sub-spectrum is the first pixel of the input
+            spectrum. If 'left' is selected, then the last pixel of
+            the sub-spectrum is the last pixel of the input spectrum.
 
         """
 
@@ -551,21 +562,24 @@ class Spectrum(ArithmeticMixin, DataArray):
             self.wave = None
 
     def rebin(self, factor, margin='center', inplace=False):
-        """Return a spectrum that shrinks the size of the current spectrum by
-        factor.
+        """Shrink the size of a spectrum by an integer factor, by summing
+        neighboring pixels.
 
         Parameters
         ----------
         factor : int
-            factor
+            The integer factor by which the spectrum should be shrunk.
         margin : string in 'center'|'right'|'left'
-            This parameters is used if new size is not an integer multiple of
-            the original size.
-
-            - 'center' : two pixels added, on the left
-              and on the right of the spectrum.
-            - 'right': one pixel added on the right of the spectrum.
-            - 'left': one pixel added on the left of the spectrum.
+            When the dimension of the spectrum is not an integer
+            multiple of the division factor, a sub-spectrum is chosen
+            for rebinning. The dimension of this sub-spectrum is an
+            integer multiple of the division factor. The margin
+            parameter determines how the sub-spectrum is chosen. If
+            'center' is selected, then the sub-spectrum is taken from the
+            center of the spectrum. If 'right' is selected, then the
+            start of the sub-spectrum is the first pixel of the input
+            spectrum. If 'left' is selected, then the last pixel of
+            the sub-spectrum is the last pixel of the input spectrum.
         inplace : bool
             If False, return a rebinned copy of the spectrum (the default).
             If True, rebin the original spectrum in-place, and return that.
@@ -573,6 +587,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         Returns
         -------
         out : Spectrum
+
         """
         # Should we rebin the spectrum in-place, or rebin a copy of the spectrum?
 
