@@ -8,7 +8,6 @@ dependencies:
   - matplotlib
   - numexpr
   - six
-  - joblib
   - ipython
   - pip:
     - numpydoc
