@@ -164,7 +164,7 @@ class Channel(object):
         out : `~mpdaf.obj.Image`
         """
         wcs = WCS(self.header)
-        ima = Image(wcs=wcs, data=self.data.__copy__())
+        ima = Image(wcs=wcs, data=self.data.__copy__(), dtype=None)
 
         if det_out is not None:
             # length of data in X
@@ -202,7 +202,7 @@ class Channel(object):
                 j1 = j2 - ny - 2 * prscy
             ima = ima[j1:j2, i1:i2]
             if bias:
-                ima -= self.get_bias_level(det_out)
+                ima = ima - self.get_bias_level(det_out)
 
         if det_out is None and bias:
             # length of data in X
@@ -239,7 +239,7 @@ class Channel(object):
                 else:
                     j2 = ny_data
                     j1 = j2 - ny - 2 * prscy
-                ima[j1:j2, i1:i2] -= self.get_bias_level(det)
+                ima[j1:j2, i1:i2] = ima[j1:j2, i1:i2] - self.get_bias_level(det)
 
         return ima
 
@@ -259,16 +259,13 @@ class Channel(object):
         ksel = np.where(ima.data.mask == False)
         return np.median(ima.data.data[ksel])
 
-    def get_trimmed_image(self, det_out=None, bias_substract=False,
-                          bias=False):
+    def get_trimmed_image(self, det_out=None, bias=False):
         """Return an Image object without over scanned pixels.
 
         Parameters
         ----------
         det_out : int in [1,4]
             Number of output detector. If None, all image is returned.
-        bias_substract : boolean
-            If True, median value of the overscanned pixels is substracted.
         bias : boolean
             If True, median value of the overscanned pixels is subtracted.
 
@@ -285,12 +282,6 @@ class Channel(object):
                                      mask=self.mask)
         else:
             work = np.ma.MaskedArray(self.data.__copy__(), mask=self.mask)
-
-        if bias_substract:
-            warnings.warn("get_trimmed_image: bias_substract parameter "
-                          "will be replaced by bias parameter",
-                          DeprecationWarning)
-            bias = True
 
         if bias:
             ksel = np.where(self.mask == True)
@@ -329,7 +320,7 @@ class Channel(object):
 
                     ksel = np.where(self.mask[j1:j2, i1:i2] == True)
                     bias_level = np.median((work.data[j1:j2, i1:i2])[ksel])
-                    work[j1:j2, i1:i2] -= bias_level
+                    work[j1:j2, i1:i2] = work[j1:j2, i1:i2] - bias_level
             else:
                 key = "ESO DET OUT%i" % det_out
                 # Output data pixels in X
@@ -359,12 +350,12 @@ class Channel(object):
 
                 ksel = np.where(self.mask[j1:j2, i1:i2] == True)
                 bias_level = np.median(work.data[j1:j2, i1:i2][ksel])
-                work[j1:j2, i1:i2] -= bias_level
+                work[j1:j2, i1:i2] = work[j1:j2, i1:i2] - bias_level
 
         data = np.ma.compressed(work)
         data = np.reshape(data, (ny_data2, nx_data2))
         wcs = WCS(crpix=(1.0, 1.0), shape=(ny_data2, nx_data2))
-        ima = Image(wcs=wcs, data=data)
+        ima = Image(wcs=wcs, data=data, dtype=None)
 
         if det_out is not None:
             # length of data in X
@@ -414,7 +405,7 @@ class Channel(object):
         out : `~mpdaf.obj.Image`
         """
         wcs = WCS(fits.Header(self.header))
-        ima = Image(wcs=wcs, data=self.data)
+        ima = Image(wcs=wcs, data=self.data, dtype=None)
         ima.data = np.ma.MaskedArray(self.data.__copy__(),
                                      mask=self.mask, copy=True)
 
@@ -470,7 +461,7 @@ class Channel(object):
         out : `~mpdaf.obj.Image`
         """
         wcs = WCS(fits.Header(self.header))
-        ima = Image(wcs=wcs, data=self.data)
+        ima = Image(wcs=wcs, data=self.data, dtype=None)
         ima.data = np.ma.MaskedArray(self.data.__copy__(),
                                      mask=np.logical_not(self.mask),
                                      copy=True)
@@ -513,24 +504,6 @@ class Channel(object):
 
         return ima
 
-
-
-# def Channel_median(channels):
-#     result = Channel(channels[0].extname)
-#     result.header = channels[0].header
-#     result.nx = channels[0].nx
-#     result.ny = channels[0].ny
-#     result.mask = channels[0].mask
-#     result.data = np.empty_like(channels[0].data)
-#     arrays = []
-#     for chan in channels:
-#         arrays.append(chan.data)
-#         result.mask += chan.mask
-#     arrays = np.array(arrays, dtype=np.int16)
-#     result.data = np.median(arrays, axis=0)
-#     if isinstance(result.data, np.ma.core.MaskedArray):
-#         result.data = result.data.data
-#     return result
 
 
 class RawFile(object):
