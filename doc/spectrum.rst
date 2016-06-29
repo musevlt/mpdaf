@@ -1,3 +1,6 @@
+.. _spectrum:
+
+
 ***************
 Spectrum object
 ***************

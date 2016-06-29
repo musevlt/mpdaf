@@ -18,14 +18,16 @@ Contents
 ========
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    installation
+   start
    obj
    drs
    muse
    tools
    sdetect
+   contribute
    changelog
 
 
