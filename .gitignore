@@ -18,6 +18,7 @@ data/obj/image.fits.gz
 data/obj/image_variance.fits.gz
 doc/api/
 doc/_build/
+doc/_static/_generated/
 htmlcov/
 lib/mpdaf/_githash.py
 lib/mpdaf/obj/merging.c

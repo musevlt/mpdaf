@@ -81,6 +81,8 @@ numpydoc_class_members_toctree = False
 numpydoc_show_class_members = False
 # numpydoc_use_plots = True
 
+ipython_savefig_dir = '_static/_generated'
+
 # Class documentation should contain *both* the class docstring and
 # the __init__ docstring
 autoclass_content = "both"
