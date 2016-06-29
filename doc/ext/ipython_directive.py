@@ -142,7 +142,11 @@ from docutils.parsers.rst import directives
 from sphinx.util.compat import Directive
 
 # Our own
-from traitlets.config import Config
+try:
+    from traitlets.config import Config
+except ImportError:
+    from IPython import Config
+
 from IPython import InteractiveShell
 from IPython.core.profiledir import ProfileDir
 from IPython.utils import io
