@@ -21,13 +21,10 @@ rawobj.py Manages raw FITS file.
 
 from __future__ import absolute_import, print_function, division
 
-import datetime
 import logging
 import matplotlib.pyplot as plt
-import multiprocessing
 import numpy as np
 import os.path
-import sys
 import warnings
 
 from astropy.io import fits
@@ -46,7 +43,7 @@ slit_position = np.array([9, 8, 1, 10, 7, 2, 11, 6, 3, 12, 5, 4])
 
 class Channel(object):
 
-    """Channel object corresponds to an extension of a raw FITS file.
+    """Channel object corresponds to an extension of a MUSE raw FITS file.
 
     Parameters
     ----------
@@ -61,45 +58,27 @@ class Channel(object):
         The extension name
     header : `astropy.io.fits.Header`
         The extension header
-    data : array
-        Array containing the pixel values of the image extension
     nx : int
         Lengths of data in X
     ny : int
         Lengths of data in Y
     mask : array of booleans
         Arrays that contents TRUE for overscanned pixels, FALSE for the others.
-
     """
 
-    def __init__(self, extname=None, filename=None, data=None):
+    def __init__(self, extname, filename):
         self._logger = logging.getLogger(__name__)
         self.extname = extname
-        if filename is not None:
-            hdulist = fits.open(filename)
-            self.header = hdulist[extname].header
-            self.nx = hdulist[extname].header["NAXIS1"]
-            self.ny = hdulist[extname].header["NAXIS2"]
-            try:
-                data = hdulist[extname].data
-                self.data = np.ndarray(np.shape(data))
-                self.data[:] = data[:]
-            except:
-                self._logger.warning("extension %s not loaded" % extname)
-                self.data = None
-            hdulist.close()
-        elif data is not None:
-            self.header = fits.Header()
-            shape = np.shape(data)
-            self.data = np.ndarray(shape)
-            self.data[:] = data[:]
-            self.nx = shape[1]
-            self.ny = shape[0]
-        else:
-            self.header = fits.Header()
-            self.nx = 0
-            self.ny = 0
+        hdulist = fits.open(filename)
+        self.header = hdulist[extname].header
+        self.nx = hdulist[extname].header["NAXIS1"]
+        self.ny = hdulist[extname].header["NAXIS2"]
+        try:
+            self.data = hdulist[extname].data
+        except:
+            self._logger.warning("extension %s not loaded" % extname)
             self.data = None
+        hdulist.close()
         self.mask = self._init_mask()
 
     def _init_mask(self):
@@ -155,194 +134,20 @@ class Channel(object):
             pass
         return np.ma.make_mask(m)
 
-    def copy(self):
-        """Return a copy of the Channel object."""
-        result = Channel(self.extname)
-        result.header = self.header.copy()
-        try:
-            result.data = self.data.__copy__()
-        except:
-            result.data = None
-        result.nx = self.nx
-        result.ny = self.ny
-        result.mask = self.mask.__copy__()
-        return result
-
-    def _decorator(function):
-        # decorator used to define arithmetic functions
-        def _wrapper(self, other):
-            if isinstance(other, Channel):
-                if self.extname != other.extname:
-                    raise IOError('operations on channel extensions '
-                                  'with different names')
-                result = Channel(self.extname)
-                result.header = self.header
-                result.nx = self.nx
-                result.ny = self.ny
-                result.mask = self.mask
-                result.data = function(self.data, other.data)
-                if isinstance(result.data, np.ma.core.MaskedArray):
-                    result.data = result.data.data
-                return result
-            else:
-                result = Channel(self.extname)
-                result.header = self.header
-                result.nx = self.nx
-                result.ny = self.ny
-                result.mask = self.mask
-                result.data = function(self.data, other)
-                if isinstance(result.data, np.ma.core.MaskedArray):
-                    result.data = result.data.data
-                return result
-        return _wrapper
-
-    def _idecorator(function):
-        # decorator used to define in-place arithmetic functions
-        def _wrapper(self, other):
-            if isinstance(other, Channel):
-                if self.extname != other.extname:
-                    raise IOError('operations on channel extensions '
-                                  'with different names')
-                result = Channel(self.extname)
-                result.header = self.header
-                result.nx = self.nx
-                result.ny = self.ny
-                result.mask = self.mask
-                result.data = function(self.data, other.data)
-                return result
-            else:
-                result = Channel(self.extname)
-                result.header = self.header
-                result.nx = self.nx
-                result.ny = self.ny
-                result.mask = self.mask
-                result.data = function(self.data, other)
-                return result
-        return _wrapper
-
-    @_decorator
-    def __mul__(self, other):
-        """Multiplies either a number or a Channel object."""
-        if isinstance(self, np.ma.core.MaskedArray):
-            return np.ma.MaskedArray.__mul__(self, other)
-        else:
-            return np.ndarray.__mul__(self, other)
-
-    @_idecorator
-    def __imul__(self, other):
-        if isinstance(self, np.ma.core.MaskedArray):
-            return np.ma.MaskedArray.__mul__(self, other)
-        else:
-            return np.ndarray.__mul__(self, other)
-
-    @_decorator
-    def __div__(self, other):
-        """Divides either a number or a Channel object."""
-        if isinstance(self, np.ma.core.MaskedArray):
-            return np.ma.MaskedArray.__div__(self, other)
-        else:
-            return np.ndarray.__div__(self, other)
-
-    @_idecorator
-    def __idiv__(self, other):
-        if isinstance(self, np.ma.core.MaskedArray):
-            return np.ma.MaskedArray.__div__(self, other)
-        else:
-            return np.ndarray.__div__(self, other)
-
-    __truediv__ = __div__
-    __itruediv__ = __idiv__
-
-    @_decorator
-    def __sub__(self, other):
-        """Subtracts either a number or a Channel object."""
-        if isinstance(self, np.ma.core.MaskedArray):
-            return np.ma.MaskedArray.__sub__(self, other)
-        else:
-            return np.ndarray.__sub__(self, other)
-
-    @_idecorator
-    def __isub__(self, other):
-        if isinstance(self, np.ma.core.MaskedArray):
-            return np.ma.MaskedArray.__sub__(self, other)
-        else:
-            return np.ndarray.__sub__(self, other)
-
-    @_decorator
-    def __add__(self, other):
-        """Add either a number or a Channel object."""
-        if isinstance(self, np.ma.core.MaskedArray):
-            return np.ma.MaskedArray.__add__(self, other)
-        else:
-            return np.ndarray.__add__(self, other)
-
-    @_idecorator
-    def __iadd__(self, other):
-        if isinstance(self, np.ma.core.MaskedArray):
-            return np.ma.MaskedArray.__add__(self, other)
-        else:
-            return np.ndarray.__add__(self, other)
-
-    @_decorator
-    def __pow__(self, other):
-        """Compute the power exponent."""
-        if isinstance(self, np.ma.core.MaskedArray):
-            return np.ma.MaskedArray.__pow__(self, other)
-        else:
-            return np.ndarray.__pow__(self, other)
-
-    @_idecorator
-    def __ipow__(self, other):
-        if isinstance(self, np.ma.core.MaskedArray):
-            return np.ma.MaskedArray.__pow__(self, other)
-        else:
-            return np.ndarray.__pow__(self, other)
-
-    def sqrt(self):
-        """Compute the positive square-root."""
-        result = Channel(self.extname)
-        result.header = self.header
-        result.nx = self.nx
-        result.ny = self.ny
-        result.mask = self.mask
-        result.data = np.sqrt(self.data)
-        if isinstance(result.data, np.ma.core.MaskedArray):
-            result.data = result.data.data
-        return result
 
     def trimmed(self):
-        """Return a Channel object containing only reference to the valid
+        """Return a masked array containing only reference to the valid
         pixels.
-
-        Returns
-        -------
-        out : `mpdaf.drs.Channel`
         """
-        result = Channel(self.extname)
-        result.header = self.header
-        result.nx = self.nx
-        result.ny = self.ny
-        result.mask = self.mask
-        result.data = np.ma.MaskedArray(self.data, mask=self.mask, copy=True)
-        return result
+        return np.ma.MaskedArray(self.data, mask=self.mask, copy=True)
 
     def overscan(self):
-        """Return a Channel object containing only reference to the overscanned
+        """Return a masked array containing only reference to the overscanned
         pixels.
-
-        Returns
-        -------
-        out : `mpdaf.drs.Channel`
         """
-        result = Channel(self.extname)
-        result.header = self.header
-        result.nx = self.nx
-        result.ny = self.ny
-        result.mask = self.mask
-        result.data = np.ma.MaskedArray(self.data,
-                                        mask=np.logical_not(self.mask),
-                                        copy=True)
-        return result
+        return np.ma.MaskedArray(self.data,
+                                 mask=np.logical_not(self.mask),
+                                 copy=True)
 
     def get_image(self, det_out=None, bias=False):
         """Return an Image object.
@@ -397,7 +202,7 @@ class Channel(object):
                 j1 = j2 - ny - 2 * prscy
             ima = ima[j1:j2, i1:i2]
             if bias:
-                ima -= self. get_bias_level(det_out)
+                ima -= self.get_bias_level(det_out)
 
         if det_out is None and bias:
             # length of data in X
@@ -434,7 +239,7 @@ class Channel(object):
                 else:
                     j2 = ny_data
                     j1 = j2 - ny - 2 * prscy
-                ima[j1:j2, i1:i2] -= self. get_bias_level(det)
+                ima[j1:j2, i1:i2] -= self.get_bias_level(det)
 
         return ima
 
@@ -709,38 +514,23 @@ class Channel(object):
         return ima
 
 
-STR_FUNCTIONS = {'Channel.__mul__': Channel.__mul__,
-                 'Channel.__imul__': Channel.__imul__,
-                 'Channel.__div__': Channel.__div__,
-                 'Channel.__idiv__': Channel.__idiv__,
-                 'Channel.__sub__': Channel.__sub__,
-                 'Channel.__isub__': Channel.__isub__,
-                 'Channel.__add__': Channel.__add__,
-                 'Channel.__iadd__': Channel.__iadd__,
-                 'Channel.__pow__': Channel.__pow__,
-                 'Channel.__ipow__': Channel.__ipow__,
-                 'Channel.sqrt': Channel.sqrt,
-                 'Channel.trimmed': Channel.trimmed,
-                 'Channel.overscan': Channel.overscan,
-                 }
 
-
-def Channel_median(channels):
-    result = Channel(channels[0].extname)
-    result.header = channels[0].header
-    result.nx = channels[0].nx
-    result.ny = channels[0].ny
-    result.mask = channels[0].mask
-    result.data = np.empty_like(channels[0].data)
-    arrays = []
-    for chan in channels:
-        arrays.append(chan.data)
-        result.mask += chan.mask
-    arrays = np.array(arrays, dtype=np.int16)
-    result.data = np.median(arrays, axis=0)
-    if isinstance(result.data, np.ma.core.MaskedArray):
-        result.data = result.data.data
-    return result
+# def Channel_median(channels):
+#     result = Channel(channels[0].extname)
+#     result.header = channels[0].header
+#     result.nx = channels[0].nx
+#     result.ny = channels[0].ny
+#     result.mask = channels[0].mask
+#     result.data = np.empty_like(channels[0].data)
+#     arrays = []
+#     for chan in channels:
+#         arrays.append(chan.data)
+#         result.mask += chan.mask
+#     arrays = np.array(arrays, dtype=np.int16)
+#     result.data = np.median(arrays, axis=0)
+#     if isinstance(result.data, np.ma.core.MaskedArray):
+#         result.data = result.data.data
+#     return result
 
 
 class RawFile(object):
@@ -750,11 +540,7 @@ class RawFile(object):
     Parameters
     ----------
     filename : str
-        The raw FITS file name. ``filename=None`` creates an empty object. The
-        FITS file is opened with memory mapping. Just the primary header and
-        the list of extension name are loaded. Method get_channel(extname)
-        returns the corresponding channel Operator [extnumber] loads and
-        returns the corresponding channel.
+        The raw FITS file name. 
 
     Attributes
     ----------
@@ -770,57 +556,36 @@ class RawFile(object):
         Lengths of data in Y
     next : int
         Number of extensions
-    progress : boolean
-        If True, progress of multiprocessing tasks are displayed. True by
-        default.
-
     """
 
-    def __init__(self, filename=None):
+    def __init__(self, filename):
         self._logger = logging.getLogger(__name__)
         self.filename = filename
         self.primary_header = fits.Header()
-        self.progress = True
         self.channels = dict()
         self.nx = 0
         self.ny = 0
         self.next = 0
 
-        if filename is not None:
-            hdulist = fits.open(self.filename)
-            self.primary_header = hdulist[0].header
-            for hdu in hdulist[1:]:
-                extname = hdu.header["EXTNAME"]
-                exttype = hdu.header["XTENSION"]
-                if exttype == 'IMAGE' and hdu.header["NAXIS"] != 0:
-                    nx = hdu.header["NAXIS1"]
-                    ny = hdu.header["NAXIS2"]
-                    if self.nx == 0:
-                        self.nx = nx
-                        self.ny = ny
-                    if nx != self.nx and ny != self.ny:
-                        self._logger.warning(
-                            'image extensions %s not considered '
-                            '(different sizes)', extname)
-                    else:
-                        self.channels[extname] = None
-            self.next = len(self.channels)
-            hdulist.close()
-
-    def copy(self):
-        """Return a copy of the RawFile object."""
-        result = RawFile(self.filename)
-        if result.filename is None:
-            result.primary_header = fits.Header(self.primary_header)
-            result.nx = self.nx
-            result.ny = self.ny
-            result.next = self.next
-            for name, chan in self.channels.items():
-                if chan is not None:
-                    result.channels[name] = chan.copy()
+        hdulist = fits.open(self.filename)
+        self.primary_header = hdulist[0].header
+        for hdu in hdulist[1:]:
+            extname = hdu.header["EXTNAME"]
+            exttype = hdu.header["XTENSION"]
+            if exttype == 'IMAGE' and hdu.header["NAXIS"] != 0:
+                nx = hdu.header["NAXIS1"]
+                ny = hdu.header["NAXIS2"]
+                if self.nx == 0:
+                    self.nx = nx
+                    self.ny = ny
+                if nx != self.nx and ny != self.ny:
+                    self._logger.warning(
+                        'image extensions %s not considered '
+                        '(different sizes)', extname)
                 else:
-                    result.channels[name] = None
-        return result
+                    self.channels[extname] = None
+        self.next = len(self.channels)
+        hdulist.close()
 
     def info(self):
         """Print information."""
@@ -879,230 +644,6 @@ class RawFile(object):
         if self.channels[extname] is None:
             self.channels[extname] = Channel(extname, self.filename)
         return self.channels[extname]
-
-    def __setitem__(self, key, value):
-        """Set the corresponding channel.
-
-        Parameters
-        ----------
-        key : int
-            The extension number.
-        value : `mpdaf.drs.Channel` or array
-            Channel object or image
-
-        """
-        extname = "CHAN%02d" % key
-        if isinstance(value, Channel):
-            if value.nx == self.nx and value.ny == self.ny:
-                self.channels[extname] = value
-            else:
-                raise IOError('set an image extension with different sizes')
-        elif isinstance(value, np.ndarray):
-            if np.shape(value) == (self.ny, self.nx):
-                chan = Channel(extname)
-                chan.data = value
-                chan.nx = self.nx
-                chan.ny = self.ny
-                self.channels[extname] = chan
-            else:
-                raise IOError('set an image extension with bad dimensions')
-        else:
-            raise IOError('format %s incompatible '
-                          'with an image extension' % type(value))
-
-    def __mul__(self, other):
-        """Multiplies either a number or a RawFits object."""
-        return self._mp_operator(other, 'Channel.__mul__')
-
-    def __imul__(self, other):
-        return self._mp_operator(other, 'Channel.__imul__')
-
-    def __div__(self, other):
-        """Divides either a number or a RawFits object."""
-        return self._mp_operator(other, 'Channel.__div__')
-
-    def __idiv__(self, other):
-        return self._mp_operator(other, 'Channel.__idiv__')
-
-    __truediv__ = __div__
-    __itruediv__ = __idiv__
-
-    def __sub__(self, other):
-        """Subtracts either a number or a RawFits object."""
-        return self._mp_operator(other, 'Channel.__sub__')
-
-    def __isub__(self, other):
-        return self._mp_operator(other, 'Channel.__isub__')
-
-    def __add__(self, other):
-        """Add either a number or a RawFits object."""
-        return self._mp_operator(other, 'Channel.__add__')
-
-    def __iadd__(self, other):
-        return self._mp_operator(other, 'Channel.__iadd__')
-
-    def __pow__(self, other):
-        """Compute the power exponent of each channel."""
-        return self._mp_operator(other, 'Channel.__pow__')
-
-    def __ipow__(self, other):
-        return self._mp_operator(other, 'Channel.__ipow__')
-
-    def _mp_operator(self, other, funcname):
-        # multiprocessing function
-        cpu_count = multiprocessing.cpu_count()
-        result = RawFile()
-        result.primary_header = self.primary_header
-        result.nx = self.nx
-        result.ny = self.ny
-        result.next = self.next
-        pool = multiprocessing.Pool(processes=cpu_count)
-        processlist = list()
-        if self.channels is not None:
-            for k in self.channels.keys():
-                processlist.append([funcname, k, self, other, self.progress])
-            if isinstance(other, RawFile):
-                processresult = pool.map(_process_operator, processlist)
-            else:
-                processresult = pool.map(_process_operator2, processlist)
-            for k, out in processresult:
-                result.channels[k] = out
-            if self.progress:
-                sys.stdout.write('\r                        \n')
-        return result
-
-    def sqrt(self):
-        """Compute the square root of each channel."""
-        cpu_count = multiprocessing.cpu_count()
-        result = RawFile()
-        result.primary_header = self.primary_header
-        result.nx = self.nx
-        result.ny = self.ny
-        result.next = self.next
-        pool = multiprocessing.Pool(processes=cpu_count)
-        processlist = list()
-        if self.channels is not None:
-            for k in self.channels.keys():
-                processlist.append(['Channel.sqrt', k, self, self.progress])
-            processresult = pool.map(_process_operator3, processlist)
-            for k, out in processresult:
-                result.channels[k] = out
-            if self.progress:
-                sys.stdout.write('\r                        \n')
-        return result
-
-    def trimmed(self):
-        """Return a RawFile object containing only valid pixels.
-
-        Returns
-        -------
-        `mpdaf.drs.RawFile`
-        """
-        cpu_count = multiprocessing.cpu_count()
-        result = RawFile()
-        result.primary_header = self.primary_header
-        result.nx = self.nx
-        result.ny = self.ny
-        result.next = self.next
-        pool = multiprocessing.Pool(processes=cpu_count)
-        processlist = list()
-        if self.channels is not None:
-            for k in self.channels.keys():
-                processlist.append(['Channel.trimmed', k,
-                                    self, self.progress])
-            processresult = pool.map(_process_operator3, processlist)
-            for k, out in processresult:
-                result.channels[k] = out
-            if self.progress:
-                sys.stdout.write('\r                        \n')
-        return result
-
-    def overscan(self):
-        """Return a RawFile object containing only overscanned pixels.
-
-        Returns
-        -------
-        `mpdaf.drs.RawFile`
-        """
-        cpu_count = multiprocessing.cpu_count()
-        result = RawFile()
-        result.primary_header = self.primary_header
-        result.nx = self.nx
-        result.ny = self.ny
-        result.next = self.next
-        pool = multiprocessing.Pool(processes=cpu_count)
-        processlist = list()
-        if self.channels is not None:
-            for k in self.channels.keys():
-                processlist.append(['Channel.overscan', k,
-                                    self, self.progress])
-            processresult = pool.map(_process_operator3, processlist)
-            for k, out in processresult:
-                result.channels[k] = out
-            if self.progress:
-                sys.stdout.write('\r                        \n')
-        return result
-
-    def write(self, filename):
-        """Save the object in a FITS file.
-
-        Parameters
-        ----------
-        filename : str
-            The FITS filename.
-
-        """
-        # create primary header
-        prihdu = fits.PrimaryHDU()
-        if self.primary_header is not None:
-            for card in self.primary_header.cards:
-                try:
-                    prihdu.header[card.keyword] = (card.value, card.comment)
-                except ValueError:
-                    if isinstance(card.value, str):
-                        n = 80 - len(card.keyword) - 14
-                        s = card.value[0:n]
-                        prihdu.header['hierarch %s' % card.keyword] = \
-                            (s, card.comment)
-                    else:
-                        prihdu.header['hierarch %s' % card.keyword] = \
-                            (card.value, card.comment)
-                except:
-                    pass
-        prihdu.header['date'] = \
-            (str(datetime.datetime.now()), 'creation date')
-        prihdu.header['author'] = ('MPDAF', 'origin of the file')
-        hdulist = [prihdu]
-        if self.channels is not None:
-            for name in self.channels.keys():
-                chan = self.get_channel(name)
-                try:
-                    if isinstance(chan.data, np.ma.core.MaskedArray):
-                        dhdu = fits.ImageHDU(name=name, data=chan.data.data)
-                    else:
-                        dhdu = fits.ImageHDU(name=name, data=chan.data)
-                    if chan.header is not None:
-                        for card in chan.header.cards:
-                            try:
-                                if card.keyword != "EXTNAME":
-                                    dhdu.header[card.keyword] = \
-                                        (card.value, card.comment)
-                            except ValueError:
-                                dhdu.header['hierarch %s' % card.keyword] = \
-                                    (card.value, card.comment)
-                            except:
-                                pass
-                    hdulist.append(dhdu)
-                except:
-                    pass
-        # save to disk
-        hdu = fits.HDUList(hdulist)
-        hdu.writeto(filename, clobber=True, output_verify='fix')
-        # update attributes
-        self.filename = filename
-        for name, chan in self.channels.items():
-            del chan
-            self.channels[name] = None
 
     def plot(self, title=None, channels="all", area=None, scale='linear',
              vmin=None, vmax=None, zscale=False, colorbar=None, **kargs):
@@ -1177,7 +718,7 @@ class RawFile(object):
                          style='italic',
                          bbox={'facecolor': 'red', 'alpha': 0.2, 'pad': 10})
 
-    def reconstruct_white_image(self, mask=None, verbose=True):
+    def reconstruct_white_image(self, mask=None):
         """Reconstructs the white image of the FOV using a mask file.
 
         Parameters
@@ -1185,8 +726,6 @@ class RawFile(object):
         mask : str
             mumdatMask_1x1.fits filename used for this reconstruction
             (if None, the last file stored in mpdaf is used).
-        verbose : bool
-            if True, progression is printed.
 
         Returns
         -------
@@ -1199,34 +738,47 @@ class RawFile(object):
         raw_mask = RawFile(mask)
 
         white_ima = np.zeros((12 * 24, 300))
-
-        cpu_count = multiprocessing.cpu_count()
-        pool = multiprocessing.Pool(processes=cpu_count)
-        processlist = list()
+        
         for chan in self.get_channels_extname_list():
-            processlist.append([chan, raw_mask, self])
-
-        processresult = pool.imap_unordered(_process_white_image, processlist)
-        pool.close()
-
-        num_tasks = len(processlist)
-        if self.progress:
-            msg = 'reconstruct white image ...'
-            self._logger.info(msg)
-            import time
-            while (True):
-                time.sleep(1)
-                completed = processresult._index
-                if completed == num_tasks:
-                    output = ""
-                    sys.stdout.write("\r\x1b[K" + output.__str__())
-                    break
-                output = "\r (%i%% done)" % (float(completed) /
-                                             float(num_tasks) * 100.0)
-                sys.stdout.write("\r\x1b[K" + output.__str__())
-                sys.stdout.flush()
-
-        for ifu, data in processresult:
+            ifu = int(chan[-2:])
+            mask_chan = raw_mask.get_channel(chan)
+            ima = self.get_channel(chan).get_trimmed_image(bias=True).data.data
+            mask = mask_chan.get_trimmed_image(bias=False).data.data
+            ima *= mask
+            spe = ima.sum(axis=0)
+            data = np.empty((48, NB_SPEC_PER_SLICE))
+            for sli in range(1, 49):
+                xstart = mask_chan.header['HIERARCH ESO DET '
+                                          'SLICE%d XSTART' % sli] - OVERSCAN
+                xend = mask_chan.header['HIERARCH ESO DET '
+                                        'SLICE%d XEND' % sli] - OVERSCAN
+                if xstart > (mask_chan.header["ESO DET CHIP NX"] / 2.0):
+                    xstart -= 2 * OVERSCAN
+                if xend > (mask_chan.header["ESO DET CHIP NX"] / 2.0):
+                    xend -= 2 * OVERSCAN
+        
+                spe_slice = spe[xstart:xend + 1]
+                n = spe_slice.shape[0]
+        
+                if n < NB_SPEC_PER_SLICE:
+                    spe_slice_75pix = np.zeros(NB_SPEC_PER_SLICE)
+                    spe_slice_75pix[:n] = spe_slice
+                elif n == NB_SPEC_PER_SLICE:
+                    spe_slice_75pix = spe_slice
+                else:
+                    spe_slice_75pix = np.empty(NB_SPEC_PER_SLICE, dtype=np.float)
+        
+                f = lambda x: spe_slice[int(x) + 0.5]
+                pix = np.arange(NB_SPEC_PER_SLICE + 1, dtype=np.float)
+                new_step = float(n) / NB_SPEC_PER_SLICE
+                x = pix * new_step - 0.5 * new_step
+        
+                for i in range(NB_SPEC_PER_SLICE):
+                    spe_slice_75pix[i] = integrate.quad(f, x[i], x[i + 1],
+                                                        full_output=1)[0] / new_step
+        
+                data[sli - 1, :] = spe_slice_75pix
+            
             # For each subslicer 1-4
             for k in range(1, NB_SUBSLICERS + 1):
                 # For each slice 1-12*/
@@ -1351,7 +903,7 @@ class RawFile(object):
         """
         if mask is None:
             path = os.path.dirname(__file__)
-            self.mask_file = path + '/mumdatMask_1x1/PAE_July2013.fits'
+            self.mask_file = path + '/mumdatMask_1x1/PAE_July2013.fits.gz'
         # create image
         self.whiteima = self.reconstruct_white_image(self.mask_file)
         # highlighted ifu
@@ -1366,124 +918,3 @@ class RawFile(object):
         self.fig.canvas.mpl_connect('button_press_event', self._onclick)
         print('To select on other channel/slice, '\
               'click on the images with the right mouse button.')
-
-
-def _process_operator(arglist):
-    # d ecorator used to define arithmetic functions with a RawFits object
-    function = STR_FUNCTIONS[arglist[0]]
-    k = arglist[1]
-    obj = arglist[2]
-    other = arglist[3]
-    progress = arglist[4]
-    v = obj.get_channel(k)
-    try:
-        v2 = other.get_channel(k)
-    except:
-        raise IOError('operations on raw files with different extensions')
-    out = function(v, v2)
-    if progress:
-        sys.stdout.write(".")
-        sys.stdout.flush()
-    return (k, out)
-
-
-def _process_operator2(arglist):
-    # decorator used to define arithmetic functions with a number
-    function = STR_FUNCTIONS[arglist[0]]
-    k = arglist[1]
-    obj = arglist[2]
-    other = arglist[3]
-    progress = arglist[4]
-    v = obj.get_channel(k)
-    out = function(v, other)
-    if progress:
-        sys.stdout.write(".")
-        sys.stdout.flush()
-    return (k, out)
-
-
-def _process_operator3(arglist):
-    # decorator used to define sqrt/trimmed
-    function = STR_FUNCTIONS[arglist[0]]
-    k = arglist[1]
-    obj = arglist[2]
-    progress = arglist[3]
-    v = obj.get_channel(k)
-    out = function(v)
-    if progress:
-        sys.stdout.write(".")
-        sys.stdout.flush()
-    return (k, out)
-
-
-def _process_median(arglist):
-    k = arglist[0]
-    list_chan = arglist[1]
-    out = Channel_median(list_chan)
-    return (k, out)
-
-
-def _process_white_image(arglist):
-    chan = arglist[0]
-    raw_mask = arglist[1]
-    raw_ima = arglist[2]
-    ifu = int(chan[-2:])
-    mask_chan = raw_mask.get_channel(chan)
-    ima = raw_ima.get_channel(chan).get_trimmed_image(bias=True).data.data
-    mask = mask_chan.get_trimmed_image(bias=False).data.data
-    ima *= mask
-    spe = ima.sum(axis=0)
-    data = np.empty((48, NB_SPEC_PER_SLICE))
-    for sli in range(1, 49):
-        xstart = mask_chan.header['HIERARCH ESO DET '
-                                  'SLICE%d XSTART' % sli] - OVERSCAN
-        xend = mask_chan.header['HIERARCH ESO DET '
-                                'SLICE%d XEND' % sli] - OVERSCAN
-        if xstart > (mask_chan.header["ESO DET CHIP NX"] / 2.0):
-            xstart -= 2 * OVERSCAN
-        if xend > (mask_chan.header["ESO DET CHIP NX"] / 2.0):
-            xend -= 2 * OVERSCAN
-
-        spe_slice = spe[xstart:xend + 1]
-        n = spe_slice.shape[0]
-
-        if n < NB_SPEC_PER_SLICE:
-            spe_slice_75pix = np.zeros(NB_SPEC_PER_SLICE)
-            spe_slice_75pix[:n] = spe_slice
-        elif n == NB_SPEC_PER_SLICE:
-            spe_slice_75pix = spe_slice
-        else:
-            spe_slice_75pix = np.empty(NB_SPEC_PER_SLICE, dtype=np.float)
-
-        f = lambda x: spe_slice[int(x) + 0.5]
-        pix = np.arange(NB_SPEC_PER_SLICE + 1, dtype=np.float)
-        new_step = float(n) / NB_SPEC_PER_SLICE
-        x = pix * new_step - 0.5 * new_step
-
-        for i in range(NB_SPEC_PER_SLICE):
-            spe_slice_75pix[i] = integrate.quad(f, x[i], x[i + 1],
-                                                full_output=1)[0] / new_step
-
-        data[sli - 1, :] = spe_slice_75pix
-    return (ifu, data)
-
-
-def RawFile_median(RawList):
-    cpu_count = multiprocessing.cpu_count()
-    result = RawFile()
-    result.primary_header = RawList[0].primary_header
-    result.nx = RawList[0].nx
-    result.ny = RawList[0].ny
-    result.next = RawList[0].next
-    pool = multiprocessing.Pool(processes=cpu_count)
-    processlist = list()
-    if RawList[0].channels is not None:
-        for k in RawList[0].channels.keys():
-            ChanList = []
-            for raw in RawList:
-                ChanList.append(raw.get_channel(k))
-            processlist.append([k, ChanList])
-        processresult = pool.map(_process_median, processlist)
-        for k, out in processresult:
-            result.channels[k] = out
-    return result
