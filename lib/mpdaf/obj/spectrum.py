@@ -855,21 +855,76 @@ class Spectrum(ArithmeticMixin, DataArray):
         return flux
 
     def integrate(self, lmin=None, lmax=None, unit=u.angstrom):
-        """Integrate the flux value over [lmin,lmax].
+        """Integrate the flux over a specified wavelength range.
+
+        The units of the integrated flux depend on the flux units of
+        the spectrum and the wavelength units, as follows:
+
+        If the flux units of the spectrum, self.unit, are something
+        like Q per angstrom, Q per nm, or Q per um, then the
+        integrated flux will have the units of Q. For example, if the
+        fluxes have units of 1e-20 erg/cm2/Angstrom/s, then the units
+        of the integration will be 1e-20 erg/cm2/s.
+
+        Alternatively, if unit is not None, then the unit of the
+        returned number will be the product of the units in self.unit
+        and unit. For example, if the flux units are counts/s, and
+        unit=u.angstrom, then the integrated flux will have units
+        counts*Angstrom/s.
+
+        Finally, if unit is None, then the units of the returned
+        number will be the product of self.unit and the units of the
+        wavelength axis of the spectrum (ie. self.wave.unit).
+
+        The result of the integration is returned as an astropy
+        Quantity, which holds the integrated value and its physical
+        units.  The units of the returned number can be determined
+        from the .unit attribute of the return value. Alternatively
+        the returned value can be converted to another unit, using the
+        to() method of astropy quantities.
 
         Parameters
         ----------
         lmin : float
-            Minimum wavelength.
+            The minimum wavelength of the range to be integrated,
+            or None (the default), to select the minimum wavelength
+            of the first pixel of the spectrum. If this is below the
+            minimum wavelength of the spectrum, the integration
+            behaves as though the flux in the first pixel extended
+            down to that wavelength.
+
+            If the unit argument is None, lmin is a pixel index, and
+            the wavelength of the center of this pixel is used as the
+            lower wavelength of the integration.
         lmax : float
-            Maximum wavelength.
+            The maximum wavelength of the range to be integrated,
+            or None (the default), to select the maximum wavelength
+            of the last pixel of the spectrum. If this is above the
+            maximum wavelength of the spectrum, the integration
+            behaves as though the flux in the last pixel extended
+            up to that wavelength.
+
+            If the unit argument is None, lmax is a pixel index, and
+            the wavelength of the center of this pixel is used as the
+            upper wavelength of the integration.
         unit : `astropy.units.Unit`
-            Type of the wavelength coordinates. If None, inputs are in pixels.
+            The wavelength units of lmin and lmax, or None to indicate
+            that lmin and lmax are pixel indexes.
 
         Returns
         -------
-        out : float
+        out : `astropy.units.quantity.Quantity`
+            The result of the integration, expressed as a floating
+            point number with accompanying units. The integrated value
+            and its physical units can be extracted using the .value
+            and .unit attributes of the returned quantity. The value
+            can also be converted to different units, using the .to()
+            method of the returned objected.
+
         """
+
+        # Get the index of the first pixel within the wavelength range,
+        # and the minimum wavelength of the integration.
         if lmin is None:
             i1 = 0
             lmin = self.wave.coord(-0.5, unit=unit)
@@ -881,6 +936,8 @@ class Spectrum(ArithmeticMixin, DataArray):
                 l1 = self.wave.pixel(lmin, False, unit)
             i1 = max(0, int(l1))
 
+        # Get the index of the last pixel within the wavelength range, plus
+        # 1, and the maximum wavelength of the integration.
         if lmax is None:
             i2 = self.shape[0]
             lmax = self.wave.coord(i2 - 0.5, unit=unit)
@@ -892,24 +949,52 @@ class Spectrum(ArithmeticMixin, DataArray):
                 l2 = self.wave.pixel(lmax, False, unit)
             i2 = min(self.shape[0], int(l2) + 1)
 
+        # Get the lower wavelength of each pixel, including one extra
+        # pixel at the end of the range.
         d = self.wave.coord(-0.5 + np.arange(i1, i2 + 1), unit=unit)
+
+        # Change the wavelengths of the first and last pixels to
+        # truncate or extend those pixels to the starting and ending
+        # wavelengths of the spectrum.
         d[0] = lmin
         d[-1] = lmax
 
         if unit is None:
             unit = self.wave.unit
 
-        subspe = self[i1:i2]
+        # Get the data of the subspectrum covered by the integration.
+        data = self.data[i1:i2]
 
-        if u.angstrom in self.unit.bases and unit is not u.angstrom:
-            try:
-                return np.ma.sum(subspe.data *
-                                 ((np.diff(d) * unit).to(u.angstrom).value)
-                                 ) * self.unit * u.angstrom
-            except:
-                return (subspe.data * np.diff(d)).sum() * self.unit * unit
+        # If the spectrum has been calibrated, the flux units will be
+        # per angstrom, per nm, per um etc. If these wavelength units
+        # don't match the units of the wavelength axis of the
+        # integration, then although the results will be correct, they
+        # will have inconvenient units. In such cases attempt to
+        # convert the units of the wavelength axis to match the flux
+        # units.
+        if unit in self.unit.bases:      # The wavelength units already agree.
+            out_unit = self.unit * unit
         else:
-            return (subspe.data * np.diff(d)).sum() * self.unit * unit
+            try:
+                # Attempt to determine the wavelength units of the flux density.
+                wunit = (set(self.unit.bases) &
+                         set([u.pm, u.angstrom, u.nm, u.um])).pop()
+
+                # Scale the wavelength axis to have the same wavelength units.
+                d *= unit.to(wunit)
+
+                # Get the final units of the integration.
+                out_unit = self.unit * wunit
+
+            # If the wavelength units of the flux weren't recognized,
+            # simply return the units unchanged.
+            except:
+                out_unit = self.unit * unit
+
+        # Integrate the spectrum by multiplying the value of each pixel
+        # by the difference in wavelength from the start of that pixel to
+        # the start of the next pixel.
+        return (data * np.diff(d)).sum() * out_unit
 
     def poly_fit(self, deg, weight=True, maxiter=0,
                  nsig=(-3.0, 3.0), verbose=False):
