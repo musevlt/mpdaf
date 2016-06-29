@@ -32,49 +32,6 @@ class TestRawObj(object):
 
     @unittest.skipIf(DATA_MISSING, "Missing test data (data/drs/raw.fits)")
     @attr(speed='slow')
-    def test_operator(self):
-        """Raw objects: tests arithmetic functions"""
-        chan1 = self.raw.get_channel("CHAN01")
-        value1 = chan1.data[32, 28]
-
-        out = self.raw - self.raw
-        chan2 = out.get_channel("CHAN01")
-        value2 = chan2.data[32, 28]
-        nose.tools.assert_equal(value2, 0)
-
-        out = self.raw + self.raw
-        chan2 = out.get_channel("CHAN01")
-        value2 = chan2.data[32, 28]
-        nose.tools.assert_equal(value2, 2 * value1)
-
-        out = self.raw * self.raw
-        chan2 = out.get_channel("CHAN01")
-        value2 = chan2.data[32, 28]
-        nose.tools.assert_equal(value2, value1 * value1)
-
-        out = self.raw.sqrt()
-        chan2 = out.get_channel("CHAN01")
-        value2 = chan2.data[32, 28]
-        nose.tools.assert_equal(value2, numpy.sqrt(value1))
-
-        del out
-        del chan2
-
-    @unittest.skipIf(DATA_MISSING, "Missing test data (data/drs/raw.fits)")
-    @attr(speed='slow')
-    def test_copy(self):
-        """Raw objects: tests copy"""
-        raw2 = self.raw.copy()
-        out = self.raw - raw2
-        out2 = out.copy()
-        del out
-        chan2 = out2.get_channel("CHAN02")
-        value2 = chan2.data[24, 12]
-        nose.tools.assert_equal(value2, 0)
-        del out2
-
-    @unittest.skipIf(DATA_MISSING, "Missing test data (data/drs/raw.fits)")
-    @attr(speed='slow')
     def test_mask(self):
         """Raw objects: tests strimmed and overscan functionalities"""
         overscan = self.raw[1].data[24, 12]

@@ -5,7 +5,7 @@ graft src
 graft lib
 graft doc
 graft tests
-graft data/obj
+graft data
 
 prune lib/mpdaf.egg-info
 
