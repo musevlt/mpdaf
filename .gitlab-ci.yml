@@ -1,34 +1,23 @@
 before_script:
   - which tox
 
-stages:
-  - clean
-  - test
-  - report
-
 coverage-clean:
-  stage: clean
   script: tox -e clean
 
 py27:
-  stage: test
   script: tox -v -e py27
 
 py34:
-  stage: test
   script: tox -v -e py34
 
 muselet:
-  stage: test
   script: tox -v -e muselet
 
 astropy10:
-  stage: test
   allow_failure: true
   script: tox -v -e astropy10
 
 coverage-report:
-  stage: report
   script:
     - tox -e report
     - grep pc_cov htmlcov/index.html | egrep -o "[0-9]+\%" | awk '{ print "covered " $1;}'
