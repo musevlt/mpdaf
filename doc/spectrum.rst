@@ -12,21 +12,21 @@ Note that virtually all numpy and scipy functions are available.
 
 .. ipython::
    :suppress:
-   
+
    In [4]: import sys
-   
+
    In [4]: from mpdaf import setup_logging
 
 Preliminary imports:
-   
+
 .. ipython::
 
    In [1]: import numpy as np
-   
+
    In [1]: import matplotlib.pyplot as plt
-   
+
    In [1]: import astropy.units as u
-   
+
    In [2]: from mpdaf.obj import Spectrum, WaveCoord
 
 
@@ -41,25 +41,25 @@ A `Spectrum <mpdaf.obj.Spectrum>` object is created:
 
   @suppress
   In [5]: setup_logging(stream=sys.stdout)
-  
+
   In [6]: wave1 = WaveCoord(cdelt=1.25, crval=4000.0, cunit= u.angstrom)
-  
+
   # numpy data array
   In [8]: MyData = np.ones(4000)
-  
+
   # numpy variance array
   In [8]: MyVariance=np.ones(4000)
-  
+
   # spectrum filled with MyData
   In [9]: spe = Spectrum(wave=wave1, data=MyData)
-  
+
   In [10]: spe.info()
-  
+
   # spectrum filled with MyData and MyVariance
   In [9]: spe = Spectrum(wave=wave1, data=MyData, var=MyVariance)
-  
+
   In [10]: spe.info()
-  
+
 
 - or from a FITS file (in which case the flux and variance values are read from specific extensions):
 
@@ -68,15 +68,15 @@ A `Spectrum <mpdaf.obj.Spectrum>` object is created:
 
   @suppress
   In [5]: setup_logging(stream=sys.stdout)
-  
+
   # data array is read from the file (extension number 0)
   In [4]: spe = Spectrum(filename='../data/obj/Spectrum_Variance.fits', ext=0)
-  
+
   In [10]: spe.info()
-  
+
   # data and variance arrays read from the file (extension numbers 1 and 2)
   In [4]: spe = Spectrum(filename='../data/obj/Spectrum_Variance.fits', ext=[0, 1])
-   
+
   In [10]: spe.info()
 
 
@@ -95,7 +95,7 @@ The `plot <mpdaf.obj.Spectrum.plot>` method is based on `matplotlib.pyplot.plot 
 
    @savefig Spectrum.png width=4in
    In [5]: spe.plot(color='g')
-   
+
 The spectrum could also be plotted with a logarithmic scale on the y-axis
 (by using `log_plot <mpdaf.obj.Spectrum.log_plot>` in place of `plot <mpdaf.obj.Spectrum.plot>`).
 
@@ -142,14 +142,14 @@ The results of the interpolations are shown below:
 .. ipython::
 
   In [5]: spvar.unmask()
-  
+
   In [7]: plt.figure()
-  
+
   @savefig Spectrum_before_interp_mask.png width=3.5in
   In [6]: spvar.plot(lmin=4600, lmax=6200, title='Spectrum before interpolation', unit=spvar.wave.unit)
-  
+
   In [7]: plt.figure()
-  
+
   @savefig Spectrum_after_interp_mask.png width=3.5in
   In [6]: spvarcut.plot(lmin=4600, lmax=6200, title='Spectrum after interpolation', unit=spvar.wave.unit)
 
@@ -163,11 +163,11 @@ overplot the rebinned Spectrum and show the corresponding variance as follows:
   :okwarning:
 
   In [5]: plt.figure()
-  
+
   In [6]: sprebin1 = spvarcut.rebin(5)
-  
+
   In [7]: spvarcut.plot()
-  
+
   @savefig Spectrum_rebin.png width=4in
   In [8]: (sprebin1 + 10).plot(noise=True)
 
@@ -179,11 +179,13 @@ updated:
 
   In [5]: plt.figure()
 
+  In [5]: sp = spvarcut[1500:2000]
+
   # 4.2 Angstroms / pixel
-  In [6]: sprebin2 = spvarcut.resample(4.2, unit=spvarcut.wave.unit)
-  
-  In [7]: spvarcut.plot()
-  
+  In [6]: sprebin2 = sp.resample(4.2, unit=sp.wave.unit)
+
+  In [7]: sp.plot()
+
   @savefig Spectrum_rebin2.png width=4in
   In [8]: (sprebin2 + 10).plot(noise=True)
 
@@ -230,14 +232,14 @@ Now, we move to the fainter line (Hbeta) and we perform the same analysis, again
 
   @suppress
   In [5]: setup_logging(stream=sys.stdout)
-  
+
   In [5]: plt.figure()
-  
+
   In [6]: specline.plot(lmin=8090,lmax=8210, unit=specline.wave.unit, title = 'Hbeta line')
-  
+
   @savefig Spectrum_specline2.png width=4in
   In [7]: Hbeta = specline.gauss_fit(lmin=8090,lmax=8210, unit=specline.wave.unit, plot=True)
-  
+
   In [8]: Hbeta.print_param()
 
 
@@ -253,22 +255,22 @@ If the wavelength of the line is already known, `line_gauss_fit <mpdaf.obj.Spect
 
   @suppress
   In [5]: setup_logging(stream=sys.stdout)
-  
+
   In [5]: plt.figure()
-  
+
   In [6]: specline.plot(lmin=8090,lmax=8210, unit=specline.wave.unit, title = 'Hbeta line')
-  
+
   @savefig Spectrum_specline2.png width=4in
   In [7]: Hbeta2 = specline.line_gauss_fit(lmin=8090,lmax=8210, lpeak=Hbeta.lpeak, unit=specline.wave.unit, plot=True)
-  
+
   In [8]: Hbeta2.print_param()
-  
+
 
 In the same way:
  - `gauss_dfit <mpdaf.obj.Spectrum.gauss_dfit>` performs a double Gaussian fit on spectrum.
 
  - `gauss_asymfit <mpdaf.obj.Spectrum.gauss_asymfit>` performs an asymetric Gaussian fit on spectrum.
- 
+
 
 Continuum fitting
 -----------------
@@ -278,16 +280,18 @@ Continuum fitting
 .. ipython::
 
   In [1]: plt.figure()
-  
+
   In [2]: cont = spe.poly_spec(5)
-  
+
   In [3]: spe.plot()
-  
+
   @savefig Spectrum_cont.png width=4in
   In [4]: cont.plot(color='r')
 
 
 .. ipython::
    :suppress:
-   
+
    In [4]: plt.close("all")
+
+   In [4]: %reset -f

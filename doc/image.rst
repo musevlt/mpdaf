@@ -11,21 +11,21 @@ Note that virtually all numpy and scipy functions are available.
 
 .. ipython::
    :suppress:
-   
+
    In [4]: import sys
-   
+
    In [4]: from mpdaf import setup_logging
 
 Preliminary imports:
-   
+
 .. ipython::
 
    In [1]: import numpy as np
-   
+
    In [1]: import matplotlib.pyplot as plt
-   
+
    In [1]: import astropy.units as u
-   
+
    In [2]: from mpdaf.obj import Image, WCS
 
 
@@ -40,15 +40,15 @@ A `Image <mpdaf.obj.Image>` object is created:
 
   @suppress
   In [5]: setup_logging(stream=sys.stdout)
-  
+
   In [6]: wcs1 = WCS(crval=0, cdelt=0.2)
-  
+
   # numpy data array
   In [8]: MyData = np.ones((300,300))
-  
+
   # image filled with MyData
   In [9]: ima = Image(data=MyData, wcs=wcs1) # image 300x300 filled with data
-  
+
   In [10]: ima.info()
 
 - or from a FITS file (in which case the flux and variance values are read from specific extensions):
@@ -58,17 +58,17 @@ A `Image <mpdaf.obj.Image>` object is created:
 
   @suppress
   In [5]: setup_logging(stream=sys.stdout)
-  
+
   # data and variance arrays read from the file (extension DATA and STAT)
   In [2]: ima = Image('../data/obj/IMAGE-HDFS-1.34.fits')
-  
+
   In [10]: ima.info()
 
 
 If the FITS file contains more than one extension and when the FITS extension are not named 'DATA' (for flux values) and 'STAT' (for variance  values), the keyword "ext=" is necessary to give the number of the extensions.
 
 The `WCS <mpdaf.obj.WCS>` object is either created using a linear scale, copied from another Image, or
-using the information from the FITS header. 
+using the information from the FITS header.
 
 Information are printed by using the `info <mpdaf.obj.Image.info>` method.
 
@@ -81,7 +81,7 @@ We display the image with lower / upper scale values:
 
    @savefig Image1.png width=4in
    In [5]: ima.plot(vmin=0, vmax=10, colorbar='v')
-   
+
 The format of each numpy array follows the indexing used by Python to
 handle images. For an MPDAF image im, the pixel in the lower-left corner is
 referenced as im[0,0] and the pixel im[p,q] refers to the horizontal position
@@ -100,32 +100,32 @@ Image Geometrical manipulation
 We `rotate <mpdaf.obj.Image.rotate>` the image by 40 degrees and rebin it onto a 0.4"/pixel scale (conserving flux):
 
 .. ipython::
-  
+
   In [1]: plt.figure()
-  
+
   @savefig Image2.png width=2in
   In [5]: ima.plot(colorbar='v')
-  
+
   In [1]: ima2 = ima.rotate(40) #this rotation uses an interpolation of the pixels
-  
+
   In [1]: plt.figure()
-  
+
   @savefig Image3.png width=2in
   In [5]: ima2.plot(colorbar='v')
-  
+
   In [2]: import astropy.units as u
-  
+
   In [3]: ima3 = ima2.resample(newdim=(150,150), newstart=None, newstep=(0.4,0.4), unit_step=u.arcsec, flux=True)
 
   In [1]: plt.figure()
-  
+
   @savefig Image4.png width=2in
   In [5]: ima3.plot(colorbar='v')
 
 
 `rotate <mpdaf.obj.Image.rotate>` rotates the image using an interpolation of the pixels.
 
-``newstart=None`` in `resample <mpdaf.obj.Image.resample>` indicates that we we want that 
+``newstart=None`` in `resample <mpdaf.obj.Image.resample>` indicates that we we want that
 the sky position that appears at the center of pixel [0,0] is unchanged by the resampling operation.
 
 `resample <mpdaf.obj.Image.resample>` is a simplified interface to the `regrid <mpdaf.obj.Image.regrid>`
@@ -138,20 +138,20 @@ Then, we load an external image of the same field (observed with a different ins
 
   # this is a small part of an HST image
   In [1]: imahst = Image('../data/obj/HST-HDFS.fits')
-  
+
   # pixel offsets
   In [1]: imahst.estimate_coordinate_offset(ima)
-  
+
   # align it like the MUSE image
   In [2]: ima2hst = imahst.align_with_image(ima)
-  
+
   In [1]: plt.figure()
-  
+
   @savefig Image5.png width=3.5in
   In [5]: ima.plot(colorbar='v', title='MUSE image')
-  
+
   In [1]: plt.figure()
-  
+
   @savefig Image6.png width=3.5in
   In [5]: ima2hst.plot(colorbar='v', title='part of the HST image')
 
@@ -167,18 +167,18 @@ We combine both datasets to produce a higher S/N image:
 .. ipython::
 
   In [1]: ima2hst[ima2hst.mask] = 0
-  
+
   In [1]: ima2hst.unmask()
 
   In [1]: imacomb = ima + ima2hst
-  
+
   In [1]: plt.figure()
-  
+
   @savefig Image7.png width=3.5in
   In [5]: ima[200:, 30:150].plot(colorbar='v', title='original image')
-  
+
   In [1]: plt.figure()
-  
+
   @savefig Image8.png width=3.5in
   In [5]: imacomb[200:, 30:150].plot(colorbar='v', title='combined image')
 
@@ -187,11 +187,11 @@ We combine both datasets to produce a higher S/N image:
 .. ipython::
 
   In [1]: dec, ra = imahst.wcs.pix2sky(np.array(imahst.shape)/2)[0]
-  
+
   In [25]: subima = ima.subimage(center=(dec,ra), size=20.0)
-  
+
   In [1]: plt.figure()
-  
+
   @savefig Image9.png width=4in
   In [26]: subima.plot()
 
@@ -222,17 +222,20 @@ We plot one of the sub-images to analyse the corresponding source:
 .. ipython::
 
   In [1]: source = seg[8]
-  
+
   In [1]: plt.figure()
-  
+
   @savefig Image10.png width=4in
   In [2]: source.plot(colorbar='v')
-  
+
+  @suppress
+  In [5]: im = None
+
 At first approximation, we apply wimple methods:
  - `background <mpdaf.obj.Image.background>` to estimate background value,
  - `peak <mpdaf.obj.Image.peak>` to locate the peak of the source,
  - `fwhm <mpdaf.obj.Image.fwhm>` to compute the fwhm of the source.
-  
+
 .. ipython::
 
   @suppress
@@ -240,10 +243,10 @@ At first approximation, we apply wimple methods:
 
   # background value and its standard deviation
   In [1]: source.background()
-  
+
   # peak position and intensity
   In [2]: source.peak()
-  
+
   # fwhm in arcsec
   In [3]: source.fwhm()
 
@@ -253,9 +256,9 @@ Then, For greater accuracy we perform a 2D Gaussian fitting of the source, and p
 
   @suppress
   In [5]: setup_logging(stream=sys.stdout)
-  
+
   In [1]: gfit = source.gauss_fit(plot=False)
-  
+
   @savefig Image11.png width=4in
   In [2]: gfit = source.gauss_fit(maxiter=150, plot=True)
 
@@ -265,31 +268,31 @@ Alternatively, we perform a 2D MOFFAT fitting of the same source (`moffat_fit <m
 
   @suppress
   In [5]: setup_logging(stream=sys.stdout)
-  
+
   In [1]: mfit = source.moffat_fit(plot=True)
 
-We can then subtract each modelled image from the original source and plot the residuals. Note the use of `gauss_image <mpdaf.obj.gauss_image>` and 
+We can then subtract each modelled image from the original source and plot the residuals. Note the use of `gauss_image <mpdaf.obj.gauss_image>` and
 `moffat_image <mpdaf.obj.moffat_image>` thaht create a new MPDAF image from a 2D Gaussian/Moffat function.:
 
 .. ipython::
 
   In [1]: from mpdaf.obj import gauss_image, moffat_image
-  
+
   In [2]: gfitim = gauss_image(wcs=source.wcs, gauss=gfit)
-  
+
   In [3]: mfitim = moffat_image(wcs=source.wcs, moffat=mfit)
-  
+
   In [4]: gresiduals = source-gfitim
-  
+
   In [5]: mresiduals = source-mfitim
-  
+
   In [1]: plt.figure()
-  
+
   @savefig Image12.png width=3.5in
   In [1]: mresiduals.plot(colorbar='v', title='Residuals from 2D Moffat profile fitting')
-  
+
   In [1]: plt.figure()
-  
+
   @savefig Image13.png width=3.5in
   In [1]: gresiduals.plot(colorbar='v', title='Residuals from 2D Gaussian profile fitting')
 
@@ -302,16 +305,16 @@ We try now to estimate the energy of the source:
 
   @suppress
   In [5]: setup_logging(stream=sys.stdout)
-  
+
   # encircled flux
   In [4]: source.ee(radius=source.fwhm(), cont=source.background()[0])
-  
+
   # enclosed energy ratio (ERR)
   In [6]: radius, ee = source.eer_curve(cont=source.background()[0])
-  
+
   # size of the square centered on the source containing 90% of the energy (in arcsec)
   In [6]: source.ee_size()
-  
+
   In [7]: plt.figure()
 
   In [7]: plt.plot(radius, ee)
@@ -324,5 +327,7 @@ We try now to estimate the energy of the source:
 
 .. ipython::
    :suppress:
-   
+
    In [4]: plt.close("all")
+
+   In [4]: %reset -f

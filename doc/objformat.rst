@@ -59,11 +59,11 @@ Each numpy masked array has 3 dimensions: Array[k,p,q] with k the spectral axis,
 
 .. ipython::
    :suppress:
-   
+
    In [4]: import sys
-   
+
    In [4]: from mpdaf import setup_logging
-   
+
    In [2]: import matplotlib.pyplot as plt
 
 .. ipython::
@@ -71,18 +71,18 @@ Each numpy masked array has 3 dimensions: Array[k,p,q] with k the spectral axis,
 
   @suppress
   In [5]: setup_logging(stream=sys.stdout)
-  
+
   In [2]: from mpdaf.obj import Cube
-  
+
   # data array is read from the file (extension number 0)
   In [1]: cube = Cube(filename='../data/sdetect/minicube.fits')
-  
+
   In [2]: cube.shape
-  
+
   In [2]: cube.data.shape
-  
+
   In [2]: cube.var.shape
-  
+
   In [2]: cube.mask.shape
 
 `Cube[k,p,q] <mpdaf.obj.Cube.__getitem__>` returns the corresponding value:
@@ -90,7 +90,7 @@ Each numpy masked array has 3 dimensions: Array[k,p,q] with k the spectral axis,
 .. ipython::
 
   In [2]: cube[3659, 8, 28]
-  
+
 In the same way `Cube[k,p,q] = value <mpdaf.obj.Cube.__setitem__>` sets value in Cube.data[k,p,q] and `Cube[k1:k2,p1:p2,q1:q2] = array <mpdaf.obj.Cube.__setitem__>` sets the corresponding part of Cube.data.
 
 `Cube[k1:k2,p1:p2,q1:q2] <mpdaf.obj.Cube.__getitem__>` returns the sub-cube:
@@ -101,29 +101,29 @@ In the same way `Cube[k,p,q] = value <mpdaf.obj.Cube.__setitem__>` sets value in
   In [5]: setup_logging(stream=sys.stdout)
 
   In [2]: cube.info()
-  
+
   In [2]: cube[3000:4000,10:20,25:40].info()
 
 `Cube[k,:,:] <mpdaf.obj.Cube.__getitem__>` returns an Image:
 
 .. ipython::
-  
+
   In [3]: ima1 = cube[1000, :, :]
-  
+
   In [4]: plt.figure()
-  
+
   @savefig ObjFormatIma1.png width=2.3in
   In [5]: ima1.plot(colorbar='v', title = '$\lambda$ = %.1f (%s)' %(cube.wave.coord(1000), cube.wave.unit))
-  
+
   In [6]: ima2 = cube[3000, :, :]
-  
+
   In [7]: plt.figure()
-  
+
   @savefig ObjFormatIma2.png width=2.3in
   In [8]: ima2.plot(colorbar='v', title = '$\lambda$ = %.1f (%s)' %(cube.wave.coord(3000), cube.wave.unit))
-  
+
   In [7]: plt.figure()
-  
+
   @savefig ObjFormatZommIma2.png width=2.3in
   In [8]: ima2[5:25, 15:35].plot(colorbar='v',title = 'Zoom $\lambda$ = %.1f (%s)' %(cube.wave.coord(3000), cube.wave.unit))
 
@@ -138,26 +138,26 @@ Then, `Cube[:,p,q] <mpdaf.obj.Cube.__getitem__>` returns a Spectrum:
 .. ipython::
 
   In [5]: spe = cube[:, 8, 28]
-  
+
   In [5]: import astropy.units as u
-  
+
   In [5]: from mpdaf.obj import deg2sexa
-  
+
   In [5]: coord_sky = cube.wcs.pix2sky([8, 28], unit=u.deg)
-  
+
   In [6]: dec, ra = deg2sexa(coord_sky)[0]
-  
+
   In [6]: plt.figure()
-  
+
   @savefig ObjFormatSpe.png width=3.5in
   In [8]: spe.plot(title = 'Spectrum ra=%s dec=%s' %(ra, dec))
-  
+
   In [6]: plt.figure()
-  
+
   @savefig ObjFormatZoomSpe.png width=3.5in
   In [8]: spe[1640:2440].plot(title = 'Zoom Spectrum ra=%s dec=%s' %(ra, dec))
 
-  
+
 Getters and setters
 -------------------
 
@@ -168,9 +168,9 @@ Getters and setters
   In [1]: cube.get_step(unit_wave=u.nm, unit_wcs=u.deg)
 
   In [1]: ima1.get_step(unit=u.deg)
-  
+
   In [1]: spe.get_step(unit=u.angstrom)
-  
+
 `Cube.get_range <mpdaf.obj.Cube.get_range>`, `Image.get_range <mpdaf.obj.Image.get_range>` and `Spectrum.get_range <mpdaf.obj.Spectrum.get_range>` return the range of wavelengths, declinations and right ascensions:
 
 .. ipython::
@@ -178,9 +178,9 @@ Getters and setters
   In [1]: cube.get_range(unit_wave=u.nm, unit_wcs=u.deg)
 
   In [1]: ima1.get_range(unit=u.deg)
-  
+
   In [1]: spe.get_range(unit=u.angstrom)
-  
+
 `get_start <mpdaf.obj.Cube.get_start>` and `get_end <mpdaf.obj.Cube.get_end>` return coordinates values corresponding to pixels 0 and -1 in all directions:
 
 .. ipython::
@@ -188,9 +188,9 @@ Getters and setters
   In [1]: print cube.get_start(unit_wave=u.nm, unit_wcs=u.deg), cube.get_end(unit_wave=u.nm, unit_wcs=u.deg)
 
   In [1]: print ima1.get_start(unit=u.deg), ima2.get_end(unit=u.deg)
-  
+
   In [1]: print spe.get_start(unit=u.angstrom), spe.get_end(unit=u.angstrom)
-  
+
 Note that when the rotation angle of the image on the sky is not zero, `get_range <mpdaf.obj.Image.get_range>` is not at the corners of the image
 and is different to `get_start <mpdaf.obj.Image.get_start>` and `get_end <mpdaf.obj.Image.get_end>`.
 
@@ -201,7 +201,7 @@ and is different to `get_start <mpdaf.obj.Image.get_start>` and `get_end <mpdaf.
   In [1]: cube.get_rot(unit=u.deg)
 
   In [1]: ima1.get_rot(unit=u.rad)
-  
+
 
 Set a flux/variance value is done directly on the ``O.data`` and ``O.var`` attributes.
 In the same way, mask/unmasked a part of the object could be done by changing the value of the ``O.mask``.
@@ -212,13 +212,15 @@ However, the world coordinates must be set by using `set_wcs <mpdaf.obj.Cube.set
   In [1]: ima2.data[0:10,0:10] = 0
 
   In [1]: ima2.mask[0:10,0:10] = True
-  
+
   In [1]: plt.figure()
-  
+
   @savefig ObjFormatMaskedIma2.png width=4in
   In [8]: ima2.plot()
-  
+
  .. ipython::
    :suppress:
-   
+
    In [4]: plt.close("all")
+
+   In [4]: %reset -f
