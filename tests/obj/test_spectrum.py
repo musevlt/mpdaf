@@ -354,13 +354,54 @@ def test_integrate():
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm)
     spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
                          wave=wave, unit=u.Unit('ct/Angstrom'))
-    flux = spectrum1.integrate().value
-    nose.tools.assert_almost_equal(flux, spectrum1.get_step(unit=u.angstrom) * spectrum1.sum())
-    flux = spectrum1.integrate(unit=u.nm).value
-    nose.tools.assert_almost_equal(flux, spectrum1.get_step(unit=u.angstrom) * spectrum1.sum())
-    flux = spectrum1.integrate(lmin=3.5, lmax=6.5, unit=u.nm).value
-    nose.tools.assert_almost_equal(flux, 75)
 
+    # Integrate the whole spectrum, by not specifying starting or ending
+    # wavelengths. This should be the sum of the pixel values multiplied
+    # by cdelt in angstroms (because the flux units are per angstrom).
+    result = spectrum1.integrate()
+    expected = spectrum1.get_step(unit=u.angstrom) * spectrum1.sum()
+    nose.tools.assert_almost_equal(result.value, expected)
+    nose.tools.assert_equal(result.unit, u.ct)
+
+    # The result should not change if we change the wavelength units of
+    # the wavelength limits to nanometers.
+    result = spectrum1.integrate(unit=u.nm)
+    expected = spectrum1.get_step(unit=u.angstrom) * spectrum1.sum()
+    nose.tools.assert_almost_equal(result.value, expected)
+    nose.tools.assert_equal(result.unit, u.ct)
+
+    # Integrate over a wavelength range 3.5 to 6.5 nm. The WCS
+    # conversion equation from wavelength to pixel index is,
+    #
+    #  index = crpix-1 + (lambda-crval)/cdelt
+    #  index = 1 + (lambda - 0.5) / 3.0
+    #
+    # So wavelengths 3.5 and 6.5nm, correspond to pixel indexes
+    # of 2.0 and 3.0. These are the centers of pixels 2 and 3.
+    # Thus the integration should be the value of pixel 2 times
+    # half of cdelt, plus the value of pixel 3 times half of cdelt.
+    # This comes to 2*3.0/2 + 3*3.0/2 = 7.5 ct/Angstrom*nm, which
+    # should be rescaled to 75 ct, since nm/Angstrom is 10.0.
+    result = spectrum1.integrate(lmin=3.5, lmax=6.5, unit=u.nm)
+    nose.tools.assert_almost_equal(result.value, 75)
+    nose.tools.assert_equal(result.unit, u.ct)
+
+    # Do the same test, but specify the wavelength limits in angstroms.
+    # The result should be the same as before.
+    result = spectrum1.integrate(lmin=35.0, lmax=65.0, unit=u.angstrom)
+    nose.tools.assert_almost_equal(result.value, 75)
+    nose.tools.assert_equal(result.unit, u.ct)
+
+    # Do the same experiment yet again, but this time after changing
+    # the flux units of the spectrum to simple counts, without any per
+    # wavelength units. Since there are no wavelength units in the
+    # flux units, the result should not be rescaled from the native
+    # value of 7.5, and because we specified a wavelength range in
+    # angstroms, the resulting units should be counts * nm.
+    spectrum1.unit = u.ct
+    result = spectrum1.integrate(lmin=3.5, lmax=6.5, unit=u.nm)
+    nose.tools.assert_almost_equal(result.value, 7.5)
+    nose.tools.assert_equal(result.unit, u.ct*u.nm)
 
 @attr(speed='fast')
 def test_write():
