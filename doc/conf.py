@@ -41,7 +41,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'numpydoc',
     'IPython.sphinxext.ipython_console_highlighting',
-    'IPython.sphinxext.ipython_directive',
+    'ipython_directive',
     # From astropy:
     'automodsumm',
     'automodapi',

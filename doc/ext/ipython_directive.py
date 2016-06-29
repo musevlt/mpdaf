@@ -134,6 +134,7 @@ import tempfile
 import ast
 import warnings
 import shutil
+import resource
 
 
 # Third-party
@@ -401,6 +402,7 @@ class EmbeddedSphinxShell(object):
         is_savefig = decorator is not None and \
                      decorator.startswith('@savefig')
 
+        print(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss, input)
         input_lines = input.split('\n')
         if len(input_lines) > 1:
             if input_lines[-1] != "":
@@ -858,6 +860,9 @@ class IPythonDirective(Directive):
         if isinstance(savefig_dir, list):
             savefig_dir = os.path.join(*savefig_dir)
         savefig_dir = os.path.join(outdir, savefig_dir)
+
+        if not os.path.exists(savefig_dir):
+            os.makedirs(savefig_dir)
 
         # get regex and prompt stuff
         rgxin      = config.ipython_rgxin
