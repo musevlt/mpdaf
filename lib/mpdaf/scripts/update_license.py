@@ -57,9 +57,12 @@ def modify(lines, license, start=0):
     return newlines
 
 
-def insert(lines, license, pos=1):
+def insert(lines, license, pos=0):
     print('Insert license text ... ', end='')
-    return lines[:pos] + license + lines[pos:]
+    if pos == 0:
+        return license + lines
+    else:
+        return lines[:pos] + license + lines[pos:]
 
 
 if __name__ == "__main__":
@@ -105,7 +108,9 @@ if __name__ == "__main__":
         elif lines[1].startswith('"""Copyright'):
             lines = modify(lines, license, start=1)
         elif lines[0].startswith('# -*- coding'):
-            lines = insert(lines, license)
+            lines = insert(lines, license, pos=1)
+        else:
+            lines = insert(lines, license, pos=0)
 
         with open(filename, 'w') as f:
             f.write(''.join(lines))
