@@ -71,8 +71,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 \"\"\"
 """
 
-GIT_CMD = ("git log --date=format:%Y --format='%ad %aN <%aE>' {} | "
-           "cut -f1 --complement")
+GIT_CMD = ("git log --date=format:%Y --format='%ad %aN <%aE>' --date-order "
+           "--reverse {} | cut -f1 --complement")
 
 EXCLUDES = ('_githash.py', 'numpycompat.py')
 
