@@ -63,6 +63,8 @@ from ..obj.objs import is_int, is_float
 from ..tools import deprecated
 from ..MUSE import FieldsMap, FSF
 from ..MUSE.PSF import MOFFAT1
+from ..sdetect.sea import segmentation, mask_creation, findCentralDetection
+from ..sdetect.sea import union, intersection, compute_spectrum
 
 emlines = {1215.67: 'LYALPHA1216',
            1550.0: 'CIV1550',
@@ -1391,7 +1393,6 @@ class Source(object):
                 tags = [tag for tag in self.images
                         if tag[0:4] != 'SEG_' and 'MASK' not in tag]
 
-            from ..sdetect.sea import segmentation
             segmentation(self, tags, DIR, del_sex)
         else:
             self._logger.warning('add_seg_images method use the MUSE_WHITE '
@@ -1432,7 +1433,6 @@ class Source(object):
             self._logger.warning('no segmentation images. Use add_seg_images '
                                  'to create them')
 
-        from ..sdetect.sea import mask_creation
         mask_creation(self, maps)
 
     def find_sky_mask(self, seg_tags, sky_mask='MASK_SKY'):
@@ -1485,7 +1485,6 @@ class Source(object):
             else:
                 maps[tag] = self.images[tag].data.data
 
-        from ..sdetect.sea import findCentralDetection, union
         r = findCentralDetection(maps, yc, xc, tolerance=3)
         self.images[union_mask] = Image(wcs=wcs, dtype=np.uint8, copy=False,
                                         data=union(list(r['seg'].values())))
@@ -1516,7 +1515,6 @@ class Source(object):
             else:
                 maps[tag] = self.images[tag].data.data
 
-        from ..sdetect.sea import findCentralDetection, intersection
         r = findCentralDetection(maps, yc, xc, tolerance=3)
         self.images[inter_mask] = Image(wcs=wcs, dtype=np.uint8, copy=False,
                                         data=intersection(list(r['seg'].values())))
@@ -1639,7 +1637,7 @@ class Source(object):
 
             # Get the sky spectrum to subtract
             # FIXME: next line seems useless
-            sky = subcub.sum(axis=(1, 2), weights=skymask)
+            sky = compute_spectrum(subcub, weights=skymask)
             old_mask = subcub.data.mask.copy()
             subcub.data.mask[np.where(
                 np.tile(skymask, (subcub.shape[0], 1, 1)) == 0)] = True
@@ -1655,7 +1653,7 @@ class Source(object):
         nb_tags = list(set(tags_to_try) & set(self.images))
 
         # No weighting
-        spec = subcub.sum(axis=(1, 2), weights=object_mask)
+        spec = compute_spectrum(subcub, weights=object_mask)
         if skysub:
             self.spectra['MUSE_TOT_SKYSUB'] = spec
         else:
@@ -1671,7 +1669,7 @@ class Source(object):
                 weight = self.images[tag].data * object_mask
                 weight[ksel] -= np.min(weight[ksel])
                 weight = weight.filled(0)
-                spec = subcub.sum(axis=(1, 2), weights=weight)
+                spec = compute_spectrum(subcub, weights=weight)
                 if skysub:
                     self.spectra[tag + '_SKYSUB'] = spec
                 else:
@@ -1706,7 +1704,7 @@ class Source(object):
             if white_cube is not None:
                 weight = white_cube * np.tile(object_mask,
                                               (subcub.shape[0], 1, 1))
-                spec = subcub.sum(axis=(1, 2), weights=weight)
+                spec = compute_spectrum(subcub, weights=weight)
                 if skysub:
                     self.spectra['MUSE_PSF_SKYSUB'] = spec
                 else:

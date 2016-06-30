@@ -43,8 +43,7 @@ import shutil
 import six
 import subprocess
 
-from ..obj import Image
-from ..sdetect import Source, SourceList
+from ..obj import Image, Spectrum
 
 __version__ = 1.0
 
@@ -191,6 +190,7 @@ def findSkyMask(images):
 
 
 def segmentation(source, tags, DIR, remove):
+    """segmatation by running sextractor"""
     # suppose that MUSE_WHITE image exists
     try:
         subprocess.check_call(['sex', '-v'])
@@ -275,3 +275,70 @@ def mask_creation(source, maps):
                                       data=findSkyMask(list(maps.values())))
     source.images['MASK_INTER'] = Image(wcs=wcs, dtype=np.uint8, copy=False,
                                         data=intersection(list(r['seg'].values())))
+    
+def compute_spectrum(cube, weights):
+    """Compute a spectrum for a cube by summing along the spatial axis.
+    The method conserves the flux by using the algorithm
+    from Jarle Brinchmann (jarle@strw.leidenuniv.nl):
+    It takes into account bad pixels in the addition.
+    It normalizes with the median value of weighting sum/no-weighting sum
+
+    Parameters
+    ----------
+    
+    cube : `~mpdaf.obj.Cube`
+           Data cube
+    weights : array
+              An array of weights associated with the data values. 
+    """
+    w = np.array(weights, dtype=np.float)
+    excmsg = 'Incorrect dimensions for the weights (%s) (it must be (%s))'
+    
+    if len(w.shape) == 3:
+        if not np.array_equal(w.shape, cube.shape):
+            raise IOError(excmsg % (w.shape, cube.shape))
+    elif len(w.shape) == 2:
+        if w.shape[0] != cube.shape[1] or w.shape[1] != cube.shape[2]:
+            raise IOError(excmsg % (w.shape, cube.shape[1:]))
+        else:
+            w = np.tile(w, (cube.shape[0], 1, 1))
+    elif len(w.shape) == 1:
+        if w.shape[0] != cube.shape[0]:
+            raise IOError(excmsg % (w.shape[0], cube.shape[0]))
+        else:
+            w = np.ones_like(cube._data) * w[:, np.newaxis, np.newaxis]
+    else:
+        raise IOError(excmsg % (None, cube.shape))
+
+    # weights mask
+    wmask = np.ma.masked_where(cube._mask, np.ma.masked_where(w == 0, w))
+
+    data = cube.data * w
+    npix = np.sum(np.sum(~cube.mask, axis=1), axis=1)
+    data = np.ma.sum(np.ma.sum(data, axis=1), axis=1) / npix
+    orig_data = cube.data * ~wmask.mask
+    orig_data = np.ma.sum(np.ma.sum(orig_data, axis=1), axis=1)
+    rr = data / orig_data
+    med_rr = np.ma.median(rr)
+    if med_rr > 0:
+        data /= med_rr
+    if cube._var is not None:
+        var = np.ma.sum(np.ma.sum(cube.var * w, axis=1), axis=1) / npix
+        dspec = np.ma.sqrt(var)
+        if med_rr > 0:
+            dspec /= med_rr
+        orig_var = cube._var * ~wmask.mask
+        orig_var = np.ma.masked_where(cube.mask,
+                                   np.ma.masked_invalid(orig_var))
+        orig_var = np.ma.sum(np.ma.sum(orig_var, axis=1), axis=1)
+        sn_orig = orig_data / np.ma.sqrt(orig_var)
+        sn_now = data / dspec
+        sn_ratio = np.ma.median(sn_orig / sn_now)
+        dspec /= sn_ratio
+        var = dspec * dspec
+        var = var.filled(np.inf)
+    else:
+        var = None
+
+    return Spectrum(wave=cube.wave, unit=cube.unit, data=data, var=var,
+                            copy=False)
