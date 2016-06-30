@@ -9,7 +9,7 @@ pixels together with output coordinates and values.  The pixel tables values
 and units change according to the reduction step. Please consult the data
 reduction user manual for further informations.
 
-The PixTable python object is used to handle the MUSE pixel tables created by
+The `~mpdaf.drs.PixTable` python object is used to handle the MUSE pixel tables created by
 the data reduction system. The PixTable object can be read and write to disk
 and a few functions can be performed on the object.  Note that pixel tables are
 saved as FITS binary tables or as multi-extension FITS images (data reduction
@@ -24,8 +24,8 @@ the memory, the file is open in memory mapping mode when a PixTable object is
 created from an input FITS file: i.e. the arrays are not in memory unless they
 are used by the script.
 
-Format
-======
+PixTable format
+===============
 
 +------------+-------+--------------------------------------------------------+--------------------------------------+
 | Array      | Type  | Description                                            | Units                                |
@@ -48,90 +48,118 @@ Format
 The origin column is composed of the IFU and slice numbers and the x and
 y coordinates on the originating CCD. Using bit shifting and information in the
 FITS headers these four numbers are encoded in a single 32bit integer. Note
-that the `MUSE package <tools.html>`_  provides a `Slicer class <slicer.html>`_
+that the `~mpdaf.MUSE` package  provides a `~mpdaf.MUSE.Slicer` class
 to convert the slicer number between various numbering schemes.
 
 
-Tutorials
-=========
+Read a pixtable, display informations and extract a smaller pixtable centered around an object
+==============================================================================================
 
-We can load the tutorial files with the command::
+Preliminary imports::
 
-  git clone http://urania1.univ-lyon1.fr/git/mpdaf_data.git
+  In [1]: import numpy as np
+  
+  In [2]: import matplotlib.pyplot as plt
+  
+  In [3]: from mpdaf.drs import PixTable
 
-Preliminary imports for all tutorials::
+We read the `~mpdaf.drs.PixTable` from the disk and check its basic informations (`~mpdaf.drs.PixTable.info`) and FITS header content::
 
-  >>> import numpy as np
-  >>> import matplotlib.pyplot as plt
-  >>> from mpdaf.drs import PixTable
+  In [4]: pix = PixTable('PIXTABLE-MUSE.2014-07-26T04:37:08.541.fits')
 
+  In [5]: pix.info()
+  [INFO] 24 merged IFUs went into this pixel table
+  [INFO] This pixel table was flux-calibrated
+  [INFO] projected (intermediate) (Gnomonic proje)
+  Filename: PIXTABLE-MUSE.2014-07-26T04:37:08.541.fits
+  No.    Name         Type      Cards   Dimensions   Format
+  0    PRIMARY     PrimaryHDU    2232   ()              
+  1    xpos        ImageHDU         9   (1, 323885723)   float32   
+  2    ypos        ImageHDU         9   (1, 323885723)   float32   
+  3    lambda      ImageHDU         9   (1, 323885723)   float32   
+  4    data        ImageHDU         9   (1, 323885723)   float32   
+  5    dq          ImageHDU         8   (1, 323885723)   int32   
+  6    stat        ImageHDU         9   (1, 323885723)   float32   
+  7    origin      ImageHDU         8   (1, 323885723)   int32   
+  [INFO] None
 
-Tutorial 1
-----------
+  In [6]: print pix.nrows
+  323885723
 
-In this tutorial we will learn how to read a pixtable, display informations and
-extract a smaller pixtable centered around an object. We will also learn how to
-display the original detector pixels which belong to the object.
+This is a pixtable containing a MUSE exposure of HDFS.  
+Note that the current table has 323885723 pixels. It corresponds to the full
+MUSE field for a single exposure. Let's look to
+the corresponding reconstructed image from the associated datacube::
 
-We read the pixtable from the disk and check its basic informations and FITS header content::
+  In [7]: from mpdaf.obj import Image                           
 
- >>> pix = PixTable('Central_PIXTABLE_REDUCED_11_positioned.fits')
- >>> pix.info()
- Filename: Central_PIXTABLE_REDUCED_11_positioned.fits
- No.    Name         Type      Cards   Dimensions   Format
- 0    PRIMARY     PrimaryHDU    1614   ()           uint8
- 1                BinTableHDU     29   29960130R x 7C   [E, E, E, E, J, E, J]
- >>> print pix.primary_header
- ...........
- HIERARCH ESO PRO MUSE PIXTABLE LIMITS SLICE HIGH = 48
- HIERARCH ESO TMP FILE = '../Output/dry-run-ref_000_001_001.fits'
- AUTHOR  = 'MPDAF   '           / origin of the file
- COMMENT   and Astrophysics', volume 376, page 359; bibcode: 2001A&A...376..359H
- >>> print pix.nrows
- >>> 29960130
+  In [8]: rec = Image('IMAGE-HDFS-v1.11.fits')
 
-Note that the current table has 29960130 pixels. It is only 1/9 of the full
-MUSE field for a single exposure.  It has been fully reduced. The corresponding
-reconstructed image from the associated datacube is available.  Let's look to
-it::
+  In [9]: rec.info()
+  [INFO] 331 x 326 Image (/muse/HDFS/public/dataproducts/HDFS-DataProducts-v1.11/IMAGE-HDFS-v1.11.fits)
+  [INFO] .data(331 x 326) (1e-20 ct), .var(331 x 326)
+  [INFO] center:(-60:33:49.0427,22:32:55.53) size in arcsec:(66.139,65.126) step in arcsec:(0.200,0.200) rot:0.1 deg
 
- >>> from mpdaf.obj import Image
- >>> rec = Image('REC_Central_PIXTABLE_REDUCED_11_positioned.fits')
- >>> rec.info()
- 100 X 100 image (REC_Central_PIXTABLE_REDUCED_11_positioned.fits)
- .data(100,100) (10**(-20)*erg/s/cm**2/Angstrom) fscale=1, no noise
- center:(-30:00:01.02,01:20:00.123) size in arcsec:(20.000,20.000) step in arcsec:(0.200,0.200) rot:0.0
- >>> rec.plot(scale='arcsinh')
+  In [10]: plt.figure()
+  Out[10]: <matplotlib.figure.Figure at 0x7ff6d7b3a550>
+
+  In [11]: rec.plot(scale='arcsinh')
+  Out[11]: <matplotlib.image.AxesImage at 0x7ff6d7935910>
 
 .. figure::  _static/pixtable/recima1.png
    :align:   center
 
-We are interested in the bright object at the bottom. Let's find its position::
+We are interested in the brightest object. Let's find its position by using `~mpdaf.obj.Image.peak`::
 
- >>> rec.ipos()
- To read cursor position, click on the left mouse button
- To remove a cursor position, click on the left mouse button + <d>
- To quit the interactive mode, click on the right mouse button.
- After quit, clicks are saved in self.clicks as dictionary {y,x,p,q,data}.
- y=-30.0023      x=20.0016       p=14    q=33    data=93985.5
- disconnecting console coordinate printout...
+  In [12]: peak = rec.peak()
 
-Now we will extract a circular region of the pixtable centered around the object and we will restrict
+Now we will use `~mpdaf.drs.PixTable.extract` to extract a circular region of the pixtable centered around the object and we will restrict
 the wavelength to the 6000:6100 Angstroem range::
 
- >>> objpix = pix.extract(filename='Star_pixtable.fits',sky=(-30.0023, 20.0015, 2/3600., 'C'), lbda=(6000,6100))
- >>> objpix.nrows
- 20558
+  In [13]: objpix = pix.extract(filename='Star_pixtable.fits',sky=(peak['y'], peak['x'], 2., 'C'), lbda=(6000,6100))
 
-Note that we have extracted a circular ('C') region of 2 arcsec (2/3600.)
-around the object.  The new pixtable (objpix) is much smaller, only 20558
+  In [14]: objpix.nrows
+  Out[14]: 24441
+
+Note that we have extracted a circular ('C') region of 2 arcsec
+around the object.  The new pixtable (objpix) is much smaller, only 24441
 pixels. The pixtable has been saved as a FITS file (Star_pixtable.fits).
 
-Let's investigate this pixtable. We start by plotting the sky positions::
+The method `~mpdaf.drs.PixTable.extract` can extract a subset of a pixtable using the following criteria:
 
- >>> x = objpix.get_xpos()
- >>> y = objpix.get_ypos()
- >>> plt.plot(y, x, '.')
+ - aperture on the sky (center, size and shape),
+ - wavelength range,
+ - IFU numbers,
+ - slice numbers,
+ - detector pixels,
+ - exposure numbers,
+ - stack numbers.
+ 
+`~mpdaf.drs.PixTable.extract` creates a mask columns for all criteria, merges the masks and returns a new pixtable extracted with the final mask.
+These methods are also available to do the extraction step par step:
+
+ - `~mpdaf.drs.PixTable.select_lambda` returns a mask corresponding to the given wavelength range,
+ - `~mpdaf.drs.PixTable.select_stacks` returns a mask corresponding to given stacks,
+ - `~mpdaf.drs.PixTable.select_slices` returns a mask corresponding to given slices,
+ - `~mpdaf.drs.PixTable.select_ifus` returns a mask corresponding to given ifus,
+ - `~mpdaf.drs.PixTable.select_exp` returns a mask corresponding to given exposures,
+ - `~mpdaf.drs.PixTable.select_xpix` and `~mpdaf.drs.PixTable.select_ypix` return a mask corresponding to detector pixels,
+ - `~mpdaf.drs.PixTable.select_sky` returns a mask corresponding to the given aperture on the sky,
+ - `~mpdaf.drs.PixTable.extract_from_mask` returns a new pixtable extracted with the given mask.
+
+Let's investigate this pixtable.
+`~mpdaf.drs.PixTable.get_xpos`/`~mpdaf.drs.PixTable.get_ypos` return the relative x/y position of the pixel to the center of the field of view.
+We start by plotting the sky positions::
+
+  In [15]: x = objpix.get_xpos()
+
+  In [16]: y = objpix.get_ypos()
+
+  In [17]: plt.figure()
+  Out[17]: <matplotlib.figure.Figure at 0x7ff495869fd0>
+
+  In [18]: plt.plot(y, x, '.')
+  Out[18]: [<matplotlib.lines.Line2D at 0x7ff495a8bfd0>]
 
 .. figure::  _static/pixtable/pixima1.png
    :align:   center
@@ -145,139 +173,214 @@ zoom to the two points on the left side, this what we obtain.
 
 This is typical of the pixel table. Because of distortion each pixel on the
 detector has not exactly the same location on the sky for the various
-wavelength.  Let's see if we have some bad pixel identified::
+wavelength.
+Let's see if we have some bad pixel identified.
+`~mpdaf.drs.PixTable.get_dq` gets the dq column.::
 
- >>> dq = objpix.get_dq()
- >>> k = np.where(dq > 0)
- >>> k
- (array([3591, 4791]),)
- >>> plt.plot(y[k], x[k], 'or')
+  In [19]: dq = objpix.get_dq()
+
+  In [20]: k = np.where(dq > 0)
+
+  In [21]: k
+  Out[21]: 
+  (array([ 9363, 13049, 14485, 14611, 14738, 15074, 15158, 15199, 15704,
+        15830, 21261, 21279]),)
+
+  In [22]: plt.plot(y[k], x[k], 'r.')
+  Out[22]: [<matplotlib.lines.Line2D at 0x7ff495ab68d0>]
 
 .. figure::  _static/pixtable/pixima3.png
    :align:   center
 
-Indeed there are two bad pixels. We can see their location as the red points in
-the plot.  Let's now investigate how this object is mapped on the detector. We
-start to get the origin array and then decode it to get for example the IFU
-number::
+Indeed there are 12 bad pixels localised in 6 areas of the detectors. We can see their location as the red points in the plot.
+Let's now investigate how this object is mapped on the detector. We start to get the origin array with `~mpdaf.drs.PixTable.get_origin`::
 
- >>> origin = objpix.get_origin()
- >>> ifu = objpix.origin2ifu(origin)
- >>> np.unique(ifu)
- array([ 9, 10], dtype=int32)
- >>> k = np.where(ifu == 9)
- >>> plt.plot(y[k],x[k],'ob')
- >>> k = np.where(ifu == 10)
- >>> plt.plot(y[k],x[k],'or')
+  In [23]: origin = objpix.get_origin()
+  
+Several methods exists to decode it:
 
-We can see that the star is split into two IFUs (9 and 10). We plot the sky
+ - `~mpdaf.drs.PixTable.origin2ifu` returns the ifu number of each pixel,
+ - `~mpdaf.drs.PixTable.origin2slice` returns the slice number of each pixel,
+ - `~mpdaf.drs.PixTable.origin2xpix` returns the x coordinates of the pixels on the detector,
+ - `~mpdaf.drs.PixTable.origin2ypix` returns the y coordinates of the pixels on the detector,
+ - `~mpdaf.drs.PixTable.origin2coords` returns (ifu, slice, ypix, xpix).
+
+For example we decode the origin array to get the IFU number::
+
+  In [24]: ifu = objpix.origin2ifu(origin)
+
+  In [25]: np.unique(ifu)
+  Out[25]: array([5, 6, 7], dtype=uint8)
+
+  In [26]: k = np.where(ifu == 5)
+
+  In [27]: plt.plot(y[k],x[k],'ob')
+  Out[27]: [<matplotlib.lines.Line2D at 0x7ff4957c0c50>]
+
+  In [28]: k = np.where(ifu == 6)  
+
+  In [29]: plt.plot(y[k],x[k],'or')
+  Out[29]: [<matplotlib.lines.Line2D at 0x7ff495854850>]
+
+  In [30]: k = np.where(ifu == 7)  
+
+  In [31]: plt.plot(y[k],x[k],'oc')
+  Out[31]: [<matplotlib.lines.Line2D at 0x7ff495854f10>]
+
+We can see that the star is split into three IFUs (5, 6 and 7). We plot the sky
 location according to the IFU number.
 
 .. figure::  _static/pixtable/pixima4.png
    :align:   center
 
 Now we are going to display the data as located on the original exposure.
-Before we have to compute separately the corresponding pixtable for each IFU::
+Firs we have to compute separately the corresponding pixtable for each IFU (`~mpdaf.drs.PixTable.extract`)
+and then we use the sub-pixtable to reconstruct the the originating CCD image (`~mpdaf.drs.PixTable.reconstruct_det_image`)::
 
- >>> objpix9 = pix.extract(sky=(-30.0023, 20.0015, 2/3600., 'C'), lbda=(6000,6100), ifu=9)
- >>> objpix10 = pix.extract(sky=(-30.0023, 20.0015, 2/3600., 'C'), lbda=(6000,6100), ifu=10)
- >>> ima9 = objpix9.reconstruct_det_image()
- >>> ima10 = objpix10.reconstruct_det_image()
- >>> ima9.plot(vmin=0, vmax=10)
- >>> ima10.plot(vmin=0, vmax=10)
+  In [32]: objpix5 = pix.extract(filename='Star_pixtable.fits',sky=(peak['y'], peak['x'], 2., 'C'), lbda=(6000,6100), ifu=5)
+  
+  In [33]: ima5 = objpix5.reconstruct_det_image()
 
-.. image::  _static/pixtable/pixima5.png
+  In [34]: plt.figure()
+  Out[34]: <matplotlib.figure.Figure at 0x7ff495a670d0>
 
-.. image::  _static/pixtable/pixima6.png
+  In [35]: ima5.plot(vmin=0, vmax=200)
+  Out[35]: <matplotlib.image.AxesImage at 0x7ff495712410>
 
-This give a good view of the pixels that comes into the object.
+  In [36]: objpix6 = pix.extract(filename='Star_pixtable.fits',sky=(peak['y'], peak['x'], 2., 'C'), lbda=(6000,6100), ifu=6) 
 
-Tutorial 2
-----------
+  In [37]: ima6 = objpix6.reconstruct_det_image()
 
-In this second tutorial we will learn how to use the pixel table to fit a 2D
-gaussian for a restricted wavelength range.
+  In [38]: plt.figure()
+  Out[38]: <matplotlib.figure.Figure at 0x7ff495854e90>
+
+  In [39]: ima6.plot(vmin=0, vmax=200)
+  Out[39]: <matplotlib.image.AxesImage at 0x7ff6d72dd090>
+
+  In [40]: objpix7 = pix.extract(filename='Star_pixtable.fits',sky=(peak['y'], peak['x'], 2., 'C'), lbda=(6000,6100), ifu=7)
+
+  In [41]: ima7 = objpix7.reconstruct_det_image()
+
+  In [42]: plt.figure()
+  Out[42]: <matplotlib.figure.Figure at 0x7ff49576b0d0>
+
+  In [43]: ima7.plot(vmin=0, vmax=200)
+  Out[43]: <matplotlib.image.AxesImage at 0x7ff4953c2cd0>
+
+
+.. image::  _static/pixtable/ima5.png
+
+.. image::  _static/pixtable/ima6.png
+
+.. image::  _static/pixtable/ima7.png
+
+This give a good view of the pixels that comes into the object for the wavelength 6000:6100 Angstroem.
+Note that we restricted the wavelength range in the `~mpdaf.drs.PixTable.extract` method.
+It would be also possible to used `~mpdaf.drs.PixTable.reconstruct_det_waveimage` that reconstructs the image of wavelength values on the detector from the pixtable.
+
+
+Use the pixtable's data
+=======================
+
+We will see how to use the pixel table to fit a 2D gaussian for a restricted wavelength range.
 
 We start to define a function that fit a 2D gaussian to a set of points (x, y,
 data)::
 
- >>> from scipy.optimize import leastsq
- >>> def fitgauss(x, y, data, peak, center, fwhm):
- >>>         p0 = np.array([peak, center[0], center[1], fwhm/2.355])
- >>>         res = leastsq(gauss2D, p0, args=[x, y, data])
- >>>         return res
- >>>
- >>> def gauss2D(p, arglist):
- >>>         x, y, data = arglist
- >>>         peak, x0, y0, sigma = p
- >>>         g = peak*np.exp(-((x-x0)**2 + (y-y0)**2)/(2*sigma**2))
- >>>         residual = data - g
- >>>         return residual
+  In [44]: from scipy.optimize import leastsq
 
+  In [45]: def fitgauss(x, y, data, peak, center, fwhm):
+     ....:     p0 = np.array([peak, center[0], center[1], fwhm/2.355])
+     ....:     res = leastsq(gauss2D, p0, args=[x, y, data])
+     ....:     return res
+     ....: 
+
+  In [46]: def gauss2D(p, arglist):
+     ....:     x, y, data = arglist
+     ....:     peak, x0, y0, sigma = p
+     ....:     g = peak*np.exp(-((x-x0)**2 + (y-y0)**2)/(2*sigma**2))
+     ....:     residual = data - g
+     ....:     return residual
+     ....: 
 
 Let's check if it works::
 
- >>> nx = 10
- >>> ny = 10
- >>> x = np.reshape(np.repeat(np.arange(nx),ny),(nx,ny))
- >>> y = np.transpose(np.reshape(np.repeat(np.arange(ny),nx),(ny,nx)))
- >>> g = 2.0*np.exp(-((x-5)**2+(y-5)**2)/(2*1.7**2))
- >>> gn = np.random.normal(g, 0.1*np.sqrt(g))
- >>> xp = x.ravel()
- >>> yp = y.ravel()
- >>> gnp = gn.ravel()
- >>> fitgauss(xp, yp, gnp, 1.0, (4.9,5.1), 2*2.355)
- (array([ 1.94258391,  4.96738244,  5.05566252,  1.71287931]), 1)
+  In [47]: y, x = np.meshgrid(np.arange(10), np.arange(10))
+
+  In [48]: g = 2.0*np.exp(-((x-5)**2+(y-5)**2)/(2*1.7**2))
+
+  In [49]: gn = np.random.normal(g, 0.1*np.sqrt(g))
+ 
+  In [50]: xp = x.ravel()
+
+  In [51]: yp = y.ravel()
+
+  In [52]: gnp = gn.ravel()
+
+  In [53]: fitgauss(xp, yp, gnp, 1.0, (4.9,5.1), 2*2.355)
+  Out[53]: (array([ 1.97698318,  4.98185621,  4.94862697,  1.70022846]), 1)
 
 OK, so now we can test it on our object pixtable::
 
- >>> objpix = pix.extract(sky=(-30.0023, 20.0015, 2/3600., 'C'), lbda=(6000,6010))
- >>> x = objpix.get_xpos()
- >>> y = objpix.get_ypos()
- >>> data = objpix.get_data()
- >>> center = (-30.0023, 20.0015)
- >>> res = fitgauss(y, x, data, data.max(), center, 0.7/3600.)
- >>> print 'Peak:',res[0][0], 'Center:',res[0][1:3], 'Fwhm:',res[0][3]*2.355*3600
- Peak: 1080.1060791 Center: [-30.0023  20.0015] Fwhm: 0.7
+  In [54]: x = objpix.get_xpos()
+
+  In [55]: y = objpix.get_ypos()
+
+  In [56]: data = objpix.get_data()
+
+  In [57]: center = (0,0)
+
+  In [58]: res = fitgauss(y, x, data, data.max(), center, 0.7/3600.)
+
+  In [59]: print 'Peak:',res[0][0], 'Center:',res[0][1:3], 'Fwhm:',res[0][3]*2.355*3600
+  Peak: 1465.94006348 Center: [ 0.  0.] Fwhm: 0.7
+  
+We have used `~mpdaf.drs.PixTable.get_data` to have the data column.
+It exists a getter and a setter for each column of the pixtable.
+We recommend that you use these setters to update a pixtable because they preserve the consistency of the file by updating the FITS header.
+
+In place of the relative coordinates, we can use the absolute position on the sky given by `~mpdaf.drs.PixTable.get_pos_sky`::
+
+  In [60]: y, x = objpix.get_pos_sky()
+
+  In [61]: center = (peak['y'], peak['x'])
+
+  In [62]: res = fitgauss(y, x, data, data.max(), center, 0.7/3600.)
+
+  In [63]: print 'Peak:',res[0][0], 'Center:',res[0][1:3], 'Fwhm:',res[0][3]*2.355*3600
+  Peak: 1465.94006348 Center: [ -60.56826963  338.23752675] Fwhm: 0.7
 
 
-Tutorial 3: self-calibration method for empty field
----------------------------------------------------
+Self-calibration method for empty field
+=======================================
 
-In this last tutorial, we will apply a self-calibration method on a single
+In this section, we will apply a self-calibration method on a single
 pixel table to bring all slices to the same median value. This will work on
 fields with small object, e.g. objects smaller than a slice length (15 arcsec).
 
-First we load a pixtable containing a MUSE exposure of HDFS. This is a reduced
-pixtable produced by scipost, without sky subtraction.::
-
- >>> pix = PixTable('sub-PIXTABLE-MUSE.2014-07-27T04:22:08.024.fits')
+The pixtable previously loaded contains a MUSE exposure of HDFS. This is a reduced
+pixtable produced by scipost, without sky subtraction.
 
 We will mask out all bright continuum objects present in the FoV.  We use
 a mask which has been produced by SExtractor on the corresponding white light
 image of this exposure.
 
-`mpdaf.drs.PixTable.mask_column <mpdaf.drs.PixTable.mask_column>` method
-returns a `mpdaf.drs.PixTableMask` object containing the mask as a new column.
+`~mpdaf.drs.PixTable.mask_column` method returns a `~mpdaf.drs.PixTableMask` object containing the mask as a new column.
 We save this mask column as a FITS table::
 
- >>> mask = pix.mask_column('Mask.fits')
- [INFO] masking object 1/69 338.247<x<338.248 -60.5716<y<-60.5712 (3745 pixels)
- [INFO] masking object 2/69 338.214<x<338.215 -60.5715<y<-60.5711 (2496 pixels)
- [INFO] masking object 3/69 338.233<x<338.234 -60.5711<y<-60.5702 (14650 pixels)
- [INFO] masking object 4/69 338.246<x<338.246 -60.571<y<-60.5706 (2299 pixels)
-  ...
- [INFO] masking object 69/69 338.232<x<338.234 -60.5552<y<-60.5548 (7416 pixels)
- >>> mask.write('maskcol.fits')
+  In [64]: mask = pix.mask_column('Mask-HDF-110814.fits')
+
+  In [65]: mask.write('maskcol.fits')
 
 Then, we estimate a reference sky spectrum from the masked pixel table::
 
- >>> skyref = pix.sky_ref(pixmask=mask)
- >>> skyref.write('skyref.fits')
+  In [66]: skyref = pix.sky_ref(pixmask=mask)
 
-`sky_ref <mpdaf.drs.PixTable.sky_ref>` returns a `mpdaf.obj.Spectrum`. Let’s look to it::
+  In [67]: skyref.write('skyref.fits')
 
- >>> skyref.plot()
+`~mpdaf.drs.PixTable.sky_ref` returns a `~mpdaf.obj.Spectrum`. Let’s look to it::
+
+  In [68]: skyref.plot()
 
 .. image::  _static/pixtable/skyref.png
 
@@ -285,135 +388,24 @@ This reference spectrum is used by the auto calibration method to normalise
 data values in each MUSE slice.  In this example, we choose to use the additive
 correction::
 
- >>> pix.subtract_slice_median(skyref, pixmask=mask)
+  In [69]: autocalib = pix.subtract_slice_median(skyref, pixmask=mask)
+  [INFO] pixtable PIXTABLE-MUSE.2014-07-26T04:37:08.541.fits updated
 
-`subtract_slice_median <mpdaf.drs.PixTable.subtract_slice_median>` is a python
-pixtable method but it has been coded in C for efficiency.
+`~mpdaf.drs.PixTable.subtract_slice_median` is a python pixtable method but it has been coded in C for efficiency.
 
-Finally, we save this corrected pixel table::
+In the same way `~mpdaf.drs.PixTable.divide_slice_median` computes the median value for all slices and divides each slice by this correction to bring all slices to the same median value.
 
- >>> pix.write('corr-PIXTABLE-MUSE.2014-07-27T04:22:08.024.fits')
+These methods return an `~mpdaf.drs.PixTableAutoCalib` object that lets the user to save calibration information in a fits file::
+
+  In [70]: autocalib.write('autocalib-PIXTABLE-MUSE.2014-07-26T04:37:08.541.fits')
+
+Finally, we save this corrected pixel table (`~mpdaf.drs.PixTable.write`)::
+
+  In [71]: pix.write('corr-PIXTABLE-MUSE.2014-07-26T04:37:08.541.fits')
 
 This non sky subtracted corrected pixtable can then be used to create
-a datacube with the appropriate pipeline recipe.  Sky subtraction can then be
+a datacube with the appropriate pipeline recipe. Sky subtraction can then be
 performed with the zap software.
-
-
-
-Reference
-=========
-
-`mpdaf.drs.PixTable.copy <mpdaf.drs.PixTable.copy>` copies PixTable object in a new one and returns it.
-
-`mpdaf.drs.PixTable.info <mpdaf.drs.PixTable.info>` prints information.
-
-`mpdaf.drs.PixTable.write <mpdaf.drs.PixTable.write>` saves the pixtable in a FITS file.
-
-`mpdaf.drs.PixTable.reconstruct_det_image <mpdaf.drs.PixTable.reconstruct_det_image>` reconstructs the image on the detector from the pixtable.
-
-`mpdaf.drs.PixTable.reconstruct_det_waveimage <mpdaf.drs.PixTable.reconstruct_det_waveimage>` reconstructs the image of wavelength values on the detector from the pixtable.
-
-`mpdaf.drs.PixTable.reconstruct_sky_image <mpdaf.drs.PixTable.reconstruct_sky_image>` reconstructs the image on the sky from the pixtable.
-
-
-Getters and setters
--------------------
-
-`mpdaf.drs.PixTable.get_column <mpdaf.drs.PixTable.get_column>` loads a column and returns it.
-
-`mpdaf.drs.PixTable.set_column <mpdaf.drs.PixTable.set_column>` sets a column (or a part of it).
-
-`mpdaf.drs.PixTable.get_xpos <mpdaf.drs.PixTable.get_xpos>` gets the xpos column.
-
-`mpdaf.drs.PixTable.set_xpos <mpdaf.drs.PixTable.set_xpos>` sets the xpos column.
-
-`mpdaf.drs.PixTable.get_ypos <mpdaf.drs.PixTable.get_ypos>` gets the ypos column.
-
-`mpdaf.drs.PixTable.set_ypos <mpdaf.drs.PixTable.set_ypos>` sets the ypos column.
-
-`mpdaf.drs.PixTable.get_lambda <mpdaf.drs.PixTable.get_lambda>` gets the lambda column.
-
-`mpdaf.drs.PixTable.set_lambda <mpdaf.drs.PixTable.set_lambda>` sets the lambda column.
-
-`mpdaf.drs.PixTable.get_data <mpdaf.drs.PixTable.get_data>` gets the data column.
-
-`mpdaf.drs.PixTable.set_data <mpdaf.drs.PixTable.set_data>` sets the data column.
-
-`mpdaf.drs.PixTable.get_stat <mpdaf.drs.PixTable.get_stat>` gets the stat column.
-
-`mpdaf.drs.PixTable.set_stat <mpdaf.drs.PixTable.set_stat>` sets the stat column.
-
-`mpdaf.drs.PixTable.get_dq <mpdaf.drs.PixTable.get_dq>` gets the dq column.
-
-`mpdaf.drs.PixTable.set_dq <mpdaf.drs.PixTable.set_dq>` sets the dq column.
-
-`mpdaf.drs.PixTable.get_origin <mpdaf.drs.PixTable.get_origin>` gets the origin column.
-
-`mpdaf.drs.PixTable.set_origin <mpdaf.drs.PixTable.set_origin>` sets the origin column.
-
-`mpdaf.drs.PixTable.get_weight <mpdaf.drs.PixTable.get_weight>` gets the weight column.
-
-`mpdaf.drs.PixTable.set_weight <mpdaf.drs.PixTable.set_weight>` sets the weight column.
-
-`mpdaf.drs.PixTable.get_exp <mpdaf.drs.PixTable.get_exp>` gets the exposure numbers.
-
-`mpdaf.drs.PixTable.get_pos_sky <mpdaf.drs.PixTable.get_pos_sky>` gets the absolute position on the sky.
-
-`mpdaf.drs.PixTable.get_keywords <mpdaf.drs.PixTable.get_keywords>` returns the keyword value corresponding to a key.
-
-
-Get information from origin array
----------------------------------
-
-`mpdaf.drs.PixTable.origin2ifu <mpdaf.drs.PixTable.origin2ifu>` converts the origin value and returns the ifu number.
-
-`mpdaf.drs.PixTable.origin2slice <mpdaf.drs.PixTable.origin2slice>` converts the origin value and returns the slice number.
-
-`mpdaf.drs.PixTable.origin2ypix <mpdaf.drs.PixTable.origin2ypix>` converts the origin value and returns the y coordinates.
-
-`mpdaf.drs.PixTable.origin2xoffset <mpdaf.drs.PixTable.origin2xoffset>` converts the origin value and returns the x coordinates offset.
-
-`mpdaf.drs.PixTable.origin2xpix <mpdaf.drs.PixTable.origin2xpix>` converts the origin value and returns the x coordinates.
-
-`mpdaf.drs.PixTable.origin2coords <mpdaf.drs.PixTable.origin2coords>` converts the origin value and returns (ifu, slice, ypix, xpix).
-
-
-Extraction
-----------
-
-`mpdaf.drs.PixTable.select_lambda <mpdaf.drs.PixTable.select_lambda>` returns a mask corresponding to the given wavelength range.
-
-`mpdaf.drs.PixTable.select_stacks <mpdaf.drs.PixTable.select_stacks>` returns a mask corresponding to given stacks.
-
-`mpdaf.drs.PixTable.select_slices <mpdaf.drs.PixTable.select_slices>` returns a mask corresponding to given slices.
-
-`mpdaf.drs.PixTable.select_ifus <mpdaf.drs.PixTable.select_ifus>` returns a mask corresponding to given ifus.
-
-`mpdaf.drs.PixTable.select_exp <mpdaf.drs.PixTable.select_exp>` returns a mask corresponding to given exposures.
-
-`mpdaf.drs.PixTable.select_xpix <mpdaf.drs.PixTable.select_xpix>` returns a mask corresponding to detector pixels.
-
-`mpdaf.drs.PixTable.select_ypix <mpdaf.drs.PixTable.select_ypix>` returns a mask corresponding to detector pixels.
-
-`mpdaf.drs.PixTable.select_sky <mpdaf.drs.PixTable.select_sky>` returns a mask corresponding to the given aperture on the sky.
-
-`mpdaf.drs.PixTable.extract <mpdaf.drs.PixTable.extract>` extracts a subset of a pixtable.
-
-`mpdaf.drs.PixTable.extract_from_mask <mpdaf.drs.PixTable.extract_from_mask>` Return a new pixtable extracted with the given mask.
-
-
-
-Autocalibration
----------------
-
-`mpdaf.drs.PixTable.mask_column <mpdaf.drs.PixTable.mask_column>` computes the mask column corresponding to a mask file.
-
-`mpdaf.drs.PixTable.sky_ref <mpdaf.drs.PixTable.sky_ref>` computes the reference sky spectrum.
-
-`mpdaf.drs.PixTable.subtract_slice_median <mpdaf.drs.PixTable.subtract_slice_median>` computes the median value for all slices and subtracts this correction to each slice to bring all slices to the same median value.
-
-`mpdaf.drs.PixTable.divide_slice_median <mpdaf.drs.PixTable.divide_slice_median>` computes the median value for all slices and divides each slice by this correction to bring all slices to the same median value.
-
 
 .. warning::
 

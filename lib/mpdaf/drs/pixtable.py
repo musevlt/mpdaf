@@ -1232,11 +1232,11 @@ class PixTable(object):
 
         - aperture on the sky (center, size and shape)
         - wavelength range
-        - IFU number
-        - slice number
+        - IFU numbers
+        - slice numbers
         - detector pixels
         - exposure numbers
-        - stack number
+        - stack numbers
 
         The arguments can be either single value or a list of values to select
         multiple regions.
@@ -1261,6 +1261,10 @@ class PixTable(object):
             (min, max) pixel range along the Y axis
         exp : list of int
             List of exposure numbers
+        stack : list of int
+            List of stack numbers
+        method : 'and' or 'or'
+                 Logical operation used to merge the criteria
 
         Returns
         -------
