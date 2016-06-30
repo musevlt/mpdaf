@@ -3,6 +3,7 @@
 from __future__ import print_function
 
 import sys
+from collections import OrderedDict
 from subprocess import check_output
 
 LICENSE = """\
@@ -38,7 +39,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 \"\"\"
 """
 
-GIT_CMD = 'git shortlog -sen {} | cut -f1 --complement'
+GIT_CMD = ("git log --date=format:%Y --format='%ad %aN <%aE>' {} | "
+           "cut -f1 --complement")
 
 
 def modify(lines, license, start=0):
@@ -71,11 +73,26 @@ if __name__ == "__main__":
             print('Empty')
             continue
 
-        authors = check_output(GIT_CMD.format(filename), shell=True)
-        authors = ['Copyright (c) 2010-2016 {}\n'.format(author)
-                   for author in authors.splitlines()]
+        authors = OrderedDict()
+        for l in check_output(GIT_CMD.format(filename),
+                              shell=True).splitlines():
+            year, author = l.split(' ', 1)
+            if author in authors:
+                authors[author].append(year)
+            else:
+                authors[author] = [year]
+
+        authorlist = []
+        for author, years in authors.items():
+            years = sorted(set(years))
+            if len(years) == 1:
+                year = '     ' + years[0]
+            else:
+                year = '{}-{}'.format(years[0], years[-1])
+            authorlist.append('Copyright (c) {} {}\n'.format(year, author))
+
         license = LICENSE.splitlines(True)
-        license = license[:2] + authors + license[2:]
+        license = license[:2] + authorlist + license[2:]
 
         if lines[0].startswith('"""Copyright'):
             lines = modify(lines, license)
