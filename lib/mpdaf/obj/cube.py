@@ -229,7 +229,7 @@ class Cube(ArithmeticMixin, DataArray):
     numpy.ndarrays, the .mask member is given the value
     numpy.ma.nomask.
 
-    When a new DataArray object is created, the data, variance and
+    When a new Cube object is created, the data, variance and
     mask arrays can either be specified as arguments, or the name
     of a FITS file can be provided to load them from.
 

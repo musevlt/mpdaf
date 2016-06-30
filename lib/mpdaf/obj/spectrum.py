@@ -115,40 +115,66 @@ class Gauss1D(object):
 
 class Spectrum(ArithmeticMixin, DataArray):
 
-    """Manages spectrum, optionally including a variance and a bad pixel mask.
+    """Spectrum objects contain 1D arrays of numbers, optionally
+    accompanied by corresponding variances. These numbers represent
+    sample fluxes along a regularly spaced grid of wavelengths.
+
+    The spectral pixel values and their variances, if any, are
+    available as arrays[q that can be accessed via properties of the
+    Spectrum object called .data and .var, respectively. These arrays
+    are usually masked arrays, which share a boolean masking array
+    that can be accessed via a property called .mask. In principle,
+    these arrays can also be normal numpy arrays without masks, in
+    which case the .mask property holds the value,
+    numpy.ma.nomask. However non-masked arrays are only supported by a
+    subset of mpdaf functions at this time, so masked arrays should be
+    used where possible.
+
+    When a new Spectrum object is created, the data, variance and mask
+    arrays can either be specified as arguments, or the name of a FITS
+    file can be provided to load them from.
 
     Parameters
     ----------
     filename : string
-        Possible FITS filename.
+        An optional FITS file name from which to load the spectrum.
+        None by default. This argument is ignored if the data
+        argument is not None.
     ext : int or (int,int) or string or (string,string)
-        Number/name of the data extension or numbers/names
-        of the data and variance extensions.
+        The optional number/name of the data extension
+        or the numbers/names of the data and variance extensions.
     wave : `mpdaf.obj.WaveCoord`
-        Wavelength coordinates.
+        The wavelength coordinates of the spectrum.
     unit : str or `astropy.units.Unit`
         The physical units of the data values. Defaults to
         `astropy.units.dimensionless_unscaled`.
     data : float array
-        Array containing the pixel values of the spectrum. None by default.
+        An optional 1 dimensional array containing the values of each
+        pixel of the spectrum, stored in ascending order of wavelength
+        (None by default). Where given, this array should be 1
+        dimensional.
     var : float array
-        Array containing the variance. None by default.
+        An optional 1 dimensional array containing the estimated
+        variances of each pixel of the spectrum, stored in ascending
+        order of wavelength (None by default).
 
     Attributes
     ----------
     filename : string
-        Possible FITS filename.
+        The name of the originating FITS file, if any. Otherwise None.
     unit : `astropy.units.Unit`
-        Data unit type.
+        The physical units of the data values.
     primary_header : `astropy.io.fits.Header`
-        Possible FITS primary header instance.
+        The FITS primary header instance, if a FITS file was provided.
     data_header : `astropy.io.fits.Header`
-        Possible FITS data header instance.
+        The FITS header of the DATA extension.
     wave : `mpdaf.obj.WaveCoord`
-        Wavelength coordinates.
+        The wavelength coordinates of the spectrum.
 
     """
 
+    # Tell the DataArray base-class that Spectrum objects require 1 dimensional
+    # data arrays and wavelength coordinates.
     _ndim_required = 1
     _has_wave = True
 
@@ -159,18 +185,27 @@ class Spectrum(ArithmeticMixin, DataArray):
             filename=filename, ext=ext, wave=wave, unit=unit, data=data,
             var=var, copy=copy, dtype=dtype, **kwargs)
 
-    def get_lambda(self, lmin, lmax=None, unit=u.angstrom):
-        """ Return the flux value corresponding to a wavelength,
-        or return the sub-spectrum corresponding to a wavelength range.
+    def subspec(self, lmin, lmax=None, unit=u.angstrom):
+        """Return the flux at a given wavelength, or the sub-spectrum
+        of a specified wavelength range.
+
+        A single flux value is returned if the lmax argument is None
+        (the default), or if the wavelengths assigned to the lmin and
+        lmax arguments are both within the same pixel. The value that
+        is returned is the value of the pixel whose wavelength is
+        closest to the wavelength specified by the lmin argument.
 
         Parameters
         ----------
         lmin : float
-            minimum wavelength.
-        lmax : float
-            maximum wavelength.
+            The minimum wavelength of a wavelength range, or the wavelength
+            of a single pixel if lmax is None.
+        lmax : float or None
+            The maximum wavelength of the wavelength range.
         unit : `astropy.units.Unit`
-            type of the wavelength coordinates. if None, inputs are in pixels.
+            The wavelength units of the lmin and lmax arguments. The
+            default is angstroms. If unit is None, then lmin and lmax
+            are interpreted as array indexes within the spectrum.
 
         Returns
         -------
@@ -184,92 +219,105 @@ class Spectrum(ArithmeticMixin, DataArray):
         if lmax is None:
             lmax = lmin
 
+        # Are lmin and lmax array indexes?
         if unit is None:
             pix_min = max(0, int(lmin + 0.5))
             pix_max = min(self.shape[0], int(lmax + 0.5))
+        # Convert wavelengths to the nearest spectrum array indexes.
         else:
             pix_min = max(0, self.wave.pixel(lmin, nearest=True, unit=unit))
             pix_max = min(self.shape[0],
                           self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
+
+        # If the start and end of the wavelength range select the same pixel,
+        # return just the value of that pixel.
         if (pix_min + 1) == pix_max:
             return self[pix_min]
+        # Otherwise return a sub-spectrum.
         else:
             return self[pix_min:pix_max]
 
     def get_step(self, unit=None):
-        """Return the wavelength step.
+        """Return the wavelength step size.
 
         Parameters
         ----------
         unit : `astropy.units.Unit`
-            Type of the wavelength coordinates
+            The units of the returned step-size.
 
         Returns
         -------
         out : float
+            The width of a spectrum pixel.
         """
         if self.wave is not None:
             return self.wave.get_step(unit)
 
     def get_start(self, unit=None):
-        """Return the wavelength value of the first pixel.
+        """Return the wavelength value of the first pixel of the spectrum.
 
         Parameters
         ----------
         unit : `astropy.units.Unit`
-            Type of the wavelength coordinates
+            The units of the returned wavelength.
 
         Returns
         -------
         out : float
+            The wavelength of the first pixel of the spectrum.
         """
         if self.wave is not None:
             return self.wave.get_start(unit)
 
     def get_end(self, unit=None):
-        """Return the wavelength value of the last pixel.
+        """Return the wavelength of the last pixel of the spectrum.
 
         Parameters
         ----------
         unit : `astropy.units.Unit`
-            Type of the wavelength coordinates
+            The units of the returned wavelength.
 
         Returns
         -------
         out : float
+            The wavelength of the final pixel of the spectrum.
         """
         if self.wave is not None:
             return self.wave.get_end(unit)
 
     def get_range(self, unit=None):
-        """Return the wavelength range (Lambda_min, Lambda_max).
+        """Return the wavelength range (Lambda_min, Lambda_max) of the spectrum.
 
         Parameters
         ----------
         unit : `astropy.units.Unit`
-            Type of the wavelength coordinates
+            The units of the returned wavelengths.
 
         Returns
         -------
         out : float array
+            The minimum and maximum wavelengths.
         """
         if self.wave is not None:
             return self.wave.get_range(unit)
 
     def mask_region(self, lmin=None, lmax=None, inside=True, unit=u.angstrom):
-        """Mask the spectrum inside/outside [lmin,lmax].
+        """Mask spectrum pixels inside or outside a wavelength range, [lmin,lmax].
 
         Parameters
         ----------
         lmin : float
-            minimum wavelength.
+            The minimum wavelength of the range, or None to choose the
+            wavelength of the first pixel in the spectrum.
         lmax : float
-            maximum wavelength.
+            The maximum wavelength of the range, or None to choose the
+            wavelength of the last pixel in the spectrum.
         unit : `astropy.units.Unit`
-            Type of the wavelength coordinates. If None, inputs are in pixels.
+            The wavelength units of lmin and lmax. If None, lmin and
+            lmax are assumed to be pixel indexes.
         inside : bool
-            If inside is True, pixels inside [lmin,lmax] are masked.
-            If inside is False, pixels outside [lmin,lmax] are masked.
+            If inside is True, pixels inside the range [lmin,lmax] are masked.
+            If inside is False, pixels outside the range [lmin,lmax] are masked.
         """
         if self.wave is None:
             raise ValueError('Operation forbidden without world coordinates '
@@ -296,6 +344,54 @@ class Spectrum(ArithmeticMixin, DataArray):
             else:
                 self.data[:pix_min] = np.ma.masked
                 self.data[pix_max + 1:] = np.ma.masked
+
+    def _wavelengths_to_slice(self, lmin, lmax, unit):
+        """Return the slice that selects a specified wavelength range.
+
+        Parameters
+        ----------
+        lmin : float
+            The minimum wavelength of a wavelength range, or the wavelength
+            of a single pixel if lmax is None.
+        lmax : float or None
+            The maximum wavelength of the wavelength range.
+        unit : `astropy.units.Unit`
+            The wavelength units of the lmin and lmax arguments. The
+            default is angstroms. If unit is None, then lmin and lmax
+            are interpreted as array indexes within the spectrum.
+
+        Returns
+        -------
+        out : slice
+            The slice needed to select pixels within the specified wavelength
+            range.
+        """
+
+        if unit is not None and self.wave is None:
+            raise ValueError('Operation forbidden without world coordinates '
+                             'along the spectral direction')
+
+        # Get the pixel index that corresponds to the minimum wavelength.
+        if lmin is None:
+            i1 = 0
+        else:
+            if unit is None:
+                i1 = max(0, int(lmin + 0.5))
+            else:
+                i1 = max(0, self.wave.pixel(lmin, nearest=True, unit=unit))
+
+        # Get the pixel index that corresponds to the maximum wavelength.
+        if lmax is None:
+            i2 = self.shape[0]
+        else:
+            if unit is None:
+                i2 = min(self.shape[0], int(lmax + 0.5))
+            else:
+                i2 = min(self.shape[0],
+                         self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
+
+        return slice(i1, i2)
+
 
     def _interp(self, wavelengths, spline=False):
         """return the interpolated values corresponding to the wavelength
@@ -409,20 +505,24 @@ class Spectrum(ArithmeticMixin, DataArray):
             self.wave = None
 
     def _rebin(self, factor, margin='center'):
-        """Shrink the size of the spectrum by factor.
+        """Shrink the size of a spectrum by an integer factor, by summing
+        neighboring pixels.
 
         Parameters
         ----------
         factor : int
-            factor
+            The integer division factor.
         margin : string in 'center'|'right'|'left'
-            This parameters is used if new size is not an integer multiple of
-            the original size.
-
-            - 'center' : two pixels added, on the left and on the right of
-              the spectrum.
-            - 'right': one pixel added on the right of the spectrum.
-            - 'left': one pixel added on the left of the spectrum.
+            When the dimension of the spectrum is not an integer
+            multiple of the division factor, a sub-spectrum is chosen
+            for rebinning. The dimension of this sub-spectrum is an
+            integer multiple of the division factor. The margin
+            parameter determines how the sub-spectrum is chosen. If
+            'center' is selected, then the sub-spectrum is taken from the
+            center of the spectrum. If 'right' is selected, then the
+            start of the sub-spectrum is the first pixel of the input
+            spectrum. If 'left' is selected, then the last pixel of
+            the sub-spectrum is the last pixel of the input spectrum.
 
         """
 
@@ -510,21 +610,24 @@ class Spectrum(ArithmeticMixin, DataArray):
             self.wave = None
 
     def rebin(self, factor, margin='center', inplace=False):
-        """Return a spectrum that shrinks the size of the current spectrum by
-        factor.
+        """Shrink the size of a spectrum by an integer factor, by summing
+        neighboring pixels.
 
         Parameters
         ----------
         factor : int
-            factor
+            The integer factor by which the spectrum should be shrunk.
         margin : string in 'center'|'right'|'left'
-            This parameters is used if new size is not an integer multiple of
-            the original size.
-
-            - 'center' : two pixels added, on the left
-              and on the right of the spectrum.
-            - 'right': one pixel added on the right of the spectrum.
-            - 'left': one pixel added on the left of the spectrum.
+            When the dimension of the spectrum is not an integer
+            multiple of the division factor, a sub-spectrum is chosen
+            for rebinning. The dimension of this sub-spectrum is an
+            integer multiple of the division factor. The margin
+            parameter determines how the sub-spectrum is chosen. If
+            'center' is selected, then the sub-spectrum is taken from the
+            center of the spectrum. If 'right' is selected, then the
+            start of the sub-spectrum is the first pixel of the input
+            spectrum. If 'left' is selected, then the last pixel of
+            the sub-spectrum is the last pixel of the input spectrum.
         inplace : bool
             If False, return a rebinned copy of the spectrum (the default).
             If True, rebin the original spectrum in-place, and return that.
@@ -532,6 +635,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         Returns
         -------
         out : Spectrum
+
         """
         # Should we rebin the spectrum in-place, or rebin a copy of the spectrum?
 
@@ -665,43 +769,41 @@ class Spectrum(ArithmeticMixin, DataArray):
         return res
 
     def mean(self, lmin=None, lmax=None, weight=True, unit=u.angstrom):
-        """Compute the mean flux value over a wavelength range.
+        """Compute the mean flux over a specified wavelength range.
 
         Parameters
         ----------
         lmin : float
-            Minimum wavelength.
+            The minimum wavelength of the range, or None to choose the
+            wavelength of the first pixel in the spectrum.
         lmax : float
-            Maximum wavelength.
+            The maximum wavelength of the range, or None to choose the
+            wavelength of the last pixel in the spectrum.
         unit : `astropy.units.Unit`
-            Type of the wavelength coordinates. If None, inputs are in pixels.
+            The wavelength units of lmin and lmax. If None, lmin and
+            lmax are assumed to be pixel indexes.
         weight : bool
-            If weight is True, compute the weighted average
-            with the inverse of variance as weight.
+            If weight is True, compute the weighted mean, inversely
+            weighting each pixel by its variance.
 
         Returns
         -------
         out : float
+            The mean flux of the specified wavelength range.
+
         """
+
+        # Don't attempt to perform a weighted mean if there are no variances.
         if self._var is None:
             weight = False
-        if lmin is None:
-            i1 = 0
-        else:
-            if unit is None:
-                i1 = max(0, int(lmin + 0.5))
-            else:
-                i1 = max(0, self.wave.pixel(lmin, nearest=True, unit=unit))
-        if lmax is None:
-            i2 = self.shape[0]
-        else:
-            if unit is None:
-                i2 = min(self.shape[0], int(lmax + 0.5))
-            else:
-                i2 = min(self.shape[0],
-                         self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
 
-        subspe = self[i1:i2]
+        # Get the slice that selects the specified wavelength range.
+        lambda_slice = self._wavelengths_to_slice(lmin, lmax, unit)
+
+        # Get the sub-spectrum of the specified wavelength range.
+        subspe = self[lambda_slice]
+
+        # Obtain the mean flux of the sub-spectrum.
         if weight:
             weights = 1.0 / subspe.var.filled(np.inf)
             flux = np.ma.average(subspe.data, weights=weights)
@@ -710,70 +812,119 @@ class Spectrum(ArithmeticMixin, DataArray):
         return flux
 
     def sum(self, lmin=None, lmax=None, weight=True, unit=u.angstrom):
-        """Sum the flux value over [lmin,lmax].
+        """Obtain the sum of the fluxes within a specified wavelength range.
 
         Parameters
         ----------
         lmin : float
-            Minimum wavelength.
+            The minimum wavelength of the range, or None to choose the
+            wavelength of the first pixel in the spectrum.
         lmax : float
-            Maximum wavelength.
+            The maximum wavelength of the range, or None to choose the
+            wavelength of the last pixel in the spectrum.
         unit : `astropy.units.Unit`
-            Type of the wavelength coordinates. If None, inputs are in pixels.
+            The wavelength units of lmin and lmax. If None, lmin and
+            lmax are assumed to be pixel indexes.
         weight : bool
-            If weight is True, compute the weighted average
-            with the inverse of variance as weight.
+            If weight is True, compute the weighted sum, inversely
+            weighting each pixel by its variance.
 
         Returns
         -------
         out : float
+            The total flux of the specified wavelength range.
         """
-        if lmin is None:
-            i1 = 0
-        else:
-            if unit is None:
-                i1 = int(lmin + 0.5)
-            else:
-                i1 = max(0, self.wave.pixel(lmin, True, unit))
-        if lmax is None:
-            i2 = self.shape[0]
-        else:
-            if unit is None:
-                i2 = int(lmax + 0.5)
-            else:
-                i2 = min(self.shape[0], self.wave.pixel(lmax, True, unit) + 1)
 
-        subspe = self[i1:i2]
+        # Get the slice that selects the specified wavelength range.
+        lambda_slice = self._wavelengths_to_slice(lmin, lmax, unit)
+
+        # Get the sub-spectrum of the wavelength range.
+        subspe = self[lambda_slice]
+
+        # Perform a weighted sum?
         if weight and self._var is not None:
             weights = 1.0 / subspe.var.filled(np.inf)
 
             # How many unmasked pixels will be averaged?
-
             nsum = np.ma.count(subspe.data)
 
             # The weighted average multiplied by the number of unmasked pixels.
-
             flux = nsum * np.ma.average(subspe.data, weights=weights)
         else:
             flux = subspe.data.sum()
         return flux
 
     def integrate(self, lmin=None, lmax=None, unit=u.angstrom):
-        """Integrate the flux value over [lmin,lmax].
+        """Integrate the flux over a specified wavelength range.
+
+        The units of the integrated flux depend on the flux units of
+        the spectrum and the wavelength units, as follows:
+
+        If the flux units of the spectrum, self.unit, are something
+        like Q per angstrom, Q per nm, or Q per um, then the
+        integrated flux will have the units of Q. For example, if the
+        fluxes have units of 1e-20 erg/cm2/Angstrom/s, then the units
+        of the integration will be 1e-20 erg/cm2/s.
+
+        Alternatively, if unit is not None, then the unit of the
+        returned number will be the product of the units in self.unit
+        and unit. For example, if the flux units are counts/s, and
+        unit=u.angstrom, then the integrated flux will have units
+        counts*Angstrom/s.
+
+        Finally, if unit is None, then the units of the returned
+        number will be the product of self.unit and the units of the
+        wavelength axis of the spectrum (ie. self.wave.unit).
+
+        The result of the integration is returned as an astropy
+        Quantity, which holds the integrated value and its physical
+        units.  The units of the returned number can be determined
+        from the .unit attribute of the return value. Alternatively
+        the returned value can be converted to another unit, using the
+        to() method of astropy quantities.
 
         Parameters
         ----------
         lmin : float
-            Minimum wavelength.
+            The minimum wavelength of the range to be integrated,
+            or None (the default), to select the minimum wavelength
+            of the first pixel of the spectrum. If this is below the
+            minimum wavelength of the spectrum, the integration
+            behaves as though the flux in the first pixel extended
+            down to that wavelength.
+
+            If the unit argument is None, lmin is a pixel index, and
+            the wavelength of the center of this pixel is used as the
+            lower wavelength of the integration.
         lmax : float
-            Maximum wavelength.
+            The maximum wavelength of the range to be integrated,
+            or None (the default), to select the maximum wavelength
+            of the last pixel of the spectrum. If this is above the
+            maximum wavelength of the spectrum, the integration
+            behaves as though the flux in the last pixel extended
+            up to that wavelength.
+
+            If the unit argument is None, lmax is a pixel index, and
+            the wavelength of the center of this pixel is used as the
+            upper wavelength of the integration.
         unit : `astropy.units.Unit`
-            Type of the wavelength coordinates. If None, inputs are in pixels.
+            The wavelength units of lmin and lmax, or None to indicate
+            that lmin and lmax are pixel indexes.
 
         Returns
         -------
-        out : float
+        out : `astropy.units.quantity.Quantity`
+            The result of the integration, expressed as a floating
+            point number with accompanying units. The integrated value
+            and its physical units can be extracted using the .value
+            and .unit attributes of the returned quantity. The value
+            can also be converted to different units, using the .to()
+            method of the returned objected.
+
         """
+
+        # Get the index of the first pixel within the wavelength range,
+        # and the minimum wavelength of the integration.
         if lmin is None:
             i1 = 0
             lmin = self.wave.coord(-0.5, unit=unit)
@@ -785,6 +936,8 @@ class Spectrum(ArithmeticMixin, DataArray):
                 l1 = self.wave.pixel(lmin, False, unit)
             i1 = max(0, int(l1))
 
+        # Get the index of the last pixel within the wavelength range, plus
+        # 1, and the maximum wavelength of the integration.
         if lmax is None:
             i2 = self.shape[0]
             lmax = self.wave.coord(i2 - 0.5, unit=unit)
@@ -796,24 +949,52 @@ class Spectrum(ArithmeticMixin, DataArray):
                 l2 = self.wave.pixel(lmax, False, unit)
             i2 = min(self.shape[0], int(l2) + 1)
 
+        # Get the lower wavelength of each pixel, including one extra
+        # pixel at the end of the range.
         d = self.wave.coord(-0.5 + np.arange(i1, i2 + 1), unit=unit)
+
+        # Change the wavelengths of the first and last pixels to
+        # truncate or extend those pixels to the starting and ending
+        # wavelengths of the spectrum.
         d[0] = lmin
         d[-1] = lmax
 
         if unit is None:
             unit = self.wave.unit
 
-        subspe = self[i1:i2]
+        # Get the data of the subspectrum covered by the integration.
+        data = self.data[i1:i2]
 
-        if u.angstrom in self.unit.bases and unit is not u.angstrom:
-            try:
-                return np.ma.sum(subspe.data *
-                                 ((np.diff(d) * unit).to(u.angstrom).value)
-                                 ) * self.unit * u.angstrom
-            except:
-                return (subspe.data * np.diff(d)).sum() * self.unit * unit
+        # If the spectrum has been calibrated, the flux units will be
+        # per angstrom, per nm, per um etc. If these wavelength units
+        # don't match the units of the wavelength axis of the
+        # integration, then although the results will be correct, they
+        # will have inconvenient units. In such cases attempt to
+        # convert the units of the wavelength axis to match the flux
+        # units.
+        if unit in self.unit.bases:      # The wavelength units already agree.
+            out_unit = self.unit * unit
         else:
-            return (subspe.data * np.diff(d)).sum() * self.unit * unit
+            try:
+                # Attempt to determine the wavelength units of the flux density.
+                wunit = (set(self.unit.bases) &
+                         set([u.pm, u.angstrom, u.nm, u.um])).pop()
+
+                # Scale the wavelength axis to have the same wavelength units.
+                d *= unit.to(wunit)
+
+                # Get the final units of the integration.
+                out_unit = self.unit * wunit
+
+            # If the wavelength units of the flux weren't recognized,
+            # simply return the units unchanged.
+            except:
+                out_unit = self.unit * unit
+
+        # Integrate the spectrum by multiplying the value of each pixel
+        # by the difference in wavelength from the start of that pixel to
+        # the start of the next pixel.
+        return (data * np.diff(d)).sum() * out_unit
 
     def poly_fit(self, deg, weight=True, maxiter=0,
                  nsig=(-3.0, 3.0), verbose=False):
@@ -1079,41 +1260,33 @@ class Spectrum(ArithmeticMixin, DataArray):
             return np.array([mag, vflux, l0])
 
     def truncate(self, lmin=None, lmax=None, unit=u.angstrom):
-        """Truncate a spectrum in place.
+        """Truncate the wavelength range of a spectrum in-place.
 
         Parameters
         ----------
         lmin : float
-            Minimum wavelength.
-        lmax : float
-            Maximum wavelength.
+            The minimum wavelength of a wavelength range, or the wavelength
+            of a single pixel if lmax is None.
+        lmax : float or None
+            The maximum wavelength of the wavelength range.
         unit : `astropy.units.Unit`
-            Type of the wavelength coordinates. If None, inputs are in pixels.
+            The wavelength units of the lmin and lmax arguments. The
+            default is angstroms. If unit is None, then lmin and lmax
+            are interpreted as array indexes within the spectrum.
 
         """
-        if lmin is None:
-            i1 = 0
-        elif unit is None:
-            i1 = max(0, int(lmin + 0.5))
-        else:
-            i1 = max(0, self.wave.pixel(lmin, nearest=True, unit=unit))
 
-        if lmax is None:
-            i2 = self.shape[0]
-        elif unit is None:
-            i2 = min(self.shape[0], int(lmax + 0.5))
-        else:
-            i2 = min(self.shape[0],
-                     self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
+        # Get the slice that selects the specified wavelength range.
+        lambda_slice = self._wavelengths_to_slice(lmin, lmax, unit)
 
-        if i1 == i2:
+        if lambda_slice.start == lambda_slice.stop:
             raise ValueError('Minimum and maximum wavelengths are equal')
 
-        if i2 == i1 + 1:
+        if lambda_slice.start > lambda_slice.stop:
             raise ValueError('Minimum and maximum wavelengths '
                              'are outside the spectrum range')
 
-        res = self.__getitem__(slice(i1, i2, 1))
+        res = self[lambda_slice]
         self._data = res._data
         self._var = res._var
         self._mask = res._mask
@@ -1223,7 +1396,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             lmax = (lmax[0] + lmax[1]) / 2.
 
         # spec = self.truncate(lmin, lmax)
-        spec = self.get_lambda(lmin, lmax, unit=unit)
+        spec = self.subspec(lmin, lmax, unit=unit)
         data = spec._interp_data(spline)
         if unit is None:
             l = np.arange(self.shape, dtype=float)
@@ -1453,7 +1626,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             lmax = lmax[0]
 
         # spec = self.truncate(lmin, lmax)
-        spec = self.get_lambda(lmin, lmax, unit=unit)
+        spec = self.subspec(lmin, lmax, unit=unit)
         data = spec._interp_data(spline)
         if unit is None:
             l = np.arange(self.shape, dtype=float)
@@ -1635,7 +1808,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             fmax = self.mean(lmax[0], lmax[1], weight=False, unit=unit)
             lmax = lmax[0]
 
-        spec = self.get_lambda(lmin, lmax, unit=unit)
+        spec = self.subspec(lmin, lmax, unit=unit)
         data = spec._interp_data(spline)
         if unit is None:
             l = np.arange(self.shape, dtype=float)
@@ -1857,7 +2030,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             lmax = (lmax[0] + lmax[1]) / 2.
 
         # spec = self.truncate(lmin, lmax)
-        spec = self.get_lambda(lmin, lmax, unit=unit)
+        spec = self.subspec(lmin, lmax, unit=unit)
         data = spec._interp_data(spline)
         l = spec.wave.coord(unit=unit)
         d = data
