@@ -72,7 +72,7 @@ def test_get_Cube():
     assert_array_equal(cube1[2, :, :].shape, (6, 5))
     assert_equal(cube1[:, 2, 3].shape[0], 10)
     assert_array_equal(cube1[1:7, 0:2, 0:3].shape, (6, 2, 3))
-    assert_array_equal(cube1.get_lambda(1.2, 15.6).shape, (6, 6, 5))
+    assert_array_equal(cube1.select_lambda(1.2, 15.6).shape, (6, 6, 5))
     a = cube1[2:4, 0:2, 1:4]
     assert_array_equal(a.get_start(), (3.5, 0, 1))
     assert_array_equal(a.get_end(), (6.5, 1, 3))

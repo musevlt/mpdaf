@@ -622,8 +622,8 @@ class Cube(ArithmeticMixin, DataArray):
         else:
             return obj
 
-    def get_lambda(self, lbda_min, lbda_max=None, unit_wave=u.angstrom):
-        """Return the sub-cube corresponding to a wavelength range.
+    def select_lambda(self, lbda_min, lbda_max=None, unit_wave=u.angstrom):
+        """Return the image or sub-cube corresponding to a wavelength range.
 
         Parameters
         ----------
