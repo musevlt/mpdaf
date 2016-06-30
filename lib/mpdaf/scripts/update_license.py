@@ -46,7 +46,7 @@ GIT_CMD = ("git log --date=format:%Y --format='%ad %aN <%aE>' {} | "
 
 def modify(lines, license, start=0):
     print('Modify license text ... ', end='')
-    for i, l in enumerate(lines[1:], 1):
+    for i, l in enumerate(lines[start + 1:], start + 1):
         if l == '"""\n':
             end = i
             break
@@ -103,14 +103,15 @@ if __name__ == "__main__":
         license = LICENSE.splitlines(True)
         license = license[:2] + authorlist + license[2:]
 
-        if lines[0].startswith('"""Copyright'):
-            lines = modify(lines, license)
-        elif lines[1].startswith('"""Copyright'):
-            lines = modify(lines, license, start=1)
-        elif lines[0].startswith('# -*- coding'):
-            lines = insert(lines, license, pos=1)
+        start = 1 if lines[0].startswith('# -*- coding') else 0
+
+        if lines[start].startswith('"""Copyright'):
+            lines = modify(lines, license, start=start)
+        elif lines[start] == '"""\n' and \
+                lines[start + 1].startswith('Copyright '):
+            lines = modify(lines, license, start=start)
         else:
-            lines = insert(lines, license, pos=0)
+            lines = insert(lines, license, pos=start)
 
         with open(filename, 'w') as f:
             f.write(''.join(lines))
