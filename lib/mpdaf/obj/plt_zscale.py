@@ -1,5 +1,6 @@
 """
 Copyright (c) 2010-2016 CNRS / Centre de Recherche Astrophysique de Lyon
+Copyright (C)      2005 Association of Universities for Research in Astronomy (AURA)
 Copyright (c) 2012-2016 Laure Piqueras <laure.piqueras@univ-lyon1.fr>
 Copyright (c) 2014-2016 Simon Conseil <simon.conseil@univ-lyon1.fr>
 
@@ -30,6 +31,8 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
+
+# Zscale implementation based on the one from the STScI Numdisplay package.
 
 from __future__ import absolute_import, division
 

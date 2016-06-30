@@ -1,5 +1,6 @@
 """
 Copyright (c) 2010-2016 CNRS / Centre de Recherche Astrophysique de Lyon
+Copyright (c) 2015-2016 Jarle Brinchman <jarle@strw.leidenuniv.nl>
 Copyright (c) 2015-2016 Laure Piqueras <laure.piqueras@univ-lyon1.fr>
 Copyright (c) 2015-2016 Simon Conseil <simon.conseil@univ-lyon1.fr>
 Copyright (c)      2016 Roland Bacon <roland.bacon@univ-lyon1.fr>
@@ -31,6 +32,21 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
+
+# sea.py contains SpectExtractAnd[nothing], the first part of
+# SpecExtractAndWeb software developed by Jarle.
+#
+# This software has been developed by Jarle Brinchmann (University of Leiden)
+# and ported to python by Laure Piqueras (CRAL).
+#
+# It takes a MUSE data cube and a catalogue of objects and extracts small
+# sub-cubes around each object. From this it creates narrow-band images and
+# eventually spectra. To do the latter it is necessary to run an external
+# routine which runs sextractor on the images to define spectrum extraction
+# apertures.
+#
+# Please contact Jarle for more info at jarle@strw.leidenuniv.nl
+
 from __future__ import absolute_import, division
 
 from astropy.io import fits as pyfits
@@ -275,7 +291,7 @@ def mask_creation(source, maps):
                                       data=findSkyMask(list(maps.values())))
     source.images['MASK_INTER'] = Image(wcs=wcs, dtype=np.uint8, copy=False,
                                         data=intersection(list(r['seg'].values())))
-    
+
 def compute_spectrum(cube, weights):
     """Compute a spectrum for a cube by summing along the spatial axis.
     The method conserves the flux by using the algorithm
@@ -285,15 +301,15 @@ def compute_spectrum(cube, weights):
 
     Parameters
     ----------
-    
+
     cube : `~mpdaf.obj.Cube`
            Data cube
     weights : array
-              An array of weights associated with the data values. 
+              An array of weights associated with the data values.
     """
     w = np.array(weights, dtype=np.float)
     excmsg = 'Incorrect dimensions for the weights (%s) (it must be (%s))'
-    
+
     if len(w.shape) == 3:
         if not np.array_equal(w.shape, cube.shape):
             raise IOError(excmsg % (w.shape, cube.shape))

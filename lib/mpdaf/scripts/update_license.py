@@ -74,7 +74,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 GIT_CMD = ("git log --date=format:%Y --format='%ad %aN <%aE>' --date-order "
            "--reverse {} | cut -f1 --complement")
 
-EXCLUDES = ('_githash.py', 'numpycompat.py')
+EXCLUDES = ('lib/mpdaf/_githash.py', 'lib/mpdaf/tools/numpycompat.py')
+
+ADDITIONAL_COPYRIGHTS = {
+    'lib/mpdaf/sdetect/sea.py': [
+        'Copyright (c) 2015-2016 Jarle Brinchman <jarle@strw.leidenuniv.nl>\n'
+    ],
+    'lib/mpdaf/obj/plt_zscale.py': [
+        'Copyright (C)      2005 Association of Universities for Research in Astronomy (AURA)\n'
+    ]
+}
 
 
 def modify(lines, license, start=0):
@@ -109,7 +118,7 @@ if __name__ == "__main__":
     for filename in files:
         print('- {} : '.format(filename), end='')
 
-        if os.path.basename(filename) in EXCLUDES:
+        if filename in EXCLUDES:
             print('SKIP')
             continue
 
@@ -130,6 +139,9 @@ if __name__ == "__main__":
                 authors[author] = [year]
 
         authorlist = []
+        if filename in ADDITIONAL_COPYRIGHTS:
+            authorlist.extend(ADDITIONAL_COPYRIGHTS[filename])
+
         for author, years in authors.items():
             years = sorted(set(years))
             if len(years) == 1:
