@@ -43,6 +43,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 GIT_CMD = ("git log --date=format:%Y --format='%ad %aN <%aE>' {} | "
            "cut -f1 --complement")
 
+EXCLUDES = ('_githash.py', 'numpycompat.py')
+
 
 def modify(lines, license, start=0):
     print('Modify license text ... ', end='')
@@ -75,6 +77,11 @@ if __name__ == "__main__":
 
     for filename in files:
         print('- {} : '.format(filename), end='')
+
+        if os.path.basename(filename) in EXCLUDES:
+            print('SKIP')
+            continue
+
         with open(filename, 'r') as f:
             lines = f.readlines()
 
