@@ -45,7 +45,7 @@ from datetime import datetime
 from numpy import ma
 
 from .coords import WCS, WaveCoord
-from .objs import UnitMaskedArray, UnitArray
+from .objs import UnitMaskedArray, UnitArray, is_int
 from ..tools import (MpdafWarning, MpdafUnitsWarning, deprecated,
                      fix_unit_read, is_valid_fits_file, copy_header,
                      read_slice_from_fits)
@@ -1152,3 +1152,149 @@ class DataArray(object):
             except:
                 self._logger.warning('Unable to install wavelength coordinates',
                                      exc_info=True)
+
+    def _rebin(self, factor, margin='center', inplace=False):
+        """Combine neighboring pixels to reduce the size of a cube by integer factors along each axis.
+
+        This function is designed to be called by the rebin methods of
+        Spectrum, Image and Cube.
+
+        Each output pixel is the mean of n pixels, where n is the
+        product of the reduction factors in the factor argument.
+
+        Parameters
+        ----------
+        factor : int or (int,int,int)
+            The integer reduction factors along the wavelength, z
+            array axis, and the image y and x array axes,
+            respectively. Python notation: (nz,ny,nx).
+        margin : 'center', 'origin', 'left' or 'right'
+            When the dimensions of the input array are not integer
+            multiples of the reduction factor, the array is truncated
+            to remove just enough pixels that its dimensions are
+            multiples of the reduction factor. This subarray is then
+            rebinned in place of the original array. The margin
+            parameter determines which pixels of the input array are
+            truncated, and which remain.
+
+            The options are:
+              'origin' or 'center':
+                 The starts of the axes of the output array are
+                 coincident with the starts of the axes of the input
+                 array.
+              'center':
+                 The center of the output array is aligned with the
+                 center of the input array, within one pixel along
+                 each axis.
+              'right':
+                 The ends of the axes of the output array are
+                 coincident with the ends of the axes of the input
+                 array.
+        inplace : bool
+            If False, return a rebinned copy of the DataArray (the default).
+            If True, rebin the original DataArray in-place, and return that.
+
+        """
+
+        # Change the input cube or change a copy of it?
+        res = self if inplace else self.copy()
+
+        # Reject unsupported margin modes.
+        if margin not in ('center', 'origin', 'left', 'right'):
+            raise ValueError('Unsuported margin parameter: %s' % margin)
+
+        # Use the same reduction factor for all dimensions?
+        if is_int(factor):
+            factor = np.ones((res.ndim), dtype=int) * factor
+
+        # The reduction factors must be in the range 1 to shape-1.
+        if np.any(factor < 1) or np.any(factor >= res.shape):
+            raise ValueError('The reduction factors must be from 1 to shape.')
+
+        # Compute the number of pixels by which each axis dimension
+        # exceeds being an integer multiple of its reduction factor.
+        n = np.mod(res.shape, factor).astype(int)
+
+        # If necessary, compute the slices needed to truncate the
+        # dimesions to be integer multiples of the axis reduction
+        # factors.
+        if np.any(n != 0):
+
+            # Add a slice for each axis to a list of slices.
+            slices = []
+            for k in range(res.ndim):
+                # Compute the slice of axis k needed to truncate this axis.
+                if margin == 'origin' or margin == 'left':
+                    nstart = 0
+                elif margin == 'center':
+                    nstart = n[k] // 2
+                elif margin == 'right':
+                    nstart = n[k]
+                slices.append(slice(nstart, res.shape[k] - n[k] + nstart))
+
+            # Truncate the data, variance and mask arrays.
+            res._data = res._data[slices]
+            if res._var is not None:
+                res._var = res._var[slices]
+            res._mask = res._mask[slices]
+
+            # Update the spatial world coordinates to match the
+            # truncated array.
+            if res._has_wcs and res.wcs is not None and res.ndim > 1:
+                res.wcs = res.wcs[slices[-2], slices[-1]]
+
+            # Update the spectral world coordinates to match the
+            # truncated array.
+            if res._has_wave and res.wave is not None and res.ndim != 2:
+                res.wave = res.wave[slices[0]]
+
+        # At this point the dimensions are integer multiples of
+        # the reduction factors. What is the shape of the output image?
+        newshape = res.shape / factor
+
+        # Create a list of array dimensions that are composed of each
+        # of the final dimensions of the array followed by the corresponding
+        # axis reduction factor. Reshaping with these dimensions places all
+        # of the pixels of each axis that are to be summed on its own axis.
+        preshape = np.column_stack((newshape, factor)).ravel()
+
+        # Compute the number of unmasked pixels of the input array
+        # that will contribute to each mean pixel in the output array.
+        unmasked = res.data.reshape(preshape).count(1)
+        for k in range(2, res.ndim + 1):
+            unmasked = unmasked.sum(k)
+
+        # Reduce the size of the data array by taking the mean of
+        # successive groups of 'factor[0] x factor[1]' pixels. Note
+        # that the following uses np.ma.mean(), which takes account of
+        # masked pixels.
+        newdata = res.data.reshape(preshape)
+        for k in range(1, res.ndim + 1):
+            newdata = newdata.mean(k)
+        res._data = newdata.data
+
+        # The treatment of the variance array is complicated by the
+        # possibility of masked pixels in the data array. A sum of N
+        # data pixels p[i] of variance v[i] has a variance of
+        # sum(v[i] / N^2), where N^2 is the number of unmasked pixels
+        # in that particular sum.
+        if res._var is not None:
+            newvar = res.var.reshape(preshape)
+            for k in range(1, res.ndim + 1):
+                newvar = newvar.sum(k)
+            newvar /= unmasked**2
+            res._var = newvar.data
+
+        # Any pixels in the output array that come from zero unmasked
+        # pixels of the input array should be masked.
+        res._mask = unmasked < 1
+
+        # Update spatial world coordinates.
+        if res._has_wcs and res.wcs is not None and res.ndim > 1:
+            res.wcs = res.wcs.rebin([factor[-2], factor[-1]])
+
+        # Update the spectral world coordinates.
+        if res._has_wave and res.wave is not None and res.ndim != 2:
+            res.wave.rebin(factor[0])
+
+        return res

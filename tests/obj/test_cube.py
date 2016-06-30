@@ -385,14 +385,119 @@ def test_median():
 @attr(speed='fast')
 def test_rebin():
     """Cube class: testing rebin methods"""
-    cube1 = generate_cube(data=1.0, wave=WaveCoord(crval=1))
-    cube2 = cube1.rebin(factor=2)
-    assert_equal(cube2[0, 0, 0], 1)
-    assert_array_equal(cube2.get_start(), (1.5, 0.5, 0.5))
-    cube2 = cube1.rebin(factor=2, flux=True, margin='origin')
-    assert_equal(cube2[-1, -1, -1], 0.5)
-    assert_array_equal(cube2.get_start(), (1.5, 0.5, 0.5))
 
+    # Create spectral and spatial world coordinates that make each
+    # pixel equal its index.
+
+    wcs = WCS(crval=(0, 0), crpix=(1, 1), cdelt=(1.0, 1.0))
+    wave = WaveCoord(crval=0.0, crpix=1.0, cdelt=1.0)
+
+    # Create a cube with even valued dimensions, filled with ones.
+    data = np.ma.ones((4,6,8))       # Start with all pixels 1.0
+    data.reshape(4*6*8)[::2] = 0.0   # Set every second pixel to 0.0
+    data.mask = data < -1            # Unmask all pixels.
+    cube1 = generate_cube(data=data.data, mask=data.mask, wcs=wcs, wave=wave)
+
+    # Rebin each of the axes such as to leave only 2 pixels along each
+    # dimension.
+    factor = np.array([2, 3, 4])
+    cube2 = cube1.rebin(factor=factor)
+
+    # Compute the expected output cube, given that the input cube is a
+    # repeating pattern of 1,0, and we divided the x-axis by a
+    # multiple of 2, the output pixels should all be 0.5.
+    expected = np.ma.ones((2,2,2)) * 0.5
+    expected.mask = expected < 0  # All pixels unmasked.
+    assert_masked_allclose(cube2.data, expected)
+
+    # Do the same experiment but with the zero valued pixels all masked.
+    data = np.ma.ones((4,6,8))       # Start with all pixels 1.0
+    data.reshape(4*6*8)[::2] = 0.0   # Set every second pixel to 0.0
+    data.mask = data < 0.1           # Mask the pixels that are 0.0
+    cube1 = generate_cube(data=data.data, mask=data.mask, wcs=wcs, wave=wave)
+
+    # Rebin each of the axes such as to leave only 2 pixels along each
+    # dimension.
+    factor = np.array([2, 3, 4])
+    cube2 = cube1.rebin(factor=factor)
+
+    # Compute the expected output cube. The zero valued pixels are all
+    # masked, leaving just pixels with values of 1, so the mean that is
+    # recorded in each output pixel should be 1.0.
+    expected = np.ma.ones((2,2,2)) * 1.0
+    expected.mask = expected < 0  # All output pixels should be unmasked.
+    assert_masked_allclose(cube2.data, expected)
+
+    # Check that the world coordinates are correct.  We averaged
+    # factor[] pixels whose coordinates were equal to their pixel
+    # indexes, so the coordinates of the first pixel of the rebinned
+    # cube should be the mean of the first factor indexes along each
+    # dimension. The sum from k=0 to factor-1 is
+    # ((factor-1)*factor)/2, and dividing this by the number of pixels
+    # gives (factor-1)/2.
+    assert_allclose(np.asarray(cube2.get_start()), (factor-1) / 2.0)
+
+    # Create a cube that has a larger number of pixels along the
+    # y and x axes of the images, so that we can divide those axes
+    # by a number whose remainder is large enough to test selection
+    # of the truncated part of the cube.
+    shape = np.array([4, 17, 15])
+    data = np.ma.ones(shape)                # Start with all pixels 1.0
+    data.reshape(shape.prod())[::2] = 0.0   # Set every second pixel to 0.0
+    data.mask = data < -1                   # Unmask all pixels.
+    cube1 = generate_cube(data=data.data, mask=data.mask, wcs=wcs, wave=wave)
+
+    # Choose the rebinning factors such that there is a significant
+    # remainder after dividing the final two dimensions of the cube by
+    # the specified factor. We don't do this for the first axis because
+    # we want the interleaved pattern of 0s and 1s to remain.
+    factor = np.array([2, 7, 9])
+    cube2 = cube1.rebin(factor=factor, margin='origin')
+
+    # Compute the expected output cube. Given that the input cube is a
+    # repeating pattern of 1,0, and we divided the x-axis by a
+    # multiple of 2, the output pixels should all be 0.5.
+    expected_shape = cube1.shape // factor
+    expected = np.ma.ones(expected_shape) * 0.5
+    expected.mask = expected < 0  # All pixels unmasked.
+    assert_masked_allclose(cube2.data, expected)
+
+    # We chose a margin value of 'origin', so that the outer corner of
+    # pixel 0,0,0 of the input cube would also be the outer corner of
+    # pixel 0,0,0 of the rebinned cube. The output world coordinates
+    # can be calculated as described for the previous test.
+    assert_allclose(np.asarray(cube2.get_start()), (factor-1) / 2.0)
+
+    # Do the same test, but with margin='center'.
+    cube2 = cube1.rebin(factor=factor, margin='center')
+
+    # Compute the expected output cube. The values should be the
+    # same as the previous test.
+    expected_shape = cube1.shape // factor
+    expected = np.ma.ones(expected_shape) * 0.5
+    expected.mask = expected < 0  # All pixels unmasked.
+    assert_masked_allclose(cube2.data, expected)
+
+    # We chose a margin value of 'center'. We need to know which
+    # pixels should have contributed to pixel 0,0,0. First calculate
+    # how many pixels remain after dividing the shape by the reduction
+    # factors. This is the number of extra pixels that should have been
+    # discarded. Divide this by 2 to determine the number of pixels that
+    # are removed from the start of each axis.
+    cut = np.mod(shape, factor).astype(int) // 2
+
+    # The world coordinates of the input cube were equal to its pixel
+    # indexes, and the world coordinates of a pixel of the output cube
+    # is thus the mean of the indexes of the pixels that were combined
+    # to make that pixel. In this case, we combine pixels
+    # data[cut:cut+factor] along each axis. This can be calculated as
+    # the sum of pixel indexes from 0 to cut+factor, minus the sum of
+    # pixel indexes from 0 to cut, with the result divided by the number
+    # of pixels that were averaged. Again we make use of the series sum,
+    # sum[n=0..N] = (n*(n-1))/2.
+    tmp = cut + factor
+    assert_allclose(np.asarray(cube2.get_start()),
+                    ((tmp*(tmp-1)) / 2.0 - (cut*(cut-1)) / 2.0) / factor)
 
 @attr(speed='fast')
 def test_get_image():
