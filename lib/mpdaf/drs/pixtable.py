@@ -1108,32 +1108,24 @@ class PixTable(object):
         out : array of bool
             mask
         """
-        xpos, ypos = self.get_pos_sky()
+        xpos, ypos = self.get_pos_sky() # in degree or pixel here
         mask = np.zeros(self.nrows, dtype=bool)
         if numexpr:
             pi = np.pi  # NOQA
             for y0, x0, size, shape in sky:
                 if shape == 'C':
-                    if self.wcs == u.deg:
+                    if self.wcs == u.deg or self.wcs == u.rad:
                         mask |= numexpr.evaluate(
                             '(((xpos - x0) * 3600 * cos(y0 * pi / 180.)) ** 2 '
                             '+ ((ypos - y0) * 3600) ** 2) < size ** 2')
-                    elif self.wcs == u.rad:
-                        mask |= numexpr.evaluate(
-                            '(((xpos - x0) * 3600 * 180 / pi * cos(y0)) ** 2 '
-                            '+ ((ypos - y0) * 3600 * 180 / pi)** 2) < size ** 2')
                     else:
                         mask |= numexpr.evaluate(
                             '((xpos - x0) ** 2 + (ypos - y0) ** 2) < size ** 2')
                 elif shape == 'S':
-                    if self.wcs == u.deg:
+                    if self.wcs == u.deg or self.wcs == u.rad:
                         mask |= numexpr.evaluate(
                             '(abs((xpos - x0) * 3600 * cos(y0 * pi / 180.)) < size) '
                             '& (abs((ypos - y0) * 3600) < size)')
-                    elif self.wcs == u.rad:
-                        mask |= numexpr.evaluate(
-                            '(abs((xpos - x0) * 3600 * 180 / pi * cos(y0)) < size) '
-                            '& (abs((ypos - y0) * 3600 * 180 / pi) < size)')
                     else:
                         mask |= numexpr.evaluate(
                             '(abs(xpos - x0) < size) & (abs(ypos - y0) < size)')
@@ -1142,28 +1134,19 @@ class PixTable(object):
         else:
             for y0, x0, size, shape in sky:
                 if shape == 'C':
-                    if self.wcs == u.deg:
+                    if self.wcs == u.deg or self.wcs == u.rad:
                         mask |= (((xpos - x0) * 3600
                                   * np.cos(y0 * np.pi / 180.)) ** 2
                                  + ((ypos - y0) * 3600) ** 2) \
                             < size ** 2
-                    elif self.wcs == u.rad:
-                        mask |= (((xpos - x0) * 3600 * 180 / np.pi
-                                  * np.cos(y0)) ** 2
-                                 + ((ypos - y0) * 3600 * 180 / np.pi)
-                                 ** 2) < size ** 2
                     else:
                         mask |= ((xpos - x0) ** 2
                                  + (ypos - y0) ** 2) < size ** 2
                 elif shape == 'S':
-                    if self.wcs == u.deg:
+                    if self.wcs == u.deg or self.wcs == u.rad:
                         mask |= (np.abs((xpos - x0) * 3600
                                         * np.cos(y0 * np.pi / 180.)) < size) \
                             & (np.abs((ypos - y0) * 3600) < size)
-                    elif self.wcs == u.rad:
-                        mask |= (np.abs((xpos - x0) * 3600 * 180
-                                        / np.pi * np.cos(y0)) < size) \
-                            & (np.abs((ypos - y0) * 3600 * 180 / np.pi) < size)
                     else:
                         mask |= (np.abs(xpos - x0) < size) \
                             & (np.abs(ypos - y0) < size)
@@ -1249,11 +1232,11 @@ class PixTable(object):
 
         - aperture on the sky (center, size and shape)
         - wavelength range
-        - IFU number
-        - slice number
+        - IFU numbers
+        - slice numbers
         - detector pixels
         - exposure numbers
-        - stack number
+        - stack numbers
 
         The arguments can be either single value or a list of values to select
         multiple regions.
@@ -1278,6 +1261,10 @@ class PixTable(object):
             (min, max) pixel range along the Y axis
         exp : list of int
             List of exposure numbers
+        stack : list of int
+            List of stack numbers
+        method : 'and' or 'or'
+                 Logical operation used to merge the criteria
 
         Returns
         -------
@@ -1337,7 +1324,7 @@ class PixTable(object):
 
         # Compute the new pixtable
         pix = self.extract_from_mask(kmask)
-        if filename is not None:
+        if pix is not None and filename is not None:
             pix.filename = filename
             pix.write(filename)
         return pix
