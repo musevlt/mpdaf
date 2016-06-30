@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 
+import os
 import sys
 from collections import OrderedDict
 from subprocess import check_output
@@ -62,6 +63,11 @@ def insert(lines, license, pos=1):
 
 
 if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print('Usage: {} FILES...'.format(os.path.basename(sys.argv[0])))
+        print('Insert or update copyright in docstrings')
+        sys.exit()
+
     files = sys.argv[1:]
 
     for filename in files:
@@ -70,7 +76,7 @@ if __name__ == "__main__":
             lines = f.readlines()
 
         if len(lines) == 0:
-            print('Empty')
+            print('Empty file')
             continue
 
         authors = OrderedDict()
