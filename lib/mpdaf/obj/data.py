@@ -1232,21 +1232,19 @@ class DataArray(object):
                     nstart = n[k]
                 slices.append(slice(nstart, res.shape[k] - n[k] + nstart))
 
-            # Truncate the data, variance and mask arrays.
-            res._data = res._data[slices]
-            if res._var is not None:
-                res._var = res._var[slices]
-            res._mask = res._mask[slices]
+            # If there is only one axis, extract the single slice from slices.
+            if len(slices) == 1:
+                slices = slices[0]
 
-            # Update the spatial world coordinates to match the
-            # truncated array.
-            if res._has_wcs and res.wcs is not None and res.ndim > 1:
-                res.wcs = res.wcs[slices[-2], slices[-1]]
+            # Get a sliced copy of the input object.
+            tmp = res[slices]
 
-            # Update the spectral world coordinates to match the
-            # truncated array.
-            if res._has_wave and res.wave is not None and res.ndim != 2:
-                res.wave = res.wave[slices[0]]
+            # Copy the sliced data back into res, so that inplace=True works.
+            res._data = tmp._data
+            res._var = tmp._var
+            res._mask = tmp._mask
+            res.wcs = tmp.wcs
+            res.wave = tmp.wave
 
         # At this point the dimensions are integer multiples of
         # the reduction factors. What is the shape of the output image?
