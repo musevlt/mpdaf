@@ -24,9 +24,9 @@ Contents
    start
    obj
    drs
+   sdetect
    muse
    tools
-   sdetect
    contribute
    changelog
 
