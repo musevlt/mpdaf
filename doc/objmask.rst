@@ -1,10 +1,18 @@
+
 *******************
 Operations on masks
 *******************
 
-Given an object, the data and variance arrays are accessible via the properties O.data and O.var.
-These two arrays are in fact masked arrays (arrays that may have missing or invalid entries, the `numpy.ma <http://docs.scipy.org/doc/numpy/reference/maskedarray.html>`_ module provides a nearly work-alike replacement for numpy that supports data arrays with masks).
-These O.data and 0.var share a single array of boolean masking elements, which is also accessible as a simple boolean array via the 0.mask property. The shared mask can be modified through any of the three properties:
+Given a Spectrum, Image or Cube object, O, the pixel values and variances of
+this object can be accessed via the O.data and O.var arrays.  These are masked
+arrays, which are arrays that can have missing or invalid entries. Masked
+arrays, which are provided by the `numpy.ma
+<http://docs.scipy.org/doc/numpy/reference/maskedarray.html>`_ module, provide a
+nearly work-alike replacement for numpy arrays.  The O.data and O.var arrays
+share a single array of boolean masking elements. This is a simple boolean
+array, and it can be accessed directly via the O.mask property. The elements of
+this array can be modified implicitly or explicitly via operations on the data,
+variance or mask arrays. For example:
 
 .. ipython::
    :suppress:
@@ -36,8 +44,15 @@ These O.data and 0.var share a single array of boolean masking elements, which i
    @suppress
    In [4]: plt.close()
 
-The inequality symbols could also be used to mask data array where greater (`<= <mpdaf.obj.DataArray.__le__>`),
-greater or equal (`< <mpdaf.obj.DataArray.__lt__>`), less (`>= <mpdaf.obj.DataArray.__ge__>`), less or equal (`> <mpdaf.obj.DataArray.__gt__>`) than a given value:
+The comparison operators can also be used to mask all data that are not less
+than or equal (`<= <mpdaf.obj.DataArray.__le__>`) to a value, are not less than
+(`< <mpdaf.obj.DataArray.__lt__>`) a value, are not greater than or equal (`>=
+<mpdaf.obj.DataArray.__ge__>`) to a value, or that are not greater than (`>
+<mpdaf.obj.DataArray.__gt__>`) a given value. In the following example, the
+``<`` operator is used to select data that have values over 2000, and mask
+everything below this threshold. In the plot of the resulting image, the masked
+values below 2000 are drawn in white. These values would otherwise be dark blue
+if they weren't masked.
 
 .. ipython::
 
@@ -54,10 +69,13 @@ greater or equal (`< <mpdaf.obj.DataArray.__lt__>`), less (`>= <mpdaf.obj.DataAr
   In [4]: plt.close()
 
 
-Note the use of `unmask <mpdaf.obj.DataArray.unmask>` to clear the current mask.
+Note the use of the `unmask <mpdaf.obj.DataArray.unmask>` method to clear the
+current mask.
 
-It is also possible to mask pixels corresponding to a selection (`mask_selection <mpdaf.obj.DataArray.mask_selection>`)
-or to mask pixels with a variance upper than threshold value (`mask_variance <mpdaf.obj.DataArray.mask_variance>`):
+It is also possible to mask pixels that correspond to a selection, by using the
+`mask_selection <mpdaf.obj.DataArray.mask_selection>` method, or to mask pixels
+whose variance exceeds a given threshold value, by using the `mask_variance
+<mpdaf.obj.DataArray.mask_variance>` method:
 
 .. ipython::
 
@@ -80,6 +98,7 @@ On Image or Cube objects, there are additional methods to mask inside or outside
 
  - a polygonal region (`Image.mask_polygon <mpdaf.obj.Image.mask_polygon>` and `Cube.mask_polygon <mpdaf.obj.Cube.mask_polygon>`)
 
+For example:
 
 .. ipython::
 
