@@ -14,7 +14,7 @@ MPDAF has the following strict requirements:
 - `Astropy <http://www.astropy.org/>`_ version 1.0 or above
 - `Six <https://pypi.python.org/pypi/six>`_
 
-Several additional libraries can be installed for optional features:
+Several additional packages can be installed for optional features:
 
 - `Nose <http://pypi.python.org/pypi/nose/>`_, to run the unit tests.
 - `Numexpr <http://pypi.python.org/pypi/numexpr>`_, to optimize some
@@ -26,6 +26,8 @@ Several additional libraries can be installed for optional features:
 - `CFITSIO <http://heasarc.gsfc.nasa.gov/fitsio/>`_ (C library for reading and
   writing FITS files).
 - `C OpenMP library <http://openmp.org>`_, to get parallelization.
+- `SExtractor <http://www.astromatic.net/software/sextractor>` for several
+  methods of `~mpdaf.sdetect.Source` and for Muselet.
 
 .. _Numpy: http://www.numpy.org/
 
