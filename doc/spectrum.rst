@@ -122,11 +122,11 @@ By using the `mask_region <mpdaf.obj.Spectrum.mask_region>` method, we mask the 
 
   In [5]: spvar.mask_region(lmin=5575, lmax=5590, unit=spvar.wave.unit)
 
-We select (in wavelengths - `get_lambda <mpdaf.obj.Spectrum.get_lambda>` method) the clean spectrum region we want to interpolate:
+We select (in wavelengths - `~mpdaf.obj.Spectrum.subspec` method) the clean spectrum region we want to interpolate:
 
 .. ipython::
 
-  In [5]: spvarcut = spvar.get_lambda(lmin=4000, lmax=6250, unit=spvar.wave.unit)
+  In [5]: spvarcut = spvar.subspec(lmin=4000, lmax=6250, unit=spvar.wave.unit)
 
 We can then choose to apply `interp_mask <mpdaf.obj.Spectrum.interp_mask>` and perform a linear interpolation of the masked values:
 
