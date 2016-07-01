@@ -34,7 +34,7 @@ PixTable format
 +------------+-------+--------------------------------------------------------+--------------------------------------+
 | ypos       | float | y position of the pixel within the field of view       | pixel, red, deg                      |
 +------------+-------+--------------------------------------------------------+--------------------------------------+
-| lambda     | float | wavelength assigned to the pixel                       | Angstroem                            |
+| lambda     | float | wavelength assigned to the pixel                       | Angstrom                             |
 +------------+-------+--------------------------------------------------------+--------------------------------------+
 | data       | float | data value                                             | count, 10**-20 erg/s/cm**2/A         |
 +------------+-------+--------------------------------------------------------+--------------------------------------+
@@ -58,9 +58,9 @@ Read a pixtable, display informations and extract a smaller pixtable centered ar
 Preliminary imports::
 
   In [1]: import numpy as np
-  
+
   In [2]: import matplotlib.pyplot as plt
-  
+
   In [3]: from mpdaf.drs import PixTable
 
 We read the `~mpdaf.drs.PixTable` from the disk and check its basic informations (`~mpdaf.drs.PixTable.info`) and FITS header content::
@@ -73,25 +73,25 @@ We read the `~mpdaf.drs.PixTable` from the disk and check its basic informations
   [INFO] projected (intermediate) (Gnomonic proje)
   Filename: PIXTABLE-MUSE.2014-07-26T04:37:08.541.fits
   No.    Name         Type      Cards   Dimensions   Format
-  0    PRIMARY     PrimaryHDU    2232   ()              
-  1    xpos        ImageHDU         9   (1, 323885723)   float32   
-  2    ypos        ImageHDU         9   (1, 323885723)   float32   
-  3    lambda      ImageHDU         9   (1, 323885723)   float32   
-  4    data        ImageHDU         9   (1, 323885723)   float32   
-  5    dq          ImageHDU         8   (1, 323885723)   int32   
-  6    stat        ImageHDU         9   (1, 323885723)   float32   
-  7    origin      ImageHDU         8   (1, 323885723)   int32   
+  0    PRIMARY     PrimaryHDU    2232   ()
+  1    xpos        ImageHDU         9   (1, 323885723)   float32
+  2    ypos        ImageHDU         9   (1, 323885723)   float32
+  3    lambda      ImageHDU         9   (1, 323885723)   float32
+  4    data        ImageHDU         9   (1, 323885723)   float32
+  5    dq          ImageHDU         8   (1, 323885723)   int32
+  6    stat        ImageHDU         9   (1, 323885723)   float32
+  7    origin      ImageHDU         8   (1, 323885723)   int32
   [INFO] None
 
   In [6]: print pix.nrows
   323885723
 
-This is a pixtable containing a MUSE exposure of HDFS.  
+This is a pixtable containing a MUSE exposure of HDFS.
 Note that the current table has 323885723 pixels. It corresponds to the full
 MUSE field for a single exposure. Let's look to
 the corresponding reconstructed image from the associated datacube::
 
-  In [7]: from mpdaf.obj import Image                           
+  In [7]: from mpdaf.obj import Image
 
   In [8]: rec = Image('IMAGE-HDFS-v1.11.fits')
 
@@ -114,7 +114,7 @@ We are interested in the brightest object. Let's find its position by using `~mp
   In [12]: peak = rec.peak()
 
 Now we will use `~mpdaf.drs.PixTable.extract` to extract a circular region of the pixtable centered around the object and we will restrict
-the wavelength to the 6000:6100 Angstroem range::
+the wavelength to the 6000:6100 Angstrom range::
 
   In [13]: objpix = pix.extract(filename='Star_pixtable.fits',sky=(peak['y'], peak['x'], 2., 'C'), lbda=(6000,6100))
 
@@ -134,7 +134,7 @@ The method `~mpdaf.drs.PixTable.extract` can extract a subset of a pixtable usin
  - detector pixels,
  - exposure numbers,
  - stack numbers.
- 
+
 `~mpdaf.drs.PixTable.extract` creates a mask columns for all criteria, merges the masks and returns a new pixtable extracted with the final mask.
 These methods are also available to do the extraction step par step:
 
@@ -182,7 +182,7 @@ Let's see if we have some bad pixel identified.
   In [20]: k = np.where(dq > 0)
 
   In [21]: k
-  Out[21]: 
+  Out[21]:
   (array([ 9363, 13049, 14485, 14611, 14738, 15074, 15158, 15199, 15704,
         15830, 21261, 21279]),)
 
@@ -196,7 +196,7 @@ Indeed there are 12 bad pixels localised in 6 areas of the detectors. We can see
 Let's now investigate how this object is mapped on the detector. We start to get the origin array with `~mpdaf.drs.PixTable.get_origin`::
 
   In [23]: origin = objpix.get_origin()
-  
+
 Several methods exists to decode it:
 
  - `~mpdaf.drs.PixTable.origin2ifu` returns the ifu number of each pixel,
@@ -217,12 +217,12 @@ For example we decode the origin array to get the IFU number::
   In [27]: plt.plot(y[k],x[k],'ob')
   Out[27]: [<matplotlib.lines.Line2D at 0x7ff4957c0c50>]
 
-  In [28]: k = np.where(ifu == 6)  
+  In [28]: k = np.where(ifu == 6)
 
   In [29]: plt.plot(y[k],x[k],'or')
   Out[29]: [<matplotlib.lines.Line2D at 0x7ff495854850>]
 
-  In [30]: k = np.where(ifu == 7)  
+  In [30]: k = np.where(ifu == 7)
 
   In [31]: plt.plot(y[k],x[k],'oc')
   Out[31]: [<matplotlib.lines.Line2D at 0x7ff495854f10>]
@@ -235,10 +235,10 @@ location according to the IFU number.
 
 Now we are going to display the data as located on the original exposure.
 Firs we have to compute separately the corresponding pixtable for each IFU (`~mpdaf.drs.PixTable.extract`)
-and then we use the sub-pixtable to reconstruct the the originating CCD image (`~mpdaf.drs.PixTable.reconstruct_det_image`)::
+and then we use the sub-pixtable to reconstruct the originating CCD image (`~mpdaf.drs.PixTable.reconstruct_det_image`)::
 
   In [32]: objpix5 = pix.extract(filename='Star_pixtable.fits',sky=(peak['y'], peak['x'], 2., 'C'), lbda=(6000,6100), ifu=5)
-  
+
   In [33]: ima5 = objpix5.reconstruct_det_image()
 
   In [34]: plt.figure()
@@ -247,7 +247,7 @@ and then we use the sub-pixtable to reconstruct the the originating CCD image (`
   In [35]: ima5.plot(vmin=0, vmax=200)
   Out[35]: <matplotlib.image.AxesImage at 0x7ff495712410>
 
-  In [36]: objpix6 = pix.extract(filename='Star_pixtable.fits',sky=(peak['y'], peak['x'], 2., 'C'), lbda=(6000,6100), ifu=6) 
+  In [36]: objpix6 = pix.extract(filename='Star_pixtable.fits',sky=(peak['y'], peak['x'], 2., 'C'), lbda=(6000,6100), ifu=6)
 
   In [37]: ima6 = objpix6.reconstruct_det_image()
 
@@ -274,7 +274,7 @@ and then we use the sub-pixtable to reconstruct the the originating CCD image (`
 
 .. image::  _static/pixtable/ima7.png
 
-This give a good view of the pixels that comes into the object for the wavelength 6000:6100 Angstroem.
+This give a good view of the pixels that comes into the object for the wavelength 6000:6100 Angstrom.
 Note that we restricted the wavelength range in the `~mpdaf.drs.PixTable.extract` method.
 It would be also possible to used `~mpdaf.drs.PixTable.reconstruct_det_waveimage` that reconstructs the image of wavelength values on the detector from the pixtable.
 
@@ -293,7 +293,7 @@ data)::
      ....:     p0 = np.array([peak, center[0], center[1], fwhm/2.355])
      ....:     res = leastsq(gauss2D, p0, args=[x, y, data])
      ....:     return res
-     ....: 
+     ....:
 
   In [46]: def gauss2D(p, arglist):
      ....:     x, y, data = arglist
@@ -301,7 +301,7 @@ data)::
      ....:     g = peak*np.exp(-((x-x0)**2 + (y-y0)**2)/(2*sigma**2))
      ....:     residual = data - g
      ....:     return residual
-     ....: 
+     ....:
 
 Let's check if it works::
 
@@ -310,7 +310,7 @@ Let's check if it works::
   In [48]: g = 2.0*np.exp(-((x-5)**2+(y-5)**2)/(2*1.7**2))
 
   In [49]: gn = np.random.normal(g, 0.1*np.sqrt(g))
- 
+
   In [50]: xp = x.ravel()
 
   In [51]: yp = y.ravel()
@@ -334,7 +334,7 @@ OK, so now we can test it on our object pixtable::
 
   In [59]: print 'Peak:',res[0][0], 'Center:',res[0][1:3], 'Fwhm:',res[0][3]*2.355*3600
   Peak: 1465.94006348 Center: [ 0.  0.] Fwhm: 0.7
-  
+
 We have used `~mpdaf.drs.PixTable.get_data` to have the data column.
 It exists a getter and a setter for each column of the pixtable.
 We recommend that you use these setters to update a pixtable because they preserve the consistency of the file by updating the FITS header.
