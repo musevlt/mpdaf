@@ -190,23 +190,6 @@ Muselet
 
 * Remove Numpy warning
 
-* Use a Numpy array and not a masked array for the weights arra
+* Use a Numpy array and not a masked array for the weights array
 
 * Use masked median of inv_variance
-
-Origin
-~~~~~~
-
-Add *ORIGIN*: *detectiOn and extRactIon of Galaxy emIssion liNes*
-
-This software has been developed by Carole Clastres under the supervision of
-David Mary (Lagrange institute, University of Nice) and ported to Python by
-Laure Piqueras (CRAL). The project is funded by the ERC MUSICOS (Roland
-Bacon, CRAL).
-
-.. warning::
-
-   This is a prototype version.
-
-   The *FOCUS* class has been removed (forerunner of *ORIGIN*).
-
