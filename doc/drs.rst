@@ -1,6 +1,6 @@
-***********************************************
-Interface for the MUSE pipeline (``mpdaf.drs``)
-***********************************************
+****************************************************
+Interface for the MUSE specific data (``mpdaf.drs``)
+****************************************************
 
 The ``mpdaf.drs`` package contains Python interfaces for the MUSE pipeline's
 objects.
