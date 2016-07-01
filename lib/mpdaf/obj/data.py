@@ -1129,7 +1129,8 @@ class DataArray(object):
                                      exc_info=True)
 
     def _rebin(self, factor, margin='center', inplace=False):
-        """Combine neighboring pixels to reduce the size of a cube by integer factors along each axis.
+        """Combine neighboring pixels to reduce the size by integer factors
+        along each axis.
 
         This function is designed to be called by the rebin methods of
         Spectrum, Image and Cube.
@@ -1223,7 +1224,7 @@ class DataArray(object):
 
         # At this point the dimensions are integer multiples of
         # the reduction factors. What is the shape of the output image?
-        newshape = res.shape / factor
+        newshape = res.shape // factor
 
         # Create a list of array dimensions that are composed of each
         # of the final dimensions of the array followed by the corresponding
