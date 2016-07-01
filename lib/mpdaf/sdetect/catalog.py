@@ -57,9 +57,8 @@ INVALID = {
 
 class Catalog(Table):
 
-    """This class contains a catalog of objects.
-
-    Inherits from `astropy.table.Table`.
+    """This class inherits from `astropy.table.Table`.
+    Its goal is to manage a list of objects.
     """
 
     def __init__(self, *args, **kwargs):
@@ -74,22 +73,21 @@ class Catalog(Table):
     def from_sources(cls, sources, fmt='default'):
         """Construct a catalog from a list of source objects.
 
-        The new catalog will contain all data stored in the primary headers and
-        in the tables extensions of the sources:
+        The new catalog will contain all data stored in the primary headers
+        and in the tables extensions of the sources:
 
         * a column per header fits
         * two columns per magnitude band:
           [BAND] [BAND]_ERR
-        * two or three columns per redshift:
-           Z_[Z_DESC], Z_[Z_DESC]_ERR or
-           Z_[Z_DESC], Z_[Z_DESC]_MIN and Z_[Z_DESC]_MAX
+        * three columns per redshift
+          Z_[Z_DESC], Z_[Z_DESC]_MIN and Z_[Z_DESC]_MAX
         * several columns per line.
 
         The lines columns depend of the format.
         By default the columns names are created around unique LINE name
-        [LINE]_[columns names of lines table].
+        [LINE]_[LINES columns names].
         But it is possible to use a working format.
-        [columns names of lines table]_xxx
+        [LINES columns names]_xxx
         where xxx is the number of lines present in each source.
 
         Parameters
@@ -436,22 +434,29 @@ class Catalog(Table):
         Parameters
         ----------
         cat2 : `astropy.table.Table`
-            Catalog to match
-        radius : float (default 1)
-            Matching size in arcsec
+            Catalog to match.
+        radius : float
+            Matching size in arcsec (default 1).
         colc1: tuple
             ('RA','DEC') name of ra,dec columns of input table
         colc2: tuple
-            ('RA','DEC') name of ra,dec columns of table 2
+            ('RA','DEC') name of ra,dec columns of cat2
 
         Returns
         -------
+        
         if full_output is True
-        return match,nomatch1,nomatch2: astropy.Table, astropy.Table, astropy.Table
-        else return match: astropy.Table
-            match - match table of matched elements in RA,DEC
-            nomatch1 - sub-table of non matched elements of the current catalog
-            nomatch2 - sub-table of non matched elements of the catalog cat2
+        
+        out : astropy.Table, astropy.Table, astropy.Table
+             match, nomatch1, nomatch2
+        else
+        
+        out : astropy.Table
+              match
+              
+        match: table of matched elements in RA,DEC
+        nomatch1: sub-table of non matched elements of the current catalog
+        nomatch2: sub-table of non matched elements of the catalog cat2
 
         """
         coord1 = SkyCoord(self[colc1[0]], self[colc1[1]],
@@ -502,17 +507,19 @@ class Catalog(Table):
             return match
 
     def select(self, wcs, ra='RA', dec='DEC', margin=0):
-        """Select all sources from catalog which are inside the WCS of image
+        """Select all sources from catalog which are inside the given WCS
         and return a new catalog.
 
         Parameters
         ----------
-        wcs : `mpdaf.obj.WCS`
-            Image WCS
-        ra, dec : str
-            Name of the column that contains RA/DEC values in degrees.
+        wcs    : `~mpdaf.obj.WCS`
+                 Image WCS
+        ra     : str
+                 Name of the column that contains RA values in degrees.
+        dec    : str
+                 Name of the column that contains DEC values in degrees.
         margin : int
-            Margin from the edges.
+                 Margin from the edges.
 
         Returns
         -------
@@ -531,12 +538,12 @@ class Catalog(Table):
 
         Parameters
         ----------
-        wcs : `mpdaf.obj.WCS`
-            Image WCS
-        ra : str
-            Name of the column that contains RA values in degrees
+        wcs : `~mpdaf.obj.WCS`
+              Image WCS
+        ra  : str
+              Name of the column that contains RA values in degrees
         dec : str
-            Name of the column that contains DEC values in degrees
+              Name of the column that contains DEC values in degrees
 
         Returns
         -------
