@@ -141,7 +141,10 @@ def iter_ima(cube, index=False):
 # A class that is used by loop_ima_multiprocessing and loop_spe_multiprocessing
 # to make periodic completion reports to the terminal while tasks are being
 # performed by external processes.
+
+
 class _MultiprocessReporter(object):
+
     def __init__(self, ntask, interval=5.0):
         """Prepare to report the progress of a multi-process job.
 
@@ -203,7 +206,8 @@ class _MultiprocessReporter(object):
 
     def _update_report_time(self):
         """Calculate the time at which the next report should be made."""
-        self.report_time = self.start_time + (self.reports+1) * self.interval
+        self.report_time = self.start_time + (self.reports + 1) * self.interval
+
 
 def _print_multiprocessing_progress(processresult, num_tasks):
     while True:
@@ -354,7 +358,6 @@ class Cube(ArithmeticMixin, DataArray):
                                      unit_radius=unit_radius,
                                      unit_wave=unit_wave)
 
-
         # Convert the central position to a floating-point pixel index.
         if unit_center is not None:
             center = self.wcs.sky2pix(center, unit=unit_center)[0]
@@ -373,10 +376,10 @@ class Cube(ArithmeticMixin, DataArray):
             s = np.sin(np.radians(posangle))
             hw = radius[0]
             hh = radius[1]
-            poly = np.array([[-hw*s-hh*c, -hw*c+hh*s],
-                             [-hw*s+hh*c, -hw*c-hh*s],
-                             [+hw*s+hh*c, +hw*c-hh*s],
-                             [+hw*s-hh*c, +hw*c+hh*s]]) / step + center
+            poly = np.array([[-hw * s - hh * c, -hw * c + hh * s],
+                             [-hw * s + hh * c, -hw * c - hh * s],
+                             [+hw * s + hh * c, +hw * c - hh * s],
+                             [+hw * s - hh * c, +hw * c + hh * s]]) / step + center
             return self.mask_polygon(poly, lmin, lmax, unit_poly=None,
                                      unit_wave=unit_wave, inside=inside)
 
@@ -393,9 +396,9 @@ class Cube(ArithmeticMixin, DataArray):
             lmax = self.wave.pixel(lmax, nearest=True, unit=unit_wave)
 
         # Get Y-axis and X-axis slice objects that bound the rectangular area.
-        [sy, sx], unclipped, center = bounding_box(form="rectangle", center=center,
-                                                   radii=radius, posangle=0.0,
-                                                   shape=self.shape[1:], step=step)
+        [sy, sx], _, _ = bounding_box(
+            form="rectangle", center=center, radii=radius,
+            shape=self.shape[1:], step=step)
 
         # Mask pixels inside the region.
         if inside:
@@ -406,7 +409,7 @@ class Cube(ArithmeticMixin, DataArray):
             self.data[:lmin, :, :] = ma.masked
             self.data[lmax:, :, :] = ma.masked
             self.data[lmin:lmax, 0:sy.start, :] = np.ma.masked
-            self.data[lmin:lmax, sy.stop:,   :] = np.ma.masked
+            self.data[lmin:lmax, sy.stop:, :] = np.ma.masked
             self.data[lmin:lmax, sy, 0:sx.start] = np.ma.masked
             self.data[lmin:lmax, sy, sx.stop:] = np.ma.masked
 
@@ -483,9 +486,9 @@ class Cube(ArithmeticMixin, DataArray):
 
         # Obtain Y and X axis slice objects that select the rectangular
         # region that just encloses the rotated ellipse.
-        [sy, sx], unclipped, center = bounding_box(form="ellipse", center=center,
-                                                   radii=radii, posangle=posangle,
-                                                   shape=self.shape[1:], step=step)
+        [sy, sx], _, center = bounding_box(
+            form="ellipse", center=center, radii=radii,
+            shape=self.shape[1:], posangle=posangle, step=step)
 
         # Precompute the sine and cosine of the position angle.
         cospa = np.cos(np.radians(posangle))
@@ -593,7 +596,7 @@ class Cube(ArithmeticMixin, DataArray):
             lmax = self.wave.pixel(lmax, nearest=True, unit=unit_wave)
 
         # Combine the previous mask with the new one between lmin and lmax.
-        self._mask[lmin:lmax,:,:] = np.logical_or(self._mask[lmin:lmax,:,:], c)
+        self._mask[lmin:lmax, :, :] = np.logical_or(self._mask[lmin:lmax, :, :], c)
 
         # When masking pixels outside the region, mask all pixels
         # outside the specified wavelength range.
@@ -1017,7 +1020,7 @@ class Cube(ArithmeticMixin, DataArray):
         # necessary to combine the two image dimensions into a single
         # dimension and average over that axis, because
         # np.ma.average() can only average along one axis.
-        if axis == (1,2) or axis == [1,2]:
+        if axis == (1, 2) or axis == [1, 2]:
             shape = (self.shape[0], self.shape[1] * self.shape[2])
             data = data.reshape(shape)
             if weights is not None:
@@ -1156,7 +1159,7 @@ class Cube(ArithmeticMixin, DataArray):
 
         # Obtain the range of Y-axis pixel-indexes of the region.
         imin = max(np.min(pixcrd[:, 0]), 0)
-        imax = min(np.max(pixcrd[:, 0]), self.shape[1] -1)
+        imax = min(np.max(pixcrd[:, 0]), self.shape[1] - 1)
 
         # Obtain the range of X-axis pixel-indexes of the region.
         jmin = max(np.min(pixcrd[:, 1]), 0)
@@ -1177,12 +1180,12 @@ class Cube(ArithmeticMixin, DataArray):
             raise ValueError('The requested area is not within the cube.')
 
         # Extract the requested part of the cube.
-        res = self[kmin:kmax+1, imin:imax+1, jmin:jmax+1]
+        res = self[kmin:kmax + 1, imin:imax + 1, jmin:jmax + 1]
 
         # Mask pixels outside the specified ranges? This is only pertinent
         # to regions that are specified in world coordinates.
         if mask and unit_wcs is not None:
-            res.mask_polygon(pixcrd - np.array([imin,jmin]), unit_poly=None,
+            res.mask_polygon(pixcrd - np.array([imin, jmin]), unit_poly=None,
                              inside=False)
         return res
 
@@ -1536,7 +1539,6 @@ class Cube(ArithmeticMixin, DataArray):
                               f, ntasks)
             reporter = _MultiprocessReporter(ntask=ntasks)
 
-
         # Wait for the results from each task and collect them into the
         # appropriate object. If verbose is True, also emit a progress
         # report every few seconds.
@@ -1735,7 +1737,7 @@ class Cube(ArithmeticMixin, DataArray):
             # foreground images.
             if is_sum:
                 off_im = (self[below, :, :].sum(axis=0) +
-                          self[above, :, :].sum(axis=0)) * float(nim)/float(nbelow + nabove)
+                          self[above, :, :].sum(axis=0)) * float(nim) / float(nbelow + nabove)
             else:
                 off_im = (self[below, :, :].mean(axis=0) +
                           self[above, :, :].mean(axis=0)) / 2.0
@@ -1996,14 +1998,12 @@ class Cube(ArithmeticMixin, DataArray):
                    lmax + 1 if lmax < self.shape[0] else self.shape[0])
 
         # Get Y-axis and X-axis slice objects that bound the rectangular area.
-        [sy, sx], [uy, ux], center = bounding_box(form = "rectangle",
-                                                  center = center,
-                                                  radii = size / 2.0,
-                                                  posangle = 0.0,
-                                                  shape = self.shape[1:],
-                                                  step = step)
-        if (sx.start >= self.shape[2] or sx.stop < 0 or sx.start==sx.stop or
-            sy.start >= self.shape[1] or sy.stop < 0 or sy.start==sy.stop):
+        [sy, sx], [uy, ux], center = bounding_box(
+            form="rectangle", center=center, radii=size / 2.0,
+            shape=self.shape[1:], step=step)
+
+        if (sx.start >= self.shape[2] or sx.stop < 0 or sx.start == sx.stop or
+                sy.start >= self.shape[1] or sy.stop < 0 or sy.start == sy.stop):
             raise ValueError('Sub-cube boundaries are outside the cube')
 
         # Extract the requested part of the cube.
