@@ -807,145 +807,93 @@ class Cube(ArithmeticMixin, DataArray):
         return self.wcs.get_rot(unit)
 
     def sum(self, axis=None, weights=None):
-        """Return the sum over the given axis.
+        """Return a sum over the given axis.
 
         Parameters
         ----------
         axis : None or int or tuple of ints
             Axis or axes along which a sum is performed:
 
-            - The default (axis = None) is perform a sum over all the
+            - The default (axis = None) performs a sum over all the
               dimensions of the cube and returns a float.
-            - axis = 0 is perform a sum over the wavelength dimension and
+            - axis = 0 performs a sum over the wavelength dimension and
               returns an image.
-            - axis = (1,2) is perform a sum over the (X,Y) axes and returns
+            - axis = (1,2) performs a sum over the (X,Y) axes and returns
               a spectrum.
 
             Other cases return None.
-        weights : array_like, optional
-            An array of weights associated with the data values. The weights
-            array can either be 1-D (axis=(1,2)) or 2-D (axis=0) or of the
-            same shape as the cube. If weights=None, then all data in a are
-            assumed to have a weight equal to one.
+        weights : ndarray, np.ma.array, float
+            When an array of weights is provided via this argument, it
+            used to perform a weighted sum. This involves obtaining a
+            weighted mean using the Cube.mean() function, then scaling
+            this by the number of points that were averaged along the
+            specified axes. The number of points that is used to scale
+            the mean to a sum, is the total number of points along the
+            averaged axes, not the number of unmasked points that had
+            finite weights. As a result, the sum behaves as though all
+            pixels along the averaged axes had values equal to the
+            mean, regardless of whether any of these were masked or
+            had zero weight.
 
-            The method conserves the flux by using the algorithm
-            from Jarle Brinchmann (jarle@strw.leidenuniv.nl):
-            - Take into account bad pixels in the addition.
-            - Normalize with the median value of weighting sum/no-weighting sum
+            The weights array can have the same shape as the cube, or
+            they can be 1-D if axis=(1,2), or 2-D if axis=0. If
+            weights=None, then all non-masked data points are given a
+            weight equal to one. Finally, if a scalar float is given,
+            then the data are all weighted equally. This can be used
+            to get an unweighted sum that behaves as though masked
+            pixels in the input cube had been filled with the mean
+            along the averaged axes before the sum was performed.
+
+            If the Cube provides an array of variances for each
+            data-point, then a good choice for the array of weights is
+            the reciprocal of this array, (ie. weights=1.0/cube.var).
+            However note that not all data-sets provide variance
+            information, so check that cube.var is not None before
+            trying this.
+
+            Any weight elements that are masked, infinite or nan, are
+            replaced with zero. As a result, if the weights are
+            specified as 1.0/cube.var, then any zero-valued variances
+            will not produce infinite weights.
 
         """
-        if weights is not None:
-            w = np.array(weights, dtype=np.float)
-            excmsg = 'Incorrect dimensions for the weights (%s) (it must be (%s))'
 
-            if len(w.shape) == 3:
-                if not np.array_equal(w.shape, self.shape):
-                    raise IOError(excmsg % (w.shape, self.shape))
-            elif len(w.shape) == 2:
-                if w.shape[0] != self.shape[1] or w.shape[1] != self.shape[2]:
-                    raise IOError(excmsg % (w.shape, self.shape[1:]))
-                else:
-                    w = np.tile(w, (self.shape[0], 1, 1))
-            elif len(w.shape) == 1:
-                if w.shape[0] != self.shape[0]:
-                    raise IOError(excmsg % (w.shape[0], self.shape[0]))
-                else:
-                    w = np.ones_like(self._data) * w[:, np.newaxis, np.newaxis]
-            else:
-                raise IOError(excmsg % (None, self.shape))
+        # Should a weighted sum be performed?
+        doweight = weights is not None
+        if doweight and is_number(weights):
+            weights = None      # This requests unit weights.
 
-            # weights mask
-            wmask = ma.masked_where(self._mask, ma.masked_where(w == 0, w))
-
+        # Sum all pixels to yield a single value?
         if axis is None:
-            if weights is None:
-                return self.data.sum()
+            if doweight:
+                return self.mean(axis=axis, weights=weights) * np.prod(self.shape)
             else:
-                data = self.data * w
-                npix = np.sum(~self.mask)
-                data = ma.sum(data) / npix
-                # flux conservation
-                orig_data = self.data * ~wmask.mask
-                orig_data = ma.sum(orig_data)
-                rr = data / orig_data
-                med_rr = ma.median(rr)
-                if med_rr > 0:
-                    data /= med_rr
-                return data
+                return self.data.sum()
+
+        # Sum along the spectral axis to yield an image?
         elif axis == 0:
-            # return an image
-            if weights is None:
+            if doweight:
+                return self.mean(axis=axis, weights=weights) * self.shape[0]
+            else:
                 data = ma.sum(self.data, axis=0)
                 if self._var is not None:
                     var = ma.sum(self.var, axis=0)
                 else:
                     var = None
-            else:
-                data = self.data * w
-                npix = np.sum(~self.mask, axis)
-                data = ma.sum(data, axis) / npix
-                orig_data = self.data * ~wmask.mask
-                orig_data = ma.sum(orig_data, axis)
-                rr = data / orig_data
-                med_rr = ma.median(rr)
-                if med_rr > 0:
-                    data /= med_rr
-                if self.var is not None:
-                    var = ma.sum(self.masked_var * w, axis) / npix
-                    dspec = ma.sqrt(var)
-                    if med_rr > 0:
-                        dspec /= med_rr
-                    orig_var = self.var * ~wmask.mask
-                    orig_var = ma.masked_where(self.mask,
-                                               ma.masked_invalid(orig_var))
-                    orig_var = ma.sum(orig_var, axis)
-                    sn_orig = orig_data / ma.sqrt(orig_var)
-                    sn_now = data / dspec
-                    sn_ratio = ma.median(sn_orig / sn_now)
-                    dspec /= sn_ratio
-                    var = dspec * dspec
-                    var = var.filled(np.inf)
-                else:
-                    var = None
-            return Image.new_from_obj(self, data=data, var=var)
+                return Image.new_from_obj(self, data=data, var=var)
+
+        # Sum along the image X and Y axes to yield a spectrum?
         elif axis == (1, 2):
-            # return a spectrum
-            if weights is None:
+            if doweight:
+                return self.mean(axis=axis, weights=weights) * np.prod(self.shape[1:])
+            else:
                 data = ma.sum(ma.sum(self.data, axis=1), axis=1)
                 if self._var is not None:
                     var = ma.sum(ma.sum(self.var, axis=1), axis=1).filled(np.inf)
                 else:
                     var = None
-            else:
-                data = self.data * w
-                npix = np.sum(np.sum(~self.mask, axis=1), axis=1)
-                data = ma.sum(ma.sum(data, axis=1), axis=1) / npix
-                orig_data = self.data * ~wmask.mask
-                orig_data = ma.sum(ma.sum(orig_data, axis=1), axis=1)
-                rr = data / orig_data
-                med_rr = ma.median(rr)
-                if med_rr > 0:
-                    data /= med_rr
-                if self._var is not None:
-                    var = ma.sum(ma.sum(self.var * w, axis=1), axis=1) / npix
-                    dspec = ma.sqrt(var)
-                    if med_rr > 0:
-                        dspec /= med_rr
-                    orig_var = self._var * ~wmask.mask
-                    orig_var = ma.masked_where(self.mask,
-                                               ma.masked_invalid(orig_var))
-                    orig_var = ma.sum(ma.sum(orig_var, axis=1), axis=1)
-                    sn_orig = orig_data / ma.sqrt(orig_var)
-                    sn_now = data / dspec
-                    sn_ratio = ma.median(sn_orig / sn_now)
-                    dspec /= sn_ratio
-                    var = dspec * dspec
-                    var = var.filled(np.inf)
-                else:
-                    var = None
-
-            return Spectrum(wave=self.wave, unit=self.unit, data=data, var=var,
-                            copy=False)
+                return Spectrum(wave=self.wave, unit=self.unit, data=data, var=var,
+                                copy=False)
         else:
             raise ValueError('Invalid axis argument')
 
@@ -990,23 +938,50 @@ class Cube(ArithmeticMixin, DataArray):
         weights : numpy.ndarray or numpy.ma.core.MaskedArray
             When an array of weights is provided via this argument, it
             used to perform a weighted mean, as described in the
-            introductory documentation above. If the Cube provides an
-            array of variances for each data-point, then a good choice
-            for the array of weights is the reciprocal of this array,
-            (ie. weights=1.0/cube.var). However beware that not all
-            data-sets provide variance information. If a different
-            weighting array is provided, note that it must have the
-            same shape as the cube. The default value of this argument
-            is None, which indicates that an unweighted mean should be
-            performed.
+            introductory documentation above.
+
+            The weights array can have the same shape as the cube, or
+            they can be 1-D if axis=(1,2), or 2-D if axis=0. If
+            weights is None then all non-masked data points are given
+            a weight equal to one.
+
+            If the Cube provides an array of variances for each
+            data-point, then a good choice for the array of weights is
+            the reciprocal of this array, (ie. weights=1.0/cube.var).
+            However beware that not all data-sets provide variance
+            information.
 
         """
 
-        # Check the shape of any weighting array that is provided.
-        if(weights is not None and
-           not np.array_equal(np.asarray(weights.shape),
-                              np.asarray(self.shape))):
-            raise ValueError('The weights array has the wrong shape')
+        # Have an array of weights been provided?
+        if weights is not None:
+
+            # Convert the weights array to a non-masked array with
+            # masked, infinite and nan values replaced with zero
+            # weights.
+            if isinstance(weights, ma.MaskedArray):
+                weights = weights.filled(0.0)
+            weights = np.where(np.isfinite(weights), weights, 0.0)
+
+            # If the dimensions of the weights array does not match
+            # the dimensions of the data, remedy this if possible using
+            # the rules given in the description of the weights argument.
+            if not np.array_equal(weights.shape, self.shape):
+                excmsg = 'Wrong dimensions for the weights (%s) (should be (%s))'
+                if weights.ndim == 3:
+                    raise ValueError(excmsg % (weights.shape, self.shape))
+                elif weights.ndim == 2:
+                    if np.array_equal(weights.shape, self.shape[1:]):
+                        weights = np.tile(weights, (self.shape[0], 1, 1))
+                    else:
+                        raise ValueError(excmsg % (weights.shape, self.shape[1:]))
+                elif weights.ndim == 1:
+                    if weights.shape[0] == self.shape[0]:
+                        weights = np.ones_like(self._data) * weights[:, np.newaxis, np.newaxis]
+                    else:
+                        raise ValueError(excmsg % (weights.shape[0], self.shape[0]))
+                else:
+                    raise ValueError(excmsg % (None, self.shape))
 
         # Average the whole array to a single number?
         if axis is None:
