@@ -2741,10 +2741,12 @@ class Image(ArithmeticMixin, DataArray):
 
     @deprecated('rebin_mean method is deprecated: use rebin instead')
     def rebin_mean(self, factor, margin='center'):
+        """DEPRECATED: See `~mpdaf.obj.Image.rebin` instead."""
         return self.rebin(factor, margin)
 
     @deprecated('rebin_median method is deprecated: use rebin instead')
     def rebin_median(self, factor, margin='center'):
+        """DEPRECATED: See `~mpdaf.obj.Image.rebin` instead."""
         return self.rebin(factor, margin)
 
     def resample(self, newdim, newstart, newstep, flux=False,
@@ -4120,11 +4122,6 @@ class Image(ArithmeticMixin, DataArray):
             return 'y= %g x=%g p=%i q=%i data=%g' % (yc, xc, row, col, val)
         else:
             return 'x=%1.4f, y=%1.4f' % (x, y)
-
-    @deprecated('The rebin_factor method is deprecated: Use rebin '
-                'instead')
-    def rebin_factor(self, factor, margin='center'):
-        return self.rebin(factor, margin)
 
     def get_spatial_fmax(self, rot=None):
         """Return the spatial-frequency band-limits of the image along

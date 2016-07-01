@@ -250,8 +250,9 @@ class Spectrum(ArithmeticMixin, DataArray):
         else:
             return self[pix_min:pix_max]
 
-    @deprecated('rebin_mean method is deprecated in favor of rebin')
+    @deprecated('get_lambda method is deprecated in favor of subspec')
     def get_lambda(self, lmin, lmax=None, unit=u.angstrom):
+        """DEPRECATED: See `~mpdaf.obj.Spectrum.subspec` instead."""
         return self.subspec(lmin, lmax=lmax, unit=unit)
 
     def get_step(self, unit=None):
@@ -2455,12 +2456,10 @@ class Spectrum(ArithmeticMixin, DataArray):
 
     @deprecated('rebin_mean method is deprecated in favor of rebin')
     def rebin_mean(self, factor, margin='center'):
+        """DEPRECATED: See `~mpdaf.obj.Spectrum.rebin` instead."""
         return self.rebin(factor, margin)
 
     @deprecated('rebin_median method is deprecated in favor of rebin')
     def rebin_median(self, factor, margin='center'):
-        return self.rebin(factor, margin)
-
-    @deprecated('rebin_factor method is deprecated in favor of rebin')
-    def rebin_factor(self, factor, margin='center'):
+        """DEPRECATED: See `~mpdaf.obj.Spectrum.rebin` instead."""
         return self.rebin(factor, margin)

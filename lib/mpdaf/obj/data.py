@@ -46,9 +46,8 @@ from numpy import ma
 
 from .coords import WCS, WaveCoord
 from .objs import UnitMaskedArray, UnitArray, is_int
-from ..tools import (MpdafWarning, MpdafUnitsWarning, deprecated,
-                     fix_unit_read, is_valid_fits_file, copy_header,
-                     read_slice_from_fits)
+from ..tools import (MpdafUnitsWarning, deprecated, fix_unit_read,
+                     is_valid_fits_file, copy_header, read_slice_from_fits)
 
 __all__ = ('DataArray', )
 
@@ -266,14 +265,6 @@ class DataArray(object):
         self.unit = unit
         self.data_header = data_header or fits.Header()
         self.primary_header = primary_header or fits.Header()
-
-        if kwargs.pop('shape', None) is not None:
-            warnings.warn('The shape parameter is no longer used. It is '
-                          'derived from the data instead', MpdafWarning)
-
-        if kwargs.pop('notnoise', None) is not None:
-            warnings.warn('The notnoise parameter is no longer used. The '
-                          'variances will be read if necessary.', MpdafWarning)
 
         if filename is not None and data is None:
             # Read the data from a FITS file
@@ -535,12 +526,6 @@ class DataArray(object):
             self._var_ext = None
             self._var = value
 
-    @deprecated('Variance should now be set with the .var attribute')
-    def set_var(self, var):
-        """Deprecated: The variance array can simply be assigned to
-        the .var attribute"""
-        self.var = var
-
     @property
     def mask(self):
         """The shared masking array of the data and variance arrays.
@@ -577,7 +562,7 @@ class DataArray(object):
         """Return a copy of the object."""
         return self.__class__.new_from_obj(self, copy=True)
 
-    def clone(self, var=None, data_init=None, var_init=None):
+    def clone(self, data_init=None, var_init=None):
         """Return a shallow copy with the same header and coordinates.
 
         Optionally fill the cloned array using values returned by provided
@@ -585,8 +570,6 @@ class DataArray(object):
 
         Parameters
         ----------
-        var : bool
-            **Deprecated**, replaced by var_init.
         data_init : function
             An optional function to use to create the data array
             (it takes the shape as parameter). For example ``np.zeros``
@@ -598,10 +581,6 @@ class DataArray(object):
             which results in the var attribute being assigned None.
 
         """
-        if var is not None:
-            warnings.warn('The "var" parameter is no longer used. Use '
-                          '"var_init"instead.', MpdafWarning)
-
         # Update the NAXIS keywords because an object without data relies on
         # this to get the shape
         data_header = self.data_header.copy()
@@ -652,11 +631,6 @@ class DataArray(object):
                 log('no world coordinates for spectral direction')
             else:
                 self.wave.info()
-
-    @deprecated('Data should now be get with the .data attribute')
-    def get_np_data(self):
-        """Deprecated: use the .data attribute instead."""
-        return self.data
 
     def __le__(self, item):
         """Mask data elements whose values are greater than a
@@ -1096,6 +1070,7 @@ class DataArray(object):
 
     @deprecated('The resize method is deprecated. Please use crop instead.')
     def resize(self):
+        """DEPRECATED: See ``crop`` instead."""
         return self.crop()
 
     def set_wcs(self, wcs=None, wave=None):

@@ -53,7 +53,7 @@ from .arithmetic import ArithmeticMixin
 from .coords import WCS, WaveCoord
 from .data import DataArray
 from .image import Image
-from .objs import is_int, bounding_box, is_number
+from .objs import bounding_box, is_number
 from .spectrum import Spectrum
 from ..tools import deprecated, add_mpdaf_method_keywords
 
@@ -2153,26 +2153,18 @@ class Cube(ArithmeticMixin, DataArray):
 
     @deprecated('get_lambda method is deprecated, use select_lambda instead')
     def get_lambda(self, lbda_min, lbda_max=None, unit_wave=u.angstrom):
+        """DEPRECATED: See `~mpdaf.obj.Cube.select_lambda` instead."""
         return self.select_lambda(lbda_min, lbda_max, unit_wave=unit_wave)
 
     @deprecated('rebin_mean method is deprecated, use rebin instead')
     def rebin_mean(self, factor, margin='center'):
+        """DEPRECATED: See `~mpdaf.obj.Cube.rebin` instead."""
         return self.rebin(factor, margin)
 
     @deprecated('rebin_median method is deprecated, use rebin instead')
     def rebin_median(self, factor, margin='center'):
+        """DEPRECATED: See `~mpdaf.obj.Cube.rebin` instead."""
         return self.rebin(factor, margin)
-
-    @deprecated('rebin_factor method is deprecated, use rebin instead')
-    def rebin_factor(self, factor, margin='center'):
-        return self.rebin(factor, margin)
-
-    @deprecated('subcube_aperture method is deprecated: use '
-                'subcube_circle_aperture instead')
-    def subcube_aperture(self, center, radius, unit_center=u.deg,
-                         unit_radius=u.angstrom):
-        return self.subcube_circle_aperture(center, radius,
-                                            unit_center, unit_radius)
 
 
 def _is_method(func, cls):
