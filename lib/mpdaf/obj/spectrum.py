@@ -250,6 +250,10 @@ class Spectrum(ArithmeticMixin, DataArray):
         else:
             return self[pix_min:pix_max]
 
+    @deprecated('rebin_mean method is deprecated in favor of rebin')
+    def get_lambda(self, lmin, lmax=None, unit=u.angstrom):
+        return self.subspec(lmin, lmax=lmax, unit=unit)
+
     def get_step(self, unit=None):
         """Return the wavelength step size.
 
