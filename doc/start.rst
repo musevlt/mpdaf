@@ -97,7 +97,7 @@ the ``mpdaf.obj`` package.
 
 Alternatively, if you use the IPython interactive python shell, then you can
 look at the docstrings of classes, objects and functions by following them with
-the ``?`` magic for IPython. Examples of this are shown below. A more general
+the magic ``?`` of IPython. Examples of this are shown below. A more general
 way to see these docstrings, which works in all Python shells, is to use the
 built-in ``help()`` function:
 
