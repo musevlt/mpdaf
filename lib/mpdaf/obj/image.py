@@ -507,16 +507,17 @@ class Image(ArithmeticMixin, DataArray):
             s = np.sin(np.radians(posangle))
             hw = radius[0]
             hh = radius[1]
-            poly = np.array([[-hw*s-hh*c, -hw*c+hh*s],
-                             [-hw*s+hh*c, -hw*c-hh*s],
-                             [+hw*s+hh*c, +hw*c-hh*s],
-                             [+hw*s-hh*c, +hw*c+hh*s]]) / step + center
+            poly = np.array([[-hw * s - hh * c, -hw * c + hh * s],
+                             [-hw * s + hh * c, -hw * c - hh * s],
+                             [+hw * s + hh * c, +hw * c - hh * s],
+                             [+hw * s - hh * c, +hw * c + hh * s]]) / step + center
             return self.mask_polygon(poly, unit=None, inside=inside)
 
         # Get Y-axis and X-axis slice objects that bound the rectangular area.
-        [sy, sx], unclipped, center = bounding_box(form="rectangle", center=center,
-                                                   radii=radius, posangle=0.0,
-                                                   shape=self.shape, step=step)
+        [sy, sx], _, _ = bounding_box(
+            form="rectangle", center=center, radii=radius,
+            shape=self.shape, step=step)
+
         # Mask pixels inside the region.
         if inside:
             self.data[sy, sx] = np.ma.masked
@@ -577,9 +578,9 @@ class Image(ArithmeticMixin, DataArray):
 
         # Obtain Y and X axis slice objects that select the rectangular
         # region that just encloses the rotated ellipse.
-        [sy, sx], unclipped, center = bounding_box(form="ellipse", center=center,
-                                                   radii=radii, posangle=posangle,
-                                                   shape=self.shape, step=step)
+        [sy, sx], _, center = bounding_box(
+            form="ellipse", center=center, radii=radii,
+            shape=self.shape, posangle=posangle, step=step)
 
         # Precompute the sine and cosine of the position angle.
         cospa = np.cos(np.radians(posangle))
@@ -754,8 +755,8 @@ class Image(ArithmeticMixin, DataArray):
             # Get the indexes of all of the pixels in the "out" array,
             # ordered like: [[0,0], [0,1], [1,0], [1,1], [2,0], [2,1]...]
 
-            py,px = np.meshgrid(np.arange(0, out.shape[0]),
-                                np.arange(0, out.shape[1]), indexing='ij')
+            py, px = np.meshgrid(np.arange(0, out.shape[0]),
+                                 np.arange(0, out.shape[1]), indexing='ij')
             pixcrd = np.column_stack((np.ravel(py), np.ravel(px)))
 
             # Look up the sky coordinates of each pixel.
@@ -849,14 +850,12 @@ class Image(ArithmeticMixin, DataArray):
         # Convert the width and height of the region to radii, and
         # get Y-axis and X-axis slice objects that select this region.
         radius = size / 2.
-        [sy, sx], [uy, ux], center = bounding_box(form = "rectangle",
-                                                  center = center,
-                                                  radii = radius,
-                                                  posangle = 0.0,
-                                                  shape = self.shape,
-                                                  step = step)
-        if (sx.start >= self.shape[1] or sx.stop < 0 or sx.start==sx.stop or
-            sy.start >= self.shape[0] or sy.stop < 0 or sy.start==sy.stop):
+        [sy, sx], [uy, ux], center = bounding_box(
+            form="rectangle", center=center, radii=radius,
+            shape=self.shape, step=step)
+
+        if (sx.start >= self.shape[1] or sx.stop < 0 or sx.start == sx.stop or
+                sy.start >= self.shape[0] or sy.stop < 0 or sy.start == sy.stop):
             raise ValueError('Sub-image boundaries are outside the cube')
 
         # Require that the image be at least minsize x minsize pixels.
@@ -913,10 +912,10 @@ class Image(ArithmeticMixin, DataArray):
 
         # Create the new unclipped sub-cube.
         return Image(wcs=wcs, unit=self.unit, copy=False,
-                    data=data, var=var, mask=mask,
-                    data_header=fits.Header(self.data_header),
-                    primary_header=fits.Header(self.primary_header),
-                    filename=self.filename)
+                     data=data, var=var, mask=mask,
+                     data_header=fits.Header(self.data_header),
+                     primary_header=fits.Header(self.primary_header),
+                     filename=self.filename)
 
     def _rotate(self, theta=0.0, interp='no', reshape=False, order=1,
                 pivot=None, unit=u.deg, regrid=None, flux=False, cutoff=0.25):
@@ -4532,6 +4531,7 @@ def moffat_image(shape=(101, 101), wcs=WCS(), factor=1, moffat=None,
 
     return Image(data=data + cont, wcs=wcs, unit=unit, copy=False, dtype=None)
 
+
 def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
                             window="blackman"):
     """Apply an anti-aliasing prefilter to an image to prepare
@@ -4673,7 +4673,7 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
 
     elif window == "gaussian":
         sigma = 0.44
-        winfn = lambda r: np.exp(-0.5 * (r/sigma)**2)
+        winfn = lambda r: np.exp(-0.5 * (r / sigma)**2)
 
     # For the rectangular window, just multiply all pixels below the
     # cutoff frequency by one, and the rest by zero.

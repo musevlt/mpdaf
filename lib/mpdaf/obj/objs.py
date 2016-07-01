@@ -82,7 +82,7 @@ def mag2flux(mag, wave):
     return 10 ** (-0.4 * (mag + 48.60)) * cs / wave ** 2
 
 
-def bounding_box(form, center, radii, posangle, shape, step):
+def bounding_box(form, center, radii, shape, posangle=0.0, step=None):
     """Return Y-axis and X-axis slice objects that bound a rectangular
     image region that just encloses either an ellipse or a rectangle,
     where the rectangle has a specified center position, Y-axis and X-axis
@@ -119,7 +119,7 @@ def bounding_box(form, center, radii, posangle, shape, step):
        of that position.
     shape  : int, int
        The dimensions of the image array.
-    step   : float, float
+    step : float, float
        The per-pixel world-coordinate increments along the Y and X axes
        of the image array, or [1.0,1.0] if radii is in pixels.
 
@@ -157,6 +157,8 @@ def bounding_box(form, center, radii, posangle, shape, step):
     center = np.asarray(center)
 
     # Ensure that the pixel sizes are in a numpy array as well.
+    if step is None:
+        step = (1.0, 1.0)
     step = np.asarray(step)
 
     # Convert the position angle to radians and precompute the sine and

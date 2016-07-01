@@ -14,7 +14,6 @@ muselet:
   script: tox -v -e muselet
 
 astropy10:
-  allow_failure: true
   script: tox -v -e astropy10
 
 coverage-report:
