@@ -74,8 +74,11 @@ autodoc_member_order = 'bysource'
 autosummary_generate = True
 
 automodapi_toctreedirnm = 'api'
-
 automodsumm_inherited_members = True
+
+# Debug:
+# automodapi_writereprocessed = True
+# automodsumm_writereprocessed = True
 
 numpydoc_class_members_toctree = False
 numpydoc_show_class_members = False

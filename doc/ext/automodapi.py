@@ -91,6 +91,7 @@ This extension also adds two sphinx configuration options:
 # actually built.
 
 import inspect
+import io
 import os
 import re
 import sys
@@ -339,7 +340,8 @@ def automodapi_replace(sourcestr, app, dotoctree=True, docname=None,
                 filename = docname + os.path.splitext(env.doc2path(docname))[1]
                 filename += '.automodapi'
 
-                with open(os.path.join(app.srcdir, filename), 'w') as f:
+                with io.open(os.path.join(app.srcdir, filename), 'w',
+                             encoding='utf8') as f:
                     f.write(ustr)
 
         return newsourcestr
