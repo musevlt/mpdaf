@@ -2,14 +2,17 @@
 Arithmetic
 **********
 
-Operations over a given axis
-----------------------------
+Operations along one or more axes
+---------------------------------
 
-On Cube object, `sum <mpdaf.obj.Cube.sum>`, `mean <mpdaf.obj.Cube.mean>`,  `median <mpdaf.obj.Cube.median>` return the sum/mean/median over the given axis:
+In Cube objects, the `sum <mpdaf.obj.Cube.sum>`, `mean
+<mpdaf.obj.Cube.mean>` and `median <mpdaf.obj.Cube.median>` methods
+return the sum, mean and median values along a given axis or axes of
+the cube:
 
- - if ``axis=0``, the operation is done over the wavelength axe and an `Image <mpdaf.obj.Image>` is returned,
+ - If ``axis=0``, the operation is performed along the wavelength axis and an `Image <mpdaf.obj.Image>` is returned,
 
- - if ``axis=(1, 2)``, the operation is done over the spatial axis and a `Spectrum <mpdaf.obj.Spectrum>` is returned.
+ - If ``axis=(1, 2)``, the operation is performed over the two spatial axes and a `Spectrum <mpdaf.obj.Spectrum>` is returned.
 
 .. ipython::
    :suppress:
@@ -57,17 +60,29 @@ On Cube object, `sum <mpdaf.obj.Cube.sum>`, `mean <mpdaf.obj.Cube.mean>`,  `medi
   In [1]: cube = None
 
 
-`Spectrum.mean <mpdaf.obj.Spectrum.mean>` and `Spectrum.sum <mpdaf.obj.Spectrum.sum>` computes the mean/total flux value over a wavelength range.
-`Spectrum.integrate <mpdaf.obj.Spectrum.integrate>` integrates the flux value over a wavelength range.
+The `Spectrum.mean <mpdaf.obj.Spectrum.mean>` and `Spectrum.sum
+<mpdaf.obj.Spectrum.sum>` methods compute the mean and total flux
+value over a given wavelength range.  Similarly, `Spectrum.integrate
+<mpdaf.obj.Spectrum.integrate>` integrates the flux value over a given
+wavelength range.
 
 
-Operations with an other object
--------------------------------
+Arithmetic Operations between objects
+-------------------------------------
 
-Operation can be performed with a scalar number, a Numpy ndarray or masked array, or a MPDAF object.
-The dimensions must be equal, or, if ``self`` and ``operand`` have compatible shapes, they will be broadcasted together.
-So it is possible to perfom an operation between a `~mpdaf.obj.Cube` and an a `~mpdaf.obj.Image` or a `~mpdaf.obj.Spectrum`.
-For MPDAF objects, they must also have compatible coordinates (world and wavelength):
+Arithmetic operations can be performed between MPDAF objects and
+scalar numbers, numpy arrays, masked arrays or other MPDAF
+objects. When an operation is performed between two MPDAF objects or
+between an MPDAF object and an array, their dimensions must either
+match, or be broadcastable to the same dimensions via the usual numpy
+rules. The broadcasting rules make it possible to perform arithmetic
+operations between a `~mpdaf.obj.Cube` and an `~mpdaf.obj.Image` or a
+`~mpdaf.obj.Spectrum`, assuming that they have compatible spatial and
+spectral world-coordinates. The following demonstration shows a cube
+being multiplied by an image that has the same spatial dimensions and
+world-coordinates as the cube, and also being divided by a spectrum
+that has the same spectral dimensions and wavelengths as the spectral
+axis of the cube.
 
 .. ipython::
   :okwarning  :
@@ -83,12 +98,17 @@ For MPDAF objects, they must also have compatible coordinates (world and wavelen
 
 
 
-Operations on the data extension
---------------------------------
+Generic object arithmetic:
+--------------------------
+
+Cube, Image and Spectrum objects are all derived from a base class
+called `~mpdaf.obj.DataArray`. This class implements a couple of
+arithmetic functions that operate on the data and variance arrays of
+these objects:
 
  - `sqrt <mpdaf.obj.DataArray.sqrt>` returns a new object with positive data square-rooted and negative data masked.
 
- - `abs <mpdaf.obj.DataArray.abs>` returns a new object with the absolute value of the data.
+ - `abs <mpdaf.obj.DataArray.abs>` returns a new object containing the absolute values of the data.
 
 .. ipython::
   :okwarning:
