@@ -1,5 +1,5 @@
 include README.rst
-include CHANGES.rst
+include CHANGELOG
 
 graft src
 graft lib

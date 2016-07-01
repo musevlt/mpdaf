@@ -170,7 +170,7 @@ def options(*packages, **kw):
 with open('README.rst') as f:
     README = f.read()
 
-with open('CHANGES.rst') as f:
+with open('CHANGELOG') as f:
     CHANGELOG = f.read()
 
 cmdclass = {'test': UnitTest}

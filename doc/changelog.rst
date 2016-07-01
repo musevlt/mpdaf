@@ -4,4 +4,7 @@
 Full Changelog
 **************
 
-.. include:: ../CHANGES.rst
+.. include:: ../CHANGELOG
+
+.. include:: oldchangelog.rst
+   :start-line: 1
