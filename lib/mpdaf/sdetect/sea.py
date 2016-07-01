@@ -206,7 +206,7 @@ def findSkyMask(images):
 
 
 def segmentation(source, tags, DIR, remove):
-    """segmatation by running sextractor"""
+    """segmentation by running sextractor"""
     # suppose that MUSE_WHITE image exists
     try:
         subprocess.check_call(['sex', '-v'])
