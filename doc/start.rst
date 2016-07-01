@@ -12,8 +12,9 @@ Getting Started with MPDAF
 Importing MPDAF
 ---------------
    
-MPDAF is divided in sub-packages and themselves are composed of classes.
-You must import the class of a sub-package with the syntax:
+MPDAF is divided into sub-packages, each of which is composed of
+several classes.  The following example shows how to import the
+Cube and PixTable classes into python.
 
 .. ipython::
 
@@ -22,10 +23,17 @@ You must import the class of a sub-package with the syntax:
    In [2]: from mpdaf.drs import PixTable
 
    
+All of the examples in the MPDAF web pages are shown being typed into
+an interactive IPython shell. This shell is the origin of the prompts
+like "In [1]:" in the above example. The examples can also be entered
+in other shells, such as the native python shell.
+
 Loading your first MUSE datacube
 --------------------------------
    
-The MUSE datacube is now loaded from a FITS file (in which case the flux and variance values are read from specific extensions):
+MUSE datacubes are generally loaded from FITS files. In these files
+the fluxes and variances are stored in separate FITS extensions. For
+example:
 
 .. ipython::
   :okwarning:
@@ -33,16 +41,22 @@ The MUSE datacube is now loaded from a FITS file (in which case the flux and var
   @suppress
   In [5]: setup_logging(stream=sys.stdout)
   
-  # data and variance arrays read from the file (extension DATA and STAT)
+  # data and variance arrays are read from DATA and STAT extensions of the file
   In [2]: cube = Cube('../data/obj/CUBE.fits')
   
   In [10]: cube.info()
 
 
-The cube format 1595 x 10 x 20 has 10 x 20 spatial pixels and 1595 spectral pixels.
-The format follows the indexing used by Python to handle 3D arrays (see :ref:`objformat` for more information).
+The listed dimensions of the cube, 1595 x 10 x 20, indicate that the
+cube has 1595 spectral pixels and 10 x 20 spatial pixels.  The order
+in which these dimensions are listed, follows the indexing conventions
+used by Python to handle 3D arrays (see :ref:`objformat` for more
+information).
 
-Let's compute the reconstructed white light image and display it:
+Let's compute the reconstructed white-light image and display it. The
+white-light image is obtained by summing each spatial pixel of the
+cube along the wavelength axis. This converts the 3D cube into a 2D
+image.
 
 .. ipython::
 
@@ -56,7 +70,9 @@ Let's compute the reconstructed white light image and display it:
   In [3]: ima.plot(scale='arcsinh', colorbar='v')
   
 
-Let's now compute the total spectrum of the object:
+Let's now compute the overall spectrum of the cube by taking the cube
+and summing along the X and Y axes of the image plane. This yields the
+total flux per spectral pixel.
 
 .. ipython::
 
@@ -70,13 +86,22 @@ Let's now compute the total spectrum of the object:
   In [3]: sp.plot()
    
 
-Helping
--------
+Online Help
+-----------
 
-Because different subpackages have very different functionality, further suggestions for getting started are in the documentation for the subpackages:
-for example :ref:`cube`, :ref:`image`, :ref:`spectrum` for the ``mpdaf.obj`` package.
+Because different sub-packages have very different functionality,
+further suggestions for getting started are provided in the online
+documentation of these sub-packages. For example, click on :ref:`cube`,
+:ref:`image`, or :ref:`spectrum` for help with the 3 main classes of
+the ``mpdaf.obj`` package.
 
-Or you can either look at docstrings using the ?
+Alternatively, if you use the IPython interactive python shell, then
+you can look at the docstrings of classes, objects and functions by
+following them with a ?. Examples of this are shown below. A more
+general way to see these docstrings, which works in all python shells,
+is to use the built-in python help command. For example, typing
+help(Cube) produces the same information as shown in the ipython
+example below.
 
 .. ipython::
 
@@ -95,5 +120,3 @@ Or you can either look at docstrings using the ?
    
    In [4]: plt.close("all")
 
-   
-   

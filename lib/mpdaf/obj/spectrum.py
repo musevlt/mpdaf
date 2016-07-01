@@ -490,161 +490,37 @@ class Spectrum(ArithmeticMixin, DataArray):
         """
         self.data = np.ma.masked_invalid(self._interp_data(spline))
 
-    def _rebin_(self, factor):
-        """Shrink the size of the spectrum by factor. New size is an integer
-        multiple of the original size.
-
-        Parameters
-        ----------
-        factor : int
-            Factor.
-        """
-        assert not np.sometrue(np.mod(self.shape[0], factor))
-        # new size is an integer multiple of the original size
-        sh = (self.shape[0] // factor, factor)
-
-        if self.mask is np.ma.nomask:
-            self._data = self._data.reshape(sh).sum(1) / factor
-            if self._var is not None:
-                self._var = self._var.reshape(sh).sum(1) / (factor * factor)
-        else:
-            mask_count = (~self.mask).reshape(sh).sum(1)
-            self._data = self.data.reshape(sh).sum(1).data / mask_count
-            if self._var is not None:
-                self._var = self.var.reshape(sh).sum(1).data / (
-                    mask_count * mask_count)
-            self._mask = mask_count == 0
-        self._ndim = self._data.ndim
-
-        try:
-            self.wave.rebin(factor)
-        except:
-            self.wave = None
-
-    def _rebin(self, factor, margin='center'):
-        """Shrink the size of a spectrum by an integer factor, by summing
-        neighboring pixels.
-
-        Parameters
-        ----------
-        factor : int
-            The integer division factor.
-        margin : string in 'center'|'right'|'left'
-            When the dimension of the spectrum is not an integer
-            multiple of the division factor, a sub-spectrum is chosen
-            for rebinning. The dimension of this sub-spectrum is an
-            integer multiple of the division factor. The margin
-            parameter determines how the sub-spectrum is chosen. If
-            'center' is selected, then the sub-spectrum is taken from the
-            center of the spectrum. If 'right' is selected, then the
-            start of the sub-spectrum is the first pixel of the input
-            spectrum. If 'left' is selected, then the last pixel of
-            the sub-spectrum is the last pixel of the input spectrum.
-
-        """
-
-        # The divisor must be in the range 1 to (shape - 1).
-
-        if factor <= 1 or factor >= self.shape[0]:
-            raise ValueError('factor must be in ]1,shape[')
-        factor = int(factor)
-
-        # How many pixels need to be removed to make the dimension
-        # of the array an integer multiple of the division factor?
-
-        n = self.shape[0] % factor
-
-        # If needed, compute the slice needed to truncate the
-        # size of the spectrum to an integer multiple of the
-        # division factor.
-
-        if n != 0:
-
-            # Calculate the index of the first pixel of the spectrum
-            # that will be re-binned.
-
-            if margin == 'left' or n == 1:
-                ia = 0
-            elif margin == 'right':
-                ia = n
-            elif margin == 'center':
-                ia = n // 2
-            else:
-                raise ValueError('Unsupported margin: %s' % margin)
-
-            # Compute the slice to be used to select the sub-spectrum.
-
-            sl = slice(ia, self.shape[0] - (n - ia))
-
-            # Slice the data and variance arrays.
-
-            self._data = self._data[sl]
-            if self._var is not None:
-                self._var = self._var[sl]
-            self._mask = self._mask[sl]
-
-            # Update the world coordinates to match the truncated
-            # array.
-
-            self.wave = self.wave[sl]
-
-        # At this point the spectrum dimension is an integer multiple of
-        # the division factor. What is the shape of the output spectrum?
-
-        newshape = self.shape[0] // factor
-        data = self.data.reshape(newshape, factor)
-
-        # Compute how many unmasked pixels in the input spectrum will
-        # contribute to each mean pixel in the output spectrum.
-
-        unmasked = data.count(1)
-
-        # Reduce the size of the data array by taking the mean of
-        # successive groups of 'factor' pixels. Note that in the
-        # following, np.ma.mean() takes account of masked pixels.
-
-        self._data = data.mean(1).data
-
-        # The treatment of the variance array is complicated by the
-        # possibility of masked pixels in the data array. A sum of N
-        # data pixels p[i] of variance v[i] has a variance of
-        # sum(v[i] / N^2), where N^2 is the number of unmasked pixels
-        # in that particular sum.
-
-        if self._var is not None:
-            self._var = self.var.reshape(newshape, factor).sum(1) / unmasked**2
-
-        # Mask all pixels in the output array that come from zero
-        # unmasked pixels of the input array.
-
-        self._mask = unmasked < 1
-
-        # Update the world-coordinate information.
-
-        try:
-            self.wave.rebin(factor)
-        except:
-            self.wave = None
-
     def rebin(self, factor, margin='center', inplace=False):
-        """Shrink the size of a spectrum by an integer factor, by summing
-        neighboring pixels.
+        """Combine neighboring pixels to reduce the size of a spectrum by an integer factor.
+
+        Each output pixel is the mean of n pixels, where n is the
+        specified reduction factor.
 
         Parameters
         ----------
         factor : int
-            The integer factor by which the spectrum should be shrunk.
-        margin : string in 'center'|'right'|'left'
-            When the dimension of the spectrum is not an integer
-            multiple of the division factor, a sub-spectrum is chosen
-            for rebinning. The dimension of this sub-spectrum is an
-            integer multiple of the division factor. The margin
-            parameter determines how the sub-spectrum is chosen. If
-            'center' is selected, then the sub-spectrum is taken from the
-            center of the spectrum. If 'right' is selected, then the
-            start of the sub-spectrum is the first pixel of the input
-            spectrum. If 'left' is selected, then the last pixel of
-            the sub-spectrum is the last pixel of the input spectrum.
+            The integer reduction factor by which the spectrum should
+            be shrunk.
+        margin : string in 'center'|'right'|'left'|'origin'
+            When the dimension of the input spectrum is not an integer
+            multiple of the reduction factor, the spectrum is
+            truncated to remove just enough pixels that its length is
+            a multiple of the reduction factor. This sub-spectrum is
+            then rebinned in place of the original spectrum. The
+            margin parameter determines which pixels of the input
+            spectrum are truncated, and which remain.
+
+            The options are:
+              'origin' or 'center':
+                 The start of the output spectrum is coincident
+                 with the start of the input spectrum.
+              'center':
+                 The center of the output spectrum is aligned
+                 with the center of the input spectrum, within
+                 one pixel.
+              'right':
+                 The end of the output spectrum is coincident
+                 with the end of the input spectrum.
         inplace : bool
             If False, return a rebinned copy of the spectrum (the default).
             If True, rebin the original spectrum in-place, and return that.
@@ -654,14 +530,8 @@ class Spectrum(ArithmeticMixin, DataArray):
         out : Spectrum
 
         """
-        # Should we rebin the spectrum in-place, or rebin a copy of the spectrum?
-
-        res = self if inplace else self.copy()
-
-        # Rebin the result object in-place.
-
-        res._rebin(factor, margin)
-        return res
+        # Delegate the rebinning to the generic DataArray function.
+        return self._rebin(factor, margin, inplace)
 
     def _resample(self, step, start=None, shape=None,
                   spline=False, notnoise=False, unit=u.angstrom):

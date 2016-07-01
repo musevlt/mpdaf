@@ -2686,119 +2686,39 @@ class Image(ArithmeticMixin, DataArray):
             moffat.ima = ima
         return moffat
 
-    def _rebin(self, factor, margin='center'):
-        if margin not in ('center', 'origin'):
-            raise ValueError('Unknown margin parameter: %s' % margin)
-
-        # Use the same factor for both dimensions?
-        if is_int(factor):
-            factor = (factor, factor)
-        factor = np.asarray(factor, dtype=np.int)
-
-        # The divisors must be in the range 1 to shape-1.
-        if factor[0] <= 1 or factor[0] >= self.shape[0] \
-                or factor[1] <= 1 or factor[1] >= self.shape[1]:
-            raise ValueError('The factor must be from 1 to shape.')
-
-        # Compute the number of pixels by which each axis dimension
-        # exceeds being an integer multiple of its reduction factor.
-        n = np.asarray(np.mod(self.shape, factor), dtype=int)
-
-        # If necessary, compute the 2D slice needed to truncate the
-        # image dimesions to be integer multiples of the axis
-        # reduction factors.
-        if n[0] != 0 or n[1] != 0:
-
-            slices = [None, None]
-
-            # Truncate the Y axis?
-            if n[0] != 0:
-                nstart = 0 if (margin == 'origin' or n[0] == 1) else n[0] // 2
-                slices[0] = slice(nstart, self.shape[0] - n[0] + nstart)
-
-            # Truncate the X axis?
-            if n[1] != 0:
-                nstart = 0 if (margin == 'origin' or n[1] == 1) else n[1] // 2
-                slices[1] = slice(nstart, self.shape[1] - n[1] + nstart)
-
-            # Substitute an all-inclusive slice for non-truncated axes.
-            if slices[0] is None:
-                slices[0] = slice(0, self.shape[0])
-            if slices[1] is None:
-                slices[1] = slice(0, self.shape[1])
-
-            # Slice the data and variance arrays.
-            self._data = self._data[slices[0], slices[1]]
-            if self._var is not None:
-                self._var = self._var[slices[0], slices[1]]
-            self._mask = self._mask[slices[0], slices[1]]
-
-            # Update the world coordinates to match the truncated
-            # array.
-            self.wcs = self.wcs[slices[0], slices[1]]
-
-        # At this point the image dimensions are integer multiples of
-        # the reduction factors. What is the shape of the output image?
-        newshape = (self.shape[0] // factor[0], self.shape[1] // factor[1])
-
-        # Compute the number of unmasked pixels of the input image
-        # that will contribute to each mean pixel in the output image.
-        unmasked = self.data.reshape(
-            newshape[0], factor[0], newshape[1], factor[1]).count(1).sum(2)
-
-        # Reduce the size of the data array by taking the mean of
-        # successive groups of 'factor[0] x factor[1]' pixels. Note
-        # that the following uses np.ma.mean(), which takes account of
-        # masked pixels.
-        if self.var is not None:
-            var = self.var.copy()
-
-        newdata = self.data.reshape(
-            newshape[0], factor[0], newshape[1], factor[1]).mean(1).mean(2)
-        self._data = newdata.data
-        self._mask = newdata.mask
-
-        # The treatment of the variance array is complicated by the
-        # possibility of masked pixels in the data array. A sum of N
-        # data pixels p[i] of variance v[i] has a variance of
-        # sum(v[i] / N^2), where N^2 is the number of unmasked pixels
-        # in that particular sum.
-        if self._var is not None:
-            self._var = (var.reshape(
-                newshape[0], factor[0], newshape[1], factor[1]).sum(1).sum(2) /
-                unmasked**2).data
-
-        # Any pixels in the output array that come from zero unmasked
-        # pixels of the input array should be masked.
-        self._mask = unmasked < 1
-
-        # Update the world-coordinate information.
-        self.wcs = self.wcs.rebin(factor)
-
-        # If the spatial frequency band-limits of the image have been
-        # reduced by the changes in the Y and X sampling intervals,
-        # record this.
-        self.update_spatial_fmax(0.5 / self.wcs.get_step())
-
     def rebin(self, factor, margin='center', inplace=False):
-        """Return an image that shrinks the size of the current image by
-        an integer division factor.
+        """Combine neighboring pixels to reduce the size of an image by integer factors along each axis.
+
+        Each output pixel is the mean of n pixels, where n is the
+        product of the reduction factors in the factor argument.
 
         Parameters
         ----------
         factor : int or (int,int)
-            The integer division factor along the y and x axes.
+            The integer reduction factor along the y and x array axes.
             Note the conventional python ordering of the axes.
-        margin : 'center' or 'origin'
-            When the dimensions of the input array are not integer
-            multiples of the division factor, a sub-image is chosen
-            for rebinning. This sub-image has dimensions that are
-            integer multiples of the division factor. The margin
-            parameter determines how the sub-image is chosen. If
-            'center' is selected, then the sub-image is taken from the
-            center of the image. If 'origin' is selected, then one
-            corner of the sub-image is the [0,0] pixel of the input
-            image.
+        margin : 'center'|'right'|'left'|'origin'
+            When the dimensions of the input image are not integer
+            multiples of the reduction factor, the image is truncated
+            to remove just enough pixels that its dimensions are
+            multiples of the reduction factor. This subimage is then
+            rebinned in place of the original image. The margin
+            parameter determines which pixels of the input image are
+            truncated, and which remain.
+
+            The options are:
+              'origin' or 'center':
+                 The starts of the axes of the output image are
+                 coincident with the starts of the axes of the input
+                 image.
+              'center':
+                 The center of the output image is aligned with the
+                 center of the input image, within one pixel along
+                 each axis.
+              'right':
+                 The ends of the axes of the output image are
+                 coincident with the ends of the axes of the input
+                 image.
         inplace : bool
             If False, return a rebinned copy of the image (the default).
             If True, rebin the original image in-place, and return that.
@@ -2809,8 +2729,14 @@ class Image(ArithmeticMixin, DataArray):
 
         """
 
-        res = self if inplace else self.copy()
-        res._rebin(factor, margin)
+        # Delegate the rebinning to the generic DataArray function.
+        res = self._rebin(factor, margin, inplace)
+
+        # If the spatial frequency band-limits of the image have been
+        # reduced by the changes in the Y and X sampling intervals,
+        # record this.
+        res.update_spatial_fmax(0.5 / res.wcs.get_step())
+
         return res
 
     @deprecated('rebin_mean method is deprecated: use rebin instead')
