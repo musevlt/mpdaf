@@ -36,18 +36,17 @@ def test_deprecated_warnings():
     with warnings.catch_warnings(record=True) as w:
         # Cause all warnings to always be triggered.
         warnings.simplefilter("always")
-        sp.set_var(None)
+        sp.get_lambda(0)
         assert len(w) == 1
         assert issubclass(w[-1].category, MpdafWarning)
         assert "deprecated" in str(w[-1].message)
 
-    for method in (DataArray.get_np_data, DataArray.resize):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            method(sp)
-            assert len(w) == 1
-            assert issubclass(w[-1].category, MpdafWarning)
-            assert "deprecated" in str(w[-1].message)
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        sp.resize()
+        assert len(w) == 1
+        assert issubclass(w[-1].category, MpdafWarning)
+        assert "deprecated" in str(w[-1].message)
 
 
 @attr(speed='fast')
@@ -225,7 +224,7 @@ def test_clone_with_data():
 
 @attr(speed='fast')
 def test_set_var():
-    """DataArray class: Testing the set_var method"""
+    """DataArray class: Testing the variance setter"""
 
     nz = 3
     ny = 4
