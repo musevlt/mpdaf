@@ -31,20 +31,18 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-"""
-Load functions from the C extension.
+# Load functions from the C extension.
+#
+# Note: closing the shared library issue with OpenMP
+#
+# old close libray code:
+# import _ctypes
+# _ctypes.dlclose(libCmethods._handle)
+# libCmethods._handle = None
+# libCmethods._name = None
+# libCmethods._FuncPtr = None
+# del libCmethods
 
-Note: closing the shared library issue with OpenMP
-
-    # close libray
-    # import _ctypes
-    # _ctypes.dlclose(libCmethods._handle)
-    # libCmethods._handle = None
-    # libCmethods._name = None
-    # libCmethods._FuncPtr = None
-    # del libCmethods
-
-"""
 
 import ctypes
 import logging

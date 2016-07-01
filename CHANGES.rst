@@ -1,5 +1,7 @@
-v1.3.dev (xx/xx/2016)
+v2.0.dev (xx/xx/2016)
 ---------------------
+
+This is the first public release, as an open source project.
 
 New Features
 ~~~~~~~~~~~~
@@ -205,7 +207,7 @@ Bacon, CRAL).
 .. warning::
 
    This is a prototype version.
-   
+
    The *FOCUS* class has been removed (forerunner of *ORIGIN*).
 
 
