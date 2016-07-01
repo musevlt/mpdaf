@@ -26,8 +26,8 @@ Several additional packages can be installed for optional features:
 - `CFITSIO <http://heasarc.gsfc.nasa.gov/fitsio/>`_ (C library for reading and
   writing FITS files).
 - `C OpenMP library <http://openmp.org>`_, to get parallelization.
-- `SExtractor <http://www.astromatic.net/software/sextractor>` for several
-  methods of `~mpdaf.sdetect.Source` and for Muselet.
+- `SExtractor <http://www.astromatic.net/software/sextractor>`_ for several
+  methods of `~mpdaf.sdetect.Source` and for :doc:`muselet`.
 
 .. _Numpy: http://www.numpy.org/
 

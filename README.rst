@@ -7,8 +7,11 @@ available freely for the community.
 It provides tools to work with MUSE-specific data (raw data, pixel tables,
 etc.), and with more general data like spectra, images and data cubes. Although
 its main use is to work with MUSE data, it is also possible to use it other
-data, for example HST images.  Bug reports, comments, and help with development
-are very welcome.
+data, for example HST images. MPDAF also provides MUSELET, a SExtractor-based
+tool to detect emission lines in a datacube, and a format to gather all the
+informations on a source in one FITS file.
+
+Bug reports, comments, and help with development are very welcome.
 
 MPDAF is compatible with Python 2.7 and 3.3+.
 
@@ -29,11 +32,11 @@ The currently existing sub-packages are:
 +--------------------------------+-------------------------------------------------+---------+
 |  sub-packages                  | description                                     |  status |
 +================================+=================================================+=========+
-| :doc:`mpdaf.obj <obj>`         | Interface for spectra, images and cubes         | Mature  |
+| :doc:`mpdaf.obj <obj>`         | Interface for spectra, images and cubes         | Stable  |
 +--------------------------------+-------------------------------------------------+---------+
 | :doc:`mpdaf.drs <drs>`         | Interface for the MUSE raw file and pixel table | Stable  |
 +--------------------------------+-------------------------------------------------+---------+
-| :doc:`mpdaf.MUSE <muse>`       | slicer: MUSE slicer numbering scheme            | Mature  |
+| :doc:`mpdaf.MUSE <muse>`       | slicer: MUSE slicer numbering scheme            | Stable  |
 |                                +-------------------------------------------------+---------+
 |                                | PSF: MUSE PSF models                            | Dev     |
 +--------------------------------+-------------------------------------------------+---------+
@@ -41,7 +44,7 @@ The currently existing sub-packages are:
 |                                +-------------------------------------------------+---------+
 |                                | Catalog: Creates source catalogs                | Dev     |
 |                                +-------------------------------------------------+---------+
-|                                | MUSELET: MUSE Line Emission Tracker             | Mature  |
+|                                | MUSELET: MUSE Line Emission Tracker             | Stable  |
 +--------------------------------+-------------------------------------------------+---------+
 
 The classification is as follows:
@@ -49,8 +52,6 @@ The classification is as follows:
  - Dev: Actively developed, so be prepared for potentially significant changes.
  - Stable: Reasonably stable, so any significant changes or additions will
    generally be backwards-compatible.
- - Mature: Additions and improvements are possible, but no major changes are
-   planned.
 
 Reporting Issues
 ----------------
