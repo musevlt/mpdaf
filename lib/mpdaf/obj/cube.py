@@ -2151,6 +2151,10 @@ class Cube(ArithmeticMixin, DataArray):
             self._logger.info('returning spectrum at nearest spaxel')
         return spec
 
+    @deprecated('get_lambda method is deprecated, use select_lambda instead')
+    def get_lambda(self, lbda_min, lbda_max=None, unit_wave=u.angstrom):
+        return self.select_lambda(lbda_min, lbda_max, unit_wave=unit_wave)
+
     @deprecated('rebin_mean method is deprecated, use rebin instead')
     def rebin_mean(self, factor, margin='center'):
         return self.rebin(factor, margin)
