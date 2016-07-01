@@ -44,10 +44,10 @@ _arit_doc = """
     Performs {name} by evaluating ``self`` {op} ``operand``.
 
     Operation can be performed with a scalar number, a Numpy ndarray or masked
-    array, or a Mpdaf object. The dimensions must be equal, or, if ``self`` and
+    array, or a MPDAF object. The dimensions must be equal, or, if ``self`` and
     ``operand`` have compatible shapes, they will be broadcasted together. So
     it is possible to perfom an operation between a `~mpdaf.obj.Cube` and an
-    a `~mpdaf.obj.Image` or a `~mpdaf.obj.Spectrum`. For Mpdaf objects, they
+    a `~mpdaf.obj.Image` or a `~mpdaf.obj.Spectrum`. For MPDAF objects, they
     must also have compatible coordinates (world and wavelength).
 
     Parameters

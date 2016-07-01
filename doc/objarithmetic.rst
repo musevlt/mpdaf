@@ -64,10 +64,10 @@ On Cube object, `sum <mpdaf.obj.Cube.sum>`, `mean <mpdaf.obj.Cube.mean>`,  `medi
 Operations with an other object
 -------------------------------
 
-Operation can be performed with a scalar number, a Numpy ndarray or masked array, or a Mpdaf object.
+Operation can be performed with a scalar number, a Numpy ndarray or masked array, or a MPDAF object.
 The dimensions must be equal, or, if ``self`` and ``operand`` have compatible shapes, they will be broadcasted together.
 So it is possible to perfom an operation between a `~mpdaf.obj.Cube` and an a `~mpdaf.obj.Image` or a `~mpdaf.obj.Spectrum`.
-For Mpdaf objects, they must also have compatible coordinates (world and wavelength):
+For MPDAF objects, they must also have compatible coordinates (world and wavelength):
 
 .. ipython::
   :okwarning  :
