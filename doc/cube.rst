@@ -434,7 +434,7 @@ parameter and returns the background-subtracted image:
      ...:     (coeffs,residuals,rank,sing_vals) = np.linalg.lstsq(A,zval)
      ...:     fp = np.poly1d(coeffs[0:degree])
      ...:     fq = np.poly1d(coeffs[degree:2*degree])
-     ...:     X,Y = np.meshgrid(xrange(ima.shape[0]),xrange(ima.shape[1]))
+     ...:     X,Y = np.meshgrid(range(ima.shape[0]), range(ima.shape[1]))
      ...:     ima2 = ima - np.array(map(lambda q,p: fp(p)+fq(q),Y,X))
      ...:     return ima2
      ...:
