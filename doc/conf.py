@@ -22,9 +22,15 @@ html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 # read version from lib/mpdaf/version.py
 mpdaf_dir = os.path.join(os.path.dirname(__file__), '..', 'lib', 'mpdaf')
 pkgmeta = {}
-execfile(os.path.join(mpdaf_dir, 'version.py'), pkgmeta)
+
+with open(os.path.join(mpdaf_dir, 'version.py')) as f:
+    code = compile(f.read(), 'version.py', 'exec')
+    exec(code, pkgmeta)
+
 if os.path.isfile(os.path.join(mpdaf_dir, '_githash.py')):
-    execfile(os.path.join(mpdaf_dir, '_githash.py'), pkgmeta)
+    with open(os.path.join(mpdaf_dir, '_githash.py')) as f:
+        code = compile(f.read(), '_githash.py', 'exec')
+        exec(code, pkgmeta)
     pkgmeta['__version__'] += pkgmeta['__dev_value__']
 
 # If your documentation needs a minimal Sphinx version, state it here.
