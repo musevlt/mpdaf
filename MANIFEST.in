@@ -1,12 +1,17 @@
 include README.rst
 include CHANGELOG
+include LICENSE
+include tox.ini
+include ez_setup.py
 
-graft src
-graft lib
-graft doc
-graft tests
 graft data
+graft doc
+graft lib
+graft src
+graft tests
 
+prune doc/api
+prune doc/build
 prune lib/mpdaf.egg-info
 
 global-exclude *.py[cod] __pycache__ *.so .directory _githash.py .git
