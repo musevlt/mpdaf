@@ -274,6 +274,7 @@ class FSF(object):
         fwhm_arcsec : array
                       fwhm of the FSF in arcsec
         """
+        lbda = np.asarray(lbda)
         if self.typ == "MOFFAT1":
             return MOFFAT1(lbda, step, size, **kargs)
         else:
@@ -281,7 +282,7 @@ class FSF(object):
         
     def get_FSF_cube(self, cube, size, **kargs):
         """Return a cube of FSFs corresponding to the MUSE data cube
-        given in input: a FSF per MUSE spectral pixels, the step of
+        given as input: a FSF per MUSE spectral pixels, the step of
         the FSF pixel is equal to the spatial step of the MUSE data cube.
 
         Parameters

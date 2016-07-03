@@ -41,8 +41,6 @@ from six.moves import range
 from six.moves import zip
 
 class FieldsMap(object):
-    """Class to work with the mosaic field map.
-    """
 
     def __init__(self, filename=None, nfields=None, **kwargs):
         """Class to work with the mosaic field map.
@@ -51,7 +49,7 @@ class FieldsMap(object):
         ----------
         filename : FITS file name
                    Name of the file containing the field map.
-                   Use ext='FIELDMAP' to read the field map from an
+                   Use extname='FIELDMAP' to read the field map from an
                    extension the MUSE data cube.
         nfields : integer
                   Number of fields.
@@ -65,7 +63,6 @@ class FieldsMap(object):
             else:
                 self.nfields = nfields
             self.data = fits.getdata(filename, **kwargs)
-            indexes = (i for i in range(self.nfields))
         
     def __getitem__(self, item):
         """Return a sliced object.
@@ -83,7 +80,7 @@ class FieldsMap(object):
 
         """
         if isinstance(field_name, six.string_types):
-            field_name = int(field_name)
+            field_name = int(field_name[-2:])
         return (self.data & 2**field_name).astype(bool)
 
     def get_pixel_fields(self, y, x):
