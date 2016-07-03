@@ -4124,7 +4124,7 @@ class Image(ArithmeticMixin, DataArray):
             pixsky = self.wcs.pix2sky([row, col], unit=self._unit)
             yc = pixsky[0][0]
             xc = pixsky[0][1]
-            val = self.data.data[col, row]
+            val = self.data.data[row, col]
             return 'y= %g x=%g p=%i q=%i data=%g' % (yc, xc, row, col, val)
         else:
             return 'x=%1.4f, y=%1.4f' % (x, y)
