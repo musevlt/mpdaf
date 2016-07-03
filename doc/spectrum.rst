@@ -5,15 +5,15 @@
 Spectrum object
 ***************
 
-A Spectrum object contains a 1D data array of flux values (a numpy array), and
-a `WaveCoord <mpdaf.obj.WaveCoord>` object that describes the wavelength scale
-of the spectrum. Optionally, an array of variances can be included for weighting
-the flux values and for computing the uncertainties of least-squares fits and
-other calculations. Array masking is used to ignore some of the pixel values in
-the calculations.
+Spectrum objects contain a 1D data array of flux values, and a `WaveCoord
+<mpdaf.obj.WaveCoord>` object that describes the wavelength scale of the
+spectrum. Optionally, an array of variances can also be provided to give the
+statistical uncertainties of the fluxes. These can be used for weighting the
+flux values and for computing the uncertainties of least-squares fits and other
+calculations. Finally a mask array is provided for indicating bad pixels.
 
-The data and variance arrays are stored in numpy masked arrays, so virtually all
-numpy and scipy functions can be applied to them.
+The fluxes and their variances are stored in numpy masked arrays, so
+virtually all numpy and scipy functions can be applied to them.
 
 .. ipython::
    :suppress:
@@ -38,10 +38,12 @@ Preliminary imports:
 Spectrum Creation
 =================
 
-A new `Spectrum <mpdaf.obj.Spectrum>` object can be obtained in two ways:
+There are two common ways to obtain a `Spectrum <mpdaf.obj.Spectrum>` object:
 
-- A spectrum can be created from either one numpy array, containing flux values,
-  or two numpy arrays containing flux values and variances:
+- A spectrum can be created from a user-provided array of the flux values at
+  each wavelength of the spectrum, or from both an array of flux values and a
+  corresponding array of variances. These arrays can be simple numpy arrays, or
+  they can be numpy masked arrays in which bad pixels have been masked.
 
 .. ipython::
 
@@ -86,10 +88,11 @@ A new `Spectrum <mpdaf.obj.Spectrum>` object can be obtained in two ways:
 
   In [10]: spe.info()
 
-
-If the FITS file contains a single extension of spectrum fluxes, or it contains
-extensions that are specifically named 'DATA' (for flux values) and 'STAT' (for
-variance values), then the "ext=" keyword is unnecessary.
+By default, if a FITS file has more than one extension, then it is expected to
+have a 'DATA' extension that contains the pixel data, and possibly a 'STAT'
+extension that contains the corresponding variances. If the file doesn't contain
+extensions of these names, the "ext=" keyword can be used to indicate the
+appropriate extension or extensions, as shown in the example above.
 
 The `WaveCoord <mpdaf.obj.WaveCoord>` object of a spectrum describes the
 wavelength scale of the spectrum. When a spectrum is read from a FITS file, this
