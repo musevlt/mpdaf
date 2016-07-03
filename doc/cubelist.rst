@@ -2,8 +2,8 @@
 Cube lists and combination
 **************************
 
-The `~mpdaf.obj.CubeList` and `~mpdaf.obj.CubeMosaic` classes
-allows to manages a list of cube FITS filenames, and to combine the cubes using
+The `~mpdaf.obj.CubeList` and `~mpdaf.obj.CubeMosaic` classes manage
+lists of cube FITS filenames, and allow one to combine cubes using
 several methods (median, sigma clipping).
 
 
@@ -23,12 +23,13 @@ A cube object `O` consist of:
 +------------+--------------------------------------------------------------------------------------------------+
 | O.fscale   | Scaling factor for the flux and variance values                                                  |
 +------------+--------------------------------------------------------------------------------------------------+
-| O.wcs      | world coordinate spatial information (`WCS <mpdaf.obj.WCS>` object)                              |
+| O.wcs      | Spatial world-coordinate information (`WCS <mpdaf.obj.WCS>` object)                              |
 +------------+--------------------------------------------------------------------------------------------------+
-| O.wave     | world coordinate spectral information  (`WaveCoord <mpdaf.obj.WaveCoord>` object)                |
+| O.wave     | Spectral world-coordinate information  (`WaveCoord <mpdaf.obj.WaveCoord>` object)                |
 +------------+--------------------------------------------------------------------------------------------------+
 
-Dimensions, scaling factor and coordinates must be the same for all cubes.
+All of the cubes must have the same dimensions, scaling factors and
+world-coordinates.
 
 
 Examples
@@ -43,7 +44,7 @@ containing these 54 cubes::
  >>> from mpdaf.obj import CubeList
  >>> l = CubeList(cubes)
 
-We merge these cubes in a single data cube containing median values of each voxel::
+We merge these cubes into a single data-cube containing the median values of each voxel::
 
  >>> cube, expmap, statpix = l.median()
   1: HDFS/DATACUBE-MUSE.2014-07-26T05:08:59.778.fits
@@ -136,12 +137,15 @@ We merge these cubes in a single data cube containing median values of each voxe
  12/15/14 - 10:40AM 97.8%
  12/15/14 - 10:40AM 100%
 
-cube and expmap are `mpdaf.obj.Cube` objects that contains respectively the merged cube and an exposure map data cube which counts the number of exposures used for the combination of each pixel.
-statpix is an astropy.Table objects that gives pixel statistics.
+In this example, the cube and expmap variables hold `mpdaf.obj.Cube`
+objects that respectively contain the merged cube and an exposure map
+data cube which counts the number of exposures used in the combination
+of each pixel. The statpix variable holds an astropy.Table object of
+pixel statistics.
 
 This process is multithreaded. It needs 30 minutes on a machine with 32 cpus.
 
-It is also possible to merge these cubes using sigma clipped mean::
+It is also possible to merge these cubes using a sigma clipped mean::
 
  >>> cube, expmap, statpix = l.combine(nmax=2, nclip=5.0, nstop=2, var='stat_mean')
   1: HDFS/DATACUBE-MUSE.2014-07-26T05:08:59.778.fits
@@ -244,25 +248,26 @@ It is also possible to merge these cubes using sigma clipped mean::
  12/15/14 - 11:17AM 100%
 
 
-The process prints the main parameters:
- - nmax: maximum number of clipping iterations
- - nclip: number of sigma at which to clip.
- - nstop: if the number of not rejected pixels is less than this number, the clipping iterations stop.
+The procedure prints the main parameters, which are:
 
-The resulted cube contains an additional extension for the variance.
-3 options are proposed to compute the variance:
+ - nmax: The maximum number of clipping iterations
+ - nclip: The number of sigma at which to clip.
+ - nstop: If the number of none-rejected pixels is less than this number, the clipping iterations stop.
 
- - ``propagate``: the variance is the mean of the variances of the N individual
+The resulting cube contains an additional extension for the variance.
+Three options are available to compute the variance:
+
+ - ``propagate``: The variance is the mean of the variances of the N individual
    exposures divided by N**2.
 
- - ``stat_mean``: the variance of each combined pixel is computed as the
+ - ``stat_mean``: The variance of each combined pixel is computed as the
    variance derived from the comparison of the N individual exposures divided
-   N-1.
+   by N-1.
 
- - ``stat_one``: the variance of each combined pixel is computed as the
+ - ``stat_one``: The variance of each combined pixel is computed as the
    variance derived from the comparison of the N individual exposures.
 
-`N` is the number of voxel left after the sigma-clipping.
+`N` is the number of voxels left after the sigma-clipping.
 
 
 Reference
