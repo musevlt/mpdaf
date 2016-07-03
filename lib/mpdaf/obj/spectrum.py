@@ -620,25 +620,32 @@ class Spectrum(ArithmeticMixin, DataArray):
 
     def resample(self, step, start=None, shape=None,
                  spline=False, notnoise=False, unit=u.angstrom, inplace=False):
-        """Return a spectrum with data resample to different wavelength step
-        size.
+        """Return a spectrum resampled to a different wavelength interval.
 
         Uses `scipy.integrate.quad`.
 
         Parameters
         ----------
         step : float
-            New pixel size in spectral direction.
+            The new pixel size in the spectral direction.
         start : float
-            Spectral position of the first new pixel.
-            It can be set or kept at the edge of the old first one.
+            The wavelength of the first new pixel.  The default is
+            None, which arranges that the minimum wavelength of
+            the resampled spectrum is the same as the minimum
+            wavelength of the original spectrum.
         unit : `astropy.units.Unit`
-            type of the wavelength coordinates
+            The wavelength units of the step and start arguments.
         shape : int
-            Size of the new spectrum.
+            The array dimension of the new spectrum (ie. the number
+            of spectral pixels).
         spline : bool
-            Linear/spline interpolation to interpolate masked values.
+            If False (the default), use a linear interpolation to
+            interpolate over masked pixels.
+            If True, use a spline interpolation to interpolate over
+            masked values.
         notnoise : bool
+            If False (the default), resample the variances, if any.
+            If True discard any variances.
         inplace : bool
             If False, return a resampled copy of the spectrum (the default).
             If True, resample the original spectrum in-place, and return that.
@@ -646,6 +653,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         Returns
         -------
         out : Spectrum
+
         """
         # Should we resample the spectrum in-place, or resample a copy?
 
