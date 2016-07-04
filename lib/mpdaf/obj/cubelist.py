@@ -37,6 +37,7 @@ from __future__ import absolute_import, division
 import logging
 import numpy as np
 import os
+import six
 
 from astropy import units as u
 from astropy.table import Table
@@ -249,8 +250,10 @@ class CubeList(object):
         data = np.empty(npixels, dtype=np.float64)
         expmap = np.empty(npixels, dtype=np.int32)
         valid_pix = np.zeros(self.nfiles, dtype=np.int32)
-        ctools.mpdaf_merging_median(c_char_p('\n'.join(self.files)), data,
-                                    expmap, valid_pix)
+        files = '\n'.join(self.files)
+        if not six.PY2:
+            files = files.encode('utf8')
+        ctools.mpdaf_merging_median(c_char_p(files), data, expmap, valid_pix)
 
         # no valid pixels
         no_valid_pix = npixels - valid_pix
@@ -331,10 +334,13 @@ class CubeList(object):
             var_mean = 2
 
         # run C method
+        files = '\n'.join(self.files)
+        if not six.PY2:
+            files = files.encode('utf8')
         ctools.mpdaf_merging_sigma_clipping(
-            c_char_p('\n'.join(self.files)), data, vardata, expmap,
-            self.scales, select_pix, valid_pix, nmax, np.float64(nclip_low),
-            np.float64(nclip_up), nstop, np.int32(var_mean), np.int32(mad))
+            c_char_p(files), data, vardata, expmap, self.scales, select_pix,
+            valid_pix, nmax, np.float64(nclip_low), np.float64(nclip_up),
+            nstop, np.int32(var_mean), np.int32(mad))
 
         # no valid pixels
         rej = (valid_pix - select_pix) / valid_pix.astype(float) * 100.0
