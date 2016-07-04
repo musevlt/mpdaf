@@ -201,7 +201,8 @@ setup(
     description='MUSE Python Data Analysis Framework is a python framework '
     'in view of the analysis of MUSE data in the context of the GTO.',
     long_description=README + '\n' + CHANGELOG,
-    url='http://urania1.univ-lyon1.fr/mpdaf/login',
+    license='BSD',
+    url='https://git-cral.univ-lyon1.fr/MUSE/mpdaf',
     install_requires=['numpy', 'scipy', 'matplotlib', 'astropy>=1.0', 'six'],
     extras_require={
         'all':  ['numexpr', 'fitsio'],
@@ -221,4 +222,23 @@ setup(
     scripts=['lib/mpdaf/scripts/topcat_show_ds9'],
     ext_package='mpdaf',
     ext_modules=ext_modules,
+    keywords=['astronomy', 'astrophysics', 'science', 'muse', 'vlt', 'cube',
+              'image', 'spectrum'],
+    classifiers=[
+        'Development Status :: 5 - Production/Stable',
+        'Intended Audience :: Science/Research',
+        'License :: OSI Approved :: BSD License',
+        'Operating System :: OS Independent',
+        'Programming Language :: C',
+        'Programming Language :: Cython',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: Implementation :: CPython',
+        'Topic :: Scientific/Engineering :: Astronomy',
+        'Topic :: Scientific/Engineering :: Physics'
+    ],
 )
