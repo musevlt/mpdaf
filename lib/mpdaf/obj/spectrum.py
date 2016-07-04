@@ -2453,51 +2453,10 @@ class Spectrum(ArithmeticMixin, DataArray):
         plt.connect('motion_notify_event', self._on_move)
         self._plot_id = len(ax.lines) - 1
 
-    def log_plot(self, max=None, title=None, noise=False, snr=False,
-                 lmin=None, lmax=None, ax=None, unit=u.angstrom,
-                 **kwargs):
-        """Plot the spectrum with a logarithmic scale along the Y-axis.
-
-        This is a shortcut for `mpdaf.obj.Spectrum.plot` with
-        `stretch='log'`.
-
-        Parameters
-        ----------
-        max : bool
-            If max is not None (the default), it should be a floating
-            point value. The plotted data will be renormalized such
-            that the peak in the plot has this value.
-        title : string
-            The title to give the figure (None by default).
-        noise : bool
-            If noise is True, colored extensions above and below
-            the plotted points indicate the square-root of the
-            variances of each pixel (if any).
-        snr : bool
-            If snr is True, data/sqrt(var) is plotted.
-        lmin : float
-            The minimum wavelength to be plotted, or None (the default)
-            to start the plot from the minimum wavelength in the spectrum.
-        lmax : float
-            The maximum wavelength to be plotted, or None (the default)
-            to start the plot from the maximum wavelength in the spectrum.
-        ax : matplotlib.Axes
-            The Axes instance in which the spectrum is drawn, or None
-            (the default), to request that an Axes object be created
-            internally.
-        unit : `astropy.units.Unit`
-            The wavelength units of the lmin and lmax arguments, or None
-            to indicate that lmin and lmax are floating point pixel
-            indexes.
-        kwargs : matplotlib.lines.Line2D
-            kwargs can be used to set properties of the plot such as:
-            line label (for auto legends), linewidth, anitialising,
-            marker face color, etc.
-
-        """
-        self.plot(max=max, title=title, noise=noise, snr=snr,
-                  lmin=lmin, lmax=lmax, ax=ax, stretch='log', unit=unit,
-                  **kwargs)
+    @deprecated('log_plot method is deprecated in favor of plot')
+    def log_plot(self, **kwargs):
+        """DEPRECATED: See `~mpdaf.obj.Spectrum.log_plot` instead."""
+        self.plot(stretch='log', **kwargs)
 
     def _on_move(self, event):
         """print xc,yc,k,lbda and data in the figure toolbar."""
