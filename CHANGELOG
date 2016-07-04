@@ -160,8 +160,7 @@ Data classes (Cube, Image, Spectrum)
 
 * Fix `clone` to update the NAXIS keywords in the data header
 
-* Change management of the data type (by default, use dtype of the data
-  input/FITS data extension)
+* Change management of the data type (by default Cube object have the type of the DATA extension)
 
 * The variance calculation of `~mpdaf.obj.DataArray.sqrt` has been
   corrected.
