@@ -36,15 +36,15 @@ The currently existing sub-packages are:
 +--------------------------------+-------------------------------------------------+---------+
 | :doc:`mpdaf.drs <drs>`         | Interface for the MUSE raw file and pixel table | Stable  |
 +--------------------------------+-------------------------------------------------+---------+
-| :doc:`mpdaf.MUSE <muse>`       | slicer: MUSE slicer numbering scheme            | Stable  |
-|                                +-------------------------------------------------+---------+
-|                                | PSF: MUSE PSF models                            | Dev     |
-+--------------------------------+-------------------------------------------------+---------+
 | :doc:`mpdaf.sdetect <sdetect>` | Source: Creates single-source FITS files        | Dev     |
 |                                +-------------------------------------------------+---------+
 |                                | Catalog: Creates source catalogs                | Dev     |
 |                                +-------------------------------------------------+---------+
 |                                | MUSELET: MUSE Line Emission Tracker             | Stable  |
++--------------------------------+-------------------------------------------------+---------+
+| :doc:`mpdaf.MUSE <muse>`       | slicer: MUSE slicer numbering scheme            | Stable  |
+|                                +-------------------------------------------------+---------+
+|                                | PSF: MUSE PSF models                            | Dev     |
 +--------------------------------+-------------------------------------------------+---------+
 
 The classification is as follows:
