@@ -2,24 +2,25 @@
 
 from __future__ import absolute_import, division
 
-import nose.tools
 from nose.plugins.attrib import attr
 from nose.tools import assert_equal, assert_true, assert_almost_equal
 
+import astropy.units as u
 import numpy as np
 import os
 import six
 
 from astropy.table import Table
-import astropy.units as u
 from mpdaf.obj import Image, Cube
 from mpdaf.sdetect import Source
 from numpy.testing import assert_array_equal
+from os.path import join
 
-DATADIR = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                       '..', '..', 'data', 'sdetect')
+DATADIR = join(os.path.abspath(os.path.dirname(__file__)),
+               '..', '..', 'data', 'sdetect')
 
-class TestSource():
+
+class TestSource(object):
 
     def setUp(self):
         col_lines = ['LBDA_OBS', 'LBDA_OBS_ERR',
@@ -35,7 +36,7 @@ class TestSource():
         self.source1 = Source.from_data(ID=1, ra=-65.1349958, dec=140.3057987,
                                         origin=('test', 'v0', 'cube.fits'),
                                         lines=lines)
-        self.source2 = Source.from_file('data/sdetect/sing-0032.fits')
+        self.source2 = Source.from_file(join(DATADIR, 'sing-0032.fits'))
 
     def tearDown(self):
         del self.source1
@@ -44,7 +45,7 @@ class TestSource():
     @attr(speed='fast')
     def test_init(self):
         """Source class; testing initialisation"""
-        src = Source._light_from_file('data/sdetect/sing-0032.fits')
+        src = Source._light_from_file(join(DATADIR, 'sing-0032.fits'))
         assert_equal(len(src.lines), len(self.source2.lines))
 
     @attr(speed='fast')
@@ -108,7 +109,7 @@ class TestSource():
     @attr(speed='fast')
     def test_add_image(self):
         """Source class: testing add_image method"""
-        cube = Cube('data/sdetect/minicube.fits', dtype=np.float64)
+        cube = Cube(join(DATADIR, 'minicube.fits'), dtype=np.float64)
         self.source2.add_white_image(cube)
         ima = cube.mean(axis=0)
 
@@ -132,7 +133,7 @@ class TestSource():
         # Add a square patch of an HST image equal in width and height
         # to the height of the white-light image, which has a height
         # of 25 white-light pixels.
-        hst = Image('data/sdetect/a478hst.fits')
+        hst = Image(join(DATADIR, 'a478hst-cutout.fits'))
         self.source2.add_image(hst, 'HST1')
 
         # Add the same HST image, but this time set the width and height
@@ -140,7 +141,8 @@ class TestSource():
         # should have the same result as giving it the same size as the
         # white-light image.
         size = self.source2.images['HST1'].shape[0]
-        self.source2.add_image(hst, 'HST2', size=size, minsize=size, unit_size=None)
+        self.source2.add_image(hst, 'HST2', size=size, minsize=size,
+                               unit_size=None)
         assert_equal(self.source2.images['HST1'][10, 10],
                      self.source2.images['HST2'][10, 10])
 
@@ -149,13 +151,14 @@ class TestSource():
         # up with the same rotation angles.
         self.source2.add_image(hst, 'HST3', rotate=True)
         assert_almost_equal(self.source2.images['HST3'].get_rot(),
-                                       self.source2.images['MUSE_WHITE'].get_rot(), 3)
+                            self.source2.images['MUSE_WHITE'].get_rot(), 3)
 
     @attr(speed='fast')
     def test_add_narrow_band_image(self):
         """Source class: testing methods on narrow bands images"""
-        cube = Cube('data/sdetect/minicube.fits')
-        src = Source.from_data(ID=1, ra=63.35592651367188, dec=10.46536922454834,
+        cube = Cube(join(DATADIR, 'minicube.fits'))
+        src = Source.from_data(ID=1,
+                               ra=63.35592651367188, dec=10.46536922454834,
                                origin=('test', 'v0', 'minicube.fits'))
         src.add_z('EMI', 0.086, 0.0001)
         src.add_white_image(cube)
@@ -177,8 +180,8 @@ class TestSource():
         src.find_sky_mask(seg_tags=seg_tags)
         src.find_union_mask(union_mask='MASK_OBJ', seg_tags=seg_tags)
         src.find_intersection_mask(seg_tags=seg_tags)
-        assert_array_equal(np.array(src.images['MASK_OBJ'].data.data, dtype=bool),
-                           ~(np.array(src.images['MASK_SKY'].data.data, dtype=bool)))
+        assert_array_equal(src.images['MASK_OBJ'].data.data.astype(bool),
+                           ~(src.images['MASK_SKY'].data.data.astype(bool)))
         assert_array_equal(src.images['MASK_INTER'].data.data,
                            np.zeros(src.images['MASK_INTER'].shape))
         assert_true('MASK_OBJ' in src.images)
@@ -189,12 +192,13 @@ class TestSource():
         assert_true('MUSE_TOT_SKYSUB' in src.spectra)
         assert_true('MUSE_WHITE_SKYSUB' in src.spectra)
         assert_true('NB_HALPHA_SKYSUB' in src.spectra)
-        src.extract_spectra(cube, obj_mask='MASK_OBJ', skysub=False, psf=0.2 * np.ones(cube.shape[0]))
+        src.extract_spectra(cube, obj_mask='MASK_OBJ', skysub=False,
+                            psf=0.2 * np.ones(cube.shape[0]))
         assert_true('MUSE_PSF' in src.spectra)
         assert_true('MUSE_TOT' in src.spectra)
         assert_true('MUSE_WHITE' in src.spectra)
         assert_true('NB_HALPHA' in src.spectra)
-        
+
         Ny = np.array([ima.shape[0] for ima in src.images.values()])
         assert_equal(len(np.unique(Ny)), 1)
         Nx = np.array([ima.shape[1] for ima in src.images.values()])
@@ -205,26 +209,26 @@ class TestSource():
         """Source class: testing sort_lines method"""
         self.source1.sort_lines()
         assert_equal(self.source1.lines['LINE'][0], six.b('[OIII]2'))
-        
+
     @attr(speed='slow')
     def test_SEA(self):
         """test SEA"""
-        cube = Cube(os.path.join(DATADIR, 'minicube.fits'))
-        ima = Image(os.path.join(DATADIR, 'a478hst.fits'))
-        cat = Table.read(os.path.join(DATADIR, 'cat.txt'), format='ascii')
-        size=10
-        width=8
-        margin=10.
-        fband=3.
+        cube = Cube(join(DATADIR, 'minicube.fits'))
+        ima = Image(join(DATADIR, 'a478hst-cutout.fits'))
+        cat = Table.read(join(DATADIR, 'cat.txt'), format='ascii')
+        size = 10
+        width = 8
+        margin = 10.
+        fband = 3.
         origin = ('sea', '0.0', os.path.basename(cube.filename))
-        
+
         for obj in cat[0:6]:
             source = Source.from_data(obj['ID'], obj['RA'], obj['DEC'], origin)
             z = float(obj['Z'])
             try:
                 errz = (float(obj['Z_MAX']) - float(obj['Z_MIN'])) / 2.0
             except:
-                errz= np.nan
+                errz = np.nan
             source.add_z('CAT', z, errz)
             # create white image
             source.add_white_image(cube, size, unit_size=u.arcsec)
@@ -248,20 +252,20 @@ class TestSource():
             # extract spectra
             source.extract_spectra(cube, skysub=True, psf=None)
             source.extract_spectra(cube, skysub=False, psf=None)
-            
+
             Nz = np.array([sp.shape[0] for sp in source.spectra.values()])
             assert_equal(len(np.unique(Nz)), 1)
             tags = [tag for tag in source.images.keys() if tag[0:4] != 'HST_']
-            Ny = np.array([source.images[tag].shape[0] for tag in tags ])
+            Ny = np.array([source.images[tag].shape[0] for tag in tags])
             assert_equal(len(np.unique(Ny)), 1)
-            Nx = np.array([source.images[tag].shape[1] for tag in tags ])
+            Nx = np.array([source.images[tag].shape[1] for tag in tags])
             assert_equal(len(np.unique(Nx)), 1)
 
     @attr(speed='fast')
     def test_add_FSF(self):
         """Source class: testing add_FSF method"""
-        src = Source.from_file('data/sdetect/origin-00026.fits')
-        cube = Cube('data/sdetect/subcub_mosaic.fits')
+        src = Source.from_file(join(DATADIR, 'origin-00026.fits'))
+        cube = Cube(join(DATADIR, 'subcub_mosaic.fits'))
         src.add_FSF(cube)
         assert_equal(src.FSF99BET, 2.8)
         assert_equal(src.FSF99FWA, 0.855)
