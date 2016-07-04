@@ -1,0 +1,77 @@
+"""Test on Image objects."""
+
+from __future__ import absolute_import, print_function
+from nose.plugins.attrib import attr
+
+import numpy as np
+import os
+import shutil
+import tempfile
+import unittest
+from mpdaf.obj import CubeList
+from numpy.testing import assert_array_equal
+from ..utils import generate_cube
+
+
+class TestCubeList(unittest.TestCase):
+
+    shape = (5, 4, 3)
+    ncubes = 3
+    cubevals = [0, 1, 5]
+
+    @classmethod
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        print('\n>>> Create cubes in', self.tmpdir)
+        self.cubenames = []
+        for i in self.cubevals:
+            cube = generate_cube(data=i, shape=self.shape)
+            cube.primary_header['CUBEIDX'] = i
+            cube.primary_header['OBJECT'] = 'OBJECT %d' % i
+            cube.primary_header['EXPTIME'] = 100
+            filename = os.path.join(self.tmpdir, 'cube-%d.fits' % i)
+            cube.write(filename, savemask='nan')
+            self.cubenames.append(filename)
+        self.expmap = np.full(self.shape, self.ncubes, dtype=int)
+
+    @classmethod
+    def tearDown(self):
+        print('>>> Remove test dir')
+        shutil.rmtree(self.tmpdir)
+
+    @attr(speed='fast')
+    def test_median(self):
+        clist = CubeList(self.cubenames)
+        combined_cube = np.ones(self.shape)
+
+        for method in (clist.median, clist.pymedian):
+            cube, expmap, stat_pix = method(header={'FOO': 'BAR'})
+            self.assertEqual(cube.primary_header['FOO'], 'BAR')
+            self.assertNotIn('CUBEIDX', cube.primary_header)
+            self.assertEqual(cube.primary_header['OBJECT'], 'OBJECT 0')
+            self.assertEqual(cube.data_header['OBJECT'], 'OBJECT 0')
+            self.assertEqual(cube.primary_header['EXPTIME'], 100 * self.ncubes)
+
+            assert_array_equal(cube.data, combined_cube)
+            assert_array_equal(expmap.data, self.expmap)
+
+    @attr(speed='fast')
+    def test_combine(self):
+        clist = CubeList(self.cubenames)
+        combined_cube = np.full(self.shape, 2)
+
+        for method in (clist.combine, clist.pycombine):
+            out = method(header={'FOO': 'BAR'})
+            if method == clist.combine:
+                cube, expmap, stat_pix = out
+            else:
+                cube, expmap, stat_pix, rejmap = out
+
+            self.assertEqual(cube.primary_header['FOO'], 'BAR')
+            self.assertNotIn('CUBEIDX', cube.primary_header)
+            self.assertEqual(cube.primary_header['OBJECT'], 'OBJECT 0')
+            self.assertEqual(cube.data_header['OBJECT'], 'OBJECT 0')
+            self.assertEqual(cube.primary_header['EXPTIME'], 100 * self.ncubes)
+
+            assert_array_equal(cube.data, combined_cube)
+            assert_array_equal(expmap.data, self.expmap)
