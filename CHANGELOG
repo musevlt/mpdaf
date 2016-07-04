@@ -1,12 +1,11 @@
 v2.0 (05/07/2016)
 -----------------
 
-This is the first public release, as an open source project.
+This is the first public release, as an open source project (BSD
+licensed).  MPDAF is also now compatible with Python 3.3+.
 
 New Features
 ~~~~~~~~~~~~
-
-* MPDAF is now compatible with Python 3.3+.
 
 * `Image.resample <mpdaf.obj.Image.resample>`: now applies by default an
   anti-aliasing filter when asked to lower the resolution of an image.
@@ -18,7 +17,7 @@ New Features
   `resample` now uses `regrid` and was conserved for compatibility reasons.
 
 * `Image.rotate <mpdaf.obj.Image.rotate>`: now works correctly on images
-  whose pixels have different angular sizes along the X and Y axes. 
+  whose pixels have different angular sizes along the X and Y axes.
 
 * `Image.align_with_image <mpdaf.obj.Image.align_with_image>`:
   **new method** to resample the image of the object to give it the same
@@ -34,11 +33,11 @@ New Features
   **new method** which determines the world coordinate offsets between an
   image and a reference image, then applies this shift to the reference
   pixel index of the image.
-  
+
 * `Image.mask_region <mpdaf.obj.Image.mask_region>` and
   `Cube.mask_region <mpdaf.obj.Cube.mask_region>` methods have been revised
   to support rectangular and square regions that are rotated.
-  
+
 * `Cube.mask_polygon <mpdaf.obj.Cube.mask_polygon>`: **new method** similar
   to `Image.mask_polygon <mpdaf.obj.Image.mask_polygon>`.
 
@@ -50,7 +49,7 @@ New Features
   increment along the Y and X axes.
   There is also a new method `WCS.set_axis_increments <mpdaf.obj.WCS.set_axis_increments>`
   to update the signed displacements on the sky.
-  
+
 * `~mpdaf.MUSE.FieldsMap`: **new class** which reads the possible FIELDMAP
   extension of the MUSE data cube.
 
@@ -61,23 +60,24 @@ New Features
 Breaking changes
 ~~~~~~~~~~~~~~~~
 
-* Remove unused methods
+* Remove unused methods:
 
-   - remove the peak detection on a spectrum (peak_detection)
-   - remove interactive plotting methods of Spectrum and Image classes
-   - remove filter methods on images (minimum_filter, maximum_filter,
-     median_filter) and spectra (median_filter)
-   - remove Image.add_poisson_noise
-   - remove Image.sum
-   - remove methods to create images (mask_image, composite_image, make_image)
-   - remove PixTable.get_slices
-   - remove the SEA script (each step remains available as library)
-   
+   - Remove the peak detection on a spectrum (``peak_detection``).
+   - Remove interactive plotting methods of Spectrum and Image classes.
+   - Remove filter methods on images (``minimum_filter``, ``maximum_filter``,
+     ``median_filter``) and spectra (``median_filter``).
+   - Remove ``Image.add_poisson_noise``.
+   - Remove ``Image.sum``.
+   - Remove methods to create images (``mask_image``, ``composite_image``, ``make_image``).
+   - Remove ``PixTable.get_slices``.
+   - Remove the SEA script (each step remains available as library).
+
 * Remove the `drs.calibobj` module.
 
 * Remove submodules *ZAP* and *GALPAK*.
 
   - `ZAP <https://github.com/ktsoto/zap>`_ is now publicly available.
+
   - `GALPAK <http://galpak.irap.omp.eu/downloads.html>`_ is also publicly
     available.
 
@@ -89,7 +89,7 @@ Breaking changes
 * The `rebin_median` methods of Cube, Image and Spectrum have been removed
   because its effect on the variances couldn't be computed, and because it
   didn't seem scientifically useful.
-  
+
 * The `rebin_factor` and `rebin_mean` methods of Cube, Image and Spectrum
   have been replace by the `rebin` method. This method has been simplified
   to make it more maintainable. The simplification to this function was to
@@ -100,7 +100,7 @@ Breaking changes
 * The method `Cube.get_lambda` has been renamed `~mpdaf.obj.Cube.select_lambda`.
 
 * The method `Spectrum.get_lambda` has been renamed `~mpdaf.obj.Spectrum.subspec`.
-  
+
 * The weighting options of `Cube.sum <mpdaf.obj.Cube.sum>` has been reimplemented.
   The old method with the flux conservation has been moved in the SEA library.
 
@@ -124,7 +124,7 @@ Breaking changes
   to do the equivalent by using align_with_image() followed by a simple
   addition of two images.
 
-* PIL dependance has been removed: now MPDAF doesn't read .PNG, .JPEG or
+* PIL dependency has been removed: now MPDAF doesn't read .PNG, .JPEG or
   .BMP images.
 
 WCS
@@ -155,12 +155,12 @@ Data classes (Cube, Image, Spectrum)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Methods which transform the object return now by default an other object.
-  The optional copy argument can be used to request that the input dat be
+  The optional copy argument can be used to request that the input data be
   transformed in-place.
-  
+
 * Fix `clone` to update the NAXIS keywords in the data header
 
-* Change management of Data.dtype (by default, use dtype of the data
+* Change management of the data type (by default, use dtype of the data
   input/FITS data extension)
 
 * The variance calculation of `~mpdaf.obj.DataArray.sqrt` has been
@@ -168,14 +168,14 @@ Data classes (Cube, Image, Spectrum)
 
 * Fix `Cube.median <mpdaf.obj.Cube.median>` when used with `axis=None`.
 
-* `Cube.get_image <mpdaf.obj.Cube.get_image>`: add input param in the
+* `Cube.get_image <mpdaf.obj.Cube.get_image>`: add input parameters in the
   FITS header.
 
 * Allow to overwrite `BUNIT` for data without unit.
 
 * Fix `EXPTIME` of combined cubes when cubes overlap (using a median of the
   exposure map give a more realistic estimate).
-  
+
 * The `mean` method of Cube, Image and Spectrum have been rewrote to
   optionally perform weighted means.
 
@@ -183,21 +183,21 @@ Data classes (Cube, Image, Spectrum)
   the spectral pixels was being multiplied by the total number of input
   pixels instead of the number of unmasked pixels. This will have resulted
   in sums that were too small wherever there were masked spectral pixels.
-  
+
 * Propagate mask in `Cube.subcube <mpdaf.obj.Cube.subcube>`.
 
 * Refactor `Cube.subcube_circle_aperture <mpdaf.obj.Cube.subcube_circle_aperture>`
   to use `Cube.subcube` and `Cube.mask`.
-  
+
 * Make `Cube.subcube <mpdaf.obj.Cube.subcube>` and
   `Image.subimage <mpdaf.obj.Image.subimage>` as similar as possible.
-  These mathods extract rectangular as well as square areas, and they now
-  work correctly for datas with rectangular pixels.
+  These methods extract rectangular as well as square areas, and they now
+  work correctly for data with rectangular pixels.
 
 * A couple of problems have been fixed in the code that multiplies an
   image by a spectrum. The original code didn't handle variances
   correctly and crashed due to a non-existent variable.
-  
+
 * Correct the pixel value shown when moving the mouse over pixels of
   `Image.plot <mpdaf.obj.Image.plot>`.
 
@@ -206,7 +206,8 @@ Sources
 
 * Correct bug in `Catalog.from_sources <mpdaf.sdetect.Catalog.from_sources>`
 
-* Rewrite `Catalog.match <mpdaf.sdetect.Catalog.match>` which was not working properly, now it returns a dictionary.
+* Rewrite `Catalog.match <mpdaf.sdetect.Catalog.match>` which was not working
+  properly, now it returns a dictionary.
 
 * Tell which keyword is missing when creating a source.
 
@@ -227,13 +228,13 @@ Muselet
 
 * Use masked median of inv_variance
 
-* Make muselet less verbose when running sextractor
+* Make Muselet less verbose when running SExtractor
 
 Pixtable
 ~~~~~~~~
 
 * Convert pixtable values to double to avoid precision errors.  This avoids
-  discrepancies between `_get_pos_sky` and `_get_pos_sky_numexpr` (numexpr
+  discrepancies between `_get_pos_sky` and `_get_pos_sky_numexpr` (Numexpr
   seems to use double precision by default) and probably also with other
   methods.
 
@@ -242,7 +243,7 @@ Pixtable
   that some combination of slices and quadrants are not valid, and allow to
   filter these values later, this commit changes the init value for the count
   to -1, and the correction to NaN.
-  
+
 * Fix `~mpdaf.drs.PixTable.select_sky` in the case of positioned pixel table.
 
 RawFile
