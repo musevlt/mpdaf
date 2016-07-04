@@ -20,24 +20,24 @@ class TestCubeList(unittest.TestCase):
     cubevals = [0, 1, 5]
 
     @classmethod
-    def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
-        print('\n>>> Create cubes in', self.tmpdir)
-        self.cubenames = []
-        for i in self.cubevals:
-            cube = generate_cube(data=i, shape=self.shape)
+    def setUpClass(cls):
+        cls.tmpdir = tempfile.mkdtemp()
+        print('\n>>> Create cubes in', cls.tmpdir)
+        cls.cubenames = []
+        for i in cls.cubevals:
+            cube = generate_cube(data=i, shape=cls.shape)
             cube.primary_header['CUBEIDX'] = i
             cube.primary_header['OBJECT'] = 'OBJECT %d' % i
             cube.primary_header['EXPTIME'] = 100
-            filename = os.path.join(self.tmpdir, 'cube-%d.fits' % i)
+            filename = os.path.join(cls.tmpdir, 'cube-%d.fits' % i)
             cube.write(filename, savemask='nan')
-            self.cubenames.append(filename)
-        self.expmap = np.full(self.shape, self.ncubes, dtype=int)
+            cls.cubenames.append(filename)
+        cls.expmap = np.full(cls.shape, cls.ncubes, dtype=int)
 
     @classmethod
-    def tearDown(self):
+    def tearDownClass(cls):
         print('>>> Remove test dir')
-        shutil.rmtree(self.tmpdir)
+        shutil.rmtree(cls.tmpdir)
 
     @attr(speed='fast')
     def test_median(self):
@@ -58,7 +58,7 @@ class TestCubeList(unittest.TestCase):
     @attr(speed='fast')
     def test_combine(self):
         clist = CubeList(self.cubenames)
-        combined_cube = np.full(self.shape, 2)
+        combined_cube = np.full(self.shape, 2, dtype=float)
 
         for method in (clist.combine, clist.pycombine):
             out = method(header={'FOO': 'BAR'})
