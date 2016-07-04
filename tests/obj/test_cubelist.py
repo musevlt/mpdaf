@@ -8,7 +8,7 @@ import os
 import shutil
 import tempfile
 import unittest
-from mpdaf.obj import CubeList
+from mpdaf.obj import CubeList, CubeMosaic
 from numpy.testing import assert_array_equal
 from ..utils import generate_cube
 
@@ -72,3 +72,14 @@ class TestCubeList(unittest.TestCase):
             self.test_header(cube)
             assert_array_equal(cube.data, combined_cube)
             assert_array_equal(expmap.data, self.expmap)
+
+    @attr(speed='fast')
+    def test_mosaic_combine(self):
+        clist = CubeMosaic(self.cubenames, self.cubenames[0])
+        combined_cube = np.full(self.shape, 2, dtype=float)
+
+        cube, expmap, stat_pix, rejmap = clist.pycombine(header={'FOO': 'BAR'})
+
+        self.test_header(cube)
+        assert_array_equal(cube.data, combined_cube)
+        assert_array_equal(expmap.data, self.expmap)
