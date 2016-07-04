@@ -247,7 +247,7 @@ html_show_sourcelink = False
 # If true, an OpenSearch description file will be output, and all pages will
 # contain a <link> tag referring to it.  The value of this option must be the
 # base URL from which the finished HTML is served.
-html_use_opensearch = 'http://urania1.univ-lyon1.fr/mpdaf/chrome/site/DocCoreLib/'
+html_use_opensearch = 'http://mpdaf.readthedocs.io/en/latest/'
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'mpdafdoc'
