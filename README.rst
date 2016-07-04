@@ -29,23 +29,23 @@ Sub-packages status
 
 The currently existing sub-packages are:
 
-+--------------------------------+-------------------------------------------------+---------+
-|  sub-packages                  | description                                     |  status |
-+================================+=================================================+=========+
-| :doc:`mpdaf.obj <obj>`         | Interface for spectra, images and cubes         | Stable  |
-+--------------------------------+-------------------------------------------------+---------+
-| :doc:`mpdaf.drs <drs>`         | Interface for the MUSE raw file and pixel table | Stable  |
-+--------------------------------+-------------------------------------------------+---------+
-| :doc:`mpdaf.sdetect <sdetect>` | Source: Creates single-source FITS files        | Dev     |
-|                                +-------------------------------------------------+---------+
-|                                | Catalog: Creates source catalogs                | Dev     |
-|                                +-------------------------------------------------+---------+
-|                                | MUSELET: MUSE Line Emission Tracker             | Stable  |
-+--------------------------------+-------------------------------------------------+---------+
-| :doc:`mpdaf.MUSE <muse>`       | slicer: MUSE slicer numbering scheme            | Stable  |
-|                                +-------------------------------------------------+---------+
-|                                | PSF: MUSE PSF models                            | Dev     |
-+--------------------------------+-------------------------------------------------+---------+
++------------------+-------------------------------------------------+---------+
+|  sub-packages    | description                                     |  status |
++==================+=================================================+=========+
+| `mpdaf.obj`_     | Interface for spectra, images and cubes         | Stable  |
++------------------+-------------------------------------------------+---------+
+| `mpdaf.drs`_     | Interface for the MUSE raw file and pixel table | Stable  |
++------------------+-------------------------------------------------+---------+
+| `mpdaf.sdetect`_ | Source: Creates single-source FITS files        | Dev     |
+|                  +-------------------------------------------------+---------+
+|                  | Catalog: Creates source catalogs                | Dev     |
+|                  +-------------------------------------------------+---------+
+|                  | MUSELET: MUSE Line Emission Tracker             | Stable  |
++------------------+-------------------------------------------------+---------+
+| `mpdaf.MUSE`_    | slicer: MUSE slicer numbering scheme            | Stable  |
+|                  +-------------------------------------------------+---------+
+|                  | PSF: MUSE PSF models                            | Dev     |
++------------------+-------------------------------------------------+---------+
 
 The classification is as follows:
 
@@ -64,3 +64,9 @@ a account on `git-cral <https://git-cral.univ-lyon1.fr>`_ if you don't have
 one.  To create an account, please send email to
 `mpdaf-support@osulistes.univ-lyon1.fr
 <mailto:mpdaf-support@osulistes.univ-lyon1.fr?subject=Account%20creation>`_
+
+
+.. _mpdaf.drs: http://mpdaf.readthedocs.io/en/latest/drs.html
+.. _mpdaf.obj: http://mpdaf.readthedocs.io/en/latest/obj.html
+.. _mpdaf.MUSE: http://mpdaf.readthedocs.io/en/latest/muse.html
+.. _mpdaf.sdetect: http://mpdaf.readthedocs.io/en/latest/sdetect.html
