@@ -40,11 +40,12 @@ import six
 from six.moves import range
 from six.moves import zip
 
+
 class FieldsMap(object):
 
     def __init__(self, filename=None, nfields=None, **kwargs):
         """Class to work with the mosaic field map.
-        
+
         Parameters
         ----------
         filename : FITS file name
@@ -63,7 +64,7 @@ class FieldsMap(object):
             else:
                 self.nfields = nfields
             self.data = fits.getdata(filename, **kwargs)
-        
+
     def __getitem__(self, item):
         """Return a sliced object.
         """
@@ -86,16 +87,16 @@ class FieldsMap(object):
     def get_pixel_fields(self, y, x):
         """Return a list of fields that cover a given pixel (y, x)."""
         ind = reversed("{0:010b}".format(self.data[y, x])[:-1])
-        fields = ('UDF-%02d' % i for i in range(1, self.nfields+1))
+        fields = ('UDF-%02d' % i for i in range(1, self.nfields + 1))
         return [field for field, i in zip(fields, ind) if i == '1']
-        
+
     def get_pixel_fields_indexes(self, y, x):
         """Return a list of fields indexes (between 0 and nfields) 
         that cover a given pixel (y, x)."""
         ind = reversed("{0:010b}".format(self.data[y, x])[:-1])
         indexes = (i for i in range(self.nfields))
         return [index for index, i in zip(indexes, ind) if i == '1']
-    
+
     def compute_weights(self):
         """Return a list of weight maps (one per fields).
         The weight gives the influence of the field for each pixel.
@@ -103,14 +104,14 @@ class FieldsMap(object):
         smooth transition.
         """
         p, q = np.meshgrid(range(self.data.shape[0]),
-                           range(self.data.shape[1]), 
+                           range(self.data.shape[1]),
                            sparse=False, indexing='ij')
-    
+
         # compute the mask for each field
         fmaps = []
-        for i in range(1, self.nfields+1):
+        for i in range(1, self.nfields + 1):
             fmaps.append(self.get_field_mask(i).astype(np.int))
-       
+
         several = (np.sum(fmaps, axis=0) > 1)
 
         w = []
@@ -128,16 +129,16 @@ class FieldsMap(object):
                 s = wmap.copy()
             else:
                 s += wmap
-            
-        ksel = np.where((s!=0) & (s!=1))
+
+        ksel = np.where((s != 0) & (s != 1))
         for wmap in w:
             wmap[ksel] /= s[ksel]
 
         return w
-    
+
     def get_FSF(self, y, x, kernels, weights=None):
         """Return the local FSF.
-        
+
         Parameters
         ----------
         y       : integer
@@ -166,9 +167,9 @@ class FieldsMap(object):
 
     def variable_PSF_convolution(self, img, kernels, weights=None):
         """ Function used for the convolution of an image by a set of PSF.
-    
+
         We use shift-variant blur techniques to model the variation of the PSF.
-    
+
         Reference: Denis, L. Thiebaut E., Soulez F., Becker J.-M. and Mourya R. 
                'Fast approximations of shift-variant blur',
                International Journal of Computer Vision,
@@ -189,7 +190,7 @@ class FieldsMap(object):
         # kernels and weights shall have the same length
         if len(kernels) != len(weights):
             raise IOError('kernels and weights shall have the same length')
-        #img and weights shall have the same shape
+        # img and weights shall have the same shape
         if img.shape != weights[0].shape:
             raise IOError('img and weights shall have the same shape')
 
@@ -198,10 +199,8 @@ class FieldsMap(object):
         # build a weighting map per PSF and convolve
         for i in range(self.nfields):
             convolved_img = convolved_img \
-                        + fftconvolve(weights[i]*img,
-                                      kernels[i]/np.sum(kernels[i]),
-                                      mode='same')
+                + fftconvolve(weights[i] * img,
+                              kernels[i] / np.sum(kernels[i]),
+                              mode='same')
 
         return convolved_img
-    
-

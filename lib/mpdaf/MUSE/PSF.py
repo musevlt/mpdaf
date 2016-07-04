@@ -59,7 +59,7 @@ class LSF(object):
         ----------
         typ : string
               type of LSF
-              
+
         qsim_v1 : simple model where the LSF is supposed to be constant over
         the FoV. It is a convolution of a step function with a Gaussian.
         The resulting function is then sample by the pixel size.
@@ -82,7 +82,7 @@ class LSF(object):
                Number of pixels.
         kargs : dict
                 kargs can be used to set LSF parameters.
-               
+
         Returns
         -------
         out : array
@@ -124,7 +124,7 @@ class LSF(object):
         epsilon : float
                   This factor is used to determine the size of LSF
                   min(LSF) < max(LSF)*epsilon
-        
+
         Returns
         -------
         out : integer
@@ -140,7 +140,8 @@ class LSF(object):
             diff = epsilon * g[1] - g[0]
         size = k * 2 + 1
         return size
-    
+
+
 def Moffat(step_arcsec, Nfsf, beta, fwhm):
     """Compute FSF with a Moffat function
 
@@ -154,7 +155,7 @@ def Moffat(step_arcsec, Nfsf, beta, fwhm):
                   Power index of the Moffat.
     fwhm        : float or array of float
                   Moffat fwhm in arcsec.
-    
+
 
     Returns
     -------
@@ -170,10 +171,10 @@ def Moffat(step_arcsec, Nfsf, beta, fwhm):
 
     # alpha coefficient in pixel
     alpha = fwhm_pix / (2 * np.sqrt(2**(1 / beta) - 1))
-    amplitude = (beta-1) * (np.pi * alpha**2)
-    
+    amplitude = (beta - 1) * (np.pi * alpha**2)
+
     if np.isscalar(alpha):
-        amplitude = (beta-1) * (np.pi * alpha**2)
+        amplitude = (beta - 1) * (np.pi * alpha**2)
         moffat = Moffat2D(amplitude, 0, 0, alpha, beta)
         moffat_kernel = Model2DKernel(moffat, x_size=Nfsf, y_size=Nfsf)
         PSF_Moffat = moffat_kernel.array
@@ -185,13 +186,14 @@ def Moffat(step_arcsec, Nfsf, beta, fwhm):
         for i in range(Nz):
             moffat = Moffat2D(amplitude[i], 0, 0, alpha[i], beta)
             moffat_kernel = Model2DKernel(moffat, x_size=Nfsf, y_size=Nfsf)
-            PSF_Moffat [i,:,:]= moffat_kernel.array
+            PSF_Moffat[i, :, :] = moffat_kernel.array
         # Normalization
 #         PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat, axis=(1, 2))\
 #                     [:, np.newaxis, np.newaxis]
-                    
+
     return PSF_Moffat, fwhm_pix
-    
+
+
 def MOFFAT1(lbda, step_arcsec, Nfsf, beta, a, b):
     """Compute PSF with a Moffat function
 
@@ -219,10 +221,11 @@ def MOFFAT1(lbda, step_arcsec, Nfsf, beta, a, b):
     fwhm_arcsec : array (Nz)
                   fwhm of the PSF in arcsec
     """
-    fwhm_arcsec = a + b*lbda
+    fwhm_arcsec = a + b * lbda
     PSF_Moffat, fwhm_pix = Moffat(step_arcsec, Nfsf, beta, fwhm_arcsec)
     return PSF_Moffat, fwhm_pix, fwhm_arcsec
-    
+
+
 class FSF(object):
 
     """This class offers Field Spread Function models for MUSE.
@@ -240,14 +243,14 @@ class FSF(object):
         ----------
         typ : string
               type of LSF
-              
-        
+
+
         MOFFAT1: Moffat function with a FWHM which varies linearly with the
         wavelength. Parameters:
          - beta (float) Power index of the Moffat.
          - a (float) constant in arcsec which defined the FWHM (fwhm=a+b*lbda)
          - b (float) constant which defined the FWHM (fwhm=a+b*lbda)
-        
+
         """
         self.typ = typ
 
@@ -264,7 +267,7 @@ class FSF(object):
                 Number of pixels.
         kargs : dict
                 kargs can be used to set LSF parameters.
-               
+
         Returns
         -------
         FSF         : array (size, size)
@@ -279,7 +282,7 @@ class FSF(object):
             return MOFFAT1(lbda, step, size, **kargs)
         else:
             raise IOError('Invalid FSF type')
-        
+
     def get_FSF_cube(self, cube, size, **kargs):
         """Return a cube of FSFs corresponding to the MUSE data cube
         given as input: a FSF per MUSE spectral pixels, the step of
@@ -294,7 +297,7 @@ class FSF(object):
                 FSF size in pixels.
         kargs : dict
                 kargs can be used to set LSF parameters.
-               
+
         Returns
         -------
         FSF         : array (cube.shape[0], size, size)
@@ -312,5 +315,3 @@ class FSF(object):
             return MOFFAT1(lbda, step, size, **kargs)
         else:
             raise IOError('Invalid FSF type')
-        
-

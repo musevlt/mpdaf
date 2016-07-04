@@ -410,7 +410,6 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         return slice(i1, i2)
 
-
     def _interp(self, wavelengths, spline=False):
         """return the interpolated values corresponding to the wavelength
         array.

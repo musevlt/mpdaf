@@ -147,7 +147,6 @@ class Channel(object):
             pass
         return np.ma.make_mask(m)
 
-
     def trimmed(self):
         """Return a masked array containing only reference to the valid
         pixels.
@@ -518,7 +517,6 @@ class Channel(object):
         return ima
 
 
-
 class RawFile(object):
 
     """RawFile class manages input/output for raw FITS file.
@@ -724,7 +722,7 @@ class RawFile(object):
         raw_mask = RawFile(mask)
 
         white_ima = np.zeros((12 * 24, 300))
-        
+
         for chan in self.get_channels_extname_list():
             ifu = int(chan[-2:])
             mask_chan = raw_mask.get_channel(chan)
@@ -742,10 +740,10 @@ class RawFile(object):
                     xstart -= 2 * OVERSCAN
                 if xend > (mask_chan.header["ESO DET CHIP NX"] / 2.0):
                     xend -= 2 * OVERSCAN
-        
+
                 spe_slice = spe[xstart:xend + 1]
                 n = spe_slice.shape[0]
-        
+
                 if n < NB_SPEC_PER_SLICE:
                     spe_slice_75pix = np.zeros(NB_SPEC_PER_SLICE)
                     spe_slice_75pix[:n] = spe_slice
@@ -753,18 +751,18 @@ class RawFile(object):
                     spe_slice_75pix = spe_slice
                 else:
                     spe_slice_75pix = np.empty(NB_SPEC_PER_SLICE, dtype=np.float)
-        
+
                 f = lambda x: spe_slice[int(x + 0.5)]
                 pix = np.arange(NB_SPEC_PER_SLICE + 1, dtype=np.float)
                 new_step = float(n) / NB_SPEC_PER_SLICE
                 x = pix * new_step - 0.5 * new_step
-        
+
                 for i in range(NB_SPEC_PER_SLICE):
                     spe_slice_75pix[i] = integrate.quad(f, x[i], x[i + 1],
                                                         full_output=1)[0] / new_step
-        
+
                 data[sli - 1, :] = spe_slice_75pix
-            
+
             # For each subslicer 1-4
             for k in range(1, NB_SUBSLICERS + 1):
                 # For each slice 1-12*/
@@ -902,5 +900,5 @@ class RawFile(object):
         plt.subplot(1, 2, 2)
         self._plot_slice_on_raw_image(selected_ifu, 1)
         self.fig.canvas.mpl_connect('button_press_event', self._onclick)
-        print('To select on other channel/slice, '\
+        print('To select on other channel/slice, '
               'click on the images with the right mouse button.')

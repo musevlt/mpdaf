@@ -699,7 +699,7 @@ class WCS(object):
         if nearest:
             res = (res + 0.5).astype(int)
             if self.naxis1 != 0 and self.naxis2 != 0:
-                np.clip(res, (0, 0), (self.naxis2-1, self.naxis1-1), out=res)
+                np.clip(res, (0, 0), (self.naxis2 - 1, self.naxis1 - 1), out=res)
         return res
 
     def pix2sky(self, x, unit=None):
@@ -794,7 +794,7 @@ class WCS(object):
 
         if not isinstance(item, (tuple, list)) or len(item) != 2:
             raise ValueError('Invalid index, a 2D slice is expected')
-        
+
         if not isinstance(item[1], slice) and not isinstance(item[0], slice):
             return None
 

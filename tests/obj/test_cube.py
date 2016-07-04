@@ -115,6 +115,7 @@ def test_crop():
 def _multiproc_func(obj):
     return obj.data.mean() * 10.0
 
+
 @attr(speed='fast')
 def test_multiprocess():
     """Cube class: tests multiprocess"""
@@ -136,6 +137,7 @@ def test_multiprocess():
     # Test spectrum processing using a normal function.
     im = cube1.loop_spe_multiprocessing(_multiproc_func, cpu=2, verbose=False)
     assert_allclose(im.data, data_value * 10.0)
+
 
 @attr(speed='fast')
 def test_multiprocess2():
@@ -170,13 +172,13 @@ def test_mask():
     # The expected mask for the images between lmin and lmax.
     expected_mask = np.array([[False, False, False, False, False],
                               [False, False, False, False, False],
-                              [False, True,  True,  False, False],
-                              [False, True,  True,  False, False],
+                              [False, True, True, False, False],
+                              [False, True, True, False, False],
                               [False, False, False, False, False],
                               [False, False, False, False, False]], dtype=bool)
     assert_array_equal(np.any(cube.mask[:2, :, :], axis=0),
                        np.zeros(cube.shape[1:]))
-    assert_array_equal(np.all(cube._mask[2:5,:,:], axis=0), expected_mask)
+    assert_array_equal(np.all(cube._mask[2:5, :, :], axis=0), expected_mask)
     assert_array_equal(np.any(cube.mask[5:, :, :], axis=0),
                        np.zeros(cube.shape[1:]))
 
@@ -188,7 +190,7 @@ def test_mask():
                      unit_center=None, unit_radius=None, unit_wave=None)
     assert_array_equal(np.any(cube.mask[:2, :, :], axis=0),
                        np.ones(cube.shape[1:]))
-    assert_array_equal(np.all(cube._mask[2:5,:,:], axis=0), ~expected_mask)
+    assert_array_equal(np.all(cube._mask[2:5, :, :], axis=0), ~expected_mask)
     assert_array_equal(np.any(cube.mask[5:, :, :], axis=0),
                        np.ones(cube.shape[1:]))
     cube.unmask()
@@ -202,7 +204,7 @@ def test_mask():
                      inside=False)
     assert_array_equal(np.any(cube.mask[:2, :, :], axis=0),
                        np.ones(cube.shape[1:]))
-    assert_array_equal(np.all(cube._mask[2:5,:,:], axis=0), ~expected_mask)
+    assert_array_equal(np.all(cube._mask[2:5, :, :], axis=0), ~expected_mask)
     assert_array_equal(np.any(cube.mask[5:, :, :], axis=0),
                        np.ones(cube.shape[1:]))
     cube.unmask()
@@ -216,19 +218,19 @@ def test_mask():
     # So all of the image should be masked, except for a 2x2 area of
     # pixel indexes 2,3 along the Y axis and pixel indexes 3,4 along
     # the X axis.
-    cube.mask_region(wcs.pix2sky([2.4, 3.8]), 1.1*3600.0, inside=False,
+    cube.mask_region(wcs.pix2sky([2.4, 3.8]), 1.1 * 3600.0, inside=False,
                      lmin=2, lmax=5)
 
     # The expected mask for the images between lmin and lmax.
-    expected_mask = np.array([[True,  True,  True,  True,  True],
-                              [True,  True,  True,  True,  True],
-                              [True,  True,  True,  False, False],
-                              [True,  True,  True,  False, False],
-                              [True,  True,  True,  True,  True],
-                              [True,  True,  True,  True,  True]], dtype=bool)
+    expected_mask = np.array([[True, True, True, True, True],
+                              [True, True, True, True, True],
+                              [True, True, True, False, False],
+                              [True, True, True, False, False],
+                              [True, True, True, True, True],
+                              [True, True, True, True, True]], dtype=bool)
     assert_array_equal(np.any(cube.mask[:2, :, :], axis=0),
                        np.ones(cube.shape[1:]))
-    assert_array_equal(np.all(cube._mask[2:5,:,:], axis=0), expected_mask)
+    assert_array_equal(np.all(cube._mask[2:5, :, :], axis=0), expected_mask)
     assert_array_equal(np.any(cube.mask[5:, :, :], axis=0),
                        np.ones(cube.shape[1:]))
     cube.unmask()
@@ -236,21 +238,21 @@ def test_mask():
     # Mask outside an elliptical region centered at pixel 3.5,3.5.
     # The boolean expected_mask array given below was a verified
     # output of mask_ellipse() for the specified ellipse parameters.
-    cube = generate_cube(shape=(10,8,8), wcs=wcs, var=None)
-    cube.mask_ellipse([3.5,3.5], (2.5,3.5), 45.0, unit_radius=None,
+    cube = generate_cube(shape=(10, 8, 8), wcs=wcs, var=None)
+    cube.mask_ellipse([3.5, 3.5], (2.5, 3.5), 45.0, unit_radius=None,
                       unit_center=None, inside=False, lmin=2, lmax=5)
     expected_mask = np.array([[True, True, True, True, True, True, True, True],
-                              [True, True, True,False,False,False, True, True],
-                              [True, True,False,False,False,False,False, True],
-                              [True,False,False,False,False,False,False, True],
-                              [True,False,False,False,False,False,False, True],
-                              [True,False,False,False,False,False, True, True],
-                              [True, True,False,False,False, True, True, True],
+                              [True, True, True, False, False, False, True, True],
+                              [True, True, False, False, False, False, False, True],
+                              [True, False, False, False, False, False, False, True],
+                              [True, False, False, False, False, False, False, True],
+                              [True, False, False, False, False, False, True, True],
+                              [True, True, False, False, False, True, True, True],
                               [True, True, True, True, True, True, True, True]],
                              dtype=bool)
     assert_array_equal(np.any(cube.mask[:2, :, :], axis=0),
                        np.ones(cube.shape[1:]))
-    assert_array_equal(np.all(cube._mask[2:5,:,:], axis=0), expected_mask)
+    assert_array_equal(np.all(cube._mask[2:5, :, :], axis=0), expected_mask)
     assert_array_equal(np.any(cube.mask[5:, :, :], axis=0),
                        np.ones(cube.shape[1:]))
 
@@ -261,7 +263,7 @@ def test_mask():
     cube.mask_selection(ksel)
     assert_array_equal(np.any(cube.mask[:2, :, :], axis=0),
                        np.ones(cube.shape[1:]))
-    assert_array_equal(np.all(cube._mask[2:5,:,:], axis=0), expected_mask)
+    assert_array_equal(np.all(cube._mask[2:5, :, :], axis=0), expected_mask)
     assert_array_equal(np.any(cube.mask[5:, :, :], axis=0),
                        np.ones(cube.shape[1:]))
 
@@ -315,7 +317,7 @@ def test_mean():
     """Cube class: testing mean method"""
 
     # Specify the dimensions of the test cube.
-    shape = (2,3,4)
+    shape = (2, 3, 4)
 
     # Create 3D data, variance and mask arrays.
     d = np.arange(np.asarray(shape).prod(), dtype=float).reshape(shape)
@@ -330,12 +332,12 @@ def test_mean():
     var = ma.array(v, mask=m)
 
     # Test the mean over each of the supported axes.
-    for axis in (None, 0, (1,2)):
+    for axis in (None, 0, (1, 2)):
 
         # Test the two weighting options. The loop-variable tuple
         # specifies the weights argument of cube.mean(), and a masked
         # array of the weights that are expected to be used.
-        for weights, w in [(None, np.ones(shape, dtype=float)), # Unweighted
+        for weights, w in [(None, np.ones(shape, dtype=float)),  # Unweighted
                            (np.sqrt(d), np.sqrt(d))]:           # Weighted
 
             # Compute the mean.
@@ -361,6 +363,7 @@ def test_mean():
             else:
                 assert_allclose(mean.data, expected_data, err_msg=errmsg)
                 assert_allclose(mean.var, expected_var, err_msg=errmsg)
+
 
 @attr(speed='fast')
 def test_median():
@@ -393,8 +396,8 @@ def test_rebin():
     wave = WaveCoord(crval=0.0, crpix=1.0, cdelt=1.0)
 
     # Create a cube with even valued dimensions, filled with ones.
-    data = np.ma.ones((4,6,8))       # Start with all pixels 1.0
-    data.reshape(4*6*8)[::2] = 0.0   # Set every second pixel to 0.0
+    data = np.ma.ones((4, 6, 8))       # Start with all pixels 1.0
+    data.reshape(4 * 6 * 8)[::2] = 0.0   # Set every second pixel to 0.0
     data.mask = data < -1            # Unmask all pixels.
     cube1 = generate_cube(data=data.data, mask=data.mask, wcs=wcs, wave=wave)
 
@@ -406,13 +409,13 @@ def test_rebin():
     # Compute the expected output cube, given that the input cube is a
     # repeating pattern of 1,0, and we divided the x-axis by a
     # multiple of 2, the output pixels should all be 0.5.
-    expected = np.ma.ones((2,2,2)) * 0.5
+    expected = np.ma.ones((2, 2, 2)) * 0.5
     expected.mask = expected < 0  # All pixels unmasked.
     assert_masked_allclose(cube2.data, expected)
 
     # Do the same experiment but with the zero valued pixels all masked.
-    data = np.ma.ones((4,6,8))       # Start with all pixels 1.0
-    data.reshape(4*6*8)[::2] = 0.0   # Set every second pixel to 0.0
+    data = np.ma.ones((4, 6, 8))       # Start with all pixels 1.0
+    data.reshape(4 * 6 * 8)[::2] = 0.0   # Set every second pixel to 0.0
     data.mask = data < 0.1           # Mask the pixels that are 0.0
     cube1 = generate_cube(data=data.data, mask=data.mask, wcs=wcs, wave=wave)
 
@@ -424,7 +427,7 @@ def test_rebin():
     # Compute the expected output cube. The zero valued pixels are all
     # masked, leaving just pixels with values of 1, so the mean that is
     # recorded in each output pixel should be 1.0.
-    expected = np.ma.ones((2,2,2)) * 1.0
+    expected = np.ma.ones((2, 2, 2)) * 1.0
     expected.mask = expected < 0  # All output pixels should be unmasked.
     assert_masked_allclose(cube2.data, expected)
 
@@ -435,7 +438,7 @@ def test_rebin():
     # dimension. The sum from k=0 to factor-1 is
     # ((factor-1)*factor)/2, and dividing this by the number of pixels
     # gives (factor-1)/2.
-    assert_allclose(np.asarray(cube2.get_start()), (factor-1) / 2.0)
+    assert_allclose(np.asarray(cube2.get_start()), (factor - 1) / 2.0)
 
     # Create a cube that has a larger number of pixels along the
     # y and x axes of the images, so that we can divide those axes
@@ -466,7 +469,7 @@ def test_rebin():
     # pixel 0,0,0 of the input cube would also be the outer corner of
     # pixel 0,0,0 of the rebinned cube. The output world coordinates
     # can be calculated as described for the previous test.
-    assert_allclose(np.asarray(cube2.get_start()), (factor-1) / 2.0)
+    assert_allclose(np.asarray(cube2.get_start()), (factor - 1) / 2.0)
 
     # Do the same test, but with margin='center'.
     cube2 = cube1.rebin(factor=factor, margin='center')
@@ -497,7 +500,8 @@ def test_rebin():
     # sum[n=0..N] = (n*(n-1))/2.
     tmp = cut + factor
     assert_allclose(np.asarray(cube2.get_start()),
-                    ((tmp*(tmp-1)) / 2.0 - (cut*(cut-1)) / 2.0) / factor)
+                    ((tmp * (tmp - 1)) / 2.0 - (cut * (cut - 1)) / 2.0) / factor)
+
 
 @attr(speed='fast')
 def test_get_image():
@@ -567,7 +571,7 @@ def test_get_image():
 @attr(speed='fast')
 def test_subcube():
     """Cube class: testing sub-cube extraction methods"""
-    wcs = WCS(crval=(0,0), crpix=1.0, deg=True)
+    wcs = WCS(crval=(0, 0), crpix=1.0, deg=True)
     cube1 = generate_cube(data=1, wave=WaveCoord(crval=1))
 
     # Extract a sub-cube whose images are centered close to pixel
@@ -708,14 +712,14 @@ def test_bandpass_image():
 
     masked_pixel = 1
     masked_mean = (((weights * spectral_values).sum() -
-                   weights[masked_pixel] * spectral_values[masked_pixel]) /
+                    weights[masked_pixel] * spectral_values[masked_pixel]) /
                    (weights.sum() - weights[masked_pixel]))
 
     # Compute the expected variances of the unmasked and masked means.
 
     unmasked_var = (weights**2 * spectral_vars).sum() / weights.sum()**2
     masked_var = (((weights**2 * spectral_vars).sum() -
-                  weights[masked_pixel]**2 * spectral_vars[masked_pixel]) /
+                   weights[masked_pixel]**2 * spectral_vars[masked_pixel]) /
                   (weights.sum() - weights[masked_pixel])**2)
 
     # Create the data array of the cube, giving all map pixels the

@@ -93,7 +93,7 @@ def modify(lines, license, start=0):
             end = i
             break
 
-    newlines = license + lines[end+1:]
+    newlines = license + lines[end + 1:]
     if start == 1:
         newlines.insert(0, lines[0])
     return newlines

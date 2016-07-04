@@ -444,16 +444,16 @@ class Catalog(Table):
 
         Returns
         -------
-        
+
         if full_output is True
-        
+
         out : astropy.Table, astropy.Table, astropy.Table
              match, nomatch1, nomatch2
         else
-        
+
         out : astropy.Table
               match
-              
+
         match: table of matched elements in RA,DEC
         nomatch1: sub-table of non matched elements of the current catalog
         nomatch2: sub-table of non matched elements of the catalog cat2

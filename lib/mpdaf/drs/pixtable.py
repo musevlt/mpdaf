@@ -1108,7 +1108,7 @@ class PixTable(object):
         out : array of bool
             mask
         """
-        xpos, ypos = self.get_pos_sky() # in degree or pixel here
+        xpos, ypos = self.get_pos_sky()  # in degree or pixel here
         mask = np.zeros(self.nrows, dtype=bool)
         if numexpr:
             pi = np.pi  # NOQA

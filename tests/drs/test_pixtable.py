@@ -93,7 +93,7 @@ class TestBasicPixTable(unittest.TestCase):
     @attr(speed='fast')
     def test_get_lambda(self):
         assert_array_equal(self.lbda, self.pix.get_lambda())
-        assert_array_equal(self.lbda*u.angstrom.to(u.nm),
+        assert_array_equal(self.lbda * u.angstrom.to(u.nm),
                            self.pix.get_lambda(unit=u.nm))
         ksel = np.where(self.lbda > 6000)
         assert_array_equal(self.lbda[ksel], self.pix.get_lambda(ksel))

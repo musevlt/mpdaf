@@ -203,12 +203,12 @@ def test_mask():
     image1 = Image(data=data, wcs=wcs)
     image1.mask_region((2.1, 1.8), (1, 1), inside=False, unit_center=None,
                        unit_radius=None)
-    expected_mask = np.array([[True,  True,  True,  True,  True],
-                              [True,  True,  True,  True,  True],
-                              [True,  False, False, True,  True],
-                              [True,  False, False, True,  True],
-                              [True,  True,  True,  True,  True],
-                              [True,  True,  True,  True,  True]], dtype=bool)
+    expected_mask = np.array([[True, True, True, True, True],
+                              [True, True, True, True, True],
+                              [True, False, False, True, True],
+                              [True, False, False, True, True],
+                              [True, True, True, True, True],
+                              [True, True, True, True, True]], dtype=bool)
     assert_array_equal(image1._mask, expected_mask)
 
     # Try exactly the same experiment as the above, except that the center
@@ -229,13 +229,13 @@ def test_mask():
     # pixel indexes 2,3 along the Y axis and pixel indexes 3,4 along
     # the X axis.
     image1.unmask()
-    image1.mask_region(wcs.pix2sky([2.4, 3.8]), 1.1*3600.0, inside=False)
-    expected_mask = np.array([[True,  True,  True,  True,  True],
-                              [True,  True,  True,  True,  True],
-                              [True,  True,  True,  False, False],
-                              [True,  True,  True,  False, False],
-                              [True,  True,  True,  True,  True],
-                              [True,  True,  True,  True,  True]], dtype=bool)
+    image1.mask_region(wcs.pix2sky([2.4, 3.8]), 1.1 * 3600.0, inside=False)
+    expected_mask = np.array([[True, True, True, True, True],
+                              [True, True, True, True, True],
+                              [True, True, True, False, False],
+                              [True, True, True, False, False],
+                              [True, True, True, True, True],
+                              [True, True, True, True, True]], dtype=bool)
     assert_array_equal(image1._mask, expected_mask)
 
     # Mask outside an elliptical region centered at pixel 3.5,3.5.
@@ -243,15 +243,15 @@ def test_mask():
     # output of mask_ellipse() for the specified ellipse parameters.
     data = np.ones(shape=(8, 8))
     image1 = Image(data=data, wcs=wcs)
-    image1.mask_ellipse([3.5,3.5], (2.5,3.5), 45.0, unit_radius=None,
+    image1.mask_ellipse([3.5, 3.5], (2.5, 3.5), 45.0, unit_radius=None,
                         unit_center=None, inside=False)
     expected_mask = np.array([[True, True, True, True, True, True, True, True],
-                              [True, True, True,False,False,False, True, True],
-                              [True, True,False,False,False,False,False, True],
-                              [True,False,False,False,False,False,False, True],
-                              [True,False,False,False,False,False,False, True],
-                              [True,False,False,False,False,False, True, True],
-                              [True, True,False,False,False, True, True, True],
+                              [True, True, True, False, False, False, True, True],
+                              [True, True, False, False, False, False, False, True],
+                              [True, False, False, False, False, False, False, True],
+                              [True, False, False, False, False, False, False, True],
+                              [True, False, False, False, False, False, True, True],
+                              [True, True, False, False, False, True, True, True],
                               [True, True, True, True, True, True, True, True]],
                              dtype=bool)
     assert_array_equal(image1._mask, expected_mask)
@@ -514,6 +514,7 @@ def test_rebin():
     start = image2.get_start()
     nose.tools.assert_equal(start[0], 0.5)
     nose.tools.assert_equal(start[1], 0.5)
+
 
 @attr(speed='fast')
 def test_fftconvolve():

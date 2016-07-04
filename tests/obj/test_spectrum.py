@@ -232,7 +232,7 @@ def test_rebin():
                          wave=wave)
     unit = spectrum1.wave.unit
     factor = 3
-    s = slice(0,factor*(spectrum1.shape[0] // factor)) # The rebinned slice
+    s = slice(0, factor * (spectrum1.shape[0] // factor))  # The rebinned slice
     flux1 = spectrum1[s].sum() * spectrum1[s].wave.get_step(unit=unit)
     spectrum2 = spectrum1.rebin(factor, margin='left')
     flux2 = spectrum2.sum() * spectrum2.wave.get_step(unit=unit)
@@ -242,7 +242,7 @@ def test_rebin():
     spe = Spectrum("data/obj/g9-124Tspec.fits", var=sig * sig)
     unit = spe.wave.unit
     factor = 3
-    s = slice(0,factor*(spe.shape[0] // factor))
+    s = slice(0, factor * (spe.shape[0] // factor))
     flux1 = spe[s].sum() * spe[s].wave.get_step(unit=unit)
     spe2 = spe.rebin(factor, margin='left')
     flux2 = spe2.sum() * spe2.wave.get_step(unit=unit)
@@ -251,7 +251,7 @@ def test_rebin():
     spnovar = Spectrum('data/obj/Spectrum_Novariance.fits')
     unit = spnovar.wave.unit
     factor = 4
-    s = slice(0,factor*(spnovar.shape[0] // factor))
+    s = slice(0, factor * (spnovar.shape[0] // factor))
     flux1 = spnovar[s].sum() * spnovar[s].wave.get_step(unit=unit)
     spnovar2 = spnovar.rebin(factor, margin='left')
     flux2 = spnovar2.sum() * spnovar2.wave.get_step(unit=unit)
@@ -260,7 +260,7 @@ def test_rebin():
     spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
     unit = spvar.wave.unit
     factor = 4
-    s = slice(0,factor*(spvar.shape[0] // factor))
+    s = slice(0, factor * (spvar.shape[0] // factor))
     flux1 = spvar[s].sum(weight=False) * spvar[s].wave.get_step(unit=unit)
     spvar2 = spvar.rebin(factor, margin='left')
     flux2 = spvar2.sum(weight=False) * spvar2.wave.get_step(unit=unit)
@@ -401,7 +401,8 @@ def test_integrate():
     spectrum1.unit = u.ct
     result = spectrum1.integrate(lmin=3.5, lmax=6.5, unit=u.nm)
     nose.tools.assert_almost_equal(result.value, 7.5)
-    nose.tools.assert_equal(result.unit, u.ct*u.nm)
+    nose.tools.assert_equal(result.unit, u.ct * u.nm)
+
 
 @attr(speed='fast')
 def test_write():

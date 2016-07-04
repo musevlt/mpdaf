@@ -10,6 +10,7 @@ from nose.tools import assert_is
 
 DEFAULT_SHAPE = (10, 6, 5)
 
+
 def astronomical_image():
     """Return a test image from a real observation """
 
@@ -21,10 +22,11 @@ def astronomical_image():
     # rectangular pixels, so replace the CD matrix with a similar one
     # that doesn't have a shear component.
 
-    ima.wcs.set_cd(np.array([[2.30899476e-5,  -5.22301199e-5],
+    ima.wcs.set_cd(np.array([[2.30899476e-5, -5.22301199e-5],
                              [-5.22871997e-5, -2.30647413e-5]]))
 
     return ima
+
 
 def assert_image_equal(ima, shape=None, start=None, end=None, step=None):
     """Raise an assertion error if the characteristics of a given image

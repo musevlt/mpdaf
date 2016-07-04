@@ -1184,8 +1184,8 @@ class Source(object):
                     FSF1 += w[i] * kernel1
                     FSF2 += w[i] * kernel2
                 # fit beta, fwhm1 and fwhm2 on PSF1 and PSF2
-                moffatfit = lambda v: np.ravel(\
-                    MOFFAT1(lbda1, step_arcsec, Nfsf, v[0], v[1], v[2])[0] - FSF1 +\
+                moffatfit = lambda v: np.ravel(
+                    MOFFAT1(lbda1, step_arcsec, Nfsf, v[0], v[1], v[2])[0] - FSF1 +
                     MOFFAT1(lbda2, step_arcsec, Nfsf, v[0], v[1], v[2])[0] - FSF2)
                 v0 = [beta, a, b]
                 v = leastsq(moffatfit, v0)[0]

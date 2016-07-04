@@ -32,14 +32,14 @@ def test_mag_flux():
 def test_unit_array():
     arr = np.arange(5)
     nose.tools.assert_is(UnitArray(arr, u.m, u.m), arr)
-    assert_array_equal(UnitArray(arr, u.m, u.mm), arr*1e3)
+    assert_array_equal(UnitArray(arr, u.m, u.mm), arr * 1e3)
 
 
 @attr(speed='fast')
 def test_unit_masked_array():
     arr = np.ma.arange(5)
     nose.tools.assert_is(UnitMaskedArray(arr, u.m, u.m), arr)
-    assert_array_equal(UnitMaskedArray(arr, u.m, u.mm), arr*1e3)
+    assert_array_equal(UnitMaskedArray(arr, u.m, u.mm), arr * 1e3)
 
 
 @attr(speed='fast')
@@ -60,7 +60,7 @@ def test_bounding_box():
     for radius in (1, (1, 1)):
         [sy, sx], [uy, yx], c = bounding_box("rectangle", (2.2, 1.8), radius,
                                              posangle=0.0, shape=shape,
-                                             step=[1.0,1.0])
+                                             step=[1.0, 1.0])
         nose.tools.assert_equal(sy, slice(2, 4))
         nose.tools.assert_equal(sx, slice(1, 3))
         assert_allclose(c, np.array([2.5, 1.5]))
@@ -75,7 +75,7 @@ def test_bounding_box():
     # the Y axis.
     [sy, sx], [uy, ux], c = bounding_box("rectangle", (2.2, 1.8), (3, 3),
                                          posangle=0.0, shape=shape,
-                                         step=[1.0,1.0])
+                                         step=[1.0, 1.0])
     nose.tools.assert_equal(sy, slice(0, 4))
     nose.tools.assert_equal(sx, slice(0, 5))
     assert_allclose(c, np.array([2.5, 1.5]))
@@ -88,7 +88,7 @@ def test_bounding_box():
     # -1,0 along the X axis. After clipping only pixel 0 should remain
     # selected along the X-axis.
     [sy, sx], [uy, ux], c = bounding_box("rectangle", (0.1, -0.1), 1, posangle=0.0,
-                                         shape=shape, step=[1.0,1.0])
+                                         shape=shape, step=[1.0, 1.0])
     nose.tools.assert_equal(sy, slice(0, 2))
     nose.tools.assert_equal(sx, slice(0, 1))
     assert_allclose(c, np.array([0.5, -0.5]))
@@ -98,8 +98,8 @@ def test_bounding_box():
     # centered at the center of a pixel, and the nearest pixel center is
     # 2.0,3.0, so we expect it to select pixels 1,2,3 along the Y axis,
     # and 2,3,4 along the X axis.
-    [sy, sx], [uy, ux], c = bounding_box("rectangle", (2.1,2.8), 1.5, posangle=0.0,
-                                         shape=shape, step=[1.0,1.0])
+    [sy, sx], [uy, ux], c = bounding_box("rectangle", (2.1, 2.8), 1.5, posangle=0.0,
+                                         shape=shape, step=[1.0, 1.0])
     nose.tools.assert_equal(sy, slice(1, 4))
     nose.tools.assert_equal(sx, slice(2, 5))
     assert_allclose(c, np.array([2.0, 3.0]))
@@ -112,6 +112,6 @@ def test_bounding_box():
     # X axis is above the maximum pixel index of shape[1], so a zero pixel-range
     # slice of slice(shape[1]-1,shape[1]-1) should be returned.
     [sy, sx], [uy, ux], c = bounding_box("rectangle", (-5, 10), 1.5, posangle=0.0,
-                                         shape=shape, step=[1.0,1.0])
+                                         shape=shape, step=[1.0, 1.0])
     nose.tools.assert_equal(sy, slice(0, 0))
-    nose.tools.assert_equal(sx, slice(shape[1]-1, shape[1]-1))
+    nose.tools.assert_equal(sx, slice(shape[1] - 1, shape[1] - 1))

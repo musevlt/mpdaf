@@ -292,6 +292,7 @@ def mask_creation(source, maps):
     source.images['MASK_INTER'] = Image(wcs=wcs, dtype=np.uint8, copy=False,
                                         data=intersection(list(r['seg'].values())))
 
+
 def compute_spectrum(cube, weights):
     """Compute a spectrum for a cube by summing along the spatial axis.
     The method conserves the flux by using the algorithm
@@ -345,7 +346,7 @@ def compute_spectrum(cube, weights):
             dspec /= med_rr
         orig_var = cube._var * ~wmask.mask
         orig_var = np.ma.masked_where(cube.mask,
-                                   np.ma.masked_invalid(orig_var))
+                                      np.ma.masked_invalid(orig_var))
         orig_var = np.ma.sum(np.ma.sum(orig_var, axis=1), axis=1)
         sn_orig = orig_data / np.ma.sqrt(orig_var)
         sn_now = data / dspec
@@ -357,4 +358,4 @@ def compute_spectrum(cube, weights):
         var = None
 
     return Spectrum(wave=cube.wave, unit=cube.unit, data=data, var=var,
-                            copy=False)
+                    copy=False)
