@@ -7,7 +7,6 @@
 # import sys
 import os
 import re
-import sphinx_rtd_theme
 import sys
 import warnings
 
@@ -15,9 +14,6 @@ sys.path.insert(0, os.path.abspath('./ext'))
 sys.setrecursionlimit(1500)
 
 # -- General configuration ----------------------------------------------------
-
-html_theme = "sphinx_rtd_theme"
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # read version from lib/mpdaf/version.py
 mpdaf_dir = os.path.join(os.path.dirname(__file__), '..', 'lib', 'mpdaf')
@@ -124,7 +120,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'MPDAF'
-copyright = u'2013-2016, CRAL'
+copyright = u'2010-2016, CRAL'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -179,17 +175,17 @@ pygments_style = 'sphinx'
 
 # -- Options for HTML output --------------------------------------------------
 
-# The theme to use for HTML and HTML Help pages.  See the documentation for
-# a list of builtin themes.
-html_theme = 'sphinx_rtd_theme'
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+
+if not on_rtd:  # only import and set the theme if we're building docs locally
+    import sphinx_rtd_theme
+    html_theme = "sphinx_rtd_theme"
+    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 # html_theme_options = {}
-
-# Add any paths that contain custom themes here, relative to this directory.
-# html_theme_path = []
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -223,7 +219,7 @@ html_last_updated_fmt = '%d %b %Y'
 
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.
-# html_use_smartypants = True
+html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
 # html_sidebars = {}
