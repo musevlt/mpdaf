@@ -140,7 +140,7 @@ MUSE mosaic field map
 
 .. warning:: FieldsMap class is currently under development
 
-`~mpdaf.MUSE.FieldsMap` reads the FIELDMAP extension of the MUSE data cube.
+`~mpdaf.MUSE.FieldsMap` reads the possible FIELDMAP extension of the MUSE data cube.
 
 .. ipython::
 
