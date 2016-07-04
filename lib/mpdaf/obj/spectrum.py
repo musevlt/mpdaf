@@ -620,25 +620,32 @@ class Spectrum(ArithmeticMixin, DataArray):
 
     def resample(self, step, start=None, shape=None,
                  spline=False, notnoise=False, unit=u.angstrom, inplace=False):
-        """Return a spectrum with data resample to different wavelength step
-        size.
+        """Return a spectrum resampled to a different wavelength interval.
 
         Uses `scipy.integrate.quad`.
 
         Parameters
         ----------
         step : float
-            New pixel size in spectral direction.
+            The new pixel size in the spectral direction.
         start : float
-            Spectral position of the first new pixel.
-            It can be set or kept at the edge of the old first one.
+            The wavelength of the first new pixel.  The default is
+            None, which arranges that the minimum wavelength of
+            the resampled spectrum is the same as the minimum
+            wavelength of the original spectrum.
         unit : `astropy.units.Unit`
-            type of the wavelength coordinates
+            The wavelength units of the step and start arguments.
         shape : int
-            Size of the new spectrum.
+            The array dimension of the new spectrum (ie. the number
+            of spectral pixels).
         spline : bool
-            Linear/spline interpolation to interpolate masked values.
+            If False (the default), use a linear interpolation to
+            interpolate over masked pixels.
+            If True, use a spline interpolation to interpolate over
+            masked values.
         notnoise : bool
+            If False (the default), resample the variances, if any.
+            If True discard any variances.
         inplace : bool
             If False, return a resampled copy of the spectrum (the default).
             If True, resample the original spectrum in-place, and return that.
@@ -646,6 +653,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         Returns
         -------
         out : Spectrum
+
         """
         # Should we resample the spectrum in-place, or resample a copy?
 
@@ -2325,59 +2333,95 @@ class Spectrum(ArithmeticMixin, DataArray):
     def plot(self, max=None, title=None, noise=False, snr=False,
              lmin=None, lmax=None, ax=None, stretch='linear', unit=u.angstrom,
              noise_kwargs=None, **kwargs):
-        """Plot the spectrum. By default, drawstyle is 'steps-mid'.
+        """Plot the spectrum.
+
+        By default, the matplotlib drawstyle option is set to
+        'steps-mid'. The reason for this is that in MPDAF integer
+        pixel indexes correspond to the centers of their pixels, and
+        the floating point pixel indexes of a pixel extend from half a
+        pixel below the integer central position to half a pixel above
+        it.
 
         Parameters
         ----------
-        max : bool
-            If max is True, the plot is normalized to peak at max value.
+        max : float
+            If max is not None (the default), it should be a floating
+            point value. The plotted data will be renormalized such
+            that the peak in the plot has this value.
         title : string
-            Figure title (None by default).
+            The title to give the figure (None by default).
         noise : bool
-            If noise is True, the +/- standard deviation is overplotted.
+            If noise is True, colored extensions above and below
+            the plotted points indicate the square-root of the
+            variances of each pixel (if any).
         snr : bool
             If snr is True, data/sqrt(var) is plotted.
         lmin : float
-            Minimum wavelength.
+            The minimum wavelength to be plotted, or None (the default)
+            to start the plot from the minimum wavelength in the spectrum.
         lmax : float
-            Maximum wavelength.
+            The maximum wavelength to be plotted, or None (the default)
+            to start the plot from the maximum wavelength in the spectrum.
         ax : matplotlib.Axes
-            The Axes instance in which the spectrum is drawn.
+            The Axes instance in which the spectrum is drawn, or None
+            (the default), to request that an Axes object be created
+            internally.
         unit : `astropy.units.Unit`
-            Unit of the wavelength coordinates.
+            The wavelength units of the lmin and lmax arguments, or None
+            to indicate that lmin and lmax are floating point pixel
+            indexes.
         noise_kwargs : dict
             Properties for the noise plot (if ``noise=True``). Default to
             ``color='0.75', facecolor='0.75', alpha=0.5``.
         kwargs : dict
-            kwargs can be used to set plot properties: line label (for auto
-            legends), linewidth, anitialising, marker face color, etc.
+            kwargs can be used to set properties of the plot such as:
+            line label (for auto legends), linewidth, anitialising,
+            marker face color, etc.
+
         """
 
+        # Create an Axes instance for the plot?
         if ax is None:
             ax = plt.gca()
 
+        # If a sub-set of the spectrum's wavelengths have been
+        # specified, get a truncated copy of the spectrum that just
+        # contains this range.
         res = self.copy()
         if lmin is not None or lmax is not None:
             res.truncate(lmin, lmax, unit)
 
+        # Get the wavelengths to be plotted along the X axis,
+        # preferably in the units specified for lmin and lmax,
+        # if any. If the specified units can't be used, use
+        # the native wavelength units of the spectrum.
         try:
             x = res.wave.coord(unit=unit)
         except u.UnitConversionError:
             unit = res.wave.unit
             x = res.wave.coord(unit=unit)
 
+        # Get the pixel values to be plotted.
         data = res.data
+
+        # Disable the noise and snr options if no variances
+        # are available.
         if res.var is None:
             noise = False
             snr = False
+
+        # Compute the SNR?
         if snr:
             data /= np.sqrt(res.var)
+
+        # Renormalize to make the peak value equal to max?
         if max is not None:
             data = data * max / data.max()
 
-        # default plot arguments
+        # Set the default plot arguments.
         kwargs.setdefault('drawstyle', 'steps-mid')
 
+        # Plot the data with a linear or logarithmic Y axis.
         if stretch == 'linear':
             ax.plot(x, data, **kwargs)
         elif stretch == 'log':
@@ -2385,9 +2429,8 @@ class Spectrum(ArithmeticMixin, DataArray):
         else:
             raise ValueError("Unknow stretch '{}'".format(stretch))
 
-#         lmin, lmax = res.get_range()
-#         ax.set_xlim(lmin, lmax)
-
+        # Plot extensions above and below the points to represent
+        # their uncertainties?
         if noise:
             sigma = np.sqrt(res.var)
             noisekw = dict(color='0.75', facecolor='0.75', alpha=0.5)
@@ -2395,6 +2438,7 @@ class Spectrum(ArithmeticMixin, DataArray):
                 noisekw.update(noise_kwargs)
             ax.fill_between(x, data + sigma, data - sigma, **noisekw)
 
+        # Label the plot.
         if title is not None:
             ax.set_title(title)
         if unit is not None:
@@ -2402,6 +2446,8 @@ class Spectrum(ArithmeticMixin, DataArray):
         if res.unit is not None:
             ax.set_ylabel(res.unit)
 
+        # Arrange for cursor motion events to display corresponding
+        # coordinates and values below the plot.
         self._fig = plt.get_current_fig_manager()
         self._unit = unit
         plt.connect('motion_notify_event', self._on_move)
@@ -2410,32 +2456,44 @@ class Spectrum(ArithmeticMixin, DataArray):
     def log_plot(self, max=None, title=None, noise=False, snr=False,
                  lmin=None, lmax=None, ax=None, unit=u.angstrom,
                  **kwargs):
-        """Plot the spectrum with y logarithmic scale.
+        """Plot the spectrum with a logarithmic scale along the Y-axis.
 
-        Shortcut for `mpdaf.obj.Spectrum.plot` with `stretch='log'`.
-        By default, drawstyle is 'steps-mid'.
+        This is a shortcut for `mpdaf.obj.Spectrum.plot` with
+        `stretch='log'`.
 
         Parameters
         ----------
         max : bool
-            If max is True, the plot is normalized to peak at max value.
+            If max is not None (the default), it should be a floating
+            point value. The plotted data will be renormalized such
+            that the peak in the plot has this value.
         title : string
-            Figure title (None by default).
+            The title to give the figure (None by default).
         noise : bool
-            If noise is True, the +/- standard deviation is overplotted.
+            If noise is True, colored extensions above and below
+            the plotted points indicate the square-root of the
+            variances of each pixel (if any).
         snr : bool
             If snr is True, data/sqrt(var) is plotted.
         lmin : float
-            Minimum wavelength.
+            The minimum wavelength to be plotted, or None (the default)
+            to start the plot from the minimum wavelength in the spectrum.
         lmax : float
-            Maximum wavelength.
-        unit : `astropy.units.Unit`
-            type of the wavelength coordinates
+            The maximum wavelength to be plotted, or None (the default)
+            to start the plot from the maximum wavelength in the spectrum.
         ax : matplotlib.Axes
-            the Axes instance in which the spectrum is drawn
+            The Axes instance in which the spectrum is drawn, or None
+            (the default), to request that an Axes object be created
+            internally.
+        unit : `astropy.units.Unit`
+            The wavelength units of the lmin and lmax arguments, or None
+            to indicate that lmin and lmax are floating point pixel
+            indexes.
         kwargs : matplotlib.lines.Line2D
-            kwargs can be used to set line properties: line label (for auto
-            legends), linewidth, anitialising, marker face color, etc.
+            kwargs can be used to set properties of the plot such as:
+            line label (for auto legends), linewidth, anitialising,
+            marker face color, etc.
+
         """
         self.plot(max=max, title=title, noise=noise, snr=snr,
                   lmin=lmin, lmax=lmax, ax=ax, stretch='log', unit=unit,

@@ -4,105 +4,122 @@
 Cube object
 ***********
 
-Cube python object can handle datacubes which have a regular grid format in
-both spatial and spectral axis.  Variance information can also be taken into
-account as well as bad pixels.  Cube object can be read and written to disk as
-a multi-extension FITS file.
+MPDAF Cube objects contain a series of images at neighboring wavelengths.  These
+are stored as a 3D array of pixel values. The wavelengths of the images increase
+along the first dimension of this array, while the Y and X axes of the images
+lie along the second and third dimensions. In addition to the data array, Cubes
+contain a `WaveCoord <mpdaf.obj.WaveCoord>` object that describes the wavelength
+scale of the spectral axis of the cube, and a `WCS <mpdaf.obj.WCS>` object that
+describes the spatial coordinates of the spatial axes. Optionally a 3D array of
+variances can be provided to give the statistical uncertainties of the
+fluxes. Finally a mask array is provided for indicating bad pixels.
 
-Object is build as a set or numpy masked arrays and world coordinate
-information. A number of transformation have been developed  as object
-properties. Note that virtually all numpy and scipy functions are available.
+The fluxes and their variances are stored in numpy masked arrays, so virtually
+all numpy and scipy functions can be applied to them.
 
 .. ipython::
    :suppress:
 
-   In [4]: import sys
+   In [1]: import sys
 
-   In [4]: from mpdaf import setup_logging
+   In [2]: from mpdaf import setup_logging
 
 Preliminary imports:
 
 .. ipython::
 
-   In [1]: import numpy as np
+   In [3]: import numpy as np
 
-   In [1]: import matplotlib.pyplot as plt
+   In [4]: import matplotlib.pyplot as plt
 
-   In [1]: import astropy.units as u
+   In [5]: import astropy.units as u
 
-   In [2]: from mpdaf.obj import Cube, WCS, WaveCoord
+   In [6]: from mpdaf.obj import Cube, WCS, WaveCoord
 
 Cube creation
 =============
 
-A `Cube <mpdaf.obj.Cube>` object is created:
+There are two common ways to obtain a `Cube <mpdaf.obj.Cube>` object:
 
-- either from one or two 3D numpy arrays containing the flux and variance
-  values (optionally, the data array can be a numpy masked array to deal with
-  bad pixel values):
+- A cube can be created from a user-provided 3D array of pixel values, or
+  from both a 3D array of pixel values, and a corresponding 3D array of
+  variances. These can be simple numpy arrays, or they can be numpy masked
+  arrays in which bad pixels have been masked. For example:
 
 .. ipython::
 
   @suppress
-  In [5]: setup_logging(stream=sys.stdout)
+  In [1]: setup_logging(stream=sys.stdout)
 
-  In [6]: wcs1 = WCS(crval=0, cdelt=0.2)
+  In [2]: wcs1 = WCS(crval=0, cdelt=0.2)
 
-  In [7]: wave1 = WaveCoord(cdelt=1.25, crval=4000.0, cunit=u.angstrom)
+  In [3]: wave1 = WaveCoord(cdelt=1.25, crval=4000.0, cunit=u.angstrom)
 
   # numpy data array
-  In [8]: MyData = np.ones((400, 30, 30))
+  In [4]: MyData = np.ones((400, 30, 30))
 
   # cube filled with MyData
-  In [9]: cube = Cube(data=MyData, wcs=wcs1, wave=wave1) # cube 400X30x30 filled with data
+  In [5]: cube = Cube(data=MyData, wcs=wcs1, wave=wave1) # cube 400X30x30 filled with data
 
-  In [10]: cube.info()
+  In [6]: cube.info()
 
   @suppress
-  In [5]: cube = None ; data = None
+  In [7]: cube = None ; data = None
 
-- or from a FITS file (in which case the flux and variance values are read from specific extensions):
+- Alternatively, a cube can be read from a FITS file. In this case the flux
+  and variance values are read from specific extensions:
 
 .. ipython::
   :okwarning:
 
   @suppress
-  In [5]: setup_logging(stream=sys.stdout)
+  In [1]: setup_logging(stream=sys.stdout)
 
   # data and variance arrays read from the file (extension DATA and STAT)
   In [2]: obj1 = Cube('../data/obj/CUBE.fits')
 
-  In [10]: obj1.info()
+  In [3]: obj1.info()
 
+By default, if a FITS file has more than one extension, then it is expected to
+have a 'DATA' extension that contains the pixel data, and possibly a 'STAT'
+extension that contains the corresponding variances. If the file doesn't contain
+extensions of these names, the "ext=" keyword can be used to indicate the
+appropriate extension or extensions.
 
-If the FITS file contains more than one extension and when the FITS extension are not named 'DATA' (for flux values) and 'STAT' (for variance  values), the keyword "ext=" is necessary to give the number of the extensions.
+The spatial and spectral world-coordinates of a Cube are recorded within `WCS
+<mpdaf.obj.WCS>` and `WaveCoord <mpdaf.obj.WaveCoord>` objects,
+respectively. When a cube is read from a FITS file, these are automatically
+generated, based on FITS header keywords. Alternatively, when an cube is
+extracted from another cube, they are derived from the world coordinate
+information of the original cube.
 
-The `WCS <mpdaf.obj.WCS>` object is either created using a linear scale, copied from another Image, or
-using the information from the FITS header.
+In the above example, information about a cube is printed using the `info
+<mpdaf.obj.Cube.info>` method. In this case the information is as follows:
 
-The `WaveCoord <mpdaf.obj.WaveCoord>` object is either created using a linear scale, copied from another Spectrum, or
-using the information from the FITS header.
-
-The `info <mpdaf.obj.Cube.info>` directive gives us already some important informations:
-
-- The cube format 1595 x 10 x 20 has 10 x 20 spatial pixels and 1595 spectral pixels
-- In addition to the data extension (.data(1595 x 10 x 20)) a variance extension is also present (.var(1595 x 10 x 20))
-- The flux data unit is erg/s/cm\ :sup:`2`/Angstrom and the scale factor is 10\ :sup:`-20`
-- The center of the field of view is at DEC: -30° 0' 0.45" and RA: 1°20'0.437" and its size is 2x4 arcsec\ :sup:`2`. The spaxel dimension is 0.2x0.2 arcsec\ :sup:`2`. The rotation angle is 0° with respect to the North.
+- The cube has dimensions, 1595 x 10 x 20, which means that there are 1595
+  images of different wavelengths, each having 10 x 20 spatial pixels.
+- In addition to the pixel array (.data(1595 x 10 x 20)), there is also a
+  variance array of the same dimensions (.var(1595 x 10 x 20)).
+- The flux units of the pixels are 10\ :sup:`-20` erg/s/cm\ :sup:`2`/Angstrom. 
+- The center of the field of view is at DEC: -30° 0' 0.45" and RA: 1°20'0.437".
+- The size of the field of view is 2 arcsec x 4 arcsec. The pixel dimensions are  0.2 arcsec x 0.2 arcsec.
+- The rotation angle of the field is 0°, which means that North is along the positive Y axis.
 - The wavelength range is 7300-9292.5 Angstrom with a step of 1.25 Angstrom
 
-The format follows the indexing used by Python to
-handle 3D arrays. The pixel in the bottom-lower-left corner is
-referenced as [0,0,0] and the pixel [k,p,q] refers to the horizontal position
-q, the vertical position p, and the spectral position k, as follows:
+The indexing of the cube arrays follows the Python conventions for indexing a 3D
+array. The pixel in the bottom-lower-left corner is referenced as [0,0,0] and
+the pixel [k,p,q] refers to the horizontal position q, the vertical position p,
+and the spectral position k, as follows:
 
 .. figure:: _static/cube/gridcube.jpg
   :align: center
 
 (see :ref:`objformat` for more information).
 
-
-Let's compute the reconstructed white light image and display it:
+The following example computes a reconstructed white-light image and displays
+it. The white-light image is obtained by summing each spatial pixel of the cube
+along the wavelength axis. This converts the 3D cube into a 2D image. The cube
+in this examples contains an observation of a single galaxy.
 
 .. ipython::
 
@@ -113,7 +130,9 @@ Let's compute the reconstructed white light image and display it:
   @savefig Cube1.png width=4in
   In [3]: ima1.plot(scale='arcsinh', colorbar='v')
 
-Let's now compute the total spectrum of the object:
+The next example computes the overall spectrum of the cube by taking the cube
+and summing along the X and Y axes of the image plane. This yields the total
+flux per spectral pixel.
 
 .. ipython::
 
@@ -125,12 +144,20 @@ Let's now compute the total spectrum of the object:
   In [3]: sp1.plot()
 
 
-Loop over all spectra
-=====================
+Loops over all spectra
+======================
 
-We will create the continuum subtracted datacube of the previously extracted object.
+The examples in this section will demonstrate how a procedure can be applied
+iteratively to the spectra of every image pixel of a cube. The goal of the
+examples will be to create a version of the above data-cube that has had the
+continuum background subtracted. For each image pixel, a low-order polynomial
+will be fitted to the spectrum of that pixel. This results in a polynomial curve
+that approximates the continnum spectrum of the pixel. This polynomial is then
+subtracted from the spectrum of that pixel, and the difference spectrum is
+recorded in a new output cube.
 
-We start by fitting the continuum on sp1:
+To illustrate the procedure, we start by fitting the continuum to the overal
+spectrum that was obtained in the previous example:
 
 .. ipython::
 
@@ -143,7 +170,7 @@ We start by fitting the continuum on sp1:
   @savefig Cube3.png width=4in
   In [4]: cont1.plot(color='r')
 
-Let's try also on a single spectrum at the edge of the galaxy:
+Next we do the same to a single pixel at the edge of the galaxy:
 
 .. ipython::
 
@@ -151,14 +178,17 @@ Let's try also on a single spectrum at the edge of the galaxy:
 
   In [2]: sp1 = obj1[:,5,2]
 
-  In [2]: sp1.plot()
+  In [3]: sp1.plot()
 
   @savefig Cube4.png width=4in
-  In [3]: sp1.poly_spec(5).plot(color='r')
+  In [4]: sp1.poly_spec(5).plot(color='r')
 
-
-Fine, now let's do this for all spectrum of the input datacube. We are going to use the spectra iterator
-to loop over all spectra. Let's see how `iter_spe <mpdaf.obj.iter_spe>` works:
+In principle, the above procedure could be performed to each pixel by writing a
+nested loop over the X and Y axes of the cube. However, instead of using two
+loops, one can use the spectrum iterator method, `iter_spe <mpdaf.obj.iter_spe>`
+of the Cube object. In the following example this is used to iteratively extract
+the six spectra of a small 2 x 3 pixel sub-cube, and determine their peak
+values:
 
 .. ipython::
 
@@ -169,18 +199,17 @@ to loop over all spectra. Let's see how `iter_spe <mpdaf.obj.iter_spe>` works:
   In [3]: small.shape
 
   @verbatim
-  In [7]: for sp in iter_spe(small):
+  In [4]: for sp in iter_spe(small):
      ...:     print sp.data.max()
      ...:
 
-In this example, we have extracted successively all six spectra of the small datacube and printed their peak value.
-
-Now let's use it to perform the computation of the continuum datacube.  We start
-by creating an empty datacube with the same dimensions than the original one,
-but without variance information (using the `colne <mpdaf.obj.DataArray.clone>`
-function). Using two spectrum iterators we extract iteratively all input spectra
-(sp) and (still empty) continuum spectrum (co). For each extracted spectrum we
-just fit the continuum and save it to the continuum datacube.:
+Now let's use the same approach to do the continuum subtraction procedure.  We
+start by creating an empty datacube with the same dimensions as the original
+cube, but without variance information (using the `clone
+<mpdaf.obj.DataArray.clone>` method). Using two spectrum iterators we
+iteratively extract the spectra of each image pixel of the input cube and the
+empty output cube. At each iteration we then fit a polynomial spectrum to the
+input spectrum and record it in the output spectrum.
 
 .. ipython::
   :okwarning:
@@ -190,23 +219,32 @@ just fit the continuum and save it to the continuum datacube.:
   In [2]: for sp, co in zip(iter_spe(obj1), iter_spe(cont1)):
      ...:     co[:] = sp.poly_spec(5)
 
-And that's it, we have now the continuum datacube. Note that we have used the co[:] = sp.poly_spec(5)
-assignment rather than the more intuitive co = sp.poly_spec(5) assignment. The use of co[:] is mandatory
-otherwise the continuum spectra co is created but not written into the cont1 datacube.
+The result is a continuum datacube. Note that we have used the co[:] =
+sp.poly_spec(5) assignment rather than the more intuitive co = sp.poly_spec(5)
+assignment. The difference is that in python co=value changes the object that
+the co variable refers to, whereas co[:] changes the contents of the
+object that it currently points to. We want to change the contents of the
+spectrum in the output cube, so the latter is needed.
 
-But, the better way to compute the continuum datacube is to use the `loop_spe_multiprocessing <mpdaf.obj.Cube.loop_spe_multiprocessing>` that automatically loop on spectrum using multiprocessing:
+There is another way to compute the continuum datacube that can be much faster
+when used on a computer with multiple processors. This is to use the
+`loop_spe_multiprocessing <mpdaf.obj.Cube.loop_spe_multiprocessing>` function.
+This uses multiple processors to apply a specified function to each spectrum of
+a cube and return a new cube that contains the resulting spectra:
 
 .. ipython::
   :okwarning:
 
   @suppress
-  In [5]: setup_logging(stream=sys.stdout)
+  In [1]: setup_logging(stream=sys.stdout)
 
-  In [1]: from mpdaf.obj import Spectrum
+  In [2]: from mpdaf.obj import Spectrum
 
-  In [2]: cont2 = obj1.loop_spe_multiprocessing(f=Spectrum.poly_spec, deg=5)
+  In [3]: cont2 = obj1.loop_spe_multiprocessing(f=Spectrum.poly_spec, deg=5)
 
-Let's check the results and display the continuum reconstructed images:
+To compare the results of the two methods, the following example sums the images
+of the two continuum cubes over the wavelength axis and displays the resulting
+white-light images of the continuum:
 
 .. ipython::
 
@@ -217,17 +255,20 @@ Let's check the results and display the continuum reconstructed images:
   @savefig Cube5.png width=3.5in
   In [3]: rec1.plot(scale='arcsinh', colorbar='v', title='method 1')
 
-  In [1]: rec2 = cont2.sum(axis=0)
+  In [4]: rec2 = cont2.sum(axis=0)
 
-  In [2]: plt.figure()
+  In [5]: plt.figure()
 
   @savefig Cube6.png width=3.5in
-  In [3]: rec2.plot(scale='arcsinh', colorbar='v', title='method2')
+  In [6]: rec2.plot(scale='arcsinh', colorbar='v', title='method2')
 
   @suppress
-  In [5]: cont2 = None
+  In [7]: cont2 = None
 
-We can also compute the line emission datacube:
+Next we subtract the continuum cube from the original cube to obtain a cube
+of the line emission of the galaxy. For display purposes this is then summed
+along the wavelength axis to yield an image of the sum of all of the emission
+lines in the cube:
 
 .. ipython::
 
@@ -236,80 +277,103 @@ We can also compute the line emission datacube:
   In [2]: plt.figure()
 
   @savefig Cube7.png width=4in
-  In [2]: line1.sum(axis=0).plot(scale='arcsinh', colorbar='v')
+  In [3]: line1.sum(axis=0).plot(scale='arcsinh', colorbar='v')
 
-Then, we will compute equivalent width of the Ha emission in the galaxy.
-First let's isolate the emission line by truncating the object datacube in wavelength:
+Next we compute the equivalent width of the Hα emission in the galaxy.  First we
+isolate the emission line by truncating the object datacube in wavelength:
 
 .. ipython::
 
   @suppress
-  In [5]: setup_logging(stream=sys.stdout)
+  In [1]: setup_logging(stream=sys.stdout)
 
-  In [1]: plt.figure()
+  In [2]: plt.figure()
 
-  In [2]: sp1.plot()
+  # Obtain the overall spectrum of the cube.
+  In [3]: sp1 = obj1.sum(axis=(1,2))
 
-  In [3]: k1,k2 = sp1.wave.pixel([9000,9200], nearest=True)
+  In [4]: sp1.plot()
 
-  In [4]: emi1 = obj1[k1:k2+1,:,:]
+  # Obtain the spectral pixel indexes of wavelengths 9000 and 9200
+  In [5]: k1,k2 = sp1.wave.pixel([9000,9200], nearest=True)
 
-  In [4]: emi1.info()
+  # Extract a sub-cube restricted to the above range of wavelengths.
+  In [6]: emi1 = obj1[k1:k2+1,:,:]
 
-  In [5]: sp1 = emi1.sum(axis=(1,2))
+  In [7]: emi1.info()
 
+  # Obtain the overall spectrum of the above sub-cube.
+  In [8]: sp1 = emi1.sum(axis=(1,2))
+
+  # Plot the sub-spectrum in red over the original spectrum.
   @savefig Cube8.png width=4in
-  In [6]: sp1.plot(color='r')
+  In [9]: sp1.plot(color='r')
 
   @suppress
-  In [1]: obj1 = None ; cont1 = None ; line1 = None
+  In [10]: obj1 = None ; cont1 = None ; line1 = None
 
-We first fit and subtract the continuum. Before doing the polynomial fit we mask the region of
-the emission lines (sp1.mask) and then we perform the linear fit. Then the spectrum is unmasked
-and the continuum subtracted:
+Next we fit and subtract the continuum. Before doing the polynomial fit we mask
+the region of the emission lines (sp1.mask), so that the lines don't affect the
+fit, and then we perform a linear fit between the continuum on either side of
+the masked region. Then the spectrum is unmasked and the continuum subtracted:
 
 .. ipython::
 
   In [1]: plt.figure()
 
+  # Mask the region containing the line emission.
   In [2]: sp1.mask_region(9050, 9125)
 
+  # Fit a line to the continuum on either side of the masked region.
   In [3]: cont1 = sp1.poly_spec(1)
 
+  # Unmask the region containing the line emission.
   In [4]: sp1.unmask()
+
+  In [4]: plt.figure()
+
+  In [4]: sp1.plot()
+
+  @savefig Cube9a.png width=3.5in
+  In [4]: cont1.plot(title="Fitted continuum")
 
   In [5]: plt.figure()
 
-  In [6]: cont1.plot()
+  # Subtract the continuum from the spectrum to leave the line emission.
+  In [6]: line1 = sp1 - cont1
 
-  In [7]: line1 = sp1 - cont1
+  @savefig Cube9.png width=3.5in
+  In [7]: line1.plot(title="Continuum subtracted")
 
-  @savefig Cube9.png width=4in
-  In [8]: line1.plot(color='r')
-
-We then compute the Ha line total flux by simple integration (taking into account the pixel size in A)
-over the wavelength range centered around Halfa and the continuum mean flux at the same location:
+Next we compute the total Hα line flux by simple integration (taking into
+account the pixel size in Angstrom) over the wavelength range centered around
+the Hα line and the continuum mean flux at the same location:
 
 .. ipython::
 
   In [1]: plt.figure()
 
+  # Find the spectral pixel index of the peak flux.
   In [2]: k = line1.data.argmax()
 
   @savefig Cube10.png width=4in
   In [3]: line1[55-10:55+11].plot(color='r')
 
+  # Integrate by summing pixels, multiplied by the pixel width.
   In [4]: fline = (line1[55-10:55+11].sum()*line1.unit) * (line1.get_step(unit=line1.wave.unit)*line1.wave.unit)
 
+  # Obtain the mean continuum flux.
   In [5]: cline = cont1[55-10:55+11].mean()*cont1.unit
 
+  # Compute the equivalent width of the line.
   In [6]: ew = fline/cline
 
   In [7]: print fline, cline, ew
 
-Now we repeat this for all datacube spectra, and we  save Ha flux and equivalent width in two images.
-We start creating two images with identical shape and wcs as the reconstructed image and then use
-the spectrum iterator `iter_spe <mpdaf.obj.iter_spe>`:
+Finally we repeat this for all datacube spectra, and we save the Hα flux and
+equivalent width in two images.  We start by creating two images with identical
+shapes and world-coordinates for the reconstructed image and then use the
+spectrum iterator `iter_spe <mpdaf.obj.iter_spe>`:
 
 .. ipython::
 
@@ -332,38 +396,38 @@ the spectrum iterator `iter_spe <mpdaf.obj.iter_spe>`:
      ...:     ha_flux[p,q] = fline
      ...:     ha_ew[p,q] = ew
 
-  In [1]: plt.figure()
+  In [5]: plt.figure()
 
   @savefig Cube11.png width=2in
-  In [5]: cont_flux.plot(title="continuum mean flux (%s)"%cont_flux.unit, colorbar='v')
+  In [6]: cont_flux.plot(title="continuum mean flux (%s)"%cont_flux.unit, colorbar='v')
 
-  In [6]: ha_flux.unit = sp.unit * sp.wave.unit
+  In [7]: ha_flux.unit = sp.unit * sp.wave.unit
 
-  In [1]: plt.figure()
+  In [8]: plt.figure()
 
   @savefig Cube12.png width=2in
-  In [7]: ha_flux.plot(title="Ha line total flux (%s)"%ha_flux.unit, colorbar='v')
+  In [9]: ha_flux.plot(title="H$\\alpha$ line total flux (%s)"%ha_flux.unit, colorbar='v')
 
-  In [8]: ha_ew.mask_selection(np.where((ima1.data)<4000))
+  In [10]: ha_ew.mask_selection(np.where((ima1.data)<4000))
 
-  In [9]: ha_ew.unit = ha_flux.unit / cont_flux.unit
+  In [11]: ha_ew.unit = ha_flux.unit / cont_flux.unit
 
-  In [1]: plt.figure()
+  In [12]: plt.figure()
 
   @savefig Cube13.png width=2in
-  In [10]: ha_ew.plot(title="Ha line ew (%s)"%ha_ew.unit, colorbar='v')
+  In [13]: ha_ew.plot(title="H$\\alpha$ line ew (%s)"%ha_ew.unit, colorbar='v')
 
   @suppress
-  In [1]: ha_flux = None ; cont_flux = None ; ha_ew = None
+  In [14]: ha_flux = None ; cont_flux = None ; ha_ew = None
 
 
-Loop over all images
-====================
+Loops over all images
+=====================
 
-In this section, we are going to process our datacube in spatial direction. We
-consider the datacube as a collection of monochromatic images and we process
-each of them. For each monochromatic image we apply a convolution by a gaussian
-kernel.
+In this section, we demonstrate ways to perform of procedure iteratively to each
+image of a cube. We consider the datacube as a collection of monochromatic
+images and we process each of them. For each monochromatic image we apply a
+convolution by a gaussian kernel.
 
 .. ipython::
   :okwarning:
@@ -371,10 +435,12 @@ kernel.
   @suppress
   In [5]: setup_logging(stream=sys.stdout)
 
-  # data and variance arrays read from the file (extension DATA and STAT)
+  # Data and variance arrays read from the file (extension DATA and STAT)
   In [6]: cube = Cube('../data/obj/Central_Datacube_bkg.fits')
 
-First, we use the image iterator `iter_ima <mpdaf.obj.iter_ima>`:
+First, we use the image iterator `iter_ima <mpdaf.obj.iter_ima>`, which operates
+similarly to the spectrum iterator described earlier on this page, except that
+it returns successive images instead of successive spectra:
 
 .. ipython::
   :verbatim:
@@ -386,7 +452,10 @@ First, we use the image iterator `iter_ima <mpdaf.obj.iter_ima>`:
   In [3]: for ima,k in iter_ima(cube, index=True):
      ...:     cube2[k,:,:] = ima.gaussian_filter(sigma=3)
 
-We can also use the `loop_ima_multiprocessing <mpdaf.obj.Cube.loop_ima_multiprocessing>` method that automatically loops over all images to apply the convolution:
+We can also make use of multiple processors to do the same thing faster, by
+using the `loop_ima_multiprocessing <mpdaf.obj.Cube.loop_ima_multiprocessing>`
+method. This applies a specified procedure to all images within a cube and
+returns a new cube of the processed images:
 
 .. ipython::
 
@@ -394,7 +463,7 @@ We can also use the `loop_ima_multiprocessing <mpdaf.obj.Cube.loop_ima_multiproc
 
   In [2]: cube2 = cube.loop_ima_multiprocessing(f=Image.gaussian_filter, sigma=3)
 
-We then plot the result:
+We then plot the results:
 
 .. ipython::
 
@@ -411,14 +480,14 @@ We then plot the result:
   @suppress
   In [5]: cube2 = None
 
-Then, we will use the `loop_ima_multiprocessing
-<mpdaf.obj.Cube.loop_ima_multiprocessing>` method to fit and remove
-a background gradient from a simulated datacube.  For each image of the cube,
-we fit a 2nd order polynomial to the background values (selected here by simply
-applying a flux threshold to mask all bright objects). We do so by doing
-a chi^2 minimization over the polynomial coefficients using the numpy recipe
-``np.linalg.lstsq()``. For this, we define a function that takes an image as
-parameter and returns the background-subtracted image:
+Next we will use the `loop_ima_multiprocessing
+<mpdaf.obj.Cube.loop_ima_multiprocessing>` method to fit and remove a background
+gradient from a simulated datacube.  For each image of the cube, we fit a 2nd
+order polynomial to the background values (selected here by simply applying a
+flux threshold to mask all bright objects). We do so by doing a chi^2
+minimization over the polynomial coefficients using the numpy recipe
+``np.linalg.lstsq()``. For this, we define a function that takes an image as its
+sole parameter and returns a background-subtracted image:
 
 .. ipython::
 
@@ -467,14 +536,15 @@ Sub-cube extraction
 
 .. warning::
 
-  To be written
+  To be written.
 
 
-`mpdaf.obj.Cube.get_lambda <mpdaf.obj.Cube.get_lambda>` returns the sub-cube corresponding to a wavelength range.
+`mpdaf.obj.Cube.select_lambda <mpdaf.obj.Cube.select_lambda>` returns the sub-cube corresponding to a wavelength range.
 
-`mpdaf.obj.Cube.get_image <mpdaf.obj.Cube.get_image>` extracts an image around a position from the datacube.
+`mpdaf.obj.Cube.get_image <mpdaf.obj.Cube.get_image>` extracts an image around a position in the datacube.
 
-`mpdaf.obj.Cube.bandpass_image <mpdaf.obj.Cube.bandpass_image>`
+`mpdaf.obj.Cube.bandpass_image <mpdaf.obj.Cube.bandpass_image>` sums the images
+of a cube after multiplying the cube by the spectral bandpass curve of another instrument.
 
 `mpdaf.obj.Cube.subcube <mpdaf.obj.Cube.subcube>` extracts a sub-cube around a position.
 

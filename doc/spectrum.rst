@@ -5,13 +5,15 @@
 Spectrum object
 ***************
 
-The Spectrum object handles a 1D data array (basically a numpy masked array)
-containing flux values, associated with a `WaveCoord <mpdaf.obj.WaveCoord>`
-object containing the wavelength information. Optionally, a variance data array
-can be attached and used for weighting the flux values. Array masking is used
-to ignore some of the pixel values in the calculations.
+Spectrum objects contain a 1D data array of flux values, and a `WaveCoord
+<mpdaf.obj.WaveCoord>` object that describes the wavelength scale of the
+spectrum. Optionally, an array of variances can also be provided to give the
+statistical uncertainties of the fluxes. These can be used for weighting the
+flux values and for computing the uncertainties of least-squares fits and other
+calculations. Finally a mask array is provided for indicating bad pixels.
 
-Note that virtually all numpy and scipy functions are available.
+The fluxes and their variances are stored in numpy masked arrays, so
+virtually all numpy and scipy functions can be applied to them.
 
 .. ipython::
    :suppress:
@@ -36,9 +38,12 @@ Preliminary imports:
 Spectrum Creation
 =================
 
-A `Spectrum <mpdaf.obj.Spectrum>` object is created:
+There are two common ways to obtain a `Spectrum <mpdaf.obj.Spectrum>` object:
 
-- either from one or two numpy data arrays (containing flux values and variance):
+- A spectrum can be created from a user-provided array of the flux values at
+  each wavelength of the spectrum, or from both an array of flux values and a
+  corresponding array of variances. These arrays can be simple numpy arrays, or
+  they can be numpy masked arrays in which bad pixels have been masked.
 
 .. ipython::
 
@@ -64,7 +69,8 @@ A `Spectrum <mpdaf.obj.Spectrum>` object is created:
   In [10]: spe.info()
 
 
-- or from a FITS file (in which case the flux and variance values are read from specific extensions):
+- Alternatively, a spectrum can be read from a FITS file. In this case the flux
+  and variance values are read from specific extensions:
 
 .. ipython::
   :okwarning:
@@ -82,15 +88,27 @@ A `Spectrum <mpdaf.obj.Spectrum>` object is created:
 
   In [10]: spe.info()
 
+By default, if a FITS file has more than one extension, then it is expected to
+have a 'DATA' extension that contains the pixel data, and possibly a 'STAT'
+extension that contains the corresponding variances. If the file doesn't contain
+extensions of these names, the "ext=" keyword can be used to indicate the
+appropriate extension or extensions, as shown in the example above.
 
-If the FITS file contains a single extension (spectrum fluxes), or when the FITS extension are specifically named 'DATA' (for flux values) and 'STAT' (for variance  values), the keyword "ext=" is unnecessary.
+The `WaveCoord <mpdaf.obj.WaveCoord>` object of a spectrum describes the
+wavelength scale of the spectrum. When a spectrum is read from a FITS file, this
+is automatically generated based on FITS header keywords. Alternatively, when a
+spectrum is extracted from a cube or another spectrum, the wavelength object is
+derived from the wavelength object of the original object. In the first example
+on this page, the wavelength scale of the spectrum increases linearly with array
+index, k. The wavelength of the first pixel (k=0) is 4000 Angstrom, and the
+subsequent pixels (k=1,2 ...) are spaced by 1.25 Angstroms.
 
-The `WaveCoord <mpdaf.obj.WaveCoord>` object is either created using a linear scale, copied from another Spectrum, or
-using the information from the FITS header. The wavelength solution is linear with the array index k: in the first example, the first array value (k=0) corresponds to a wavelength of 4000 Angstroms, and the next array values (k=1,2 ...) are spaced by 1.25 Angstroms.
+Information about a spectrum can be printed using the `info
+<mpdaf.obj.Spectrum.info>` method.
 
-Information are printed by using the `info <mpdaf.obj.Spectrum.info>` method.
-
-The `plot <mpdaf.obj.Spectrum.plot>` method is based on `matplotlib.pyplot.plot <http://matplotlib.org/api/pyplot_api.html>`_ and accepts all matplotlib arguments:
+Spectrum objects also have a `plot <mpdaf.obj.Spectrum.plot>` method, which is
+based on `matplotlib.pyplot.plot <http://matplotlib.org/api/pyplot_api.html>`_
+and accepts all matplotlib arguments:
 
 .. ipython::
 
@@ -99,42 +117,47 @@ The `plot <mpdaf.obj.Spectrum.plot>` method is based on `matplotlib.pyplot.plot 
    @savefig Spectrum.png width=4in
    In [5]: spe.plot(color='g')
 
-The spectrum could also be plotted with a logarithmic scale on the y-axis
+This spectrum could also be plotted with a logarithmic scale on the y-axis
 (by using `log_plot <mpdaf.obj.Spectrum.log_plot>` in place of `plot <mpdaf.obj.Spectrum.plot>`).
 
 
-Spectrum manipulation: masking, interpolating, rebinning
-========================================================
+Spectrum masking and interpolation
+==================================
 
-Here we describe how we can mask noisy parts in a spectrum, and do a polynomial
-interpolation taking into account the variance.
+This section demonstrates how one can mask a sky line in a spectrum, and
+replace it with a linear or spline interpolation over the resulting gap.
 
-We start from the original spectrum and its variance:
+The original spectrum and its variance is first loaded:
 
 .. ipython::
   :okwarning:
 
   In [5]: spvar = Spectrum('../data/obj/Spectrum_Variance.fits',ext=[0,1])
 
-By using the `mask_region <mpdaf.obj.Spectrum.mask_region>` method, we mask the residuals from the strong sky emission line around 5577 Angstroms:
+Next the `mask_region <mpdaf.obj.Spectrum.mask_region>` method is used to mask a
+strong sky emission line around 5577 Angstroms:
 
 .. ipython::
 
-  In [5]: spvar.mask_region(lmin=5575, lmax=5590, unit=spvar.wave.unit)
+  In [5]: spvar.mask_region(lmin=5575, lmax=5590, unit=u.angstrom)
 
-We select (in wavelengths - `~mpdaf.obj.Spectrum.subspec` method) the clean spectrum region we want to interpolate:
+Then the `~mpdaf.obj.Spectrum.subspec` method is used to select the sub-set of
+the spectrum that we are interested in, including the masked region:
 
 .. ipython::
 
-  In [5]: spvarcut = spvar.subspec(lmin=4000, lmax=6250, unit=spvar.wave.unit)
+  In [5]: spvarcut = spvar.subspec(lmin=4000, lmax=6250, unit=u.angstrom)
 
-We can then choose to apply `interp_mask <mpdaf.obj.Spectrum.interp_mask>` and perform a linear interpolation of the masked values:
+The `interp_mask <mpdaf.obj.Spectrum.interp_mask>` method can then be used to
+replace the masked pixels with values that are interpolated from pixels on
+either side of the masked region. By default, this method uses linear
+interpolation:
 
 .. ipython::
 
   In [5]: spvarcut.interp_mask()
 
-The other option is to perform an interpolation with a spline:
+However it can also be told to use a spline interpolation:
 
 .. ipython::
 
@@ -149,18 +172,29 @@ The results of the interpolations are shown below:
   In [7]: plt.figure()
 
   @savefig Spectrum_before_interp_mask.png width=3.5in
-  In [6]: spvar.plot(lmin=4600, lmax=6200, title='Spectrum before interpolation', unit=spvar.wave.unit)
+  In [6]: spvar.plot(lmin=4600, lmax=6200, title='Spectrum before interpolation', unit=u.angstrom)
 
   In [7]: plt.figure()
 
   @savefig Spectrum_after_interp_mask.png width=3.5in
-  In [6]: spvarcut.plot(lmin=4600, lmax=6200, title='Spectrum after interpolation', unit=spvar.wave.unit)
+  In [6]: spvarcut.plot(lmin=4600, lmax=6200, title='Spectrum after interpolation', unit=u.angstrom)
 
-Last, we will resample the extracted spectrum using the 2 dedicated functions
-(rebin and resample).  The function `rebin
-<mpdaf.obj.Spectrum.rebin>` rebins the Spectrum using an integer number of
-pixels per bin. The corresponding variance is updated accordingly. We can
-overplot the rebinned Spectrum and show the corresponding variance as follows:
+Spectrum rebinning and resampling
+=================================
+
+Two methods are provided for resampling spectra.  The `rebin
+<mpdaf.obj.Spectrum.rebin>` method reduces the resolution of a spectrum by
+integer factors. If the integer factor is n, then the pixels of the new spectrum
+are calculated from the mean of n neighboring pixels. If the spectrum has
+variances, the variances of the averaged pixels are updated accordingly.
+
+In the example below, the spectrum of the previous section is rebinned to reduce
+its resolution by a factor of 5. In a plot of the original spectrum, the
+rebinned spectrum is drawn vertically offset from it by 10. The grey areas above
+and below the line of the rebinned spectrum indicate the standard deviation
+computed from the rebinned variances. The standard deviations clearly don't
+reflect the actual noise level, but this is because the variances in the FITS
+file are incorrect.
 
 .. ipython::
   :okwarning:
@@ -174,9 +208,11 @@ overplot the rebinned Spectrum and show the corresponding variance as follows:
   @savefig Spectrum_rebin.png width=4in
   In [8]: (sprebin1 + 10).plot(noise=True)
 
-The function `resample <mpdaf.obj.Spectrum.resample>` resamples the Spectrum
-with a specific numbers of wavelength units per pixel. The variance is not
-updated:
+Whereas the rebin method is restricted to decreasing the resolution by integer
+factors, the `resample <mpdaf.obj.Spectrum.resample>` method can resample a
+Spectrum to any resolution. The desired pixel size is specified in wavelength
+units. At the current time the variances are not updated, but this will be
+remedied in the near future.
 
 .. ipython::
 
@@ -185,7 +221,7 @@ updated:
   In [5]: sp = spvarcut[1500:2000]
 
   # 4.2 Angstroms / pixel
-  In [6]: sprebin2 = sp.resample(4.2, unit=sp.wave.unit)
+  In [6]: sprebin2 = sp.resample(4.2, unit=u.angstrom)
 
   In [7]: sp.plot()
 
@@ -199,23 +235,25 @@ Continuum and line fitting
 Line fitting
 ------------
 
-We want to fit the emission lines in a z=0.6758 galaxy (Hbeta and [OIII]).
-We open the spectrum and associated variance:
+In this section, the Hbeta and [OIII] emission lines of a z=0.6758 galaxy are
+fitted. The spectrum and associated variances are first loaded:
 
 .. ipython::
   :okwarning:
 
   In [1]: specline = Spectrum('../data/obj/Spectrum_lines.fits')
 
-We plot the spectrum around the [OIII] line:
+The spectrum around the [OIII] line is then plotted:
 
 .. ipython::
 
   In [2]: plt.figure()
 
-  In [2]: specline.plot(lmin=8350, lmax=8420, unit=specline.wave.unit, title = '[OIII] line')
+  In [2]: specline.plot(lmin=8350, lmax=8420, unit=u.angstrom, title = '[OIII] line')
 
-`gauss_fit <mpdaf.obj.Spectrum.gauss_fit>` performs a Gaussian fit on spectrum. Variance weighting is used in the fit:
+Next the `gauss_fit <mpdaf.obj.Spectrum.gauss_fit>` method is used to perform a
+Gaussian fit to the section of the spectrum that contains the line. The fit is
+automatically weighted by the variances of the spectrum:
 
 .. ipython::
 
@@ -223,13 +261,14 @@ We plot the spectrum around the [OIII] line:
   In [5]: setup_logging(stream=sys.stdout)
 
   @savefig Spectrum_specline1.png width=4in
-  In [3]: OIII = specline.gauss_fit(lmin=8350, lmax=8420, unit=specline.wave.unit, plot=True)
+  In [3]: OIII = specline.gauss_fit(lmin=8350, lmax=8420, unit=u.angstrom, plot=True)
 
   In [4]: OIII.print_param()
 
-The result of the fit is overploted in red.
+The result of the fit plotted in red over the spectrum.
 
-Now, we move to the fainter line (Hbeta) and we perform the same analysis, again using variance weighting:
+Next a fit is performed to the fainter Hbeta line, again using the variances
+to weight the least-squares Gaussian fit:
 
 .. ipython::
 
@@ -238,21 +277,25 @@ Now, we move to the fainter line (Hbeta) and we perform the same analysis, again
 
   In [5]: plt.figure()
 
-  In [6]: specline.plot(lmin=8090,lmax=8210, unit=specline.wave.unit, title = 'Hbeta line')
+  In [6]: specline.plot(lmin=8090,lmax=8210, unit=u.angstrom, title = 'Hbeta line')
 
   @savefig Spectrum_specline2.png width=4in
-  In [7]: Hbeta = specline.gauss_fit(lmin=8090,lmax=8210, unit=specline.wave.unit, plot=True)
+  In [7]: Hbeta = specline.gauss_fit(lmin=8090,lmax=8210, unit=u.angstrom, plot=True)
 
   In [8]: Hbeta.print_param()
 
 
-The results from the fit can be retrieved in the returned `Gauss1D <mpdaf.obj.Gauss1D>` object. For example we can measure the equivalent width of the line like this:
+The results from the fit can be retrieved in the returned `Gauss1D
+<mpdaf.obj.Gauss1D>` object. For example the equivalent width of the line can be
+estimated as follows:
 
 .. ipython::
 
   In [8]: Hbeta.flux/Hbeta.cont
 
-If the wavelength of the line is already known, `line_gauss_fit <mpdaf.obj.Spectrum.line_gauss_fit>` could perform an better Gaussian fit on the line by fixing the Gaussian center:
+If the wavelength of the line is already known, `line_gauss_fit
+<mpdaf.obj.Spectrum.line_gauss_fit>` can perform an better Gaussian fit on the
+line by fixing the Gaussian center:
 
 .. ipython::
 
@@ -261,10 +304,10 @@ If the wavelength of the line is already known, `line_gauss_fit <mpdaf.obj.Spect
 
   In [5]: plt.figure()
 
-  In [6]: specline.plot(lmin=8090,lmax=8210, unit=specline.wave.unit, title = 'Hbeta line')
+  In [6]: specline.plot(lmin=8090,lmax=8210, unit=u.angstrom, title = 'Hbeta line')
 
   @savefig Spectrum_specline2.png width=4in
-  In [7]: Hbeta2 = specline.line_gauss_fit(lmin=8090,lmax=8210, lpeak=Hbeta.lpeak, unit=specline.wave.unit, plot=True)
+  In [7]: Hbeta2 = specline.line_gauss_fit(lmin=8090,lmax=8210, lpeak=Hbeta.lpeak, unit=u.angstrom, plot=True)
 
   In [8]: Hbeta2.print_param()
 
@@ -278,7 +321,8 @@ In the same way:
 Continuum fitting
 -----------------
 
-`poly_spec <mpdaf.obj.Spectrum.poly_spec>` performs a polynomial fit on spectrum and it can be used to fit the continuum:
+The `poly_spec <mpdaf.obj.Spectrum.poly_spec>` method performs a polynomial fit
+to a spectrum. This can be used to fit the continuum:
 
 .. ipython::
 
@@ -298,3 +342,6 @@ Continuum fitting
    In [4]: plt.close("all")
 
    In [4]: %reset -f
+
+In the plot, the polynomial fit to the continuum is the red line drawn over the
+spectrum.

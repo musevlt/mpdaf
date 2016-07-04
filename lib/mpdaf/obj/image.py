@@ -3556,6 +3556,13 @@ class Image(ArithmeticMixin, DataArray):
         # Offset the WCS of the current image by the pixel shift found above.
         out.wcs.set_crpix1(out.wcs.get_crpix1() + dx)
         out.wcs.set_crpix2(out.wcs.get_crpix2() + dy)
+
+        # Calculate the resulting shift in pixel coordinates, for display
+        # to the user.
+        units = u.arcsec if self.wcs.unit is u.deg else self.wcs.unit
+        offset = np.array([-dy, -dx]) * self.wcs.get_axis_increments(units)
+        self._logger.info("Shifted the coordinates by dy=%.3g dx=%.3g %s" %
+                          (offset[0], offset[1], units))
         return out
 
     def gaussian_filter(self, sigma=3, interp='no', inplace=False):
@@ -4117,7 +4124,7 @@ class Image(ArithmeticMixin, DataArray):
             pixsky = self.wcs.pix2sky([row, col], unit=self._unit)
             yc = pixsky[0][0]
             xc = pixsky[0][1]
-            val = self.data.data[col, row]
+            val = self.data.data[row, col]
             return 'y= %g x=%g p=%i q=%i data=%g' % (yc, xc, row, col, val)
         else:
             return 'x=%1.4f, y=%1.4f' % (x, y)

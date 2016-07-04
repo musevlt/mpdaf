@@ -2,13 +2,17 @@
 Interface for spectra, images and cubes (``mpdaf.obj``)
 *******************************************************
 
-The ``mpdaf.obj`` package provides a way to load a MUSE cube created by the MUSE pipeline (i.e. a FITS data cube of 3GB, ~ 300x300x3680 pixels) 
-into a Python object handling the world coordinates, the variance and the bad pixels information.
+The ``mpdaf.obj`` package provides a way to load a MUSE cube created by the MUSE
+pipeline (i.e. a 3GB FITS data cube of approximately 300x300x3680 pixels) into a
+Python object that manages spatial world-coordinates, wavelength world
+coordinates, pixel variances and bad pixel information.
 
 
-It is then relatively easy to extract smaller cubes or narrow-band images from a cube, spectra from an aperture, 
-and perform common operations like masking, interpolating, re-sampling, smoothing, profile fitting...
-The world coordinates, the associated variance and the mask are propagated into the extracted cube, image, or spectra.
+It is then relatively easy to extract smaller cubes, narrow-band images or
+spectra from the cube. The world coordinates, associated variances and bad-pixel
+masks are propagated into these extracted cubes, images, and spectra.  Many
+useful operations like masking, interpolation, re-sampling, smoothing and
+profile fitting are also provided.
 
 
 Contents:
