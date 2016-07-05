@@ -32,17 +32,17 @@ The currently existing sub-packages are:
 +------------------+-------------------------------------------------+---------+
 |  sub-packages    | description                                     |  status |
 +==================+=================================================+=========+
-| `mpdaf.obj`_     | Interface for spectra, images and cubes         | Stable  |
+| |mpdaf.obj|_     | Interface for spectra, images and cubes         | Stable  |
 +------------------+-------------------------------------------------+---------+
-| `mpdaf.drs`_     | Interface for the MUSE raw file and pixel table | Stable  |
+| |mpdaf.drs|_     | Interface for the MUSE raw file and pixel table | Stable  |
 +------------------+-------------------------------------------------+---------+
-| `mpdaf.sdetect`_ | Source: Creates single-source FITS files        | Dev     |
+| |mpdaf.sdetect|_ | Source: Creates single-source FITS files        | Dev     |
 |                  +-------------------------------------------------+---------+
 |                  | Catalog: Creates source catalogs                | Dev     |
 |                  +-------------------------------------------------+---------+
 |                  | MUSELET: MUSE Line Emission Tracker             | Stable  |
 +------------------+-------------------------------------------------+---------+
-| `mpdaf.MUSE`_    | slicer: MUSE slicer numbering scheme            | Stable  |
+| |mpdaf.MUSE|_    | slicer: MUSE slicer numbering scheme            | Stable  |
 |                  +-------------------------------------------------+---------+
 |                  | PSF: MUSE PSF models                            | Dev     |
 +------------------+-------------------------------------------------+---------+
@@ -65,6 +65,11 @@ one.  To create an account, please send email to
 `mpdaf-support@osulistes.univ-lyon1.fr
 <mailto:mpdaf-support@osulistes.univ-lyon1.fr?subject=Account%20creation>`_
 
+
+.. |mpdaf.obj| replace:: ``mpdaf.obj``
+.. |mpdaf.drs| replace:: ``mpdaf.drs``
+.. |mpdaf.MUSE| replace:: ``mpdaf.MUSE``
+.. |mpdaf.sdetect| replace:: ``mpdaf.sdetect``
 
 .. _mpdaf.drs: http://mpdaf.readthedocs.io/en/latest/drs.html
 .. _mpdaf.obj: http://mpdaf.readthedocs.io/en/latest/obj.html
