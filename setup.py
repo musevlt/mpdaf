@@ -123,8 +123,8 @@ class UnitTest(Command):
         pass
 
     def run(self):
-        errno = subprocess.call(['nosetests', '-a speed=fast',
-                                 'lib/mpdaf', 'tests'])
+        errno = subprocess.call(['nosetests', '-a', 'speed=fast', '-a',
+                                 'speed=slow', 'lib/mpdaf', 'tests'])
         raise SystemExit(errno)
 
 
