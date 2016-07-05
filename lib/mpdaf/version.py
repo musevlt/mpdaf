@@ -30,8 +30,8 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-__version__ = '2.0'
-__date__ = '2016/07/05'
+__version__ = '2.1.dev'
+__date__ = '2016/xx/xx'
 
 try:
     from ._githash import __githash__, __dev_value__
