@@ -26,7 +26,6 @@ Contents
    drs
    sdetect
    muse
-   tools
    logging
    contribute
    changelog

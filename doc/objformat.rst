@@ -44,6 +44,11 @@ provides a nearly work-alike replacement for numpy that supports data arrays
 with masks. See the `DataArray <mpdaf.obj.DataArray>` documentation for more
 details.
 
+When an object is constructed from a MUSE FITS file, ``O.data`` will contain the DATA extension,
+``O.var`` will contain the STAT extension and ``O.mask`` will contain the DQ extension if it exists.
+A DQ extension contains the pixel data quality. By default all bad pixels are masked.
+But it is possible for the user to create his mask by using the :ref:`euro3D`.
+
 Indexing
 --------
 
