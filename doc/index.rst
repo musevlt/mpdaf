@@ -27,6 +27,7 @@ Contents
    sdetect
    muse
    tools
+   logging
    contribute
    changelog
 

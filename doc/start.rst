@@ -85,6 +85,12 @@ total flux per spectral pixel.
   @savefig Cube2.png width=4in
   In [3]: sp.plot()
 
+Logging
+-------
+
+When imported, MPDAF initialize a logger by default. This logger uses the
+`logging` module, and log messages to stderr, for instance for the ``.info()``
+methods. See :doc:`logging` for more details.
 
 Online Help
 -----------
