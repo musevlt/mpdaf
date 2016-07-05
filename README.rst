@@ -27,31 +27,42 @@ Links :
 Sub-packages status
 -------------------
 
+.. role:: stable(raw)
+   :format: html
+
+.. role:: dev(raw)
+   :format: html
+
+.. raw:: html
+
+   <style>
+      .stable {font-weight: bold;color:green;}
+      .dev {font-weight: bold;color:red;}
+   </style>
+
 The currently existing sub-packages are:
 
-+------------------+-------------------------------------------------+---------+
-|  sub-packages    | description                                     |  status |
-+==================+=================================================+=========+
-| |mpdaf.obj|_     | Interface for spectra, images and cubes         | Stable  |
-+------------------+-------------------------------------------------+---------+
-| |mpdaf.drs|_     | Interface for the MUSE raw file and pixel table | Stable  |
-+------------------+-------------------------------------------------+---------+
-| |mpdaf.sdetect|_ | Source: Creates single-source FITS files        | Dev     |
-|                  +-------------------------------------------------+---------+
-|                  | Catalog: Creates source catalogs                | Dev     |
-|                  +-------------------------------------------------+---------+
-|                  | MUSELET: MUSE Line Emission Tracker             | Stable  |
-+------------------+-------------------------------------------------+---------+
-| |mpdaf.MUSE|_    | slicer: MUSE slicer numbering scheme            | Stable  |
-|                  +-------------------------------------------------+---------+
-|                  | PSF: MUSE PSF models                            | Dev     |
-+------------------+-------------------------------------------------+---------+
++------------------+-------------------------------------------------+------------------+
+|  sub-packages    | description                                     |  status          |
++==================+=================================================+==================+
+| |mpdaf.obj|_     | Interface for spectra, images and cubes         | :stable:`Stable` |
++------------------+-------------------------------------------------+------------------+
+| |mpdaf.drs|_     | Interface for the MUSE raw file and pixel table | :stable:`Stable` |
++------------------+-------------------------------------------------+------------------+
+| |mpdaf.sdetect|_ | Source: Creates single-source FITS files        | :dev:`Dev`       |
+|                  +-------------------------------------------------+------------------+
+|                  | Catalog: Creates source catalogs                | :dev:`Dev`       |
+|                  +-------------------------------------------------+------------------+
+|                  | MUSELET: MUSE Line Emission Tracker             | :stable:`Stable` |
++------------------+-------------------------------------------------+------------------+
+| |mpdaf.MUSE|_    | slicer: MUSE slicer numbering scheme            | :stable:`Stable` |
+|                  +-------------------------------------------------+------------------+
+|                  | PSF: MUSE PSF models                            | :dev:`Dev`       |
++------------------+-------------------------------------------------+------------------+
 
-The classification is as follows:
-
- - Dev: Actively developed, so be prepared for potentially significant changes.
- - Stable: Reasonably stable, so any significant changes or additions will
-   generally be backwards-compatible.
+Where :dev:`Dev` means *Actively developed*, so be prepared for potentially
+significant changes, and :stable:`Stable` means *Reasonably stable*, so any
+significant changes or additions will generally be backwards-compatible.
 
 Reporting Issues
 ----------------
