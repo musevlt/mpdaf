@@ -29,6 +29,7 @@ Contents
    logging
    contribute
    changelog
+   credits
 
 
 Indices and tables

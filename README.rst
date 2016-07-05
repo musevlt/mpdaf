@@ -1,6 +1,9 @@
 MPDAF, the *MUSE Python Data Analysis Framework*, is an open-source (BSD
 licensed) Python package, developed and maintained by `CRAL
-<https://cral.univ-lyon1.fr/>`_.  It has been developed and used in the `MUSE
+<https://cral.univ-lyon1.fr/>`_ and partially funded by the ERC advanced grant 339659-MUSICOS
+(see `Authors and Credits <http://mpdaf.readthedocs.io/en/latest/credits.html>`_ for more details).
+
+It has been developed and used in the `MUSE
 Consortium <http://muse-vlt.eu/science/>`_ for several years, and is now
 available freely for the community.
 
@@ -75,17 +78,6 @@ a account on `git-cral <https://git-cral.univ-lyon1.fr>`_ if you don't have
 one.  To create an account, please send email to
 `mpdaf-support@osulistes.univ-lyon1.fr
 <mailto:mpdaf-support@osulistes.univ-lyon1.fr?subject=Account%20creation>`_
-
-MPDAF team
-----------
-
-- `Roland Bacon <mailto:roland.bacon@univ-lyon1.fr>`_ scientific manager
-- `Laure Piqueras <mailto:laure.piqueras@univ-lyon1.fr>`_ lead developer
-- `Simon Conseil <mailto:simon.conseil@univ-lyon1.fr>`_ developer
-- `Johan Richard <mailto:jrichard@univ-lyon1.fr>`_ developer
-- `Martin Shepherd <mailto:martin.shepherd@univ-lyon1.fr>`_ developer
-
-R. Bacon acknowledges support from the ERC advanced grant 339659-MUSICOS.
 
 
 .. |mpdaf.obj| replace:: ``mpdaf.obj``
