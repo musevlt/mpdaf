@@ -11,8 +11,11 @@ use `~mpdaf.log.setup_logging` to setup a logger with a different level or
 format. `~mpdaf.log.setup_logfile` can also be used to setup a logger with
 a file.
 
+Functions
+=========
 
-Reference/API
-=============
+.. autofunction:: mpdaf.log.clear_loggers
 
-.. automodapi:: mpdaf.log
+.. autofunction:: mpdaf.log.setup_logging
+
+.. autofunction:: mpdaf.log.setup_logfile
