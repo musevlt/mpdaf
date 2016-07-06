@@ -140,8 +140,20 @@ class Catalog(Table):
         index = names_hdr.index('CUBE')
         names_hdr.insert(5, names_hdr.pop(index))
         tuple_hdr.insert(5, tuple_hdr.pop(index))
+        index = names_hdr.index('CUBE_V')
+        names_hdr.insert(6, names_hdr.pop(index))
+        tuple_hdr.insert(6, tuple_hdr.pop(index))
 
         dtype_hdr = [c[0] for c in tuple_hdr]
+        # type of mandatory keywords
+        dtype_hdr[0] = np.int
+        dtype_hdr[1] = np.float64
+        dtype_hdr[2] = np.float64
+        dtype_hdr[3] = type('1')
+        dtype_hdr[4] = type('1')
+        dtype_hdr[5] = type('1')
+        dtype_hdr[6] = type('1')
+        
         desc_hdr = [c[1][:c[1].find('u.')] if c[1].find('u.') != -1 else c[1][:c[1].find('%')] if c[1].find('%') != -1 else c[1] for c in tuple_hdr]
         unit_hdr = [c[1][c[1].find('u.'):].split()[0][2:] if c[1].find('u.') != -1 else None for c in tuple_hdr]
         format_hdr = [c[1][c[1].find('%'):].split()[0] if c[1].find('%') != -1 else None for c in tuple_hdr]
@@ -245,7 +257,10 @@ class Catalog(Table):
                 if typ == type('1'):
                     row += ['%s' % h[key] if key in keys else INVALID[typ]]
                 else:
-                    row += [h[key] if key in keys else INVALID[typ]]
+                    k = [h[key] if key in keys else INVALID[typ]]
+                    if type(k[0]) == type('1'):
+                        raise ValueError('column %s: could not convert string to %s'%(key, typ))
+                    row += k
 
             # magnitudes
             if len(lmag) != 0:
@@ -337,6 +352,12 @@ class Catalog(Table):
         # create Table
         names = names_hdr + names_mag + names_z + names_lines
 
+        # raise a warning if the type is not the same between each source
+        for i in range(len(names_hdr)):
+            check = np.unique(np.asarray([type(row[i]) for row in data_rows]))
+            if len(check) > 1:
+                logger.warning('column %s is defined with different types(%s) that will be converted to %s'%(names[i], check, dtype[i]))
+            
         t = cls(rows=data_rows, names=names, masked=True, dtype=dtype)
 
         # format
