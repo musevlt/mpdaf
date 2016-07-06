@@ -23,9 +23,9 @@ A cube object `O` consist of:
 +------------+--------------------------------------------------------------------------------------------------+
 | O.fscale   | Scaling factor for the flux and variance values                                                  |
 +------------+--------------------------------------------------------------------------------------------------+
-| O.wcs      | Spatial world-coordinate information (`WCS <mpdaf.obj.WCS>` object)                              |
+| O.wcs      | Spatial world-coordinate information (`~mpdaf.obj.WCS` object)                                   |
 +------------+--------------------------------------------------------------------------------------------------+
-| O.wave     | Spectral world-coordinate information  (`WaveCoord <mpdaf.obj.WaveCoord>` object)                |
+| O.wave     | Spectral world-coordinate information  (`~mpdaf.obj.WaveCoord` object)                           |
 +------------+--------------------------------------------------------------------------------------------------+
 
 All of the cubes must have the same dimensions, scaling factors and

@@ -2,7 +2,7 @@
 Rearranging
 ***********
 
-The `crop <mpdaf.obj.DataArray.crop>` method can be used to reduce the size of a
+The `~mpdaf.obj.DataArray.crop` method can be used to reduce the size of a
 Cube, Image or Spectrum to the smallest sub-array that retains all unmasked
 pixels. In the following example, the pixels outside of an elliptical region of
 an image are first masked, and then the crop method is used to select the

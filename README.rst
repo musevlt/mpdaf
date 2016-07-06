@@ -12,7 +12,7 @@ etc.), and with more general data like spectra, images and data cubes. Although
 its main use is to work with MUSE data, it is also possible to use it other
 data, for example HST images. MPDAF also provides MUSELET, a SExtractor-based
 tool to detect emission lines in a datacube, and a format to gather all the
-informations on a source in one FITS file.
+information on a source in one FITS file.
 
 Bug reports, comments, and help with development are very welcome.
 

@@ -38,7 +38,7 @@ Preliminary imports:
 Image creation
 ==============
 
-There are two common ways to obtain an `Image <mpdaf.obj.Image>` object:
+There are two common ways to obtain an `~mpdaf.obj.Image` object:
 
 - An image can be created from a user-provided 2D array of the pixel values, or
   from both a 2D array of pixel values, and a corresponding 2D array of
@@ -80,16 +80,16 @@ extension that contains the corresponding variances. If the file doesn't contain
 extensions of these names, the "ext=" keyword can be used to indicate the
 appropriate extension or extensions.
 
-The world-coordinate grid of an Image is described by a `WCS <mpdaf.obj.WCS>`
+The world-coordinate grid of an Image is described by a `~mpdaf.obj.WCS`
 object. When an image is read from a FITS file, this is automatically generated
 based on FITS header keywords. Alternatively, when an image is extracted from a
 cube or another image, the WCS object is derived from the WCS object of the
 original object.
 
 As shown in the above example, information about an image can be printed using
-the `info <mpdaf.obj.Image.info>` method.
+the `~mpdaf.obj.Image.info` method.
 
-Image objects provide a `plot <mpdaf.obj.Image.plot>` method that is based on
+Image objects provide a `~mpdaf.obj.Image.plot` method that is based on
 `matplotlib.pyplot.plot <http://matplotlib.org/api/pyplot_api.html>`_ and
 accepts all matplotlib arguments.  The colors used to plot an image are
 distributed between a minimum and a maximum pixel value. By default these are
@@ -146,10 +146,10 @@ anticlockwise, then re-sampled to change its pixel size from 0.2 arcseconds to
   In [5]: ima3.plot(colorbar='v')
 
 
-The `rotate <mpdaf.obj.Image.rotate>` method interpolates the image onto a
+The `~mpdaf.obj.Image.rotate` method interpolates the image onto a
 rotated coordinate grid.
 
-The `resample <mpdaf.obj.Image.resample>` method also interpolates the image
+The `~mpdaf.obj.Image.resample` method also interpolates the image
 onto a new grid, but before doing this it applies a decimation filter to remove
 high spatial frequencies that would otherwise be undersampled by the pixel
 spacing.
@@ -159,8 +159,8 @@ the center of pixel [0,0] should also be at the center of pixel [0,0] of the
 resampled image.  This argument can alternatively be used to move the sky within
 the image.
 
-The `resample <mpdaf.obj.Image.resample>` method is a simplified interface to
-the `regrid <mpdaf.obj.Image.regrid>` function, which provides more options.
+The `~mpdaf.obj.Image.resample` method is a simplified interface to
+the `~mpdaf.obj.Image.regrid` function, which provides more options.
 
 The following example shows how images from different telescopes can be
 resampled onto the same coordinate grid, then how the coordinate offsets of the
@@ -197,7 +197,7 @@ In the example shown above, the `align_with_image
 coordinate grid as a MUSE image. The resampled HST image then has the same
 number of pixels, and the same pixel coordinates as the MUSE image.
 
-The `adjust_coordinates <mpdaf.obj.Image.adjust_coordinates>` method then uses
+The `~mpdaf.obj.Image.adjust_coordinates` method then uses
 an enhanced form of cross-correlation to estimate and correct for any relative
 pointing errors between the two images. Note that, to see the estimated
 correction without applying it, the `estimate_coordinate_offset
@@ -225,7 +225,7 @@ images:
   @savefig Image8.png width=3.5in
   In [5]: imacomb[200:, 30:150].plot(colorbar='v', title='combined image')
 
-The `subimage <mpdaf.obj.Image.subimage>` method can be used to extract a square
+The `~mpdaf.obj.Image.subimage` method can be used to extract a square
 or rectangular sub-image of given world-coordinate dimensions from an image. In
 the following example it is used used to extract a 20 arcsecond square sub-image
 from the center of the HST image.
@@ -241,7 +241,7 @@ from the center of the HST image.
   @savefig Image9.png width=4in
   In [26]: subima.plot()
 
-The `inside <mpdaf.obj.Image.inside>` method lets the user test whether a given
+The `~mpdaf.obj.Image.inside` method lets the user test whether a given
 coordinate is inside an image. In the following example, dec and ra are the
 coordinates of the center of the image that were calculated in the preceding
 example.
@@ -258,7 +258,7 @@ Object analysis: image segmentation, peak measurement, profile fitting
 
 The following demonstration will show some examples of extracting and analyzing
 images of individual objects within an image. The first example segments the
-image into several cutout images using the (`segment <mpdaf.obj.Image.segment>`)
+image into several cutout images using the (`~mpdaf.obj.Image.segment`)
 method:
 
 .. ipython::
@@ -268,7 +268,7 @@ method:
 
   In [1]: seg = im.segment(minsize=10, background=2100)
 
-The `segment <mpdaf.obj.Image.segment>` method returns a list of images of the
+The `~mpdaf.obj.Image.segment` method returns a list of images of the
 detected sources. In the following example, we extract one of these for further
 analysis:
 
@@ -286,9 +286,9 @@ analysis:
 
 For a first approximation, some simple analysis methods are applied:
 
- - `background <mpdaf.obj.Image.background>` to estimate the background level,
- - `peak <mpdaf.obj.Image.peak>` to locate the peak of the source,
- - `fwhm <mpdaf.obj.Image.fwhm>` to estimate the FWHM of the source.
+ - `~mpdaf.obj.Image.background` to estimate the background level,
+ - `~mpdaf.obj.Image.peak` to locate the peak of the source,
+ - `~mpdaf.obj.Image.fwhm` to estimate the FWHM of the source.
 
 .. ipython::
 
@@ -305,7 +305,7 @@ For a first approximation, some simple analysis methods are applied:
   In [3]: source.fwhm()
 
 Then, for greater accuracy we fit a 2D Gaussian to the source, and plot the
-isocontours (`gauss_fit <mpdaf.obj.Image.gauss_fit>`):
+isocontours (`~mpdaf.obj.Image.gauss_fit`):
 
 .. ipython::
 
@@ -319,7 +319,7 @@ isocontours (`gauss_fit <mpdaf.obj.Image.gauss_fit>`):
 
 In general, Moffat profiles provide a better representation of the point-spread
 functions of ground-based telescope observations, so next we perform a 2D MOFFAT
-fit to the same source (`moffat_fit <mpdaf.obj.Image.moffat_fit>`):
+fit to the same source (`~mpdaf.obj.Image.moffat_fit`):
 
 .. ipython::
 
@@ -329,9 +329,9 @@ fit to the same source (`moffat_fit <mpdaf.obj.Image.moffat_fit>`):
   In [1]: mfit = source.moffat_fit(plot=True)
 
 We then subtract the fitted Gaussian and Moffat models of from the original
-source to see the residuals. Note the use of `gauss_image
-<mpdaf.obj.gauss_image>` and `moffat_image <mpdaf.obj.moffat_image>` to
-create MPDAF images of the 2D Gaussian and Moffat functions:
+source to see the residuals. Note the use of `~mpdaf.obj.gauss_image` and
+`~mpdaf.obj.moffat_image` to create MPDAF images of the 2D Gaussian and Moffat
+functions:
 
 .. ipython::
 
@@ -357,9 +357,9 @@ create MPDAF images of the 2D Gaussian and Moffat functions:
 
 Finally we estimate the energy received from the source:
 
- - The `ee <mpdaf.obj.Image.ee>` method computes ensquared or encircled energy, which is the sum of the flux within a given radius of the center of the source.
- - The `ee_size <mpdaf.obj.Image.ee_size>` method computes the size of a square centered on the source that contains a given fraction of the total flux of the source,
- - The `eer_curve <mpdaf.obj.Image.eer_curve>` method returns the normalized enclosed energy as a function radius.
+ - The `~mpdaf.obj.Image.ee` method computes ensquared or encircled energy, which is the sum of the flux within a given radius of the center of the source.
+ - The `~mpdaf.obj.Image.ee_size` method computes the size of a square centered on the source that contains a given fraction of the total flux of the source,
+ - The `~mpdaf.obj.Image.eer_curve` method returns the normalized enclosed energy as a function radius.
 
 .. ipython::
 

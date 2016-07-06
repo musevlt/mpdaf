@@ -5,14 +5,15 @@ Arithmetic
 Operations along one or more axes
 ---------------------------------
 
-In Cube objects, the `sum <mpdaf.obj.Cube.sum>`, `mean
-<mpdaf.obj.Cube.mean>` and `median <mpdaf.obj.Cube.median>` methods
-return the sum, mean and median values along a given axis or axes of
-the cube:
+In Cube objects, the `~mpdaf.obj.Cube.sum`, `~mpdaf.obj.Cube.mean` and
+`~mpdaf.obj.Cube.median` methods return the sum, mean and median values along
+a given axis or axes of the cube:
 
- - If ``axis=0``, the operation is performed along the wavelength axis and an `Image <mpdaf.obj.Image>` is returned,
+ - If ``axis=0``, the operation is performed along the wavelength axis and an
+   `~mpdaf.obj.Image` is returned,
 
- - If ``axis=(1, 2)``, the operation is performed over the two spatial axes and a `Spectrum <mpdaf.obj.Spectrum>` is returned.
+ - If ``axis=(1, 2)``, the operation is performed over the two spatial axes
+   and a `~mpdaf.obj.Spectrum` is returned.
 
 .. ipython::
    :suppress:
@@ -106,9 +107,9 @@ called `~mpdaf.obj.DataArray`. This class implements a couple of
 arithmetic functions that operate on the data and variance arrays of
 these objects:
 
- - `sqrt <mpdaf.obj.DataArray.sqrt>` returns a new object with positive data square-rooted and negative data masked.
+ - `~mpdaf.obj.DataArray.sqrt` returns a new object with positive data square-rooted and negative data masked.
 
- - `abs <mpdaf.obj.DataArray.abs>` returns a new object containing the absolute values of the data.
+ - `~mpdaf.obj.DataArray.abs` returns a new object containing the absolute values of the data.
 
 .. ipython::
   :okwarning:
