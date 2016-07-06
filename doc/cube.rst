@@ -8,8 +8,8 @@ MPDAF Cube objects contain a series of images at neighboring wavelengths.  These
 are stored as a 3D array of pixel values. The wavelengths of the images increase
 along the first dimension of this array, while the Y and X axes of the images
 lie along the second and third dimensions. In addition to the data array, Cubes
-contain a `WaveCoord <mpdaf.obj.WaveCoord>` object that describes the wavelength
-scale of the spectral axis of the cube, and a `WCS <mpdaf.obj.WCS>` object that
+contain a `~mpdaf.obj.WaveCoord` object that describes the wavelength
+scale of the spectral axis of the cube, and a `~mpdaf.obj.WCS` object that
 describes the spatial coordinates of the spatial axes. Optionally a 3D array of
 variances can be provided to give the statistical uncertainties of the
 fluxes. Finally a mask array is provided for indicating bad pixels.
@@ -39,7 +39,7 @@ Preliminary imports:
 Cube creation
 =============
 
-There are two common ways to obtain a `Cube <mpdaf.obj.Cube>` object:
+There are two common ways to obtain a `~mpdaf.obj.Cube` object:
 
 - A cube can be created from a user-provided 3D array of pixel values, or
   from both a 3D array of pixel values, and a corresponding 3D array of
@@ -86,12 +86,11 @@ extension that contains the corresponding variances. If the file doesn't contain
 extensions of these names, the "ext=" keyword can be used to indicate the
 appropriate extension or extensions.
 
-The spatial and spectral world-coordinates of a Cube are recorded within `WCS
-<mpdaf.obj.WCS>` and `WaveCoord <mpdaf.obj.WaveCoord>` objects,
-respectively. When a cube is read from a FITS file, these are automatically
-generated, based on FITS header keywords. Alternatively, when an cube is
-extracted from another cube, they are derived from the world coordinate
-information of the original cube.
+The spatial and spectral world-coordinates of a Cube are recorded within
+`~mpdaf.obj.WCS` and `~mpdaf.obj.WaveCoord` objects, respectively. When a cube
+is read from a FITS file, these are automatically generated, based on FITS
+header keywords. Alternatively, when an cube is extracted from another cube,
+they are derived from the world coordinate information of the original cube.
 
 In the above example, information about a cube is printed using the `info
 <mpdaf.obj.Cube.info>` method. In this case the information is as follows:
@@ -100,7 +99,7 @@ In the above example, information about a cube is printed using the `info
   images of different wavelengths, each having 10 x 20 spatial pixels.
 - In addition to the pixel array (.data(1595 x 10 x 20)), there is also a
   variance array of the same dimensions (.var(1595 x 10 x 20)).
-- The flux units of the pixels are 10\ :sup:`-20` erg/s/cm\ :sup:`2`/Angstrom. 
+- The flux units of the pixels are 10\ :sup:`-20` erg/s/cm\ :sup:`2`/Angstrom.
 - The center of the field of view is at DEC: -30° 0' 0.45" and RA: 1°20'0.437".
 - The size of the field of view is 2 arcsec x 4 arcsec. The pixel dimensions are  0.2 arcsec x 0.2 arcsec.
 - The rotation angle of the field is 0°, which means that North is along the positive Y axis.
@@ -152,11 +151,11 @@ iteratively to the spectra of every image pixel of a cube. The goal of the
 examples will be to create a version of the above data-cube that has had the
 continuum background subtracted. For each image pixel, a low-order polynomial
 will be fitted to the spectrum of that pixel. This results in a polynomial curve
-that approximates the continnum spectrum of the pixel. This polynomial is then
+that approximates the continuum spectrum of the pixel. This polynomial is then
 subtracted from the spectrum of that pixel, and the difference spectrum is
 recorded in a new output cube.
 
-To illustrate the procedure, we start by fitting the continuum to the overal
+To illustrate the procedure, we start by fitting the continuum to the overall
 spectrum that was obtained in the previous example:
 
 .. ipython::
@@ -183,12 +182,11 @@ Next we do the same to a single pixel at the edge of the galaxy:
   @savefig Cube4.png width=4in
   In [4]: sp1.poly_spec(5).plot(color='r')
 
-In principle, the above procedure could be performed to each pixel by writing a
-nested loop over the X and Y axes of the cube. However, instead of using two
-loops, one can use the spectrum iterator method, `iter_spe <mpdaf.obj.iter_spe>`
-of the Cube object. In the following example this is used to iteratively extract
-the six spectra of a small 2 x 3 pixel sub-cube, and determine their peak
-values:
+In principle, the above procedure could be performed to each pixel by writing
+a nested loop over the X and Y axes of the cube. However, instead of using two
+loops, one can use the spectrum iterator method, `~mpdaf.obj.iter_spe` of the
+Cube object. In the following example this is used to iteratively extract the
+six spectra of a small 2 x 3 pixel sub-cube, and determine their peak values:
 
 .. ipython::
 
@@ -219,16 +217,16 @@ input spectrum and record it in the output spectrum.
   In [2]: for sp, co in zip(iter_spe(obj1), iter_spe(cont1)):
      ...:     co[:] = sp.poly_spec(5)
 
-The result is a continuum datacube. Note that we have used the co[:] =
-sp.poly_spec(5) assignment rather than the more intuitive co = sp.poly_spec(5)
-assignment. The difference is that in python co=value changes the object that
-the co variable refers to, whereas co[:] changes the contents of the
-object that it currently points to. We want to change the contents of the
-spectrum in the output cube, so the latter is needed.
+The result is a continuum datacube. Note that we have used the ``co[:]
+= sp.poly_spec(5)`` assignment rather than the more intuitive ``co
+= sp.poly_spec(5)`` assignment. The difference is that in python ``co=value``
+changes the object that the co variable refers to, whereas ``co[:]`` changes
+the contents of the object that it currently points to. We want to change the
+contents of the spectrum in the output cube, so the latter is needed.
 
 There is another way to compute the continuum datacube that can be much faster
 when used on a computer with multiple processors. This is to use the
-`loop_spe_multiprocessing <mpdaf.obj.Cube.loop_spe_multiprocessing>` function.
+`~mpdaf.obj.Cube.loop_spe_multiprocessing` function.
 This uses multiple processors to apply a specified function to each spectrum of
 a cube and return a new cube that contains the resulting spectra:
 
@@ -313,9 +311,10 @@ isolate the emission line by truncating the object datacube in wavelength:
   In [10]: obj1 = None ; cont1 = None ; line1 = None
 
 Next we fit and subtract the continuum. Before doing the polynomial fit we mask
-the region of the emission lines (sp1.mask), so that the lines don't affect the
-fit, and then we perform a linear fit between the continuum on either side of
-the masked region. Then the spectrum is unmasked and the continuum subtracted:
+the region of the emission lines (``sp1.mask``), so that the lines don't affect
+the fit, and then we perform a linear fit between the continuum on either side
+of the masked region. Then the spectrum is unmasked and the continuum
+subtracted:
 
 .. ipython::
 
@@ -373,7 +372,7 @@ the Hα line and the continuum mean flux at the same location:
 Finally we repeat this for all datacube spectra, and we save the Hα flux and
 equivalent width in two images.  We start by creating two images with identical
 shapes and world-coordinates for the reconstructed image and then use the
-spectrum iterator `iter_spe <mpdaf.obj.iter_spe>`:
+spectrum iterator `~mpdaf.obj.iter_spe`:
 
 .. ipython::
 
@@ -438,7 +437,7 @@ convolution by a gaussian kernel.
   # Data and variance arrays read from the file (extension DATA and STAT)
   In [6]: cube = Cube('../data/obj/Central_Datacube_bkg.fits')
 
-First, we use the image iterator `iter_ima <mpdaf.obj.iter_ima>`, which operates
+First, we use the image iterator `~mpdaf.obj.iter_ima`, which operates
 similarly to the spectrum iterator described earlier on this page, except that
 it returns successive images instead of successive spectra:
 
@@ -453,7 +452,7 @@ it returns successive images instead of successive spectra:
      ...:     cube2[k,:,:] = ima.gaussian_filter(sigma=3)
 
 We can also make use of multiple processors to do the same thing faster, by
-using the `loop_ima_multiprocessing <mpdaf.obj.Cube.loop_ima_multiprocessing>`
+using the `~mpdaf.obj.Cube.loop_ima_multiprocessing`
 method. This applies a specified procedure to all images within a cube and
 returns a new cube of the processed images:
 
@@ -503,8 +502,8 @@ sole parameter and returns a background-subtracted image:
      ...:     (coeffs,residuals,rank,sing_vals) = np.linalg.lstsq(A,zval)
      ...:     fp = np.poly1d(coeffs[0:degree])
      ...:     fq = np.poly1d(coeffs[degree:2*degree])
-     ...:     X,Y = np.meshgrid(range(ima.shape[0]), range(ima.shape[1]))
-     ...:     ima2 = ima - np.array(map(lambda q,p: fp(p)+fq(q),Y,X))
+     ...:     X,Y = np.meshgrid(list(range(ima.shape[0])), list(range(ima.shape[1])))
+     ...:     ima2 = ima - np.array(list(map(lambda q,p: fp(p)+fq(q),Y,X)))
      ...:     return ima2
      ...:
 
@@ -539,18 +538,18 @@ Sub-cube extraction
   To be written.
 
 
-`mpdaf.obj.Cube.select_lambda <mpdaf.obj.Cube.select_lambda>` returns the sub-cube corresponding to a wavelength range.
+`~mpdaf.obj.Cube.select_lambda` returns the sub-cube corresponding to a wavelength range.
 
-`mpdaf.obj.Cube.get_image <mpdaf.obj.Cube.get_image>` extracts an image around a position in the datacube.
+`~mpdaf.obj.Cube.get_image` extracts an image around a position in the datacube.
 
-`mpdaf.obj.Cube.bandpass_image <mpdaf.obj.Cube.bandpass_image>` sums the images
+`~mpdaf.obj.Cube.bandpass_image` sums the images
 of a cube after multiplying the cube by the spectral bandpass curve of another instrument.
 
-`mpdaf.obj.Cube.subcube <mpdaf.obj.Cube.subcube>` extracts a sub-cube around a position.
+`~mpdaf.obj.Cube.subcube` extracts a sub-cube around a position.
 
-`mpdaf.obj.Cube.aperture <mpdaf.obj.aperture>`
+`~mpdaf.obj.aperture`
 
-`mpdaf.obj.Cube.subcube_circle_aperture <mpdaf.obj.Cube.subcube_circle_aperture>` extracts a sub-cube from an circle aperture of fixed radius.
+`~mpdaf.obj.Cube.subcube_circle_aperture` extracts a sub-cube from an circle aperture of fixed radius.
 
 .. ipython::
    :suppress:
