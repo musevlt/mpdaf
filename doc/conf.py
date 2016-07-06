@@ -3,8 +3,8 @@
 # mpdaf documentation build configuration file, created by
 # sphinx-quickstart on Fri Jun 22 10:03:09 2012.
 
-# import numpydoc
-# import sys
+from __future__ import print_function
+
 import os
 import re
 import sys
@@ -286,3 +286,19 @@ latex_documents = [
 
 # If false, no module index is generated.
 # latex_domain_indices = True
+
+
+# -------------------------------------------------------------------------
+# Ugly hack to remove the license from module docstrings and having it appear
+# at the top of the documentation
+
+def cut_license(app, what_, name, obj, options, lines):
+    if what_ not in ['module']:
+        return
+    if lines[0].startswith('Copyright (c) 2010-2016 CNRS'):
+        print('Remove license from {} ({} lines)'.format(name, len(lines)))
+        del lines[:-1]
+
+
+def setup(app):
+    app.connect('autodoc-process-docstring', cut_license)
