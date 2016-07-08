@@ -71,27 +71,17 @@ def deg2sexa(x):
         written like hours:minutes:seconds.
 
     """
-    x = np.array(x)
+    x = np.asarray(x)
+    ndim = x.ndim
+    x = np.atleast_2d(x)
 
-    # Is this a single-dimensional array containing a single ra,dec
-    # coordinate like [ra,dec]?
-
-    if len(np.shape(x)) == 1 and np.shape(x)[0] == 2:
-        ra = deg2hms(x[1])
-        dec = deg2dms(x[0])
-        return np.array([dec, ra])
-
-    # Or is this a 2D array of multiple [ra,dec] coordinates?
-
-    elif len(np.shape(x)) == 2 and np.shape(x)[1] == 2:
-        result = []
-        for i in range(np.shape(x)[0]):
-            ra = deg2hms(x[i][1])
-            dec = deg2dms(x[i][0])
-            result.append(np.array([dec, ra]))
-        return np.array(result)
-    else:
-        raise ValueError('Operation forbidden')
+    # FIXME: can be replaced with SkyCoord.to_string('hmsdms', sep=':')
+    result = []
+    for i in range(np.shape(x)[0]):
+        ra = deg2hms(x[i][1])
+        dec = deg2dms(x[i][0])
+        result.append(np.array([dec, ra]))
+    return np.array(result) if ndim > 1 else result[0]
 
 
 def sexa2deg(x):
@@ -114,27 +104,16 @@ def sexa2deg(x):
         array of the same dimensions as the input array.
 
     """
-    x = np.array(x)
+    x = np.asarray(x)
+    ndim = x.ndim
+    x = np.atleast_2d(x)
 
-    # Is this a single-dimensional array containing a single ra,dec
-    # coordinate like [ra,dec]?
-
-    if len(np.shape(x)) == 1 and np.shape(x)[0] == 2:
-        ra = hms2deg(x[1])
-        dec = dms2deg(x[0])
-        return np.array([dec, ra])
-
-    # Or is this a 2D array of multiple [ra,dec] coordinates?
-
-    elif len(np.shape(x)) == 2 and np.shape(x)[1] == 2:
-        result = []
-        for i in range(np.shape(x)[0]):
-            ra = hms2deg(x[i][1])
-            dec = dms2deg(x[i][0])
-            result.append(np.array([dec, ra]))
-        return np.array(result)
-    else:
-        raise ValueError('Operation forbidden')
+    result = []
+    for i in range(np.shape(x)[0]):
+        ra = hms2deg(x[i][1])
+        dec = dms2deg(x[i][0])
+        result.append(np.array([dec, ra]))
+    return np.array(result) if ndim > 1 else result[0]
 
 
 def deg2hms(x):

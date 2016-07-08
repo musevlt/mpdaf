@@ -182,9 +182,13 @@ class TestCoord(object):
         """testing degree/sexagesimal transformations"""
         ra = '23:51:41.268'
         dec = '-26:04:43.032'
+
         deg = sexa2deg([dec, ra])
-        nose.tools.assert_almost_equal(deg[0], -26.07862, 3)
-        nose.tools.assert_almost_equal(deg[1], 357.92195, 3)
+        assert_allclose(deg, (-26.07862, 357.92195), atol=1e-3)
+        deg = sexa2deg([[dec, ra]])[0]
+        assert_allclose(deg, (-26.07862, 357.92195), atol=1e-3)
+
         sexa = deg2sexa([-26.07862, 357.92195])
-        nose.tools.assert_equal(sexa[0], dec)
-        nose.tools.assert_equal(sexa[1], ra)
+        assert_array_equal(sexa, (dec, ra))
+        sexa = deg2sexa([[-26.07862, 357.92195]])[0]
+        assert_array_equal(sexa, (dec, ra))
