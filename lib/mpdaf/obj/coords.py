@@ -365,6 +365,30 @@ def axis_increments_from_cd(cd):
     return np.array([dy, dx])
 
 
+def determine_refframe(phdr):
+    """Determine the reference frame in standard FITS WCS terms.
+
+    Parameters
+    ----------
+    phdr : `astropy.io.fits.Header`
+        Primary Header of an observation
+
+    """
+
+    # MUSE files should have RADECSYS='FK5' and EQUINOX=2000.0
+    equinox = phdr.get('EQUINOX')
+    radesys = phdr.get('RADESYS') or phdr.get('RADECSYS')
+
+    if radesys == 'FK5' and equinox == 2000.0:
+        return 'FK5', equinox
+    elif radesys:
+        return radesys, None
+    elif equinox is not None and equinox > 1984.:
+        return "FK5", equinox
+    else:
+        return "ICRS", None
+
+
 class WCS(object):
 
     """The WCS class manages the world coordinates of the spatial axes of
@@ -475,7 +499,8 @@ class WCS(object):
     """
 
     def __init__(self, hdr=None, crpix=None, crval=(1.0, 1.0),
-                 cdelt=(1.0, 1.0), deg=False, rot=0, shape=None, cd=None):
+                 cdelt=(1.0, 1.0), deg=False, rot=0, shape=None, cd=None,
+                 frame=None, equinox=None):
         self._logger = logging.getLogger(__name__)
 
         # Initialize the WCS object from a FITS header?
@@ -496,6 +521,11 @@ class WCS(object):
                     self.naxis2 = 0
             # bug if naxis=3
             # http://mail.scipy.org/pipermail/astropy/2011-April/001242.html
+
+            if frame is not None:
+                self.wcs.wcs.radesys = frame
+            if equinox is not None:
+                self.wcs.wcs.equinox = equinox
 
         # If no FITS header is provided, initialize the WCS object from
         # the other parameters of the constructor.
@@ -545,6 +575,10 @@ class WCS(object):
             if deg:  # in decimal degree
                 self.wcs.wcs.ctype = ['RA---TAN', 'DEC--TAN']
                 self.wcs.wcs.cunit = ['deg', 'deg']
+                if frame is not None:
+                    self.wcs.wcs.radesys = frame
+                if equinox is not None:
+                    self.wcs.wcs.equinox = equinox
             else:   # in pixel or arcsec
                 self.wcs.wcs.ctype = ['LINEAR', 'LINEAR']
                 self.wcs.wcs.cunit = ['pixel', 'pixel']
