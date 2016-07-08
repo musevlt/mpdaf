@@ -39,7 +39,7 @@ class TestCubeList(unittest.TestCase):
         print('>>> Remove test dir')
         shutil.rmtree(cls.tmpdir)
 
-    def test_header(self, cube):
+    def assert_header(self, cube):
         self.assertEqual(cube.primary_header['FOO'], 'BAR')
         self.assertNotIn('CUBEIDX', cube.primary_header)
         self.assertEqual(cube.primary_header['OBJECT'], 'OBJECT 0')
@@ -53,7 +53,7 @@ class TestCubeList(unittest.TestCase):
 
         for method in (clist.median, clist.pymedian):
             cube, expmap, stat_pix = method(header={'FOO': 'BAR'})
-            self.test_header(cube)
+            self.assert_header(cube)
             assert_array_equal(cube.data, combined_cube)
             assert_array_equal(expmap.data, self.expmap)
 
@@ -69,7 +69,7 @@ class TestCubeList(unittest.TestCase):
             else:
                 cube, expmap, stat_pix, rejmap = out
 
-            self.test_header(cube)
+            self.assert_header(cube)
             assert_array_equal(cube.data, combined_cube)
             assert_array_equal(expmap.data, self.expmap)
 
@@ -80,6 +80,6 @@ class TestCubeList(unittest.TestCase):
 
         cube, expmap, stat_pix, rejmap = clist.pycombine(header={'FOO': 'BAR'})
 
-        self.test_header(cube)
+        self.assert_header(cube)
         assert_array_equal(cube.data, combined_cube)
         assert_array_equal(expmap.data, self.expmap)
