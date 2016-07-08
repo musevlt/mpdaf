@@ -9,7 +9,7 @@ import astropy.units as u
 import numpy as np
 from astropy import wcs as pywcs
 from astropy.io import fits
-from mpdaf.obj import WCS, WaveCoord, deg2sexa, sexa2deg
+from mpdaf.obj import WCS, WaveCoord, deg2sexa, sexa2deg, determine_refframe
 from numpy.testing import assert_allclose, assert_array_equal
 
 
@@ -25,6 +25,15 @@ class TestWCS(object):
         wcs2.naxis1 = wcs.naxis1
         wcs2.naxis2 = wcs.naxis2
         nose.tools.assert_true(wcs.isEqual(wcs2))
+
+    @attr(speed='fast')
+    def test_from_hdr2(self):
+        """WCS class: testing constructor 2 """
+        h = fits.open('data/sdetect/a478hst-cutout.fits')
+        frame, equinox = determine_refframe(h[0].header)
+        wcs = WCS(h[1].header, frame=frame, equinox=equinox)
+        nose.tools.assert_equal(wcs.wcs.wcs.equinox, 2000.0)
+        nose.tools.assert_equal(wcs.wcs.wcs.radesys, 'FK5')
 
     @attr(speed='fast')
     def test_copy(self):
@@ -175,20 +184,28 @@ class TestWaveCoord(object):
         assert_array_equal(wave.get_range(u.nm), [to_nm(start), to_nm(end)])
 
 
-class TestCoord(object):
+@attr(speed='fast')
+def test_deg_sexa():
+    """testing degree/sexagesimal transformations"""
+    ra = '23:51:41.268'
+    dec = '-26:04:43.032'
 
-    @attr(speed='fast')
-    def test_deg_sexa(self):
-        """testing degree/sexagesimal transformations"""
-        ra = '23:51:41.268'
-        dec = '-26:04:43.032'
+    deg = sexa2deg([dec, ra])
+    assert_allclose(deg, (-26.07862, 357.92195), atol=1e-3)
+    deg = sexa2deg([[dec, ra]])[0]
+    assert_allclose(deg, (-26.07862, 357.92195), atol=1e-3)
 
-        deg = sexa2deg([dec, ra])
-        assert_allclose(deg, (-26.07862, 357.92195), atol=1e-3)
-        deg = sexa2deg([[dec, ra]])[0]
-        assert_allclose(deg, (-26.07862, 357.92195), atol=1e-3)
+    sexa = deg2sexa([-26.07862, 357.92195])
+    assert_array_equal(sexa, (dec, ra))
+    sexa = deg2sexa([[-26.07862, 357.92195]])[0]
+    assert_array_equal(sexa, (dec, ra))
 
-        sexa = deg2sexa([-26.07862, 357.92195])
-        assert_array_equal(sexa, (dec, ra))
-        sexa = deg2sexa([[-26.07862, 357.92195]])[0]
-        assert_array_equal(sexa, (dec, ra))
+
+@attr(speed='fast')
+def test_determine_refframe():
+    nose.tools.assert_equal(determine_refframe({'EQUINOX': 2000.})[0], 'FK5')
+    nose.tools.assert_equal(determine_refframe({'EQUINOX': 2000.,
+                                                'RADESYS': 'FK5'})[0], 'FK5')
+    nose.tools.assert_equal(determine_refframe({'RADESYS': 'FK5'})[0], 'FK5')
+    nose.tools.assert_equal(determine_refframe({'RADECSYS': 'FK5'})[0], 'FK5')
+    nose.tools.assert_equal(determine_refframe({'RADESYS': 'ICRS'})[0], 'ICRS')

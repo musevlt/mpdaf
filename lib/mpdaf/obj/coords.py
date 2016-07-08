@@ -49,7 +49,7 @@ from ..tools import fix_unit_read
 
 __all__ = ('deg2sexa', 'sexa2deg', 'deg2hms', 'hms2deg', 'deg2dms', 'dms2deg',
            'image_angle_from_cd', 'axis_increments_from_cd',
-           'WCS', 'WaveCoord')
+           'WCS', 'WaveCoord', 'determine_refframe')
 
 
 def deg2sexa(x):
