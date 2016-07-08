@@ -600,14 +600,15 @@ class WCS(object):
             # center in sexadecimal
             xc = (self.naxis1 - 1) / 2.
             yc = (self.naxis2 - 1) / 2.
-            pixsky = self.pix2sky([yc, xc], unit=u.deg)
-            sexa = deg2sexa(pixsky)
-            ra = sexa[0][1]
-            dec = sexa[0][0]
-            self._logger.info('center:(%s,%s) size in arcsec:(%0.3f,%0.3f) '
-                              'step in arcsec:(%0.3f,%0.3f) rot:%0.1f deg',
-                              dec, ra, sizey, sizex, dy, dx, self.get_rot())
+            pixsky = self.pix2sky([yc, xc], unit=u.deg)[0]
+            dec, ra = deg2sexa(pixsky)
+            self._logger.info(
+                'center:(%s,%s) size:(%0.3f",%0.3f") '
+                'step:(%0.3f",%0.3f") rot:%0.1f deg frame:%s',
+                dec, ra, sizey, sizex, dy, dx, self.get_rot(),
+                self.wcs.wcs.radesys)
         except:
+            # FIXME: when is that useful ?
             pixcrd = [[0, 0], [self.naxis2 - 1, self.naxis1 - 1]]
             pixsky = self.pix2sky(pixcrd)
             dy, dx = self.get_step()
