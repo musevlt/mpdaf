@@ -898,15 +898,18 @@ class DataArray(object):
             If 'none', masked array is not saved.
 
         """
-        warnings.simplefilter('ignore')
-        header = copy_header(self.primary_header)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            header = copy_header(self.primary_header)
+
         header['date'] = (str(datetime.now()), 'creation date')
         header['author'] = ('MPDAF', 'origin of the file')
-        hdulist = [fits.PrimaryHDU(header=header)]
-        warnings.simplefilter('default')
+        hdulist = fits.HDUList([fits.PrimaryHDU(header=header)])
 
         # create cube DATA extension
-        datahdu = self.get_data_hdu(savemask=savemask)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            datahdu = self.get_data_hdu(savemask=savemask)
         hdulist.append(datahdu)
 
         # create spectrum STAT extension
@@ -919,12 +922,7 @@ class DataArray(object):
                 name='DQ', header=datahdu.header.copy(),
                 data=np.uint8(self.data.mask)))
 
-        # save to disk
-        hdu = fits.HDUList(hdulist)
-        warnings.simplefilter('ignore')
-        hdu.writeto(filename, clobber=True, output_verify='silentfix')
-        warnings.simplefilter('default')
-
+        hdulist.writeto(filename, clobber=True, output_verify='silentfix')
         self.filename = filename
 
     def sqrt(self, out=None):
