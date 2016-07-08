@@ -2,7 +2,7 @@
 from __future__ import absolute_import, division
 
 import nose.tools
-from nose.plugins.attrib import attr
+import pytest
 
 import astropy.units as u
 import numpy as np
@@ -24,7 +24,6 @@ else:
     from operator import add, sub, mul, truediv as div
 
 
-@attr(speed='fast')
 def test_copy():
     """Cube class: testing copy method."""
     cube1 = generate_cube()
@@ -36,7 +35,6 @@ def test_copy():
     assert_equal(s, cube2.data.sum())
 
 
-@attr(speed='fast')
 def test_arithmetricOperator_Cube():
     """Cube class: tests arithmetic functions"""
     cube1 = generate_cube(uwave=u.nm)
@@ -65,7 +63,6 @@ def test_arithmetricOperator_Cube():
     assert_almost_equal(cube2.data, cube1.data / 25.3)
 
 
-@attr(speed='fast')
 def test_get_Cube():
     """Cube class: tests getters"""
     cube1 = generate_cube()
@@ -78,7 +75,6 @@ def test_get_Cube():
     assert_array_equal(a.get_end(), (6.5, 1, 3))
 
 
-@attr(speed='fast')
 def test_iter_ima():
     """Cube class: tests Image iterator"""
     cube1 = generate_cube()
@@ -89,7 +85,6 @@ def test_iter_ima():
     assert_array_equal(*np.broadcast_arrays(cube1.data.data, c))
 
 
-@attr(speed='fast')
 def test_iter_spe():
     """Cube class: tests Spectrum iterator"""
     cube1 = generate_cube(data=0.)
@@ -100,7 +95,6 @@ def test_iter_spe():
     assert_array_equal(*np.broadcast_arrays(cube1.data.data, y + x))
 
 
-@attr(speed='fast')
 def test_crop():
     """Cube class: tests the crop method."""
     cube1 = generate_cube()
@@ -116,7 +110,6 @@ def _multiproc_func(obj):
     return obj.data.mean() * 10.0
 
 
-@attr(speed='fast')
 def test_multiprocess():
     """Cube class: tests multiprocess"""
     data_value = 2.2
@@ -139,7 +132,6 @@ def test_multiprocess():
     assert_allclose(im.data, data_value * 10.0)
 
 
-@attr(speed='fast')
 def test_multiprocess2():
     """Cube class: more tests for multiprocess"""
     cube1 = generate_cube()
@@ -156,7 +148,6 @@ def test_multiprocess2():
     assert_equal(out[8, 3, 2], cube1[:, 3, 2].resample(step=1)[8])
 
 
-@attr(speed='fast')
 def test_mask():
     """Cube class: testing mask functionalities"""
     cube = generate_cube()
@@ -281,7 +272,6 @@ def test_mask():
     assert_array_equal(cube.data.mask, mask)
 
 
-@attr(speed='fast')
 def test_truncate():
     """Cube class: testing truncation"""
     cube1 = generate_cube(data=2, wave=WaveCoord(crval=1))
@@ -293,7 +283,6 @@ def test_truncate():
     assert_array_equal(cube2.get_end(), (5, 1, 3))
 
 
-@attr(speed='fast')
 def test_sum():
     """Cube class: testing sum method"""
     cube1 = generate_cube(data=1, wave=WaveCoord(crval=1))
@@ -312,7 +301,6 @@ def test_sum():
     assert_array_equal(cube1.sum(axis=(1, 2)).data, ind * 6 * 5)
 
 
-@attr(speed='fast')
 def test_mean():
     """Cube class: testing mean method"""
 
@@ -365,7 +353,6 @@ def test_mean():
                 assert_allclose(mean.var, expected_var, err_msg=errmsg)
 
 
-@attr(speed='fast')
 def test_median():
     """Cube class: testing median methods"""
     cube1 = generate_cube(data=1., wave=WaveCoord(crval=1))
@@ -385,7 +372,6 @@ def test_median():
         m = cube1.median(axis=-1)
 
 
-@attr(speed='fast')
 def test_rebin():
     """Cube class: testing rebin methods"""
 
@@ -503,7 +489,6 @@ def test_rebin():
                     ((tmp * (tmp - 1)) / 2.0 - (cut * (cut - 1)) / 2.0) / factor)
 
 
-@attr(speed='fast')
 def test_get_image():
     """Cube class: testing get_image method"""
     shape = (2000, 6, 5)
@@ -568,7 +553,6 @@ def test_get_image():
     nose.tools.assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].sum())
 
 
-@attr(speed='fast')
 def test_subcube():
     """Cube class: testing sub-cube extraction methods"""
     wcs = WCS(crval=(0, 0), crpix=1.0, deg=True)
@@ -595,7 +579,6 @@ def test_subcube():
     assert_array_equal(cube2.shape, (10, 2, 2))
 
 
-@attr(speed='fast')
 def test_aperture():
     """Cube class: testing spectrum extraction"""
     cube = generate_cube(data=1, wave=WaveCoord(crval=1))
@@ -605,7 +588,6 @@ def test_aperture():
     assert_equal(spe.get_start(), 1)
 
 
-@attr(speed='fast')
 def test_write():
     """Cube class: testing write"""
     unit = u.Unit('1e-20 erg/s/cm2/Angstrom')
@@ -636,7 +618,6 @@ def test_write():
         assert_equal(hdr[key], 1.0)
 
 
-@attr(speed='fast')
 def test_get_item():
     """Cube class: testing __getitem__"""
     c = generate_cube(data=1, wave=WaveCoord(crval=1, cunit=u.angstrom))

@@ -3,7 +3,7 @@
 from __future__ import absolute_import, division
 
 import nose.tools
-from nose.plugins.attrib import attr
+import pytest
 
 import numpy as np
 
@@ -16,7 +16,6 @@ from tempfile import NamedTemporaryFile
 from ..utils import generate_spectrum
 
 
-@attr(speed='fast')
 def test_copy():
     """Spectrum class: testing copy method."""
     spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
@@ -26,7 +25,6 @@ def test_copy():
     nose.tools.assert_equal(spvar.var.sum(), spe.var.sum())
 
 
-@attr(speed='fast')
 def test_selection():
     """Spectrum class: testing operators > and < """
     spectrum1 = generate_spectrum(uwave=u.nm)
@@ -41,7 +39,6 @@ def test_selection():
     nose.tools.assert_almost_equal(spectrum1.sum(), 21.5)
 
 
-@attr(speed='fast')
 def test_arithmetric():
     """Spectrum class: testing arithmetic functions"""
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm)
@@ -97,7 +94,6 @@ def test_arithmetric():
                               sp1data * image1.data[np.newaxis, :, :])
 
 
-@attr(speed='fast')
 def test_get_Spectrum():
     """Spectrum class: testing getters"""
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm)
@@ -117,7 +113,6 @@ def test_get_Spectrum():
     nose.tools.assert_almost_equal(spvarcut.get_step(unit=unit), 0.63, 2)
 
 
-@attr(speed='fast')
 def test_spectrum_methods():
     """Spectrum class: testing sum/mean/abs/sqrt methods"""
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm, shape=10)
@@ -153,7 +148,6 @@ def test_spectrum_methods():
     nose.tools.assert_almost_equal(spvar.get_range()[1], 7184.289, 2)
 
 
-@attr(speed='fast')
 def test_gauss_fit():
     """Spectrum class: testing Gaussian fit"""
     wave = WaveCoord(crpix=1, cdelt=0.3, crval=400, cunit=u.nm, shape=10)
@@ -173,7 +167,6 @@ def test_gauss_fit():
     nose.tools.assert_almost_equal(spem.fwhm(gauss.lpeak), 20, 0)
 
 
-@attr(speed='fast')
 def test_crop():
     """Spectrum class: testing resize method"""
     sig = fits.getdata("data/obj/g9-124Tsigspec.fits")
@@ -186,7 +179,6 @@ def test_crop():
                             spe.shape[0])
 
 
-@attr(speed='fast')
 def test_resample():
     """Spectrum class: testing resampling function"""
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm, shape=10)
@@ -198,7 +190,7 @@ def test_resample():
     nose.tools.assert_almost_equal(flux1, flux2)
 
 
-@attr(speed='veryslow')
+@pytest.mark.veryslow
 def test_resampling_slow():
     """Spectrum class: heavy test of resampling function"""
     sig = fits.getdata("data/obj/g9-124Tsigspec.fits")
@@ -224,7 +216,6 @@ def test_resampling_slow():
     nose.tools.assert_almost_equal(flux1, flux2, 0)
 
 
-@attr(speed='fast')
 def test_rebin():
     """Spectrum class: testing rebin function"""
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, shape=10)
@@ -267,7 +258,6 @@ def test_rebin():
     nose.tools.assert_almost_equal(flux1, flux2, 2)
 
 
-@attr(speed='fast')
 def test_truncate():
     """Spectrum class: testing truncate function"""
     sig = fits.getdata("data/obj/g9-124Tsigspec.fits")
@@ -277,7 +267,6 @@ def test_truncate():
     nose.tools.assert_equal(spe.shape[0], 160)
 
 
-@attr(speed='fast')
 def test_interpolation():
     """Spectrum class: testing interpolations"""
     spnovar = Spectrum('data/obj/Spectrum_Novariance.fits')
@@ -308,7 +297,6 @@ def test_interpolation():
                                    spvarcut4.mean())
 
 
-@attr(speed='fast')
 def test_poly_fit():
     """Spectrum class: testing polynomial fit"""
     spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
@@ -322,7 +310,6 @@ def test_poly_fit():
     nose.tools.assert_almost_equal(spfit3.mean(), 11.1, 1)
 
 
-@attr(speed='fast')
 def test_filter():
     """Spectrum class: testing filters"""
     sp = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
@@ -335,7 +322,6 @@ def test_filter():
     nose.tools.assert_almost_equal(sp.abmag_filter_name('B'), -22.278, 2)
 
 
-@attr(speed='fast')
 def test_mag():
     """Spectrum class: testing magnitude computations."""
     Vega = Spectrum('data/obj/Vega.fits')
@@ -348,7 +334,6 @@ def test_mag():
     nose.tools.assert_true(mag > 1.9 and mag < 2.0)
 
 
-@attr(speed='fast')
 def test_integrate():
     """Spectrum class: testing integration"""
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm)
@@ -404,7 +389,6 @@ def test_integrate():
     nose.tools.assert_equal(result.unit, u.ct * u.nm)
 
 
-@attr(speed='fast')
 def test_write():
     """Spectrum class: testing write."""
     sp = Spectrum(data=np.arange(10), wave=WaveCoord(cunit=u.nm))

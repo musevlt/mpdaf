@@ -2,7 +2,7 @@
 
 from __future__ import absolute_import, division
 
-from nose.plugins.attrib import attr
+import pytest
 
 import astropy.units as u
 import os
@@ -28,7 +28,6 @@ TESTSPE = join(DATADIR, 'data', 'obj', 'Spectrum_lines.fits')
 TESTCUBE = join(DATADIR, 'data', 'sdetect', 'minicube.fits')
 
 
-@attr(speed='fast')
 def test_deprecated_warnings():
     """DataArray class: Testing warnings for deprecated methods"""
     sp = generate_spectrum()
@@ -49,7 +48,6 @@ def test_deprecated_warnings():
         assert "deprecated" in str(w[-1].message)
 
 
-@attr(speed='fast')
 def test_fits_img():
     """DataArray class: Testing FITS image reading"""
     hdu = fits.open(TESTIMG)
@@ -59,7 +57,6 @@ def test_fits_img():
     hdu.close()
 
 
-@attr(speed='fast')
 def test_fits_spectrum():
     """DataArray class: Testing FITS spectrum reading"""
     hdu = fits.open(TESTSPE)
@@ -69,7 +66,6 @@ def test_fits_spectrum():
     hdu.close()
 
 
-@attr(speed='fast')
 def test_invalid_file():
     """DataArray class: Testing invalid file reading"""
     with assert_raises(IOError) as e:
@@ -77,7 +73,6 @@ def test_invalid_file():
         assert_equal(e.exception.message, 'Invalid file: missing/file.test')
 
 
-@attr(speed='fast')
 def test_from_ndarray():
     """DataArray class: Testing initialization from a numpy.ndarray"""
 
@@ -109,7 +104,6 @@ def test_from_ndarray():
     assert_true(d.data.mask is d.mask and d.var.mask is d.mask)
 
 
-@attr(speed='fast')
 def test_from_obj():
     """DataArray class: Testing initialization from an object"""
     d = DataArray(data=np.arange(10), var=np.ones(10))
@@ -126,7 +120,6 @@ def test_from_obj():
     assert_array_equal(c.var, d.var)
 
 
-@attr(speed='fast')
 def test_copy():
     """DataArray class: Testing the copy method"""
     wcs = WCS(deg=True)
@@ -153,7 +146,6 @@ def test_copy():
                 cube2.var.mask is cube2.mask)
 
 
-@attr(speed='fast')
 def test_clone():
     """DataArray class: Testing the clone method"""
     cube1 = generate_cube(shape=(10, 6, 5))
@@ -165,7 +157,6 @@ def test_clone():
     assert_true(cube2._mask is None)
 
 
-@attr(speed='fast')
 def test_clone_fits():
     """DataArray class: Testing the clone method with a FITS file"""
     cube = Cube(filename=TESTCUBE)
@@ -179,7 +170,6 @@ def test_clone_fits():
     assert_array_equal(sp.abs().data, np.abs(sp._data))
 
 
-@attr(speed='fast')
 def test_clone_with_data():
     """DataArray class: Testing the clone method with data"""
 
@@ -222,7 +212,6 @@ def test_clone_with_data():
                 cube2.var.mask is cube2.mask)
 
 
-@attr(speed='fast')
 def test_set_var():
     """DataArray class: Testing the variance setter"""
 
@@ -268,7 +257,6 @@ def test_set_var():
     assert_true(cube.data.mask is cube.mask)
 
 
-@attr(speed='fast')
 def test_comparisons():
     """DataArray class: Testing comparison methods"""
 
@@ -340,7 +328,6 @@ def test_comparisons():
     assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
 
 
-@attr(speed='fast')
 def test_getitem():
     """DataArray class: Testing the __getitem__ method"""
 
@@ -465,7 +452,6 @@ def test_getitem():
     assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
 
 
-@attr(speed='fast')
 def test_setitem():
     """DataArray class: Testing the __setitem__ method"""
 
@@ -604,7 +590,6 @@ def test_setitem():
                 cube2.var.mask is cube2.mask)
 
 
-@attr(speed='fast')
 def test_get_wcs_header():
     """DataArray class: Testing the get_wcs_header method"""
 
@@ -616,7 +601,6 @@ def test_get_wcs_header():
     assert_true(wcs.isEqual(hdr_wcs))
 
 
-@attr(speed='fast')
 def test_get_data_hdu():
     """DataArray class: Testing the get_data_hdu method"""
 
@@ -639,7 +623,6 @@ def test_get_data_hdu():
     assert_true(cube.wave.isEqual(hdr_wave))
 
 
-@attr(speed='fast')
 def test_get_stat_hdu():
     """DataArray class: Testing the get_stat_hdu method"""
 
@@ -660,7 +643,6 @@ def test_get_stat_hdu():
     assert_masked_allclose(ma.array(hdu_var, mask=mask), cube.var)
 
 
-@attr(speed='fast')
 def test_write():
     """DataArray class: Testing the write method"""
 
@@ -700,7 +682,6 @@ def test_write():
     os.remove(filename)
 
 
-@attr(speed='fast')
 def test_sqrt():
     """DataArray class: Testing the sqrt method"""
 
@@ -774,7 +755,6 @@ def test_sqrt():
     assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
 
 
-@attr(speed='fast')
 def test_abs():
     """DataArray class: Testing the abs method"""
 
@@ -802,7 +782,6 @@ def test_abs():
                 spec2.var.mask is spec2.mask)
 
 
-@attr(speed='fast')
 def test_unmask():
     """DataArray class: Testing the unmask method"""
 
@@ -833,7 +812,6 @@ def test_unmask():
                 spec.var.mask is spec.mask)
 
 
-@attr(speed='fast')
 def test_mask_variance():
     """DataArray class: Testing the mask_variance method"""
 
@@ -865,7 +843,6 @@ def test_mask_variance():
                 spec.var.mask is spec.mask)
 
 
-@attr(speed='fast')
 def test_mask_selection():
     """DataArray class: Testing the mask_selection method"""
 
@@ -894,7 +871,6 @@ def test_mask_selection():
                 spec.var.mask is spec.mask)
 
 
-@attr(speed='fast')
 def test_shared_masks():
     """DataArray class: Testing shared masks"""
 
@@ -1331,7 +1307,6 @@ def test_shared_masks():
                 spec.var.mask is spec.mask)
 
 
-@attr(speed='fast')
 def test_non_masked_data():
     """DataArray class: Testing non-masked data"""
 

@@ -6,7 +6,7 @@ import os
 import numpy
 import unittest
 
-from nose.plugins.attrib import attr
+import pytest
 from mpdaf.drs import RawFile
 
 DATA_PATH = "data/drs/raw.fits"
@@ -23,7 +23,7 @@ class TestRawObj(object):
             pass
 
     @unittest.skipIf(DATA_MISSING, "Missing test data (data/drs/raw.fits)")
-    @attr(speed='slow')
+    @pytest.mark.slow
     def test_init(self):
         """Raw objects: tests initialization"""
         chan1 = self.raw.get_channel("CHAN01")
@@ -31,7 +31,7 @@ class TestRawObj(object):
         nose.tools.assert_equal(shape, (self.raw.ny, self.raw.nx))
 
     @unittest.skipIf(DATA_MISSING, "Missing test data (data/drs/raw.fits)")
-    @attr(speed='slow')
+    @pytest.mark.slow
     def test_mask(self):
         """Raw objects: tests strimmed and overscan functionalities"""
         overscan = self.raw[1].data[24, 12]

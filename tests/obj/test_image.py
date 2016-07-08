@@ -3,7 +3,7 @@
 from __future__ import absolute_import, division
 
 import nose.tools
-from nose.plugins.attrib import attr
+import pytest
 
 import astropy.units as u
 import numpy as np
@@ -23,7 +23,6 @@ else:
     from operator import add, sub, mul, truediv as div
 
 
-@attr(speed='fast')
 def test_copy():
     """Image class: testing copy method."""
     image1 = generate_image()
@@ -34,7 +33,6 @@ def test_copy():
     nose.tools.assert_equal(s, image2.data.sum())
 
 
-@attr(speed='fast')
 def test_arithmetic_images():
     image1 = generate_image()
     image2 = generate_image(data=1, unit=u.Unit('2 ct'))
@@ -46,7 +44,6 @@ def test_arithmetic_images():
                            (image2.data.data * image2.unit).to(u.ct)).value)
 
 
-@attr(speed='fast')
 def test_arithmetic_scalar():
     image1 = generate_image()
     image1 += 4.2
@@ -64,7 +61,6 @@ def test_arithmetic_scalar():
         assert_allclose(op(4.2, image1).data, op(4.2, 2))
 
 
-@attr(speed='fast')
 def test_arithmetic_cubes():
     image2 = generate_image(data=1, unit=u.Unit('2 ct'))
     cube1 = generate_cube(data=0.5, unit=u.Unit('2 ct'))
@@ -74,7 +70,6 @@ def test_arithmetic_cubes():
         assert_allclose(op(cube1, image2).data, op(cube1.data, image2.data))
 
 
-@attr(speed='fast')
 def test_arithmetic_spectra():
     image1 = generate_image()
     spectrum1 = generate_spectrum()
@@ -88,7 +83,6 @@ def test_arithmetic_spectra():
                     np.sqrt(image1.data + 4) - 2)
 
 
-@attr(speed='fast')
 def test_get():
     """Image class: testing getters"""
     image1 = generate_image()
@@ -96,7 +90,6 @@ def test_get():
     assert_image_equal(ima, shape=(2, 3), start=(0, 1), end=(1, 3), step=(1, 1))
 
 
-@attr(speed='fast')
 def test_crop():
     """Image class: testing crop method"""
     # Create an image whose pixels are all masked.
@@ -144,7 +137,6 @@ def test_crop():
     nose.tools.assert_equal(image1.get_rot(), 0)
 
 
-@attr(speed='fast')
 def test_truncate():
     """Image class: testing truncation"""
     image1 = generate_image()
@@ -152,7 +144,6 @@ def test_truncate():
     assert_image_equal(image1, shape=(2, 3), start=(0, 1), end=(1, 3))
 
 
-@attr(speed='fast')
 def test_gauss():
     """Image class: testing Gaussian fit"""
     wcs = WCS(cdelt=(0.2, 0.3), crval=(8.5, 12), shape=(40, 30))
@@ -173,7 +164,6 @@ def test_gauss():
     nose.tools.assert_almost_equal(gauss2.cont, 12.3)
 
 
-@attr(speed='fast')
 def test_moffat():
     """Image class: testing Moffat fit"""
     ima = moffat_image(wcs=WCS(crval=(0, 0)), flux=12.3, fwhm=(1.8, 1.8),
@@ -189,7 +179,6 @@ def test_moffat():
     nose.tools.assert_almost_equal(moffat.cont, 8.24)
 
 
-@attr(speed='fast')
 def test_mask():
     """Image class: testing mask functionalities"""
     wcs = WCS()
@@ -264,7 +253,6 @@ def test_mask():
     assert_array_equal(image1._mask, expected_mask)
 
 
-@attr(speed='fast')
 def test_background():
     """Image class: testing background value"""
     wcs = WCS()
@@ -279,7 +267,6 @@ def test_background():
     nose.tools.assert_true((background - std < 1989) & (background + std > 1989))
 
 
-@attr(speed='fast')
 def test_peak():
     """Image class: testing peak research"""
     wcs = WCS()
@@ -296,7 +283,6 @@ def test_peak():
     nose.tools.assert_almost_equal(p['q'], 875.9, 1)
 
 
-@attr(speed='fast')
 def test_rotate():
     """Image class: testing rotation"""
 
@@ -360,7 +346,6 @@ def test_rotate():
     assert_allclose(after.wcs.get_rot() - before.wcs.get_rot(), 30.0)
 
 
-@attr(speed='fast')
 def test_resample():
     """Image class: Testing the resample method"""
 
@@ -427,14 +412,12 @@ def test_resample():
         assert_allclose(offset, np.array([pad, pad]), rtol=0, atol=0.1)
 
 
-@attr(speed='fast')
 def test_inside():
     """Image class: testing inside method."""
     ima = astronomical_image()
     nose.tools.assert_equal(ima.inside((39.951088, -1.4977398), unit=ima.wcs.unit), False)
 
 
-@attr(speed='fast')
 def test_subimage():
     """Image class: testing sub-image extraction."""
     ima = astronomical_image()
@@ -442,7 +425,6 @@ def test_subimage():
     nose.tools.assert_equal(subima.peak()['data'], 3035.0)
 
 
-@attr(speed='fast')
 def test_ee():
     """Image class: testing ensquared energy."""
     wcs = WCS()
@@ -462,7 +444,6 @@ def test_ee():
     nose.tools.assert_almost_equal(size[0], 1.775)
 
 
-@attr(speed='fast')
 def test_rebin():
     """Image class: testing rebin methods."""
     wcs = WCS(crval=(0, 0))
@@ -516,7 +497,6 @@ def test_rebin():
     nose.tools.assert_equal(start[1], 0.5)
 
 
-@attr(speed='fast')
 def test_fftconvolve():
     """Image class: testing convolution methods."""
     wcs = WCS(cdelt=(0.2, 0.3), crval=(8.5, 12), shape=(40, 30), deg=True)

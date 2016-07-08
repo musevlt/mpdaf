@@ -2,7 +2,7 @@
 
 from __future__ import absolute_import, division
 
-from nose.plugins.attrib import attr
+import pytest
 from nose.tools import assert_equal, assert_true, assert_almost_equal
 
 import astropy.units as u
@@ -42,13 +42,11 @@ class TestSource(object):
         del self.source1
         del self.source2
 
-    @attr(speed='fast')
     def test_init(self):
         """Source class; testing initialisation"""
         src = Source._light_from_file(join(DATADIR, 'sing-0032.fits'))
         assert_equal(len(src.lines), len(self.source2.lines))
 
-    @attr(speed='fast')
     def test_arg(self):
         """Source class: testing argument setter/getter"""
         self.source1.add_comment('This is a test', 'mpdaf')
@@ -75,7 +73,6 @@ class TestSource(object):
         self.source1.remove_history(1)
         self.source1.remove_history(2)
 
-    @attr(speed='fast')
     def test_z(self):
         """Source class: testing add_z method"""
         self.source1.add_z('z_test', 0.07, 0.007)
@@ -85,7 +82,6 @@ class TestSource(object):
         assert_equal(z['Z_MIN'][z['Z_DESC'] == key], 0.07 - 0.007 / 2)
         assert_equal(z['Z_MAX'][z['Z_DESC'] == key], 0.07 + 0.007 / 2)
 
-    @attr(speed='fast')
     def test_mag(self):
         """Source class: testing add_mag method"""
         self.source1.add_mag('TEST', 2380, 46)
@@ -93,7 +89,6 @@ class TestSource(object):
         assert_equal(mag['MAG'][mag['BAND'] == six.b('TEST')], 2380)
         assert_equal(mag['MAG_ERR'][mag['BAND'] == six.b('TEST')], 46)
 
-    @attr(speed='fast')
     def test_line(self):
         """Source class: testing add_line methods"""
         cols = ['LBDA_OBS', 'LBDA_OBS_ERR', 'LINE']
@@ -106,7 +101,6 @@ class TestSource(object):
         self.source1.add_line(cols, values, match=('LINE', 'TEST'))
         assert_equal(lines['LBDA_OBS'][lines['LINE'] == six.b('TEST')], 4807.)
 
-    @attr(speed='fast')
     def test_add_image(self):
         """Source class: testing add_image method"""
         cube = Cube(join(DATADIR, 'minicube.fits'), dtype=np.float64)
@@ -153,7 +147,6 @@ class TestSource(object):
         assert_almost_equal(self.source2.images['HST3'].get_rot(),
                             self.source2.images['MUSE_WHITE'].get_rot(), 3)
 
-    @attr(speed='fast')
     def test_add_narrow_band_image(self):
         """Source class: testing methods on narrow bands images"""
         cube = Cube(join(DATADIR, 'minicube.fits'))
@@ -204,13 +197,12 @@ class TestSource(object):
         Nx = np.array([ima.shape[1] for ima in src.images.values()])
         assert_equal(len(np.unique(Nx)), 1)
 
-    @attr(speed='fast')
     def test_sort_lines(self):
         """Source class: testing sort_lines method"""
         self.source1.sort_lines()
         assert_equal(self.source1.lines['LINE'][0], six.b('[OIII]2'))
 
-    @attr(speed='slow')
+    @pytest.mark.slow
     def test_SEA(self):
         """test SEA"""
         cube = Cube(join(DATADIR, 'minicube.fits'))
@@ -261,7 +253,6 @@ class TestSource(object):
             Nx = np.array([source.images[tag].shape[1] for tag in tags])
             assert_equal(len(np.unique(Nx)), 1)
 
-    @attr(speed='fast')
     def test_add_FSF(self):
         """Source class: testing add_FSF method"""
         src = Source.from_file(join(DATADIR, 'origin-00026.fits'))
@@ -272,7 +263,6 @@ class TestSource(object):
         assert_equal(src.FSF99FWB, -3.551e-05)
 
 #
-#     @attr(speed='fast')
 #     def test_catalog(self):
 #         """Source class: tests catalog creation"""
 #         cat = Catalog.from_sources([self.source1, self.source2])

@@ -5,12 +5,11 @@ import nose.tools
 import os
 import tempfile
 import warnings
-from nose.plugins.attrib import attr
+import pytest
 
 from mpdaf.tools import util
 
 
-@attr(speed='fast')
 def test_chdir():
     cwd = os.getcwd()
     tmp = tempfile.mkdtemp()
@@ -20,7 +19,6 @@ def test_chdir():
     nose.tools.assert_equal(cwd, os.getcwd())
 
 
-@attr(speed='fast')
 def test_deprecated():
     msg = 'This function is deprecated'
 

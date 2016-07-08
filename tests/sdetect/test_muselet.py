@@ -6,7 +6,7 @@ import nose.tools
 import os
 import shutil
 import tempfile
-from nose.plugins.attrib import attr
+import pytest
 
 from mpdaf.sdetect.muselet import muselet
 
@@ -14,7 +14,7 @@ DATADIR = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                        '..', '..', 'data', 'sdetect')
 
 
-@attr(speed='veryslow')
+@pytest.mark.veryslow
 def test_muselet():
     """test MUSELET"""
     try:

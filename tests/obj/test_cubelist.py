@@ -1,7 +1,7 @@
 """Test on Image objects."""
 
 from __future__ import absolute_import, print_function
-from nose.plugins.attrib import attr
+import pytest
 
 import numpy as np
 import os
@@ -46,7 +46,6 @@ class TestCubeList(unittest.TestCase):
         self.assertEqual(cube.data_header['OBJECT'], 'OBJECT 0')
         self.assertEqual(cube.primary_header['EXPTIME'], 100 * self.ncubes)
 
-    @attr(speed='fast')
     def test_median(self):
         clist = CubeList(self.cubenames)
         combined_cube = np.ones(self.shape)
@@ -57,7 +56,6 @@ class TestCubeList(unittest.TestCase):
             assert_array_equal(cube.data, combined_cube)
             assert_array_equal(expmap.data, self.expmap)
 
-    @attr(speed='fast')
     def test_combine(self):
         clist = CubeList(self.cubenames)
         combined_cube = np.full(self.shape, 2, dtype=float)
@@ -73,7 +71,6 @@ class TestCubeList(unittest.TestCase):
             assert_array_equal(cube.data, combined_cube)
             assert_array_equal(expmap.data, self.expmap)
 
-    @attr(speed='fast')
     def test_mosaic_combine(self):
         clist = CubeMosaic(self.cubenames, self.cubenames[0])
         combined_cube = np.full(self.shape, 2, dtype=float)
