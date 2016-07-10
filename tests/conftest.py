@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import astropy
 import numpy as np
 import os
 import pytest
@@ -10,6 +11,11 @@ from os.path import join
 from .utils import generate_cube, generate_image, generate_spectrum
 
 DATADIR = join(os.path.abspath(os.path.dirname(__file__)), '..', 'data')
+
+
+def pytest_report_header(config):
+    return "project deps: Numpy {}, Astropy {}".format(
+        np.__version__, astropy.__version__)
 
 
 def get_data_file(*paths):
