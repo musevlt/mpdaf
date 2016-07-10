@@ -101,7 +101,7 @@ def test_from_ndarray():
     # fact all references to the same mask.
     assert_array_equal(d.data.mask, mask)
     assert_array_equal(d.var.mask, mask)
-    assert_true(d.data.mask is d.mask and d.var.mask is d.mask)
+    assert d.data.mask is d.mask and d.var.mask is d.mask
 
 
 def test_from_obj():
@@ -109,7 +109,7 @@ def test_from_obj():
     d = DataArray(data=np.arange(10), var=np.ones(10))
     c = Cube.new_from_obj(d)
     assert_tuple_equal(c.shape, d.shape)
-    assert_true(np.may_share_memory(c.data, d.data))
+    assert np.may_share_memory(c.data, d.data)
     assert_array_equal(c.data, d.data)
     assert_array_equal(c.var, d.var)
 
@@ -150,11 +150,11 @@ def test_clone():
     """DataArray class: Testing the clone method"""
     cube1 = generate_cube(shape=(10, 6, 5))
     cube2 = cube1.clone()
-    assert_true(cube1.wcs.isEqual(cube2.wcs))
-    assert_true(cube1.wave.isEqual(cube2.wave))
-    assert_true(cube2._data is None)
-    assert_true(cube2._var is None)
-    assert_true(cube2._mask is None)
+    assert cube1.wcs.isEqual(cube2.wcs)
+    assert cube1.wave.isEqual(cube2.wave)
+    assert cube2._data is None
+    assert cube2._var is None
+    assert cube2._mask is None
 
 
 def test_clone_fits():
@@ -164,7 +164,7 @@ def test_clone_fits():
     assert_equal(im.ndim, 2)
     assert_equal(im.data_header['NAXIS'], 2)
     assert_equal(im.shape, cube.shape[1:])
-    assert_true('NAXIS3' not in im.data_header)
+    assert 'NAXIS3' not in im.data_header
 
     sp = cube[:, 20, 20]
     assert_array_equal(sp.abs().data, np.abs(sp._data))
@@ -246,7 +246,7 @@ def test_set_var():
 
     # Remove the variance array and check that this worked.
     cube.var = None
-    assert_true(cube.var is None)
+    assert cube.var is None
 
     # Make sure that removing the variance array didn't affect
     # the mask of the data array.
@@ -254,7 +254,7 @@ def test_set_var():
 
     # Check that the data and masked properties still both hold
     # references to the same mask array.
-    assert_true(cube.data.mask is cube.mask)
+    assert cube.data.mask is cube.mask
 
 
 def test_comparisons():
@@ -280,7 +280,7 @@ def test_comparisons():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+    assert s.data.mask is s.mask and s.var.mask is s.mask
 
     # [ __lt__ ]
 
@@ -295,7 +295,7 @@ def test_comparisons():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+    assert s.data.mask is s.mask and s.var.mask is s.mask
 
     # [ __ge__ ]
 
@@ -310,7 +310,7 @@ def test_comparisons():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+    assert s.data.mask is s.mask and s.var.mask is s.mask
 
     # [ __gt__ ]
 
@@ -325,7 +325,7 @@ def test_comparisons():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+    assert s.data.mask is s.mask and s.var.mask is s.mask
 
 
 def test_getitem():
@@ -364,7 +364,7 @@ def test_getitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+    assert s.data.mask is s.mask and s.var.mask is s.mask
 
     # Check that the wavelength of the first spectrum pixel matches that
     # of pixel za,ya,xa in the original cube.
@@ -390,7 +390,7 @@ def test_getitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+    assert s.data.mask is s.mask and s.var.mask is s.mask
 
     # Check that the world coordinates of the first pixel of the
     # image match those of pixel(za,ya,xa) of the original cube.
@@ -415,7 +415,7 @@ def test_getitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+    assert s.data.mask is s.mask and s.var.mask is s.mask
 
     # Check that the world coordinates of the first pixel of the
     # image match those of pixel(za,ya,xa) of the original cube.
@@ -438,7 +438,7 @@ def test_getitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+    assert s.data.mask is s.mask and s.var.mask is s.mask
 
     # Extract a sub-cube of values from the unmasked area of the cube
     # and check that all its data and variances are not masked.
@@ -449,7 +449,7 @@ def test_getitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+    assert s.data.mask is s.mask and s.var.mask is s.mask
 
 
 def test_setitem():
@@ -598,7 +598,7 @@ def test_get_wcs_header():
     im = generate_image(wcs=wcs)
     hdr = im.get_wcs_header()
     hdr_wcs = WCS(hdr)
-    assert_true(wcs.isEqual(hdr_wcs))
+    assert wcs.isEqual(hdr_wcs)
 
 
 def test_get_data_hdu():
@@ -615,12 +615,12 @@ def test_get_data_hdu():
 
     # Check that the WCS information taken from the header matches the
     # WCS information stored with the cube.
-    assert_true(cube.wcs.isEqual(hdr_wcs))
+    assert cube.wcs.isEqual(hdr_wcs)
 
     # Check that the wavelength information taken from the header
     # matches the wavelength information stored with the cube.
     hdr_wave = WaveCoord(hdr)
-    assert_true(cube.wave.isEqual(hdr_wave))
+    assert cube.wave.isEqual(hdr_wave)
 
 
 def test_get_stat_hdu():
@@ -670,8 +670,8 @@ def test_write():
     # Verify that the contents of the file match the original cube.
     assert_masked_allclose(cube2.data, cube.data)
     assert_masked_allclose(cube2.var, cube.var)
-    assert_true(cube2.wcs.isEqual(cube.wcs))
-    assert_true(cube2.wave.isEqual(cube.wave))
+    assert cube2.wcs.isEqual(cube.wcs)
+    assert cube2.wave.isEqual(cube.wave)
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
@@ -718,7 +718,7 @@ def test_sqrt():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+    assert s.data.mask is s.mask and s.var.mask is s.mask
 
     # Given a sample of value x, picked from a distribution of variance vx,
     # compute the expected variance, vs, of sqrt(x).
@@ -752,7 +752,7 @@ def test_sqrt():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+    assert s.data.mask is s.mask and s.var.mask is s.mask
 
 
 def test_abs():
@@ -1091,8 +1091,8 @@ def test_shared_masks():
 #     spec.data = new_data
 #     assert_masked_allclose(spec.var, ma.array(old_var, mask=old_mask))
 #     assert_masked_allclose(spec.data, ma.array(new_data, mask=expected_mask))
-#     assert_true(spec.data.mask is spec.mask)
-#     assert_true(spec.var.mask is not spec.mask)
+#     assert spec.data.mask is spec.mask
+#     assert spec.var.mask is not spec.mask
 #
 #     #. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 #     # Now that the size of the data array has been changed, try assigning
@@ -1158,8 +1158,8 @@ def test_shared_masks():
 #     assert_masked_allclose(spec.var, ma.array(old_var, mask=old_mask))
 #     assert_masked_allclose(spec.data,
 #                            ma.array(new_data.data, mask=expected_mask))
-#     assert_true(spec.data.mask is spec.mask)
-#     assert_true(spec.var.mask is not spec.mask)
+#     assert spec.data.mask is spec.mask
+#     assert spec.var.mask is not spec.mask
 #
 #     # ----------------------------------------------------------------
 #     # Directly modify the masks of the data, var and masked properties.

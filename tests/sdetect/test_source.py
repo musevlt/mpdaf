@@ -156,17 +156,17 @@ class TestSource(object):
         src.add_z('EMI', 0.086, 0.0001)
         src.add_white_image(cube)
         src.add_narrow_band_images(cube, 'EMI')
-        assert_true('NB_OIII5007' in src.images)
-        assert_true('NB_HALPHA' in src.images)
-        assert_true('NB_HBETA' in src.images)
+        assert 'NB_OIII5007' in src.images
+        assert 'NB_HALPHA' in src.images
+        assert 'NB_HBETA' in src.images
         src.add_narrow_band_image_lbdaobs(cube, 'OBS7128', 7128)
-        assert_true('OBS7128' in src.images)
+        assert 'OBS7128' in src.images
         src.add_seg_images()
-        assert_true('SEG_MUSE_WHITE' in src.images)
-        assert_true('SEG_NB_OIII5007' in src.images)
-        assert_true('SEG_NB_HALPHA' in src.images)
-        assert_true('SEG_NB_HBETA' in src.images)
-        assert_true('SEG_OBS7128' in src.images)
+        assert 'SEG_MUSE_WHITE' in src.images
+        assert 'SEG_NB_OIII5007' in src.images
+        assert 'SEG_NB_HALPHA' in src.images
+        assert 'SEG_NB_HBETA' in src.images
+        assert 'SEG_OBS7128' in src.images
 
         seg_tags = ['SEG_MUSE_WHITE', 'SEG_NB_OIII5007', 'SEG_OBS7128',
                     'SEG_NB_HBETA', 'SEG_NB_HALPHA']
@@ -177,20 +177,20 @@ class TestSource(object):
                            ~(src.images['MASK_SKY'].data.data.astype(bool)))
         assert_array_equal(src.images['MASK_INTER'].data.data,
                            np.zeros(src.images['MASK_INTER'].shape))
-        assert_true('MASK_OBJ' in src.images)
-        assert_true('MASK_INTER' in src.images)
-        assert_true('MASK_SKY' in src.images)
+        assert 'MASK_OBJ' in src.images
+        assert 'MASK_INTER' in src.images
+        assert 'MASK_SKY' in src.images
         src.extract_spectra(cube, obj_mask='MASK_OBJ', skysub=True, psf=None)
-        assert_true('MUSE_SKY' in src.spectra)
-        assert_true('MUSE_TOT_SKYSUB' in src.spectra)
-        assert_true('MUSE_WHITE_SKYSUB' in src.spectra)
-        assert_true('NB_HALPHA_SKYSUB' in src.spectra)
+        assert 'MUSE_SKY' in src.spectra
+        assert 'MUSE_TOT_SKYSUB' in src.spectra
+        assert 'MUSE_WHITE_SKYSUB' in src.spectra
+        assert 'NB_HALPHA_SKYSUB' in src.spectra
         src.extract_spectra(cube, obj_mask='MASK_OBJ', skysub=False,
                             psf=0.2 * np.ones(cube.shape[0]))
-        assert_true('MUSE_PSF' in src.spectra)
-        assert_true('MUSE_TOT' in src.spectra)
-        assert_true('MUSE_WHITE' in src.spectra)
-        assert_true('NB_HALPHA' in src.spectra)
+        assert 'MUSE_PSF' in src.spectra
+        assert 'MUSE_TOT' in src.spectra
+        assert 'MUSE_WHITE' in src.spectra
+        assert 'NB_HALPHA' in src.spectra
 
         Ny = np.array([ima.shape[0] for ima in src.images.values()])
         assert_equal(len(np.unique(Ny)), 1)
