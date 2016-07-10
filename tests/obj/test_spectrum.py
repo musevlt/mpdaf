@@ -2,7 +2,6 @@
 
 from __future__ import absolute_import, division
 
-import nose.tools
 import pytest
 
 import numpy as np
@@ -10,7 +9,8 @@ import numpy as np
 from astropy import units as u
 from astropy.io import fits
 from mpdaf.obj import Spectrum, Image, Cube, WCS, WaveCoord
-from numpy.testing import assert_array_almost_equal, assert_array_equal
+from numpy.testing import (assert_array_almost_equal, assert_array_equal,
+                           assert_almost_equal)
 from tempfile import NamedTemporaryFile
 
 from ..utils import generate_spectrum
@@ -29,14 +29,14 @@ def test_selection():
     """Spectrum class: testing operators > and < """
     spectrum1 = generate_spectrum(uwave=u.nm)
     spectrum2 = spectrum1 > 6
-    nose.tools.assert_almost_equal(spectrum2.sum(), 24)
+    assert_almost_equal(spectrum2.sum(), 24)
     spectrum2 = spectrum1 >= 6
-    nose.tools.assert_almost_equal(spectrum2.sum(), 30)
+    assert_almost_equal(spectrum2.sum(), 30)
     spectrum2 = spectrum1 < 6
-    nose.tools.assert_almost_equal(spectrum2.sum(), 15.5)
+    assert_almost_equal(spectrum2.sum(), 15.5)
     spectrum2 = spectrum1 <= 6
     spectrum1[:] = spectrum2
-    nose.tools.assert_almost_equal(spectrum1.sum(), 21.5)
+    assert_almost_equal(spectrum1.sum(), 21.5)
 
 
 def test_arithmetric():
@@ -108,9 +108,9 @@ def test_get_Spectrum():
     unit = spvar.wave.unit
     spvarcut = spvar.subspec(5560, 5590, unit=unit)
     assert spvarcut.shape[0] == 48
-    nose.tools.assert_almost_equal(spvarcut.get_start(unit=unit), 5560.25, 2)
-    nose.tools.assert_almost_equal(spvarcut.get_end(unit=unit), 5589.89, 2)
-    nose.tools.assert_almost_equal(spvarcut.get_step(unit=unit), 0.63, 2)
+    assert_almost_equal(spvarcut.get_start(unit=unit), 5560.25, 2)
+    assert_almost_equal(spvarcut.get_end(unit=unit), 5589.89, 2)
+    assert_almost_equal(spvarcut.get_step(unit=unit), 0.63, 2)
 
 
 def test_spectrum_methods():
@@ -119,18 +119,18 @@ def test_spectrum_methods():
     spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
                          wave=wave)
     sum1 = spectrum1.sum()
-    nose.tools.assert_almost_equal(sum1, spectrum1.data.sum())
+    assert_almost_equal(sum1, spectrum1.data.sum())
     spectrum2 = spectrum1[1:-2]
     sum1 = spectrum1.sum(lmin=spectrum1.wave.coord(1),
                          lmax=spectrum1.wave.coord(10 - 3),
                          unit=u.nm)
     sum2 = spectrum2.sum()
-    nose.tools.assert_almost_equal(sum1, sum2)
+    assert_almost_equal(sum1, sum2)
     mean1 = spectrum1.mean(lmin=spectrum1.wave.coord(1),
                            lmax=spectrum1.wave.coord(10 - 3),
                            unit=u.nm)
     mean2 = spectrum2.mean()
-    nose.tools.assert_almost_equal(mean1, mean2)
+    assert_almost_equal(mean1, mean2)
 
     spnovar = Spectrum('data/obj/Spectrum_Novariance.fits')
     spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
@@ -138,16 +138,16 @@ def test_spectrum_methods():
     assert spvar2[23] == np.abs(spvar[23])
     spvar2 = spvar.abs().sqrt()
     assert spvar2[8] == np.sqrt(np.abs(spvar[8]))
-    nose.tools.assert_almost_equal(spvar.mean(), 11.526, 2)
-    nose.tools.assert_almost_equal(spnovar.mean(), 11.101, 2)
+    assert_almost_equal(spvar.mean(), 11.526, 2)
+    assert_almost_equal(spnovar.mean(), 11.101, 2)
     spvarsum = spvar2 + 4 * spvar2 - 56 / spvar2
 
-    nose.tools.assert_almost_equal(spvarsum[10], spvar2[10] + 4 * spvar2[10] - 56 / spvar2[10], 2)
-    nose.tools.assert_almost_equal(spvar.get_step(), 0.630, 2)
-    nose.tools.assert_almost_equal(spvar.get_start(), 4602.604, 2)
-    nose.tools.assert_almost_equal(spvar.get_end(), 7184.289, 2)
-    nose.tools.assert_almost_equal(spvar.get_range()[0], 4602.604, 2)
-    nose.tools.assert_almost_equal(spvar.get_range()[1], 7184.289, 2)
+    assert_almost_equal(spvarsum[10], spvar2[10] + 4 * spvar2[10] - 56 / spvar2[10], 2)
+    assert_almost_equal(spvar.get_step(), 0.630, 2)
+    assert_almost_equal(spvar.get_start(), 4602.604, 2)
+    assert_almost_equal(spvar.get_end(), 7184.289, 2)
+    assert_almost_equal(spvar.get_range()[0], 4602.604, 2)
+    assert_almost_equal(spvar.get_range()[1], 7184.289, 2)
 
 
 def test_gauss_fit():
@@ -158,15 +158,15 @@ def test_gauss_fit():
     spem.add_gaussian(5000, 1200, 20, unit=u.angstrom)
     gauss = spem.gauss_fit(lmin=(4500, 4800), lmax=(5200, 6000), lpeak=5000,
                            unit=u.angstrom)
-    nose.tools.assert_almost_equal(gauss.lpeak, 5000, 2)
-    nose.tools.assert_almost_equal(gauss.flux, 1200, 2)
-    nose.tools.assert_almost_equal(gauss.fwhm, 20, 2)
-    nose.tools.assert_almost_equal(spem.fwhm(gauss.lpeak), 20, 0)
+    assert_almost_equal(gauss.lpeak, 5000, 2)
+    assert_almost_equal(gauss.flux, 1200, 2)
+    assert_almost_equal(gauss.fwhm, 20, 2)
+    assert_almost_equal(spem.fwhm(gauss.lpeak), 20, 0)
     gauss = spem.line_gauss_fit(lmin=(4500, 4800), lmax=(5200, 6000),
                                 lpeak=5000, unit=u.angstrom)
-    nose.tools.assert_almost_equal(gauss.flux, 1200, 2)
-    nose.tools.assert_almost_equal(gauss.fwhm, 20, 2)
-    nose.tools.assert_almost_equal(spem.fwhm(gauss.lpeak), 20, 0)
+    assert_almost_equal(gauss.flux, 1200, 2)
+    assert_almost_equal(gauss.fwhm, 20, 2)
+    assert_almost_equal(spem.fwhm(gauss.lpeak), 20, 0)
 
 
 def test_crop():
@@ -188,7 +188,7 @@ def test_resample():
     flux1 = spectrum1.sum() * spectrum1.wave.get_step()
     spectrum2 = spectrum1.resample(0.3)
     flux2 = spectrum2.sum() * spectrum2.wave.get_step()
-    nose.tools.assert_almost_equal(flux1, flux2)
+    assert_almost_equal(flux1, flux2)
 
 
 @pytest.mark.veryslow
@@ -200,21 +200,21 @@ def test_resampling_slow():
     flux1 = spe.sum(weight=False) * spe.wave.get_step(unit=unit)
     spe2 = spe.resample(0.3, unit=unit)
     flux2 = spe2.sum(weight=False) * spe2.wave.get_step(unit=unit)
-    nose.tools.assert_almost_equal(flux1, flux2, 1)
+    assert_almost_equal(flux1, flux2, 1)
 
     spnovar = Spectrum('data/obj/Spectrum_Novariance.fits')
     unit = spnovar.wave.unit
     flux1 = spnovar.sum() * spnovar.wave.get_step(unit=unit)
     spnovar2 = spnovar.resample(4, unit=unit)
     flux2 = spnovar2.sum() * spnovar2.wave.get_step(unit=unit)
-    nose.tools.assert_almost_equal(flux1, flux2, 0)
+    assert_almost_equal(flux1, flux2, 0)
 
     spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
     unit = spvar.wave.unit
     flux1 = spvar.sum(weight=False) * spvar.wave.get_step(unit=unit)
     spvar2 = spvar.resample(4, unit=unit)
     flux2 = spvar2.sum(weight=False) * spvar2.wave.get_step(unit=unit)
-    nose.tools.assert_almost_equal(flux1, flux2, 0)
+    assert_almost_equal(flux1, flux2, 0)
 
 
 def test_rebin():
@@ -228,7 +228,7 @@ def test_rebin():
     flux1 = spectrum1[s].sum() * spectrum1[s].wave.get_step(unit=unit)
     spectrum2 = spectrum1.rebin(factor, margin='left')
     flux2 = spectrum2.sum() * spectrum2.wave.get_step(unit=unit)
-    nose.tools.assert_almost_equal(flux1, flux2, 2)
+    assert_almost_equal(flux1, flux2, 2)
 
     sig = fits.getdata("data/obj/g9-124Tsigspec.fits")
     spe = Spectrum("data/obj/g9-124Tspec.fits", var=sig * sig)
@@ -238,7 +238,7 @@ def test_rebin():
     flux1 = spe[s].sum() * spe[s].wave.get_step(unit=unit)
     spe2 = spe.rebin(factor, margin='left')
     flux2 = spe2.sum() * spe2.wave.get_step(unit=unit)
-    nose.tools.assert_almost_equal(flux1, flux2, 2)
+    assert_almost_equal(flux1, flux2, 2)
 
     spnovar = Spectrum('data/obj/Spectrum_Novariance.fits')
     unit = spnovar.wave.unit
@@ -247,7 +247,7 @@ def test_rebin():
     flux1 = spnovar[s].sum() * spnovar[s].wave.get_step(unit=unit)
     spnovar2 = spnovar.rebin(factor, margin='left')
     flux2 = spnovar2.sum() * spnovar2.wave.get_step(unit=unit)
-    nose.tools.assert_almost_equal(flux1, flux2, 2)
+    assert_almost_equal(flux1, flux2, 2)
 
     spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
     unit = spvar.wave.unit
@@ -256,7 +256,7 @@ def test_rebin():
     flux1 = spvar[s].sum(weight=False) * spvar[s].wave.get_step(unit=unit)
     spvar2 = spvar.rebin(factor, margin='left')
     flux2 = spvar2.sum(weight=False) * spvar2.wave.get_step(unit=unit)
-    nose.tools.assert_almost_equal(flux1, flux2, 2)
+    assert_almost_equal(flux1, flux2, 2)
 
 
 def test_truncate():
@@ -288,14 +288,11 @@ def test_interpolation():
     spvarcut2 = spnovar.subspec(5550, 5590, unit=uspnovar)
     spvarcut3 = spm1.subspec(5550, 5590, unit=uspvar)
     spvarcut4 = spm2.subspec(5550, 5590, unit=uspvar)
-    nose.tools.assert_almost_equal(spvar.mean(5550, 5590, unit=uspvar),
-                                   spvarcut1.mean())
-    nose.tools.assert_almost_equal(spnovar.mean(5550, 5590, unit=uspnovar),
-                                   spvarcut2.mean())
-    nose.tools.assert_almost_equal(spm1.mean(5550, 5590, unit=uspvar),
-                                   spvarcut3.mean())
-    nose.tools.assert_almost_equal(spm2.mean(5550, 5590, unit=uspvar),
-                                   spvarcut4.mean())
+    assert_almost_equal(spvar.mean(5550, 5590, unit=uspvar), spvarcut1.mean())
+    assert_almost_equal(spnovar.mean(5550, 5590, unit=uspnovar),
+                        spvarcut2.mean())
+    assert_almost_equal(spm1.mean(5550, 5590, unit=uspvar), spvarcut3.mean())
+    assert_almost_equal(spm2.mean(5550, 5590, unit=uspvar), spvarcut4.mean())
 
 
 def test_poly_fit():
@@ -306,9 +303,9 @@ def test_poly_fit():
     spfit1.poly_val(polyfit1)
     spfit2 = spvar.poly_spec(10)
     spfit3 = spvar.poly_spec(10, weight=False)
-    nose.tools.assert_almost_equal(spfit1.mean(), 11.1, 1)
-    nose.tools.assert_almost_equal(spfit2.mean(), 11.1, 1)
-    nose.tools.assert_almost_equal(spfit3.mean(), 11.1, 1)
+    assert_almost_equal(spfit1.mean(), 11.1, 1)
+    assert_almost_equal(spfit2.mean(), 11.1, 1)
+    assert_almost_equal(spfit3.mean(), 11.1, 1)
 
 
 def test_filter():
@@ -316,11 +313,11 @@ def test_filter():
     sp = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
     sp.unit = u.Unit('erg/cm2/s/Angstrom')
     sp.wave.unit = u.angstrom
-    nose.tools.assert_almost_equal(sp.abmag_band(5000.0, 1000.0), -22.837, 2)
-    nose.tools.assert_almost_equal(
-        sp.abmag_filter([4000, 5000, 6000], [0.1, 1.0, 0.3]), -23.077, 2)
-    nose.tools.assert_almost_equal(sp.abmag_filter_name('U'), 99)
-    nose.tools.assert_almost_equal(sp.abmag_filter_name('B'), -22.278, 2)
+    assert_almost_equal(sp.abmag_band(5000.0, 1000.0), -22.837, 2)
+    assert_almost_equal(sp.abmag_filter([4000, 5000, 6000], [0.1, 1.0, 0.3]),
+                        -23.077, 2)
+    assert_almost_equal(sp.abmag_filter_name('U'), 99)
+    assert_almost_equal(sp.abmag_filter_name('B'), -22.278, 2)
 
 
 def test_mag():
@@ -328,7 +325,7 @@ def test_mag():
     Vega = Spectrum('data/obj/Vega.fits')
     Vega.unit = u.Unit('2E-17 erg / (Angstrom cm2 s)')
     Vega.wave.wcs.wcs.cunit[0] = u.angstrom
-    nose.tools.assert_almost_equal(Vega.abmag_filter_name('V'), 0, 1)
+    assert_almost_equal(Vega.abmag_filter_name('V'), 0, 1)
     mag = Vega.abmag_filter_name('Ic')
     assert mag > 0.4 and mag < 0.5
     mag = Vega.abmag_band(22500, 2500)
@@ -346,14 +343,14 @@ def test_integrate():
     # by cdelt in angstroms (because the flux units are per angstrom).
     result = spectrum1.integrate()
     expected = spectrum1.get_step(unit=u.angstrom) * spectrum1.sum()
-    nose.tools.assert_almost_equal(result.value, expected)
+    assert_almost_equal(result.value, expected)
     assert result.unit == u.ct
 
     # The result should not change if we change the wavelength units of
     # the wavelength limits to nanometers.
     result = spectrum1.integrate(unit=u.nm)
     expected = spectrum1.get_step(unit=u.angstrom) * spectrum1.sum()
-    nose.tools.assert_almost_equal(result.value, expected)
+    assert_almost_equal(result.value, expected)
     assert result.unit == u.ct
 
     # Integrate over a wavelength range 3.5 to 6.5 nm. The WCS
@@ -369,13 +366,13 @@ def test_integrate():
     # This comes to 2*3.0/2 + 3*3.0/2 = 7.5 ct/Angstrom*nm, which
     # should be rescaled to 75 ct, since nm/Angstrom is 10.0.
     result = spectrum1.integrate(lmin=3.5, lmax=6.5, unit=u.nm)
-    nose.tools.assert_almost_equal(result.value, 75)
+    assert_almost_equal(result.value, 75)
     assert result.unit == u.ct
 
     # Do the same test, but specify the wavelength limits in angstroms.
     # The result should be the same as before.
     result = spectrum1.integrate(lmin=35.0, lmax=65.0, unit=u.angstrom)
-    nose.tools.assert_almost_equal(result.value, 75)
+    assert_almost_equal(result.value, 75)
     assert result.unit == u.ct
 
     # Do the same experiment yet again, but this time after changing
@@ -386,7 +383,7 @@ def test_integrate():
     # angstroms, the resulting units should be counts * nm.
     spectrum1.unit = u.ct
     result = spectrum1.integrate(lmin=3.5, lmax=6.5, unit=u.nm)
-    nose.tools.assert_almost_equal(result.value, 7.5)
+    assert_almost_equal(result.value, 7.5)
     assert result.unit == u.ct * u.nm
 
 

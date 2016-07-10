@@ -2,9 +2,6 @@
 
 from __future__ import absolute_import, division
 
-import nose.tools
-import pytest
-
 import astropy.units as u
 import numpy as np
 from astropy import wcs as pywcs

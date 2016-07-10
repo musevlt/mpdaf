@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import astropy.units as u
-import nose.tools
 import numpy as np
-import pytest
-from numpy.testing import assert_array_equal, assert_allclose
+from numpy.testing import (assert_array_equal, assert_allclose,
+                           assert_almost_equal)
 
 
 from mpdaf.obj.objs import (is_float, is_int, bounding_box, flux2mag,
@@ -22,7 +21,7 @@ def test_is_int():
 
 
 def test_mag_flux():
-    nose.tools.assert_almost_equal(flux2mag(mag2flux(20, 7000), 7000), 20)
+    assert_almost_equal(flux2mag(mag2flux(20, 7000), 7000), 20)
 
 
 def test_unit_array():

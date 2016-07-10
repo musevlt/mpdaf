@@ -2,16 +2,14 @@
 
 from __future__ import absolute_import, division
 
-import nose.tools
-import pytest
-
 import astropy.units as u
 import numpy as np
 import scipy.ndimage as ndi
 import six
 
 from mpdaf.obj import Image, WCS, gauss_image, moffat_image
-from numpy.testing import assert_array_equal, assert_allclose
+from numpy.testing import (assert_array_equal, assert_allclose,
+                           assert_almost_equal)
 
 from ..utils import (assert_image_equal, generate_image, generate_cube,
                      generate_spectrum, assert_masked_allclose,
@@ -152,16 +150,16 @@ def test_gauss():
     # ima2 = gauss_image(wcs=wcs,width=(1,2),factor=2, rot = 60)
     gauss = ima.gauss_fit(cont=2.0, fit_back=False, verbose=False,
                           unit_center=None, unit_fwhm=None)
-    nose.tools.assert_almost_equal(gauss.center[0], 19.5)
-    nose.tools.assert_almost_equal(gauss.center[1], 14.5)
-    nose.tools.assert_almost_equal(gauss.flux, 1)
+    assert_almost_equal(gauss.center[0], 19.5)
+    assert_almost_equal(gauss.center[1], 14.5)
+    assert_almost_equal(gauss.flux, 1)
     ima += 10.3
     gauss2 = ima.gauss_fit(cont=2.0 + 10.3, fit_back=True, verbose=False,
                            unit_center=None, unit_fwhm=None)
-    nose.tools.assert_almost_equal(gauss2.center[0], 19.5)
-    nose.tools.assert_almost_equal(gauss2.center[1], 14.5)
-    nose.tools.assert_almost_equal(gauss2.flux, 1)
-    nose.tools.assert_almost_equal(gauss2.cont, 12.3)
+    assert_almost_equal(gauss2.center[0], 19.5)
+    assert_almost_equal(gauss2.center[1], 14.5)
+    assert_almost_equal(gauss2.flux, 1)
+    assert_almost_equal(gauss2.cont, 12.3)
 
 
 def test_moffat():
@@ -171,12 +169,12 @@ def test_moffat():
                        unit_fwhm=u.pix)
     moffat = ima.moffat_fit(fit_back=True, verbose=False, unit_center=None,
                             unit_fwhm=None)
-    nose.tools.assert_almost_equal(moffat.center[0], 50.)
-    nose.tools.assert_almost_equal(moffat.center[1], 50.)
-    nose.tools.assert_almost_equal(moffat.flux, 12.3)
-    nose.tools.assert_almost_equal(moffat.fwhm[0], 1.8)
-    nose.tools.assert_almost_equal(moffat.n, 1.6)
-    nose.tools.assert_almost_equal(moffat.cont, 8.24)
+    assert_almost_equal(moffat.center[0], 50.)
+    assert_almost_equal(moffat.center[1], 50.)
+    assert_almost_equal(moffat.flux, 12.3)
+    assert_almost_equal(moffat.fwhm[0], 1.8)
+    assert_almost_equal(moffat.n, 1.6)
+    assert_almost_equal(moffat.cont, 8.24)
 
 
 def test_mask():
@@ -279,8 +277,8 @@ def test_peak():
     ima = astronomical_image()
     p = ima.peak(center=(790, 875), radius=20, plot=False, unit_center=None,
                  unit_radius=None)
-    nose.tools.assert_almost_equal(p['p'], 793.1, 1)
-    nose.tools.assert_almost_equal(p['q'], 875.9, 1)
+    assert_almost_equal(p['p'], 793.1, 1)
+    assert_almost_equal(p['q'], 875.9, 1)
 
 
 def test_rotate():
@@ -338,7 +336,7 @@ def test_rotate():
     for pixel in new_pixels:
         py = pixel[0]
         px = pixel[1]
-        nose.tools.assert_almost_equal(after.data[py, px], test_value, places=6)
+        assert_almost_equal(after.data[py, px], test_value, places=6)
 
     # If both the WCS and the image were rotated wrongly in the same
     # way, then the above test will incrorrectly claim that the
@@ -442,7 +440,7 @@ def test_ee():
     assert eer[1] == 1.0
     size = image1.ee_size(center=(2, 2), unit_center=None, unit_size=None,
                           cont=0)
-    nose.tools.assert_almost_equal(size[0], 1.775)
+    assert_almost_equal(size[0], 1.775)
 
 
 def test_rebin():
@@ -508,14 +506,14 @@ def test_fftconvolve():
                                  peak=False, rot=60., factor=1,
                                  unit_center=u.deg, unit_fwhm=u.arcsec)
     g = ima2.gauss_fit(verbose=False)
-    nose.tools.assert_almost_equal(g.fwhm[0], 20000, 2)
-    nose.tools.assert_almost_equal(g.fwhm[1], 10000, 2)
-    nose.tools.assert_almost_equal(g.center[0], 8.5)
-    nose.tools.assert_almost_equal(g.center[1], 12)
+    assert_almost_equal(g.fwhm[0], 20000, 2)
+    assert_almost_equal(g.fwhm[1], 10000, 2)
+    assert_almost_equal(g.center[0], 8.5)
+    assert_almost_equal(g.center[1], 12)
     ima2 = ima.fftconvolve_moffat(center=None, flux=1., a=10000, q=1, n=2,
                                   peak=False, rot=60., factor=1,
                                   unit_center=u.deg, unit_a=u.arcsec)
     m = ima2.moffat_fit(verbose=False)
-    nose.tools.assert_almost_equal(m.center[0], 8.5)
-    nose.tools.assert_almost_equal(m.center[1], 12)
+    assert_almost_equal(m.center[0], 8.5)
+    assert_almost_equal(m.center[1], 12)
     # ima3 = ima.correlate2d(np.ones((40, 30)))

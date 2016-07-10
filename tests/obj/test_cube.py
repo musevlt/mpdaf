@@ -1,8 +1,6 @@
 """Test on Cube objects."""
 from __future__ import absolute_import, division
 
-import nose.tools
-
 import astropy.units as u
 import numpy as np
 import pytest
@@ -520,15 +518,14 @@ def test_get_image():
     # 2.0 everywhere except where the gaussian was added to 2.0. Hence
     # pixel 2,2 of the mean image should be the mean of the gaussian
     # minus the average 2.0 background.
-    nose.tools.assert_almost_equal(ima[2, 2],
-                                   cube1[lslice, 2, 2].mean() - 2, 3)
+    assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].mean() - 2, 3)
 
     # Get another mean image, but this time without subtracting off a
     # background.  Image pixel 0,0 should have a mean of 2.0, and
     # pixel 2,2 should equal the mean of the gaussian added to 2.0
     ima = cube1.get_image(wave=lrange, is_sum=False, subtract_off=False)
     assert ima[0, 0] == 2
-    nose.tools.assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].mean(), 3)
+    assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].mean(), 3)
 
     # For this test, perform a sum over the chosen wavelength range,
     # and subtract off a background image taken from wavelength
@@ -541,15 +538,15 @@ def test_get_image():
     # by the addition of the gaussian.
     ima = cube1.get_image(wave=lrange, is_sum=True, subtract_off=True)
     assert ima[0, 0] == 0
-    nose.tools.assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].sum() -
-                                   cube1[lslice, 0, 0].sum(), 3)
+    assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].sum() -
+                        cube1[lslice, 0, 0].sum(), 3)
 
     # Finally, perform a sum of the chosen wavelength range without
     # subtracting a background image. This is easy to test by doing
     # equivalent sums through the cube over the chosen wavelength range.
     ima = cube1.get_image(wave=lrange, is_sum=True, subtract_off=False)
     assert ima[0, 0] == cube1[lslice, 0, 0].sum()
-    nose.tools.assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].sum())
+    assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].sum())
 
 
 def test_subcube():
