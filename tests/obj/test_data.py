@@ -115,7 +115,7 @@ def test_from_obj():
 
     data = np.zeros(10)
     c = Cube.new_from_obj(d, data=data, copy=True)
-    assert_false(np.may_share_memory(c.data, data))
+    assert not np.may_share_memory(c.data, data)
     assert_array_equal(c.data, data)
     assert_array_equal(c.var, d.var)
 

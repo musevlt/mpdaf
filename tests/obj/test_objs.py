@@ -18,7 +18,7 @@ def test_is_float():
 
 def test_is_int():
     assert is_int(1)
-    nose.tools.assert_false(is_int(1.2))
+    assert not is_int(1.2)
 
 
 def test_mag_flux():
