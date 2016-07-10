@@ -21,8 +21,8 @@ def test_copy():
     spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
     spe = spvar.copy()
     assert spvar.wave.isEqual(spe.wave)
-    nose.tools.assert_equal(spvar.data.sum(), spe.data.sum())
-    nose.tools.assert_equal(spvar.var.sum(), spe.var.sum())
+    assert spvar.data.sum() == spe.data.sum()
+    assert spvar.var.sum() == spe.var.sum()
 
 
 def test_selection():
@@ -47,28 +47,28 @@ def test_arithmetric():
     spectrum2 = spectrum1 > 6  # [-,-,-,-,-,-,-,7,8,9]
     # +
     spectrum3 = spectrum1 + spectrum2
-    nose.tools.assert_equal(spectrum3.data.data[3], 3)
-    nose.tools.assert_equal(spectrum3.data.data[8], 16)
+    assert spectrum3.data.data[3] == 3
+    assert spectrum3.data.data[8] == 16
     spectrum3 = 4.2 + spectrum1
-    nose.tools.assert_equal(spectrum3.data.data[3], 3 + 4.2)
+    assert spectrum3.data.data[3] == 3 + 4.2
     # -
     spectrum3 = spectrum1 - spectrum2
-    nose.tools.assert_equal(spectrum3.data.data[3], 3)
-    nose.tools.assert_equal(spectrum3.data.data[8], 0)
+    assert spectrum3.data.data[3] == 3
+    assert spectrum3.data.data[8] == 0
     spectrum3 = spectrum1 - 4.2
-    nose.tools.assert_equal(spectrum3.data.data[8], 8 - 4.2)
+    assert spectrum3.data.data[8] == 8 - 4.2
     # *
     spectrum3 = spectrum1 * spectrum2
-    nose.tools.assert_equal(spectrum3.data.data[8], 64)
+    assert spectrum3.data.data[8] == 64
     spectrum3 = 4.2 * spectrum1
-    nose.tools.assert_equal(spectrum3.data.data[9], 9 * 4.2)
+    assert spectrum3.data.data[9] == 9 * 4.2
     # /
     spectrum3 = spectrum1 / spectrum2
     # divide functions that have a validity domain returns the masked constant
     # whenever the input is masked or falls outside the validity domain.
-    nose.tools.assert_equal(spectrum3.data.data[8], 1)
+    assert spectrum3.data.data[8] == 1
     spectrum3 = 1.0 / (4.2 / spectrum1)
-    nose.tools.assert_equal(spectrum3.data.data[5], 5 / 4.2)
+    assert spectrum3.data.data[5] == 5 / 4.2
 
     # with cube
     wcs = WCS()
@@ -100,14 +100,14 @@ def test_get_Spectrum():
     spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]) * 2.3,
                          wave=wave)
     a = spectrum1[1:7]
-    nose.tools.assert_equal(a.shape[0], 6)
+    assert a.shape[0] == 6
     a = spectrum1.subspec(1.2, 15.6, unit=u.nm)
-    nose.tools.assert_equal(a.shape[0], 6)
+    assert a.shape[0] == 6
 
     spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
     unit = spvar.wave.unit
     spvarcut = spvar.subspec(5560, 5590, unit=unit)
-    nose.tools.assert_equal(spvarcut.shape[0], 48)
+    assert spvarcut.shape[0] == 48
     nose.tools.assert_almost_equal(spvarcut.get_start(unit=unit), 5560.25, 2)
     nose.tools.assert_almost_equal(spvarcut.get_end(unit=unit), 5589.89, 2)
     nose.tools.assert_almost_equal(spvarcut.get_step(unit=unit), 0.63, 2)
@@ -133,9 +133,9 @@ def test_spectrum_methods():
     spnovar = Spectrum('data/obj/Spectrum_Novariance.fits')
     spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
     spvar2 = spvar.abs()
-    nose.tools.assert_equal(spvar2[23], np.abs(spvar[23]))
+    assert spvar2[23] == np.abs(spvar[23])
     spvar2 = spvar.abs().sqrt()
-    nose.tools.assert_equal(spvar2[8], np.sqrt(np.abs(spvar[8])))
+    assert spvar2[8] == np.sqrt(np.abs(spvar[8]))
     nose.tools.assert_almost_equal(spvar.mean(), 11.526, 2)
     nose.tools.assert_almost_equal(spnovar.mean(), 11.101, 2)
     spvarsum = spvar2 + 4 * spvar2 - 56 / spvar2
@@ -264,7 +264,7 @@ def test_truncate():
     spe = Spectrum("data/obj/g9-124Tspec.fits", var=sig * sig)
     unit = spe.wave.unit
     spe.truncate(4950, 5050, unit=unit)
-    nose.tools.assert_equal(spe.shape[0], 160)
+    assert spe.shape[0] == 160
 
 
 def test_interpolation():
@@ -346,14 +346,14 @@ def test_integrate():
     result = spectrum1.integrate()
     expected = spectrum1.get_step(unit=u.angstrom) * spectrum1.sum()
     nose.tools.assert_almost_equal(result.value, expected)
-    nose.tools.assert_equal(result.unit, u.ct)
+    assert result.unit == u.ct
 
     # The result should not change if we change the wavelength units of
     # the wavelength limits to nanometers.
     result = spectrum1.integrate(unit=u.nm)
     expected = spectrum1.get_step(unit=u.angstrom) * spectrum1.sum()
     nose.tools.assert_almost_equal(result.value, expected)
-    nose.tools.assert_equal(result.unit, u.ct)
+    assert result.unit == u.ct
 
     # Integrate over a wavelength range 3.5 to 6.5 nm. The WCS
     # conversion equation from wavelength to pixel index is,
@@ -369,13 +369,13 @@ def test_integrate():
     # should be rescaled to 75 ct, since nm/Angstrom is 10.0.
     result = spectrum1.integrate(lmin=3.5, lmax=6.5, unit=u.nm)
     nose.tools.assert_almost_equal(result.value, 75)
-    nose.tools.assert_equal(result.unit, u.ct)
+    assert result.unit == u.ct
 
     # Do the same test, but specify the wavelength limits in angstroms.
     # The result should be the same as before.
     result = spectrum1.integrate(lmin=35.0, lmax=65.0, unit=u.angstrom)
     nose.tools.assert_almost_equal(result.value, 75)
-    nose.tools.assert_equal(result.unit, u.ct)
+    assert result.unit == u.ct
 
     # Do the same experiment yet again, but this time after changing
     # the flux units of the spectrum to simple counts, without any per
@@ -386,7 +386,7 @@ def test_integrate():
     spectrum1.unit = u.ct
     result = spectrum1.integrate(lmin=3.5, lmax=6.5, unit=u.nm)
     nose.tools.assert_almost_equal(result.value, 7.5)
-    nose.tools.assert_equal(result.unit, u.ct * u.nm)
+    assert result.unit == u.ct * u.nm
 
 
 def test_write():
@@ -402,10 +402,10 @@ def test_write():
     assert_array_equal(hdu[1].data.shape, sp.shape)
 
     hdr = hdu[1].header
-    nose.tools.assert_equal(hdr['EXTNAME'], 'DATA')
-    nose.tools.assert_equal(hdr['NAXIS'], 1)
-    nose.tools.assert_equal(u.Unit(hdr['CUNIT1']), u.nm)
-    nose.tools.assert_equal(hdr['NAXIS1'], sp.shape[0])
+    assert hdr['EXTNAME'] == 'DATA'
+    assert hdr['NAXIS'] == 1
+    assert u.Unit(hdr['CUNIT1']) == u.nm
+    assert hdr['NAXIS1'] == sp.shape[0]
 
     # Same with Angstrom
     sp = Spectrum(data=np.arange(10), wave=WaveCoord(cunit=u.angstrom))
@@ -414,4 +414,4 @@ def test_write():
 
     hdu = fits.open(fobj)
     hdr = hdu[1].header
-    nose.tools.assert_equal(u.Unit(hdr['CUNIT1']), u.angstrom)
+    assert u.Unit(hdr['CUNIT1']) == u.angstrom

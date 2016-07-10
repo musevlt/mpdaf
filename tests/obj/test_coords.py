@@ -30,8 +30,8 @@ class TestWCS(object):
         h = fits.open('data/sdetect/a478hst-cutout.fits')
         frame, equinox = determine_refframe(h[0].header)
         wcs = WCS(h[1].header, frame=frame, equinox=equinox)
-        nose.tools.assert_equal(wcs.wcs.wcs.equinox, 2000.0)
-        nose.tools.assert_equal(wcs.wcs.wcs.radesys, 'FK5')
+        assert wcs.wcs.wcs.equinox == 2000.0
+        assert wcs.wcs.wcs.radesys == 'FK5'
 
     def test_copy(self):
         """WCS class: tests copy"""
@@ -112,7 +112,7 @@ class TestWaveCoord(object):
         """WaveCoord class: testing coordinates transformations"""
         wave = WaveCoord(crval=0, cunit=u.nm, shape=10)
         pixel = wave.pixel(wave.coord(5, unit=u.nm), nearest=True, unit=u.nm)
-        nose.tools.assert_equal(pixel, 5)
+        assert pixel == 5
 
         wave2 = np.arange(10)
         pixel = wave.pixel(wave.coord(wave2, unit=u.nm), nearest=True,
@@ -126,26 +126,26 @@ class TestWaveCoord(object):
     def test_get(self):
         """WaveCoord class: testing getters"""
         wave = WaveCoord(crval=0, cunit=u.nm, shape=10)
-        nose.tools.assert_equal(wave.get_step(unit=u.nm), 1.0)
-        nose.tools.assert_equal(wave.get_start(unit=u.nm), 0.0)
-        nose.tools.assert_equal(wave.get_end(unit=u.nm), 9.0)
+        assert wave.get_step(unit=u.nm) == 1.0
+        assert wave.get_start(unit=u.nm) == 0.0
+        assert wave.get_end(unit=u.nm) == 9.0
 
     def test_rebin(self):
         """WCS class: testing rebin method"""
         wave = WaveCoord(crval=0, cunit=u.nm, shape=10)
         wave.rebin(factor=2)
-        nose.tools.assert_equal(wave.get_step(unit=u.nm), 2.0)
-        nose.tools.assert_equal(wave.get_start(unit=u.nm), 0.5)
-        nose.tools.assert_equal(wave.coord(2, unit=u.nm), 4.5)
-        nose.tools.assert_equal(wave.shape, 5)
+        assert wave.get_step(unit=u.nm) == 2.0
+        assert wave.get_start(unit=u.nm) == 0.5
+        assert wave.coord(2, unit=u.nm) == 4.5
+        assert wave.shape == 5
 
     def test_resample(self):
         """WCS class: testing resampling method"""
         wave = WaveCoord(crval=0, cunit=u.nm, shape=10)
         wave2 = wave.resample(step=2.5, start=20, unit=u.angstrom)
-        nose.tools.assert_equal(wave2.get_step(unit=u.nm), 0.25)
-        nose.tools.assert_equal(wave2.get_start(unit=u.nm), 2.0)
-        nose.tools.assert_equal(wave2.shape, 32)
+        assert wave2.get_step(unit=u.nm) == 0.25
+        assert wave2.get_start(unit=u.nm) == 2.0
+        assert wave2.shape == 32
 
     def test_muse_header(self):
         """WCS class: testing MUSE header specifities."""
@@ -154,20 +154,20 @@ class TestWaveCoord(object):
         wave = WaveCoord(**d)
         start = d['crval']
         end = d['crval'] + d['cdelt'] * (d['shape'] - 1)
-        nose.tools.assert_equal(wave.get_step(), d['cdelt'])
-        nose.tools.assert_equal(wave.get_crval(), start)
-        nose.tools.assert_equal(wave.get_start(), start)
-        nose.tools.assert_equal(wave.get_end(), end)
+        assert wave.get_step() == d['cdelt']
+        assert wave.get_crval() == start
+        assert wave.get_start() == start
+        assert wave.get_end() == end
         assert_array_equal(wave.get_range(), [start, end])
-        nose.tools.assert_equal(wave.get_crpix(), d['crpix'])
-        nose.tools.assert_equal(wave.get_ctype(), d['ctype'])
+        assert wave.get_crpix() == d['crpix']
+        assert wave.get_ctype() == d['ctype']
 
         def to_nm(val):
             return (val * u.angstrom).to(u.nm).value
-        nose.tools.assert_equal(wave.get_step(u.nm), to_nm(d['cdelt']))
-        nose.tools.assert_equal(wave.get_crval(u.nm), to_nm(start))
-        nose.tools.assert_equal(wave.get_start(u.nm), to_nm(start))
-        nose.tools.assert_equal(wave.get_end(u.nm), to_nm(end))
+        assert wave.get_step(u.nm) == to_nm(d['cdelt'])
+        assert wave.get_crval(u.nm) == to_nm(start)
+        assert wave.get_start(u.nm) == to_nm(start)
+        assert wave.get_end(u.nm) == to_nm(end)
         assert_array_equal(wave.get_range(u.nm), [to_nm(start), to_nm(end)])
 
 
@@ -188,10 +188,9 @@ def test_deg_sexa():
 
 
 def test_determine_refframe():
-    nose.tools.assert_equal(determine_refframe({'EQUINOX': 2000.})[0], 'FK5')
-    nose.tools.assert_equal(determine_refframe({'EQUINOX': 2000.,
-                                                'RADESYS': 'FK5'})[0], 'FK5')
-    nose.tools.assert_equal(determine_refframe({'RADESYS': 'FK5'})[0], 'FK5')
-    nose.tools.assert_equal(determine_refframe({'RADECSYS': 'FK5'})[0], 'FK5')
-    nose.tools.assert_equal(determine_refframe({'RADESYS': 'ICRS'})[0], 'ICRS')
-    nose.tools.assert_equal(determine_refframe({})[0], None)
+    assert determine_refframe({'EQUINOX': 2000.})[0] == 'FK5'
+    assert determine_refframe({'EQUINOX': 2000., 'RADESYS': 'FK5'})[0] == 'FK5'
+    assert determine_refframe({'RADESYS': 'FK5'})[0] == 'FK5'
+    assert determine_refframe({'RADECSYS': 'FK5'})[0] == 'FK5'
+    assert determine_refframe({'RADESYS': 'ICRS'})[0] == 'ICRS'
+    assert determine_refframe({})[0] is None

@@ -45,31 +45,31 @@ class TestSource(object):
     def test_init(self):
         """Source class; testing initialisation"""
         src = Source._light_from_file(join(DATADIR, 'sing-0032.fits'))
-        assert_equal(len(src.lines), len(self.source2.lines))
+        assert len(src.lines) == len(self.source2.lines)
 
     def test_arg(self):
         """Source class: testing argument setter/getter"""
         self.source1.add_comment('This is a test', 'mpdaf')
-        assert_equal(self.source1.com001, 'This is a test')
+        assert self.source1.com001 == 'This is a test'
         self.source1.add_comment('an other', 'mpdaf')
-        assert_equal(self.source1.com002, 'an other')
+        assert self.source1.com002 == 'an other'
         self.source1.remove_comment(2)
         self.source1.add_comment('an other', 'mpdaf')
-        assert_equal(self.source1.com002, 'an other')
+        assert self.source1.com002 == 'an other'
         self.source1.remove_comment(1)
         self.source1.remove_comment(2)
         self.source1.test = 24.12
-        assert_equal(self.source1.test, 24.12)
+        assert self.source1.test == 24.12
         self.source1.add_attr('test', 'toto')
-        assert_equal(self.source1.test, 'toto')
+        assert self.source1.test == 'toto'
         self.source1.remove_attr('test')
         self.source1.add_history('test_arg unitary test', 'mpdaf')
-        assert_equal(self.source1.hist001, 'test_arg unitary test')
+        assert self.source1.hist001 == 'test_arg unitary test'
         self.source1.add_history('an other', 'mpdaf')
-        assert_equal(self.source1.hist002, 'an other')
+        assert self.source1.hist002 == 'an other'
         self.source1.remove_history(2)
         self.source1.add_history('an other', 'mpdaf')
-        assert_equal(self.source1.hist002, 'an other')
+        assert self.source1.hist002 == 'an other'
         self.source1.remove_history(1)
         self.source1.remove_history(2)
 
@@ -78,16 +78,16 @@ class TestSource(object):
         self.source1.add_z('z_test', 0.07, 0.007)
         z = self.source1.z
         key = six.b('z_test')
-        assert_equal(z['Z'][z['Z_DESC'] == key], 0.07)
-        assert_equal(z['Z_MIN'][z['Z_DESC'] == key], 0.07 - 0.007 / 2)
-        assert_equal(z['Z_MAX'][z['Z_DESC'] == key], 0.07 + 0.007 / 2)
+        assert z['Z'][z['Z_DESC'] == key] == 0.07
+        assert z['Z_MIN'][z['Z_DESC'] == key] == 0.07 - 0.007 / 2
+        assert z['Z_MAX'][z['Z_DESC'] == key] == 0.07 + 0.007 / 2
 
     def test_mag(self):
         """Source class: testing add_mag method"""
         self.source1.add_mag('TEST', 2380, 46)
         mag = self.source1.mag
-        assert_equal(mag['MAG'][mag['BAND'] == six.b('TEST')], 2380)
-        assert_equal(mag['MAG_ERR'][mag['BAND'] == six.b('TEST')], 46)
+        assert mag['MAG'][mag['BAND'] == six.b('TEST')] == 2380
+        assert mag['MAG_ERR'][mag['BAND'] == six.b('TEST')] == 46
 
     def test_line(self):
         """Source class: testing add_line methods"""
@@ -95,11 +95,11 @@ class TestSource(object):
         values = [4810.0, 3.0, 'TEST']
         self.source1.add_line(cols, values)
         lines = self.source1.lines
-        assert_equal(lines['LBDA_OBS'][lines['LINE'] == six.b('TEST')], 4810.)
+        assert lines['LBDA_OBS'][lines['LINE'] == six.b('TEST')] == 4810.
         cols = ['LBDA_OBS']
         values = [4807.0]
         self.source1.add_line(cols, values, match=('LINE', 'TEST'))
-        assert_equal(lines['LBDA_OBS'][lines['LINE'] == six.b('TEST')], 4807.)
+        assert lines['LBDA_OBS'][lines['LINE'] == six.b('TEST')] == 4807.
 
     def test_add_image(self):
         """Source class: testing add_image method"""
@@ -122,7 +122,7 @@ class TestSource(object):
         #  white.shape=(25,20)
         #
         # So: cube[15,25] = white[15-7, 25-20] = white[8, 5]
-        assert_equal(ima[15, 25], self.source2.images['MUSE_WHITE'][8, 5])
+        assert ima[15, 25], self.source2.images['MUSE_WHITE'][8 == 5]
 
         # Add a square patch of an HST image equal in width and height
         # to the height of the white-light image, which has a height
@@ -137,8 +137,8 @@ class TestSource(object):
         size = self.source2.images['HST1'].shape[0]
         self.source2.add_image(hst, 'HST2', size=size, minsize=size,
                                unit_size=None)
-        assert_equal(self.source2.images['HST1'][10, 10],
-                     self.source2.images['HST2'][10, 10])
+        assert (self.source2.images['HST1'][10, 10] ==
+                self.source2.images['HST2'][10, 10])
 
         # Add the HST image again, but this time rotate it to the same
         # orientation as the white-light image, then check that they end
@@ -193,14 +193,14 @@ class TestSource(object):
         assert 'NB_HALPHA' in src.spectra
 
         Ny = np.array([ima.shape[0] for ima in src.images.values()])
-        assert_equal(len(np.unique(Ny)), 1)
+        assert len(np.unique(Ny)) == 1
         Nx = np.array([ima.shape[1] for ima in src.images.values()])
-        assert_equal(len(np.unique(Nx)), 1)
+        assert len(np.unique(Nx)) == 1
 
     def test_sort_lines(self):
         """Source class: testing sort_lines method"""
         self.source1.sort_lines()
-        assert_equal(self.source1.lines['LINE'][0], six.b('[OIII]2'))
+        assert self.source1.lines['LINE'][0] == six.b('[OIII]2')
 
     @pytest.mark.slow
     def test_SEA(self):
@@ -246,21 +246,21 @@ class TestSource(object):
             source.extract_spectra(cube, skysub=False, psf=None)
 
             Nz = np.array([sp.shape[0] for sp in source.spectra.values()])
-            assert_equal(len(np.unique(Nz)), 1)
+            assert len(np.unique(Nz)) == 1
             tags = [tag for tag in source.images.keys() if tag[0:4] != 'HST_']
             Ny = np.array([source.images[tag].shape[0] for tag in tags])
-            assert_equal(len(np.unique(Ny)), 1)
+            assert len(np.unique(Ny)) == 1
             Nx = np.array([source.images[tag].shape[1] for tag in tags])
-            assert_equal(len(np.unique(Nx)), 1)
+            assert len(np.unique(Nx)) == 1
 
     def test_add_FSF(self):
         """Source class: testing add_FSF method"""
         src = Source.from_file(join(DATADIR, 'origin-00026.fits'))
         cube = Cube(join(DATADIR, 'subcub_mosaic.fits'))
         src.add_FSF(cube)
-        assert_equal(src.FSF99BET, 2.8)
-        assert_equal(src.FSF99FWA, 0.855)
-        assert_equal(src.FSF99FWB, -3.551e-05)
+        assert src.FSF99BET == 2.8
+        assert src.FSF99FWA == 0.855
+        assert src.FSF99FWB == -3.551e-05
 
 #
 #     def test_catalog(self):

@@ -22,8 +22,8 @@ def test_muselet():
         print('Working directory:', outdir)
         cont, single, raw = muselet(os.path.join(DATADIR, 'minicube.fits'),
                                     nbcube=False, del_sex=True, workdir=outdir)
-        nose.tools.assert_equal(len(cont), 1)
-        nose.tools.assert_equal(len(single), 8)
-        nose.tools.assert_equal(len(raw), 39)
+        assert len(cont) == 1
+        assert len(single) == 8
+        assert len(raw) == 39
     finally:
         shutil.rmtree(outdir)
