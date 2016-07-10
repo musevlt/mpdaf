@@ -1,7 +1,7 @@
 """Test on RawFile objects to be used with py.test."""
 
 from __future__ import absolute_import
-import nose.tools
+
 import os
 import numpy
 import unittest
@@ -28,7 +28,7 @@ class TestRawObj(object):
         """Raw objects: tests initialization"""
         chan1 = self.raw.get_channel("CHAN01")
         shape = numpy.shape(chan1.data)
-        nose.tools.assert_equal(shape, (self.raw.ny, self.raw.nx))
+        assert shape == (self.raw.ny, self.raw.nx)
 
     @unittest.skipIf(DATA_MISSING, "Missing test data (data/drs/raw.fits)")
     @pytest.mark.slow
@@ -37,9 +37,9 @@ class TestRawObj(object):
         overscan = self.raw[1].data[24, 12]
         pixel = self.raw[1].data[240, 120]
         out = self.raw[1].trimmed() * 10
-        nose.tools.assert_equal(out.data[24, 12], overscan)
-        nose.tools.assert_equal(out.data[240, 120], 10 * pixel)
+        assert out.data[24, 12] == overscan
+        assert out.data[240, 120] == 10 * pixel
 
         out = self.raw[1].overscan() * 2
-        nose.tools.assert_equal(out.data[24, 12], 2 * overscan)
-        nose.tools.assert_equal(out.data[240, 120], pixel)
+        assert out.data[24, 12] == 2 * overscan
+        assert out.data[240, 120] == pixel

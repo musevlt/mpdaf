@@ -55,8 +55,8 @@ def test_bounding_box():
         [sy, sx], [uy, yx], c = bounding_box("rectangle", (2.2, 1.8), radius,
                                              posangle=0.0, shape=shape,
                                              step=[1.0, 1.0])
-        nose.tools.assert_equal(sy, slice(2, 4))
-        nose.tools.assert_equal(sx, slice(1, 3))
+        assert sy == slice(2, 4)
+        assert sx == slice(1, 3)
         assert_allclose(c, np.array([2.5, 1.5]))
 
     # Ask for a 6x6 region centered at 2.2, 1.8.
@@ -70,8 +70,8 @@ def test_bounding_box():
     [sy, sx], [uy, ux], c = bounding_box("rectangle", (2.2, 1.8), (3, 3),
                                          posangle=0.0, shape=shape,
                                          step=[1.0, 1.0])
-    nose.tools.assert_equal(sy, slice(0, 4))
-    nose.tools.assert_equal(sx, slice(0, 5))
+    assert sy == slice(0, 4)
+    assert sx == slice(0, 5)
     assert_allclose(c, np.array([2.5, 1.5]))
 
     # Place the center at 0.1,-0.1 and the radius to 1, to check the
@@ -83,8 +83,8 @@ def test_bounding_box():
     # selected along the X-axis.
     [sy, sx], [uy, ux], c = bounding_box("rectangle", (0.1, -0.1), 1, posangle=0.0,
                                          shape=shape, step=[1.0, 1.0])
-    nose.tools.assert_equal(sy, slice(0, 2))
-    nose.tools.assert_equal(sx, slice(0, 1))
+    assert sy == slice(0, 2)
+    assert sx == slice(0, 1)
     assert_allclose(c, np.array([0.5, -0.5]))
 
     # Request a region that is an odd number of pixels in width and height
@@ -94,8 +94,8 @@ def test_bounding_box():
     # and 2,3,4 along the X axis.
     [sy, sx], [uy, ux], c = bounding_box("rectangle", (2.1, 2.8), 1.5, posangle=0.0,
                                          shape=shape, step=[1.0, 1.0])
-    nose.tools.assert_equal(sy, slice(1, 4))
-    nose.tools.assert_equal(sx, slice(2, 5))
+    assert sy == slice(1, 4)
+    assert sx == slice(2, 5)
     assert_allclose(c, np.array([2.0, 3.0]))
 
     # Request a region that is entirely outside the array.
@@ -107,5 +107,5 @@ def test_bounding_box():
     # slice of slice(shape[1]-1,shape[1]-1) should be returned.
     [sy, sx], [uy, ux], c = bounding_box("rectangle", (-5, 10), 1.5, posangle=0.0,
                                          shape=shape, step=[1.0, 1.0])
-    nose.tools.assert_equal(sy, slice(0, 0))
-    nose.tools.assert_equal(sx, slice(shape[1] - 1, shape[1] - 1))
+    assert sy == slice(0, 0)
+    assert sx == slice(shape[1] - 1, shape[1] - 1)

@@ -122,20 +122,20 @@ def _generate_test_data(data=2.3, var=1.0, mask=None, shape=None, unit=u.ct,
         data = data * np.ones(shape, dtype=type(data))
     elif data is not None:
         data = np.array(data, copy=copy)
-        np.testing.assert_equal(shape, data.shape)
+        assert shape == data.shape
 
     if np.isscalar(var):
         var = var * np.ones(shape, dtype=type(var))
     elif var is not None:
         var = np.array(var, copy=copy)
-        np.testing.assert_equal(shape, var.shape)
+        assert shape == var.shape
 
     if mask is None:
         mask = False
 
     if not np.isscalar(mask):
         mask = np.array(mask, copy=copy, dtype=bool)
-        np.testing.assert_equal(shape, mask.shape)
+        assert shape == mask.shape
 
     # Substitute default world-coordinates where not specified.
     if ndim == 2:
