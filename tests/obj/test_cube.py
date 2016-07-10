@@ -638,7 +638,7 @@ def test_get_item():
     assert_equal(r.data_header['KEY'], c.data_header['KEY'])
     assert isinstance(r, Image)
     assert r.wcs.isEqual(c.wcs)
-    nose.tools.assert_is_none(r.wave)
+    assert r.wave is None
 
     r = c[:, 2, 2]
     assert_array_equal(r.shape, (10, ))
@@ -646,7 +646,7 @@ def test_get_item():
     assert_equal(r.data_header['KEY'], c.data_header['KEY'])
     assert isinstance(r, Spectrum)
     assert r.wave.isEqual(c.wave)
-    nose.tools.assert_is_none(r.wcs)
+    assert r.wcs is None
 
 
 def test_bandpass_image():
