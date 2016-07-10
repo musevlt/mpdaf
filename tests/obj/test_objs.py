@@ -12,12 +12,12 @@ from mpdaf.obj.objs import (is_float, is_int, bounding_box, flux2mag,
 
 
 def test_is_float():
-    nose.tools.assert_true(is_float(1.2))
-    nose.tools.assert_true(is_float(1))
+    assert is_float(1.2)
+    assert is_float(1)
 
 
 def test_is_int():
-    nose.tools.assert_true(is_int(1))
+    assert is_int(1)
     nose.tools.assert_false(is_int(1.2))
 
 

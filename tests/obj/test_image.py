@@ -29,7 +29,7 @@ def test_copy():
     image2 = image1.copy()
     s = image1.data.sum()
     image1[0, 0] = 10000
-    nose.tools.assert_true(image1.wcs.isEqual(image2.wcs))
+    assert image1.wcs.isEqual(image2.wcs)
     nose.tools.assert_equal(s, image2.data.sum())
 
 
@@ -264,7 +264,7 @@ def test_background():
     ima = astronomical_image()
     (background, std) = ima[1647:1732, 618:690].background()
     # compare with IRAF results
-    nose.tools.assert_true((background - std < 1989) & (background + std > 1989))
+    assert (background - std < 1989) & (background + std > 1989)
 
 
 def test_peak():

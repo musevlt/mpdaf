@@ -20,7 +20,7 @@ def test_copy():
     """Spectrum class: testing copy method."""
     spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
     spe = spvar.copy()
-    nose.tools.assert_true(spvar.wave.isEqual(spe.wave))
+    assert spvar.wave.isEqual(spe.wave)
     nose.tools.assert_equal(spvar.data.sum(), spe.data.sum())
     nose.tools.assert_equal(spvar.var.sum(), spe.var.sum())
 
@@ -329,9 +329,9 @@ def test_mag():
     Vega.wave.wcs.wcs.cunit[0] = u.angstrom
     nose.tools.assert_almost_equal(Vega.abmag_filter_name('V'), 0, 1)
     mag = Vega.abmag_filter_name('Ic')
-    nose.tools.assert_true(mag > 0.4 and mag < 0.5)
+    assert mag > 0.4 and mag < 0.5
     mag = Vega.abmag_band(22500, 2500)
-    nose.tools.assert_true(mag > 1.9 and mag < 2.0)
+    assert mag > 1.9 and mag < 2.0
 
 
 def test_integrate():

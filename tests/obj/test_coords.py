@@ -23,7 +23,7 @@ class TestWCS(object):
         wcs2 = WCS(h2)
         wcs2.naxis1 = wcs.naxis1
         wcs2.naxis2 = wcs.naxis2
-        nose.tools.assert_true(wcs.isEqual(wcs2))
+        assert wcs.isEqual(wcs2)
 
     def test_from_hdr2(self):
         """WCS class: testing constructor 2 """
@@ -37,7 +37,7 @@ class TestWCS(object):
         """WCS class: tests copy"""
         wcs = WCS(crval=(0, 0), shape=(5, 6))
         wcs2 = wcs.copy()
-        nose.tools.assert_true(wcs.isEqual(wcs2))
+        assert wcs.isEqual(wcs2)
 
     def test_coordTransform(self):
         """WCS class: testing coordinates transformations"""
@@ -100,13 +100,13 @@ class TestWaveCoord(object):
         h2 = wave.to_header()
         wave2 = WaveCoord(h2)
         wave2.shape = wave.shape
-        nose.tools.assert_true(wave.isEqual(wave2))
+        assert wave.isEqual(wave2)
 
     def test_copy(self):
         """WaveCoord class: testing copy"""
         wave = WaveCoord(crval=0, cunit=u.nm, shape=10)
         wave2 = wave.copy()
-        nose.tools.assert_true(wave.isEqual(wave2))
+        assert wave.isEqual(wave2)
 
     def test_coord_transform(self):
         """WaveCoord class: testing coordinates transformations"""

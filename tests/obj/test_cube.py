@@ -30,8 +30,8 @@ def test_copy():
     cube2 = cube1.copy()
     s = cube1.data.sum()
     cube1[0, 0, 0] = 1000
-    nose.tools.assert_true(cube1.wcs.isEqual(cube2.wcs))
-    nose.tools.assert_true(cube1.wave.isEqual(cube2.wave))
+    assert cube1.wcs.isEqual(cube2.wcs)
+    assert cube1.wave.isEqual(cube2.wave)
     assert_equal(s, cube2.data.sum())
 
 
@@ -628,24 +628,24 @@ def test_get_item():
     assert_array_equal(r.shape, (10, 2, 2))
     assert_equal(r.primary_header['KEY'], c.primary_header['KEY'])
     assert_equal(r.data_header['KEY'], c.data_header['KEY'])
-    nose.tools.assert_true(isinstance(r, Cube))
-    nose.tools.assert_true(r.wcs.isEqual(c.wcs[:2, :2]))
-    nose.tools.assert_true(r.wave.isEqual(c.wave))
+    assert isinstance(r, Cube)
+    assert r.wcs.isEqual(c.wcs[:2, :2])
+    assert r.wave.isEqual(c.wave)
 
     r = c[0, :, :]
     assert_array_equal(r.shape, (6, 5))
     assert_equal(r.primary_header['KEY'], c.primary_header['KEY'])
     assert_equal(r.data_header['KEY'], c.data_header['KEY'])
-    nose.tools.assert_true(isinstance(r, Image))
-    nose.tools.assert_true(r.wcs.isEqual(c.wcs))
+    assert isinstance(r, Image)
+    assert r.wcs.isEqual(c.wcs)
     nose.tools.assert_is_none(r.wave)
 
     r = c[:, 2, 2]
     assert_array_equal(r.shape, (10, ))
     assert_equal(r.primary_header['KEY'], c.primary_header['KEY'])
     assert_equal(r.data_header['KEY'], c.data_header['KEY'])
-    nose.tools.assert_true(isinstance(r, Spectrum))
-    nose.tools.assert_true(r.wave.isEqual(c.wave))
+    assert isinstance(r, Spectrum)
+    assert r.wave.isEqual(c.wave)
     nose.tools.assert_is_none(r.wcs)
 
 
