@@ -12,8 +12,7 @@ from numpy.testing import (assert_array_equal, assert_allclose,
                            assert_almost_equal)
 
 from ..utils import (assert_image_equal, generate_image, generate_cube,
-                     generate_spectrum, assert_masked_allclose,
-                     astronomical_image)
+                     generate_spectrum, assert_masked_allclose)
 
 if six.PY2:
     from operator import add, sub, mul, div
@@ -253,7 +252,7 @@ def test_mask():
     assert_array_equal(image1._mask, expected_mask)
 
 
-def test_background():
+def test_background(a370II):
     """Image class: testing background value"""
     wcs = WCS()
     data = np.ones(shape=(6, 5)) * 2
@@ -261,13 +260,12 @@ def test_background():
     (background, std) = image1.background()
     assert background == 2
     assert std == 0
-    ima = astronomical_image()
-    (background, std) = ima[1647:1732, 618:690].background()
+    (background, std) = a370II[1647:1732, 618:690].background()
     # compare with IRAF results
     assert (background - std < 1989) & (background + std > 1989)
 
 
-def test_peak():
+def test_peak(a370II):
     """Image class: testing peak research"""
     wcs = WCS()
     data = np.ones(shape=(6, 5)) * 2
@@ -276,37 +274,27 @@ def test_peak():
     p = image1.peak()
     assert p['p'] == 2
     assert p['q'] == 3
-    ima = astronomical_image()
-    p = ima.peak(center=(790, 875), radius=20, plot=False, unit_center=None,
-                 unit_radius=None)
+    p = a370II.peak(center=(790, 875), radius=20, plot=False, unit_center=None,
+                    unit_radius=None)
     assert_almost_equal(p['p'], 793.1, 1)
     assert_almost_equal(p['q'], 875.9, 1)
 
 
-def test_rotate():
+def test_rotate(a370II):
     """Image class: testing rotation"""
 
-    # Read a test image.
+    peak = a370II.data.max()
 
-    before = astronomical_image()
-
-    # Get the maximum of the image.
-
-    peak = before.data.max()
-
-    # Choose a few test pixels at different locations in the input
-    # image.
-
+    # Choose a few test pixels at different locations in the input image.
     old_pixels = np.array([
-        [before.shape[0] // 4, before.shape[1] // 4],
-        [before.shape[0] // 4, (3 * before.shape[1]) // 4],
-        [(3 * before.shape[0]) // 4, before.shape[1] // 4],
-        [(3 * before.shape[0]) // 4, (3 * before.shape[1]) // 4],
-        [before.shape[0] // 2, before.shape[1] // 2]])
+        [a370II.shape[0] // 4, a370II.shape[1] // 4],
+        [a370II.shape[0] // 4, (3 * a370II.shape[1]) // 4],
+        [(3 * a370II.shape[0]) // 4, a370II.shape[1] // 4],
+        [(3 * a370II.shape[0]) // 4, (3 * a370II.shape[1]) // 4],
+        [a370II.shape[0] // 2, a370II.shape[1] // 2]])
 
     # Get the sky coordinates of the test pixels.
-
-    coords = before.wcs.pix2sky(old_pixels)
+    coords = a370II.wcs.pix2sky(old_pixels)
 
     # Set 3x3 squares of pixels around each of the test pixels
     # in the input image to a large value that we can later
@@ -319,22 +307,19 @@ def test_rotate():
     for pixel in old_pixels:
         py = pixel[0]
         px = pixel[1]
-        before.data[py - 1:py + 2, px - 1:px + 2] = test_value
+        a370II.data[py - 1:py + 2, px - 1:px + 2] = test_value
 
     # Get a rotated copy of the image.
-
-    after = before.rotate(30, reshape=True, regrid=True)
+    after = a370II.rotate(30, reshape=True, regrid=True)
 
     # See in which pixels the coordinate matrix of the rotated
     # image says that the test sky coordinates should now be found
     # after the rotation.
-
     new_pixels = np.asarray(np.rint(after.wcs.sky2pix(coords)), dtype=int)
 
     # Check that the values of the nearest pixels to the rotated
-    # locations hold the test value that we wrote to the image before
+    # locations hold the test value that we wrote to the image a370II
     # rotation.
-
     for pixel in new_pixels:
         py = pixel[0]
         px = pixel[1]
@@ -343,66 +328,54 @@ def test_rotate():
     # If both the WCS and the image were rotated wrongly in the same
     # way, then the above test will incrorrectly claim that the
     # rotation worked, so now check that the WCS was rotated correctly.
-    assert_allclose(after.wcs.get_rot() - before.wcs.get_rot(), 30.0)
+    assert_allclose(after.wcs.get_rot() - a370II.wcs.get_rot(), 30.0)
 
 
-def test_resample():
+def test_resample(a370II):
     """Image class: Testing the resample method"""
 
-    # Read a test image.
-
-    before = astronomical_image()
-
     # What scale factors shall we multiply the input step size by?
-
     xfactor = 3.5
     yfactor = 4.3
 
     # Get the maximum of the input image.
-
-    peak = before.data.max()
+    peak = a370II.data.max()
 
     # Choose a few test pixels at different locations in the input
     # image.
-
     old_pixels = np.array([
-        [before.shape[0] // 4, before.shape[1] // 4],
-        [before.shape[0] // 4, (3 * before.shape[1]) // 4],
-        [(3 * before.shape[0]) // 4, before.shape[1] // 4],
-        [(3 * before.shape[0]) // 4, (3 * before.shape[1]) // 4],
-        [before.shape[0] // 2, before.shape[1] // 2]])
+        [a370II.shape[0] // 4, a370II.shape[1] // 4],
+        [a370II.shape[0] // 4, (3 * a370II.shape[1]) // 4],
+        [(3 * a370II.shape[0]) // 4, a370II.shape[1] // 4],
+        [(3 * a370II.shape[0]) // 4, (3 * a370II.shape[1]) // 4],
+        [a370II.shape[0] // 2, a370II.shape[1] // 2]])
 
     # Get the sky coordinates of the test pixels.
-
-    coords = before.wcs.pix2sky(old_pixels)
+    coords = a370II.wcs.pix2sky(old_pixels)
 
     # Assign a large value to each of the above test pixels, so that
     # we can distinguish the smoothed version of it in the output
     # image.
-
     test_value = 2 * peak
     for pixel in old_pixels:
         py = pixel[0]
         px = pixel[1]
-        before.data[py, px] = test_value
+        a370II.data[py, px] = test_value
 
     # Resample the image.
-
     newstep = np.array(
-        [before.get_step(unit=u.arcsec)[0] * yfactor,
-         before.get_step(unit=u.arcsec)[1] * xfactor])
-    after = before.resample(newdim=before.shape, newstart=None,
+        [a370II.get_step(unit=u.arcsec)[0] * yfactor,
+         a370II.get_step(unit=u.arcsec)[1] * xfactor])
+    after = a370II.resample(newdim=a370II.shape, newstart=None,
                             newstep=newstep, flux=False)
 
     # See in which pixels the coordinate matrix of the rotated
     # image says that the test sky coordinates should now be found
     # after the rotation.
-
     new_pixels = np.asarray(np.rint(after.wcs.sky2pix(coords)), dtype=int)
 
     # Check that the first image moments of the resampled test pixels
     # are at the expected places.
-
     pad = 10
     for pixel in new_pixels:
         py = pixel[0]
@@ -412,17 +385,15 @@ def test_resample():
         assert_allclose(offset, np.array([pad, pad]), rtol=0, atol=0.1)
 
 
-def test_inside():
+def test_inside(a370II):
     """Image class: testing inside method."""
-    ima = astronomical_image()
-    assert ima.inside((39.951088, -1.4977398), unit=ima.wcs.unit) is False
+    assert not a370II.inside((39.951088, -1.4977398), unit=a370II.wcs.unit)
 
 
-def test_subimage():
+def test_subimage(a370II):
     """Image class: testing sub-image extraction."""
-    ima = astronomical_image()
-    subima = ima.subimage(center=(790, 875), size=40, unit_center=None,
-                          unit_size=None)
+    subima = a370II.subimage(center=(790, 875), size=40, unit_center=None,
+                             unit_size=None)
     assert subima.peak()['data'] == 3035.0
 
 
