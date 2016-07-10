@@ -113,21 +113,6 @@ if '.dev' in __version__:
         __version__ += commit_number
 
 
-class UnitTest(Command):
-    user_options = []
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        errno = subprocess.call(['nosetests', '-a', 'speed=fast', '-a',
-                                 'speed=slow', 'lib/mpdaf', 'tests'])
-        raise SystemExit(errno)
-
-
 def options(*packages, **kw):
     flag_map = {'-I': 'include_dirs', '-L': 'library_dirs', '-l': 'libraries'}
 
@@ -173,7 +158,7 @@ with open('README.rst') as f:
 with open('CHANGELOG') as f:
     CHANGELOG = f.read()
 
-cmdclass = {'test': UnitTest}
+cmdclass = {}
 
 ext = '.pyx' if HAVE_CYTHON else '.c'
 ext_modules = [
@@ -207,7 +192,8 @@ setup(
     extras_require={
         'all':  ['numexpr', 'fitsio'],
     },
-    tests_require=['nose'],
+    setup_requires=['pytest-runner'],
+    tests_require=['pytest'],
     package_dir={'': 'lib'},
     packages=find_packages('lib'),
     zip_safe=False,
