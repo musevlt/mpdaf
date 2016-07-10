@@ -38,7 +38,6 @@ def test_unit_masked_array():
 
 def test_bounding_box():
     shape = (4, 5)
-    center = (2.2, 1.8)
 
     # Check that specifying just one radius, or two identical radii
     # produce the same expected result. The requested half-width of 1
@@ -80,8 +79,9 @@ def test_bounding_box():
     # clipping the selected pixels would be 0,1 along the Y-axis and
     # -1,0 along the X axis. After clipping only pixel 0 should remain
     # selected along the X-axis.
-    [sy, sx], [uy, ux], c = bounding_box("rectangle", (0.1, -0.1), 1, posangle=0.0,
-                                         shape=shape, step=[1.0, 1.0])
+    [sy, sx], [uy, ux], c = bounding_box("rectangle", (0.1, -0.1), 1,
+                                         posangle=0.0, shape=shape,
+                                         step=[1.0, 1.0])
     assert sy == slice(0, 2)
     assert sx == slice(0, 1)
     assert_allclose(c, np.array([0.5, -0.5]))
@@ -91,7 +91,8 @@ def test_bounding_box():
     # centered at the center of a pixel, and the nearest pixel center is
     # 2.0,3.0, so we expect it to select pixels 1,2,3 along the Y axis,
     # and 2,3,4 along the X axis.
-    [sy, sx], [uy, ux], c = bounding_box("rectangle", (2.1, 2.8), 1.5, posangle=0.0,
+    [sy, sx], [uy, ux], c = bounding_box("rectangle", (2.1, 2.8), 1.5,
+                                         posangle=0.0,
                                          shape=shape, step=[1.0, 1.0])
     assert sy == slice(1, 4)
     assert sx == slice(2, 5)
@@ -102,9 +103,10 @@ def test_bounding_box():
     # center of -5,10 if it fitted in the image. The selected range along
     # the Y axis is off the lower edge of the array, so its slice should
     # be the zero pixel range slice(0,0). The selected range along the
-    # X axis is above the maximum pixel index of shape[1], so a zero pixel-range
-    # slice of slice(shape[1]-1,shape[1]-1) should be returned.
-    [sy, sx], [uy, ux], c = bounding_box("rectangle", (-5, 10), 1.5, posangle=0.0,
+    # X axis is above the maximum pixel index of shape[1], so a zero
+    # pixel-range slice of slice(shape[1]-1,shape[1]-1) should be returned.
+    [sy, sx], [uy, ux], c = bounding_box("rectangle", (-5, 10), 1.5,
+                                         posangle=0.0,
                                          shape=shape, step=[1.0, 1.0])
     assert sy == slice(0, 0)
     assert sx == slice(shape[1] - 1, shape[1] - 1)

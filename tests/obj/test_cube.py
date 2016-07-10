@@ -229,15 +229,16 @@ def test_mask():
     cube = generate_cube(shape=(10, 8, 8), wcs=wcs, var=None)
     cube.mask_ellipse([3.5, 3.5], (2.5, 3.5), 45.0, unit_radius=None,
                       unit_center=None, inside=False, lmin=2, lmax=5)
-    expected_mask = np.array([[True, True, True, True, True, True, True, True],
-                              [True, True, True, False, False, False, True, True],
-                              [True, True, False, False, False, False, False, True],
-                              [True, False, False, False, False, False, False, True],
-                              [True, False, False, False, False, False, False, True],
-                              [True, False, False, False, False, False, True, True],
-                              [True, True, False, False, False, True, True, True],
-                              [True, True, True, True, True, True, True, True]],
-                             dtype=bool)
+    expected_mask = np.array([
+        [True, True, True, True, True, True, True, True],
+        [True, True, True, False, False, False, True, True],
+        [True, True, False, False, False, False, False, True],
+        [True, False, False, False, False, False, False, True],
+        [True, False, False, False, False, False, False, True],
+        [True, False, False, False, False, False, True, True],
+        [True, True, False, False, False, True, True, True],
+        [True, True, True, True, True, True, True, True]],
+        dtype=bool)
     assert_array_equal(np.any(cube.mask[:2, :, :], axis=0),
                        np.ones(cube.shape[1:]))
     assert_array_equal(np.all(cube._mask[2:5, :, :], axis=0), expected_mask)
@@ -334,12 +335,14 @@ def test_mean():
             # Compute the expected values of the mean and its variance,
             # using a different implementation to cube.mean().
             expected_data = np.sum(data * w, axis=axis) / np.sum(w, axis=axis)
-            expected_var = np.sum(var * w**2, axis=axis) / np.sum(w, axis=axis)**2
+            expected_var = (np.sum(var * w**2, axis=axis) /
+                            np.sum(w, axis=axis)**2)
 
             # In the case any of the following tests fail, provide an
             # error message that indicates which arguments were passed
             # to cube.mean()
-            errmsg = "Failure of cube.mean(axis=%s, weights=%s)" % (axis, weights)
+            errmsg = "Failure of cube.mean(axis=%s, weights=%s)" % (
+                axis, weights)
 
             # See if the mean pixels and variances of these pixels have the
             # expected values.
@@ -483,13 +486,15 @@ def test_rebin():
     # sum[n=0..N] = (n*(n-1))/2.
     tmp = cut + factor
     assert_allclose(np.asarray(cube2.get_start()),
-                    ((tmp * (tmp - 1)) / 2.0 - (cut * (cut - 1)) / 2.0) / factor)
+                    ((tmp * (tmp - 1)) / 2.0 -
+                     (cut * (cut - 1)) / 2.0) / factor)
 
 
 def test_get_image():
     """Cube class: testing get_image method"""
     shape = (2000, 6, 5)
-    wave = WaveCoord(crpix=1, cdelt=3.0, crval=2000, cunit=u.angstrom, shape=shape[0])
+    wave = WaveCoord(crpix=1, cdelt=3.0, crval=2000, cunit=u.angstrom,
+                     shape=shape[0])
     wcs = WCS(crval=(0, 0))
     data = np.ones(shape=shape) * 2
     cube1 = Cube(data=data, wave=wave, wcs=wcs)
@@ -551,7 +556,6 @@ def test_get_image():
 
 def test_subcube():
     """Cube class: testing sub-cube extraction methods"""
-    wcs = WCS(crval=(0, 0), crpix=1.0, deg=True)
     cube1 = generate_cube(data=1, wave=WaveCoord(crval=1))
 
     # Extract a sub-cube whose images are centered close to pixel
@@ -670,13 +674,13 @@ def test_bandpass_image():
     # spectral pixels. The weight of each pixel is supposed to be
     # integral of the sensitivity function over the width of the pixel.
     #
-    #| 0  |  1  |  2  |  3  |  4  |  5  |  6  |  Pixel indexes
-    #         _______________________
-    # _______|                       |_________  Sensitivities
+    # | 0  |  1  |  2  |  3  |  4  |  5  |  6  |  Pixel indexes
+    #          _______________________
+    #  _______|                       |_________  Sensitivities
     #
-    #  0.0  0.5   1.0   1.0   1.0   0.5   0.0    Weights
-    #  0.0  1.0   2.0   3.0   4.0   5.0   6.0    Pixel values vs wavelength
-    #  0.0  0.5   2.0   3.0   4.0   2.5   0.0    Pixel values * weights
+    #   0.0  0.5   1.0   1.0   1.0   0.5   0.0    Weights
+    #   0.0  1.0   2.0   3.0   4.0   5.0   6.0    Pixel values vs wavelength
+    #   0.0  0.5   2.0   3.0   4.0   2.5   0.0    Pixel values * weights
 
     weights = np.array([0.0, 0.5, 1.0, 1.0, 1.0, 0.5, 0.0])
 

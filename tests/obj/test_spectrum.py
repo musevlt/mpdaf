@@ -142,7 +142,8 @@ def test_spectrum_methods():
     assert_almost_equal(spnovar.mean(), 11.101, 2)
     spvarsum = spvar2 + 4 * spvar2 - 56 / spvar2
 
-    assert_almost_equal(spvarsum[10], spvar2[10] + 4 * spvar2[10] - 56 / spvar2[10], 2)
+    assert_almost_equal(spvarsum[10],
+                        spvar2[10] + 4 * spvar2[10] - 56 / spvar2[10], 2)
     assert_almost_equal(spvar.get_step(), 0.630, 2)
     assert_almost_equal(spvar.get_start(), 4602.604, 2)
     assert_almost_equal(spvar.get_end(), 7184.289, 2)

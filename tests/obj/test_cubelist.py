@@ -1,7 +1,6 @@
 """Test on Image objects."""
 
 from __future__ import absolute_import, print_function
-import pytest
 
 import numpy as np
 import os

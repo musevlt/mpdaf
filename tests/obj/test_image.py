@@ -85,7 +85,8 @@ def test_get():
     """Image class: testing getters"""
     image1 = generate_image()
     ima = image1[0:2, 1:4]
-    assert_image_equal(ima, shape=(2, 3), start=(0, 1), end=(1, 3), step=(1, 1))
+    assert_image_equal(ima, shape=(2, 3), start=(0, 1), end=(1, 3),
+                       step=(1, 1))
 
 
 def test_crop():
@@ -232,15 +233,16 @@ def test_mask():
     image1 = Image(data=data, wcs=wcs)
     image1.mask_ellipse([3.5, 3.5], (2.5, 3.5), 45.0, unit_radius=None,
                         unit_center=None, inside=False)
-    expected_mask = np.array([[True, True, True, True, True, True, True, True],
-                              [True, True, True, False, False, False, True, True],
-                              [True, True, False, False, False, False, False, True],
-                              [True, False, False, False, False, False, False, True],
-                              [True, False, False, False, False, False, False, True],
-                              [True, False, False, False, False, False, True, True],
-                              [True, True, False, False, False, True, True, True],
-                              [True, True, True, True, True, True, True, True]],
-                             dtype=bool)
+    expected_mask = np.array([
+        [True, True, True, True, True, True, True, True],
+        [True, True, True, False, False, False, True, True],
+        [True, True, False, False, False, False, False, True],
+        [True, False, False, False, False, False, False, True],
+        [True, False, False, False, False, False, False, True],
+        [True, False, False, False, False, False, True, True],
+        [True, True, False, False, False, True, True, True],
+        [True, True, True, True, True, True, True, True]],
+        dtype=bool)
     assert_array_equal(image1._mask, expected_mask)
 
     # Use np.where to select the masked pixels and check that mask_selection()
