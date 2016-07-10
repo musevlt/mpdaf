@@ -13,8 +13,6 @@ from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_almost_equal)
 from tempfile import NamedTemporaryFile
 
-from ..utils import generate_spectrum
-
 
 def test_copy():
     """Spectrum class: testing copy method."""
@@ -25,18 +23,17 @@ def test_copy():
     assert spvar.var.sum() == spe.var.sum()
 
 
-def test_selection():
+def test_selection(spectrum):
     """Spectrum class: testing operators > and < """
-    spectrum1 = generate_spectrum(uwave=u.nm)
-    spectrum2 = spectrum1 > 6
+    spectrum2 = spectrum > 6
     assert_almost_equal(spectrum2.sum(), 24)
-    spectrum2 = spectrum1 >= 6
+    spectrum2 = spectrum >= 6
     assert_almost_equal(spectrum2.sum(), 30)
-    spectrum2 = spectrum1 < 6
+    spectrum2 = spectrum < 6
     assert_almost_equal(spectrum2.sum(), 15.5)
-    spectrum2 = spectrum1 <= 6
-    spectrum1[:] = spectrum2
-    assert_almost_equal(spectrum1.sum(), 21.5)
+    spectrum2 = spectrum <= 6
+    spectrum[:] = spectrum2
+    assert_almost_equal(spectrum.sum(), 21.5)
 
 
 def test_arithmetric():

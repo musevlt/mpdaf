@@ -21,14 +21,13 @@ else:
     from operator import add, sub, mul, truediv as div
 
 
-def test_copy():
+def test_copy(cube):
     """Cube class: testing copy method."""
-    cube1 = generate_cube()
-    cube2 = cube1.copy()
-    s = cube1.data.sum()
-    cube1[0, 0, 0] = 1000
-    assert cube1.wcs.isEqual(cube2.wcs)
-    assert cube1.wave.isEqual(cube2.wave)
+    cube2 = cube.copy()
+    s = cube.data.sum()
+    cube[0, 0, 0] = 1000
+    assert cube.wcs.isEqual(cube2.wcs)
+    assert cube.wave.isEqual(cube2.wave)
     assert s == cube2.data.sum()
 
 
@@ -60,26 +59,24 @@ def test_arithmetricOperator_Cube():
     assert_almost_equal(cube2.data, cube1.data / 25.3)
 
 
-def test_get_Cube():
+def test_get_cube(cube):
     """Cube class: tests getters"""
-    cube1 = generate_cube()
-    assert_array_equal(cube1[2, :, :].shape, (6, 5))
-    assert cube1[:, 2, 3].shape[0] == 10
-    assert_array_equal(cube1[1:7, 0:2, 0:3].shape, (6, 2, 3))
-    assert_array_equal(cube1.select_lambda(1.2, 15.6).shape, (6, 6, 5))
-    a = cube1[2:4, 0:2, 1:4]
+    assert_array_equal(cube[2, :, :].shape, (6, 5))
+    assert cube[:, 2, 3].shape[0] == 10
+    assert_array_equal(cube[1:7, 0:2, 0:3].shape, (6, 2, 3))
+    assert_array_equal(cube.select_lambda(1.2, 15.6).shape, (6, 6, 5))
+    a = cube[2:4, 0:2, 1:4]
     assert_array_equal(a.get_start(), (3.5, 0, 1))
     assert_array_equal(a.get_end(), (6.5, 1, 3))
 
 
-def test_iter_ima():
+def test_iter_ima(cube):
     """Cube class: tests Image iterator"""
-    cube1 = generate_cube()
     ones = np.ones(shape=(6, 5))
-    for ima, k in iter_ima(cube1, True):
+    for ima, k in iter_ima(cube, True):
         ima[:, :] = k * ones
-    c = np.arange(cube1.shape[0])[:, np.newaxis, np.newaxis]
-    assert_array_equal(*np.broadcast_arrays(cube1.data.data, c))
+    c = np.arange(cube.shape[0])[:, np.newaxis, np.newaxis]
+    assert_array_equal(*np.broadcast_arrays(cube.data.data, c))
 
 
 def test_iter_spe():
@@ -92,12 +89,11 @@ def test_iter_spe():
     assert_array_equal(*np.broadcast_arrays(cube1.data.data, y + x))
 
 
-def test_crop():
+def test_crop(cube):
     """Cube class: tests the crop method."""
-    cube1 = generate_cube()
-    cube1.data.mask[0, :, :] = True
-    cube1.crop()
-    assert cube1.shape[0] == 9
+    cube.data.mask[0, :, :] = True
+    cube.crop()
+    assert cube.shape[0] == 9
 
 
 # A function for testing the multiprocessing function, which takes an
@@ -129,26 +125,23 @@ def test_multiprocess():
     assert_allclose(im.data, data_value * 10.0)
 
 
-def test_multiprocess2():
+def test_multiprocess2(cube):
     """Cube class: more tests for multiprocess"""
-    cube1 = generate_cube()
     f = Image.ee
-    ee = cube1.loop_ima_multiprocessing(f, cpu=2, verbose=False)
-    assert ee[1] == cube1[1, :, :].ee()
+    ee = cube.loop_ima_multiprocessing(f, cpu=2, verbose=False)
+    assert ee[1] == cube[1, :, :].ee()
 
     f = Image.rotate
-    cub2 = cube1.loop_ima_multiprocessing(f, cpu=2, verbose=False, theta=20)
-    assert cub2[4, 3, 2] == cube1[4, :, :].rotate(20)[3, 2]
+    cub2 = cube.loop_ima_multiprocessing(f, cpu=2, verbose=False, theta=20)
+    assert cub2[4, 3, 2] == cube[4, :, :].rotate(20)[3, 2]
 
     f = Spectrum.resample
-    out = cube1.loop_spe_multiprocessing(f, cpu=2, verbose=False, step=1)
-    assert out[8, 3, 2] == cube1[:, 3, 2].resample(step=1)[8]
+    out = cube.loop_spe_multiprocessing(f, cpu=2, verbose=False, step=1)
+    assert out[8, 3, 2] == cube[:, 3, 2].resample(step=1)[8]
 
 
-def test_mask():
+def test_mask(cube):
     """Cube class: testing mask functionalities"""
-    cube = generate_cube()
-
     # A region of half-width=1 and half-height=1 should have a size of
     # 2x2 pixels. A 2x2 region of pixels has a center at the shared
     # corner of the 4 pixels, and the closest corner to the requested

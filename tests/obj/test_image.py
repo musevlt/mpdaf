@@ -12,7 +12,7 @@ from numpy.testing import (assert_array_equal, assert_allclose,
                            assert_almost_equal)
 
 from ..utils import (assert_image_equal, generate_image, generate_cube,
-                     generate_spectrum, assert_masked_allclose)
+                     assert_masked_allclose)
 
 if six.PY2:
     from operator import add, sub, mul, div
@@ -20,42 +20,39 @@ else:
     from operator import add, sub, mul, truediv as div
 
 
-def test_copy():
+def test_copy(image):
     """Image class: testing copy method."""
-    image1 = generate_image()
-    image2 = image1.copy()
-    s = image1.data.sum()
-    image1[0, 0] = 10000
-    assert image1.wcs.isEqual(image2.wcs)
+    image2 = image.copy()
+    s = image.data.sum()
+    image[0, 0] = 10000
+    assert image.wcs.isEqual(image2.wcs)
     assert s == image2.data.sum()
 
 
-def test_arithmetic_images():
-    image1 = generate_image()
+def test_arithmetic_images(image):
     image2 = generate_image(data=1, unit=u.Unit('2 ct'))
 
     for op in (add, sub, mul, div):
-        image3 = op(image1, image2)
+        image3 = op(image, image2)
         assert_allclose((image3.data.data * image3.unit).value,
-                        op(image1.data.data * image1.unit,
+                        op(image.data.data * image.unit,
                            (image2.data.data * image2.unit).to(u.ct)).value)
 
 
-def test_arithmetic_scalar():
-    image1 = generate_image()
-    image1 += 4.2
-    assert_allclose(image1.data, 2 + 4.2)
-    image1 -= 4.2
-    assert_allclose(image1.data, 2)
-    image1 *= 4.2
-    assert_allclose(image1.data, 2 * 4.2)
-    image1 /= 4.2
-    assert_allclose(image1.data, 2)
+def test_arithmetic_scalar(image):
+    image += 4.2
+    assert_allclose(image.data, 2 + 4.2)
+    image -= 4.2
+    assert_allclose(image.data, 2)
+    image *= 4.2
+    assert_allclose(image.data, 2 * 4.2)
+    image /= 4.2
+    assert_allclose(image.data, 2)
 
     for op in (add, sub, mul, div):
-        assert_allclose(op(image1, 4.2).data, op(2, 4.2))
+        assert_allclose(op(image, 4.2).data, op(2, 4.2))
     for op in (add, sub, mul, div):
-        assert_allclose(op(4.2, image1).data, op(4.2, 2))
+        assert_allclose(op(4.2, image).data, op(4.2, 2))
 
 
 def test_arithmetic_cubes():
@@ -67,23 +64,19 @@ def test_arithmetic_cubes():
         assert_allclose(op(cube1, image2).data, op(cube1.data, image2.data))
 
 
-def test_arithmetic_spectra():
-    image1 = generate_image()
-    spectrum1 = generate_spectrum()
+def test_arithmetic_spectra(image, spectrum):
+    ref = spectrum.data[:, np.newaxis, np.newaxis] * image.data[..., :]
+    assert_allclose((image * spectrum).data, ref)
+    assert_allclose((spectrum * image).data, ref)
 
-    ref = spectrum1.data[:, np.newaxis, np.newaxis] * image1.data[..., :]
-    assert_allclose((image1 * spectrum1).data, ref)
-    assert_allclose((spectrum1 * image1).data, ref)
-
-    image2 = (image1 * -2).abs() + (image1 + 4).sqrt() - 2
-    assert_allclose(image2.data, np.abs(image1.data * -2) +
-                    np.sqrt(image1.data + 4) - 2)
+    image2 = (image * -2).abs() + (image + 4).sqrt() - 2
+    assert_allclose(image2.data, np.abs(image.data * -2) +
+                    np.sqrt(image.data + 4) - 2)
 
 
-def test_get():
+def test_get(image):
     """Image class: testing getters"""
-    image1 = generate_image()
-    ima = image1[0:2, 1:4]
+    ima = image[0:2, 1:4]
     assert_image_equal(ima, shape=(2, 3), start=(0, 1), end=(1, 3),
                        step=(1, 1))
 
@@ -135,11 +128,10 @@ def test_crop():
     assert image1.get_rot() == 0
 
 
-def test_truncate():
+def test_truncate(image):
     """Image class: testing truncation"""
-    image1 = generate_image()
-    image1 = image1.truncate(0, 1, 1, 3, unit=image1.wcs.unit)
-    assert_image_equal(image1, shape=(2, 3), start=(0, 1), end=(1, 3))
+    image = image.truncate(0, 1, 1, 3, unit=image.wcs.unit)
+    assert_image_equal(image, shape=(2, 3), start=(0, 1), end=(1, 3))
 
 
 def test_gauss():

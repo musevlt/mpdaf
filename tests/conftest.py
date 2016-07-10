@@ -7,6 +7,8 @@ import pytest
 from mpdaf.obj import Image
 from os.path import join
 
+from .utils import generate_cube, generate_image, generate_spectrum
+
 DATADIR = join(os.path.abspath(os.path.dirname(__file__)), '..', 'data')
 
 
@@ -28,3 +30,18 @@ def a370II():
     ima.wcs.set_cd(np.array([[2.30899476e-5, -5.22301199e-5],
                              [-5.22871997e-5, -2.30647413e-5]]))
     return ima
+
+
+@pytest.fixture
+def cube():
+    return generate_cube()
+
+
+@pytest.fixture
+def image():
+    return generate_image()
+
+
+@pytest.fixture
+def spectrum():
+    return generate_spectrum()

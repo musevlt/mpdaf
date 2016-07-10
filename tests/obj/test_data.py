@@ -25,21 +25,19 @@ TESTSPE = join(DATADIR, 'data', 'obj', 'Spectrum_lines.fits')
 TESTCUBE = join(DATADIR, 'data', 'sdetect', 'minicube.fits')
 
 
-def test_deprecated_warnings():
+def test_deprecated_warnings(spectrum):
     """DataArray class: Testing warnings for deprecated methods"""
-    sp = generate_spectrum()
-
     with warnings.catch_warnings(record=True) as w:
         # Cause all warnings to always be triggered.
         warnings.simplefilter("always")
-        sp.get_lambda(0)
+        spectrum.get_lambda(0)
         assert len(w) == 1
         assert issubclass(w[-1].category, MpdafWarning)
         assert "deprecated" in str(w[-1].message)
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        sp.resize()
+        spectrum.resize()
         assert len(w) == 1
         assert issubclass(w[-1].category, MpdafWarning)
         assert "deprecated" in str(w[-1].message)
@@ -142,12 +140,11 @@ def test_copy():
     assert cube2.var.mask is cube2.mask
 
 
-def test_clone():
+def test_clone(cube):
     """DataArray class: Testing the clone method"""
-    cube1 = generate_cube(shape=(10, 6, 5))
-    cube2 = cube1.clone()
-    assert cube1.wcs.isEqual(cube2.wcs)
-    assert cube1.wave.isEqual(cube2.wave)
+    cube2 = cube.clone()
+    assert cube.wcs.isEqual(cube2.wcs)
+    assert cube.wave.isEqual(cube2.wave)
     assert cube2._data is None
     assert cube2._var is None
     assert cube2._mask is None
@@ -762,7 +759,6 @@ def test_abs():
     var = 0.5
     mask = np.logical_and(ramp > -2, ramp < 2)
     spec1 = generate_spectrum(ramp, var=var, mask=mask)
-
     spec2 = spec1.abs()
 
     # Check that the unmasked values of the data array have been
