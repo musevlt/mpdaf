@@ -338,7 +338,7 @@ def test_rotate():
     for pixel in new_pixels:
         py = pixel[0]
         px = pixel[1]
-        assert_almost_equal(after.data[py, px], test_value, places=6)
+        assert_almost_equal(after.data[py, px], test_value, decimal=6)
 
     # If both the WCS and the image were rotated wrongly in the same
     # way, then the above test will incrorrectly claim that the

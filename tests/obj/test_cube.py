@@ -574,7 +574,7 @@ def test_subcube():
     # of radius 1.
     cube2 = cube1.subcube_circle_aperture(center=(2.3, 2.8), radius=1,
                                           unit_center=None, unit_radius=None)
-    assert cube2.data.mask[0, 0, 0] is True
+    assert bool(cube2.data.mask[0, 0, 0]) is True
     assert_array_equal(cube2.get_start(), (1, 2, 2))
     assert_array_equal(cube2.shape, (10, 2, 2))
 
