@@ -1330,7 +1330,7 @@ def test_non_masked_data():
                            ma.array(old_data, mask=ma.nomask))
     assert_masked_allclose(template_spec.var,
                            ma.array(old_var, mask=ma.nomask))
-    assert_is(template_spec.mask, ma.nomask)
+    assert template_spec.mask is ma.nomask
 
     # Assign a new ndarray data array and a new ndarray variance array
     # of the same size, and check that this doesn't trigger masks to be
@@ -1343,7 +1343,7 @@ def test_non_masked_data():
 
     assert_masked_allclose(spec.data, ma.array(new_data, mask=ma.nomask))
     assert_masked_allclose(spec.var, ma.array(new_var, mask=ma.nomask))
-    assert_is(spec.mask, ma.nomask)
+    assert spec.mask is ma.nomask
 
     # Assign ndarray arrays of a new size to the data and var properties.
 
@@ -1356,7 +1356,7 @@ def test_non_masked_data():
 #
 #     assert_masked_allclose(spec.data, ma.array(new_data, mask=ma.nomask))
 #     assert_masked_allclose(spec.var, ma.array(new_var, mask=ma.nomask))
-#     assert_is(spec.mask, ma.nomask)
+#     assert spec.mask is ma.nomask
 
     # Assign a masked array of the same size to the data property.
     new_mask = ma.make_mask_none(n)

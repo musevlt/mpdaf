@@ -27,13 +27,13 @@ def test_mag_flux():
 
 def test_unit_array():
     arr = np.arange(5)
-    nose.tools.assert_is(UnitArray(arr, u.m, u.m), arr)
+    assert UnitArray(arr, u.m, u.m) is arr
     assert_array_equal(UnitArray(arr, u.m, u.mm), arr * 1e3)
 
 
 def test_unit_masked_array():
     arr = np.ma.arange(5)
-    nose.tools.assert_is(UnitMaskedArray(arr, u.m, u.m), arr)
+    assert UnitMaskedArray(arr, u.m, u.m) is arr
     assert_array_equal(UnitMaskedArray(arr, u.m, u.mm), arr * 1e3)
 
 

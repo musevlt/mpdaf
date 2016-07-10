@@ -69,7 +69,7 @@ def assert_masked_allclose(d1, d2):
         # Check that they have identical masks.
 
         if d1.mask is np.ma.nomask or d2.mask is np.ma.nomask:
-            assert_is(d2.mask, d1.mask)
+            assert d2.mask is d1.mask
         else:
             assert_array_equal(d1.mask, d2.mask)
 
