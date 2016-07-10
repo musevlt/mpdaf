@@ -2,7 +2,6 @@
 
 from __future__ import absolute_import, division, print_function
 
-import nose.tools
 import os
 import shutil
 import tempfile

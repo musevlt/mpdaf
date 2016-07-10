@@ -6,7 +6,6 @@ import astropy.units as u
 import numpy as np
 from mpdaf.obj import Image, Cube, WCS, WaveCoord, Spectrum
 from numpy.testing import assert_array_equal, assert_allclose
-from nose.tools import assert_is
 
 DEFAULT_SHAPE = (10, 6, 5)
 

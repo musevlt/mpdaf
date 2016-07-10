@@ -1,8 +1,6 @@
 """Test on Image objects."""
 
-# import nose.tools
 from __future__ import absolute_import
-import pytest
 
 import astropy.units as u
 import io

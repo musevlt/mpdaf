@@ -2,20 +2,17 @@
 
 from __future__ import absolute_import, division
 
-import pytest
-
 import astropy.units as u
 import os
 import tempfile
 import numpy as np
+import pytest
 import warnings
 
 from astropy.io import fits
 from numpy import ma
 from mpdaf.obj import DataArray, WaveCoord, WCS, Cube
 from numpy.testing import assert_array_equal, assert_allclose
-from nose.tools import (assert_true, assert_equal, assert_tuple_equal,
-                        assert_is, assert_false, assert_raises)
 from os.path import join
 
 from mpdaf.tools import MpdafWarning
@@ -68,7 +65,7 @@ def test_fits_spectrum():
 
 def test_invalid_file():
     """DataArray class: Testing invalid file reading"""
-    with assert_raises(IOError) as e:
+    with pytest.raises(IOError) as e:
         DataArray(filename='missing/file.test')
         assert e.exception.message == 'Invalid file: missing/file.test'
 
@@ -88,7 +85,7 @@ def test_from_ndarray():
     d = DataArray(data=data, var=var, mask=mask)
 
     # Is the shape of the DataArray correct?
-    assert_tuple_equal(d.shape, data.shape)
+    assert d.shape == data.shape
 
     # Check that the enclosed data and variance arrays match
     # the arrays that were passed to the constructor.
@@ -108,7 +105,7 @@ def test_from_obj():
     """DataArray class: Testing initialization from an object"""
     d = DataArray(data=np.arange(10), var=np.ones(10))
     c = Cube.new_from_obj(d)
-    assert_tuple_equal(c.shape, d.shape)
+    assert c.shape == d.shape
     assert np.may_share_memory(c.data, d.data)
     assert_array_equal(c.data, d.data)
     assert_array_equal(c.var, d.var)
@@ -141,9 +138,8 @@ def test_copy():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-
-    assert_true(cube2.data.mask is cube2.mask and
-                cube2.var.mask is cube2.mask)
+    assert cube2.data.mask is cube2.mask
+    assert cube2.var.mask is cube2.mask
 
 
 def test_clone():
@@ -208,8 +204,8 @@ def test_clone_with_data():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(cube2.data.mask is cube2.mask and
-                cube2.var.mask is cube2.mask)
+    assert cube2.data.mask is cube2.mask
+    assert cube2.var.mask is cube2.mask
 
 
 def test_set_var():
@@ -494,8 +490,8 @@ def test_setitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(cube2.data.mask is cube2.mask and
-                cube2.var.mask is cube2.mask)
+    assert cube2.data.mask is cube2.mask
+    assert cube2.var.mask is cube2.mask
 
     # Next assign the same array, but as part of a 3D DataArray
     # with variances and a mask.
@@ -512,8 +508,8 @@ def test_setitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(cube2.data.mask is cube2.mask and
-                cube2.var.mask is cube2.mask)
+    assert cube2.data.mask is cube2.mask
+    assert cube2.var.mask is cube2.mask
 
     # ----------------------------------
     # Test the assignment of sub-images.
@@ -539,8 +535,8 @@ def test_setitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(cube2.data.mask is cube2.mask and
-                cube2.var.mask is cube2.mask)
+    assert cube2.data.mask is cube2.mask
+    assert cube2.var.mask is cube2.mask
 
     # Next assign the same array, but as part of a 2D DataArray
     # with variances and a mask.
@@ -560,8 +556,8 @@ def test_setitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(cube2.data.mask is cube2.mask and
-                cube2.var.mask is cube2.mask)
+    assert cube2.data.mask is cube2.mask
+    assert cube2.var.mask is cube2.mask
 
     # -----------------------------------
     # Test the assignment of sub-spectra.
@@ -586,8 +582,8 @@ def test_setitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(cube2.data.mask is cube2.mask and
-                cube2.var.mask is cube2.mask)
+    assert cube2.data.mask is cube2.mask
+    assert cube2.var.mask is cube2.mask
 
 
 def test_get_wcs_header():
@@ -675,8 +671,8 @@ def test_write():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(cube2.data.mask is cube2.mask and
-                cube2.var.mask is cube2.mask)
+    assert cube2.data.mask is cube2.mask
+    assert cube2.var.mask is cube2.mask
 
     # Delete the temporary file.
     os.remove(filename)
@@ -778,8 +774,8 @@ def test_abs():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(spec2.data.mask is spec2.mask and
-                spec2.var.mask is spec2.mask)
+    assert spec2.data.mask is spec2.mask
+    assert spec2.var.mask is spec2.mask
 
 
 def test_unmask():
@@ -808,8 +804,8 @@ def test_unmask():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    assert spec.data.mask is spec.mask
+    assert spec.var.mask is spec.mask
 
 
 def test_mask_variance():
@@ -839,8 +835,8 @@ def test_mask_variance():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    assert spec.data.mask is spec.mask
+    assert spec.var.mask is spec.mask
 
 
 def test_mask_selection():
@@ -867,8 +863,8 @@ def test_mask_selection():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    assert spec.data.mask is spec.mask
+    assert spec.var.mask is spec.mask
 
 
 def test_shared_masks():
@@ -914,8 +910,8 @@ def test_shared_masks():
     spec.var = new_var
     assert_masked_allclose(spec.var, ma.array(new_var, mask=expected_mask))
     assert_masked_allclose(spec.data, ma.array(old_data, mask=expected_mask))
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    assert spec.data.mask is spec.mask
+    assert spec.var.mask is spec.mask
 
     # ----------------------------------------------------------------
     # Assign a MaskedArray of the same shape to DataArray.var:
@@ -946,8 +942,8 @@ def test_shared_masks():
     assert_masked_allclose(spec.var,
                            ma.array(new_var.data, mask=expected_mask))
     assert_masked_allclose(spec.data, ma.array(old_data, mask=expected_mask))
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    assert spec.data.mask is spec.mask
+    assert spec.var.mask is spec.mask
 
     # ----------------------------------------------------------------
     # Assign a numpy.ndarray of the same shape to DataArray.data:
@@ -975,8 +971,8 @@ def test_shared_masks():
     spec.data = new_data
     assert_masked_allclose(spec.var, ma.array(old_var, mask=expected_mask))
     assert_masked_allclose(spec.data, ma.array(new_data, mask=expected_mask))
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    assert spec.data.mask is spec.mask
+    assert spec.var.mask is spec.mask
 
     # ----------------------------------------------------------------
     # Assign a MaskedArray of the same shape to DataArray.data:
@@ -1010,8 +1006,8 @@ def test_shared_masks():
     assert_masked_allclose(spec.var, ma.array(old_var, mask=expected_mask))
     assert_masked_allclose(spec.data,
                            ma.array(new_data, mask=expected_mask))
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    assert spec.data.mask is spec.mask
+    assert spec.var.mask is spec.mask
 
     # ----------------------------------------------------------------
     # Assign a numpy.ndarray of a different shape to DataArray.var:
@@ -1235,8 +1231,8 @@ def test_shared_masks():
     assert_array_equal(spec.data.mask, expected_mask)
     assert_array_equal(spec.var.mask, expected_mask)
     assert_array_equal(spec.mask, expected_mask)
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    assert spec.data.mask is spec.mask
+    assert spec.var.mask is spec.mask
 
     # ----------------------------------------------------------------
     # Attempt to assign a mask of a different size to the masked property.
@@ -1275,8 +1271,8 @@ def test_shared_masks():
     assert_masked_allclose(spec.var, ma.array(old_var, mask=expected_mask))
     assert_allclose(spec.data.data[30:32], old_data[30:32])
     assert_allclose(spec.var.data[32:34], old_var[32:34])
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    assert spec.data.mask is spec.mask
+    assert spec.var.mask is spec.mask
 
     # ----------------------------------------------------------------
     # Check that in-place arithmetic operations work when they mask
@@ -1303,8 +1299,8 @@ def test_shared_masks():
     spec.var[32:34] *= ma.array([2.0, 2.0], mask=[True, False])
     assert_masked_allclose(spec.data, ma.array(new_data, mask=expected_mask))
     assert_masked_allclose(spec.var, ma.array(new_var, mask=expected_mask))
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    assert spec.data.mask is spec.mask
+    assert spec.var.mask is spec.mask
 
 
 def test_non_masked_data():
@@ -1375,8 +1371,8 @@ def test_non_masked_data():
                            ma.array(new_data.data, mask=expected_mask))
     assert_masked_allclose(spec.var,
                            ma.array(old_var, mask=expected_mask))
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    assert spec.data.mask is spec.mask
+    assert spec.var.mask is spec.mask
 
     # Assign a masked array of the same size to the var property.
     new_mask = ma.make_mask_none(n)
@@ -1396,5 +1392,5 @@ def test_non_masked_data():
                            ma.array(old_data, mask=expected_mask))
     assert_masked_allclose(spec.var,
                            ma.array(new_var.data, mask=expected_mask))
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    assert spec.data.mask is spec.mask
+    assert spec.var.mask is spec.mask
