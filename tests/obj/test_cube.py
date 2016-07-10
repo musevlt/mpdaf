@@ -5,6 +5,7 @@ import nose.tools
 
 import astropy.units as u
 import numpy as np
+import pytest
 import six
 
 from astropy.io import fits
@@ -258,7 +259,7 @@ def test_mask():
 
     # The cube was generated without any variance information.
     # Check that mask_variance() raises an error due to this.
-    with nose.tools.assert_raises(ValueError):
+    with pytest.raises(ValueError):
         cube.mask_variance(0.1)
 
     # Add an array of variances to the cube and check that mask_variance()
@@ -366,7 +367,7 @@ def test_median():
     m = cube1.median(axis=(1, 2))
     assert_array_equal(m.data, ind)
 
-    with nose.tools.assert_raises(ValueError):
+    with pytest.raises(ValueError):
         m = cube1.median(axis=-1)
 
 
