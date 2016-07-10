@@ -175,8 +175,7 @@ def test_crop():
     spe.mask_region(lmax=5000, unit=unit)
     spe.mask_region(lmin=6500, unit=unit)
     spe.crop()
-    nose.tools.assert_equal(int((6500 - 5000) / spe.get_step(unit=unit)),
-                            spe.shape[0])
+    assert int((6500 - 5000) / spe.get_step(unit=unit)) == spe.shape[0]
 
 
 def test_resample():

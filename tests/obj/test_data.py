@@ -52,8 +52,8 @@ def test_fits_img():
     """DataArray class: Testing FITS image reading"""
     hdu = fits.open(TESTIMG)
     data = DataArray(filename=TESTIMG)
-    assert_equal(data.shape, hdu[0].data.shape)
-    assert_equal(data.ndim, 2)
+    assert data.shape == hdu[0].data.shape
+    assert data.ndim == 2
     hdu.close()
 
 
@@ -61,8 +61,8 @@ def test_fits_spectrum():
     """DataArray class: Testing FITS spectrum reading"""
     hdu = fits.open(TESTSPE)
     data = DataArray(filename=TESTSPE)
-    assert_equal(data.shape, hdu[1].data.shape)
-    assert_equal(data.ndim, 1)
+    assert data.shape == hdu[1].data.shape
+    assert data.ndim == 1
     hdu.close()
 
 
@@ -70,7 +70,7 @@ def test_invalid_file():
     """DataArray class: Testing invalid file reading"""
     with assert_raises(IOError) as e:
         DataArray(filename='missing/file.test')
-        assert_equal(e.exception.message, 'Invalid file: missing/file.test')
+        assert e.exception.message == 'Invalid file: missing/file.test'
 
 
 def test_from_ndarray():
@@ -161,9 +161,9 @@ def test_clone_fits():
     """DataArray class: Testing the clone method with a FITS file"""
     cube = Cube(filename=TESTCUBE)
     im = cube[0].clone()
-    assert_equal(im.ndim, 2)
-    assert_equal(im.data_header['NAXIS'], 2)
-    assert_equal(im.shape, cube.shape[1:])
+    assert im.ndim == 2
+    assert im.data_header['NAXIS'] == 2
+    assert im.shape == cube.shape[1:]
     assert 'NAXIS3' not in im.data_header
 
     sp = cube[:, 20, 20]

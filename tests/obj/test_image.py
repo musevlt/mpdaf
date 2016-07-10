@@ -30,7 +30,7 @@ def test_copy():
     s = image1.data.sum()
     image1[0, 0] = 10000
     assert image1.wcs.isEqual(image2.wcs)
-    nose.tools.assert_equal(s, image2.data.sum())
+    assert s == image2.data.sum()
 
 
 def test_arithmetic_images():
@@ -134,7 +134,7 @@ def test_crop():
     # Check the WCS characteristics of the cropped image.
 
     assert_image_equal(image1, shape=(3, 3), start=(2, 1), end=(4, 3))
-    nose.tools.assert_equal(image1.get_rot(), 0)
+    assert image1.get_rot() == 0
 
 
 def test_truncate():
@@ -259,8 +259,8 @@ def test_background():
     data = np.ones(shape=(6, 5)) * 2
     image1 = Image(data=data, wcs=wcs)
     (background, std) = image1.background()
-    nose.tools.assert_equal(background, 2)
-    nose.tools.assert_equal(std, 0)
+    assert background == 2
+    assert std == 0
     ima = astronomical_image()
     (background, std) = ima[1647:1732, 618:690].background()
     # compare with IRAF results
@@ -274,8 +274,8 @@ def test_peak():
     image1 = Image(data=data, wcs=wcs)
     image1.data[2, 3] = 8
     p = image1.peak()
-    nose.tools.assert_equal(p['p'], 2)
-    nose.tools.assert_equal(p['q'], 3)
+    assert p['p'] == 2
+    assert p['q'] == 3
     ima = astronomical_image()
     p = ima.peak(center=(790, 875), radius=20, plot=False, unit_center=None,
                  unit_radius=None)
@@ -415,14 +415,15 @@ def test_resample():
 def test_inside():
     """Image class: testing inside method."""
     ima = astronomical_image()
-    nose.tools.assert_equal(ima.inside((39.951088, -1.4977398), unit=ima.wcs.unit), False)
+    assert ima.inside((39.951088, -1.4977398), unit=ima.wcs.unit) is False
 
 
 def test_subimage():
     """Image class: testing sub-image extraction."""
     ima = astronomical_image()
-    subima = ima.subimage(center=(790, 875), size=40, unit_center=None, unit_size=None)
-    nose.tools.assert_equal(subima.peak()['data'], 3035.0)
+    subima = ima.subimage(center=(790, 875), size=40, unit_center=None,
+                          unit_size=None)
+    assert subima.peak()['data'] == 3035.0
 
 
 def test_ee():
@@ -432,13 +433,13 @@ def test_ee():
     image1 = Image(data=data, wcs=wcs)
     image1.mask_region((2, 2), (1.5, 1.5), inside=False, unit_center=None,
                        unit_radius=None)
-    nose.tools.assert_equal(image1.ee(), 9 * 2)
+    assert image1.ee() == 9 * 2
     ee = image1.ee(center=(2, 2), unit_center=None, radius=1, unit_radius=None)
-    nose.tools.assert_equal(ee, 4 * 2)
+    assert ee == 4 * 2
     r, eer = image1.eer_curve(center=(2, 2), unit_center=None,
                               unit_radius=None, cont=0)
-    nose.tools.assert_equal(r[1], 1.0)
-    nose.tools.assert_equal(eer[1], 1.0)
+    assert r[1] == 1.0
+    assert eer[1] == 1.0
     size = image1.ee_size(center=(2, 2), unit_center=None, unit_size=None,
                           cont=0)
     nose.tools.assert_almost_equal(size[0], 1.775)
@@ -493,8 +494,8 @@ def test_rebin():
     # Check the WCS information.
 
     start = image2.get_start()
-    nose.tools.assert_equal(start[0], 0.5)
-    nose.tools.assert_equal(start[1], 0.5)
+    assert start[0] == 0.5
+    assert start[1] == 0.5
 
 
 def test_fftconvolve():
