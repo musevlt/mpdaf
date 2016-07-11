@@ -101,8 +101,9 @@ def test_line(source1):
     assert lines['LBDA_OBS'][lines['LINE'] == six.b('TEST')] == 4807.
 
 
-def test_add_image(minicube, source2, a478hst):
+def test_add_image(source2, a478hst):
     """Source class: testing add_image method"""
+    minicube = Cube(get_data_file('sdetect', 'minicube.fits'), dtype=float)
     source2.add_white_image(minicube)
     ima = minicube.mean(axis=0)
 
