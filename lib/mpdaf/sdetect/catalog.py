@@ -77,6 +77,8 @@ class Catalog(Table):
         and in the tables extensions of the sources:
 
         * a column per header fits
+          ('SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
+          'AUTHOR', 'COM*' and 'HIST*' are excluded)
         * two columns per magnitude band:
           [BAND] [BAND]_ERR
         * three columns per redshift
@@ -394,8 +396,28 @@ class Catalog(Table):
 
     @classmethod
     def from_path(cls, path, fmt='default', pattern='*.fits'):
-        """Create a Catalog object from the path of a directory containing
-        source files.
+        """Construct a catalog from a list of source objects
+        which are contains in the directory given as input.
+
+        The new catalog will contain all data stored in the primary headers
+        and in the tables extensions of the sources:
+
+        * a column per header fits
+          ('SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
+          'AUTHOR', 'COM*' and 'HIST*' are excluded)
+        * two columns per magnitude band:
+          [BAND] [BAND]_ERR
+        * three columns per redshift
+          Z_[Z_DESC], Z_[Z_DESC]_MIN and Z_[Z_DESC]_MAX
+        * several columns per line.
+
+        The lines columns depend of the format.
+        By default the columns names are created around unique LINE name
+        [LINE]_[LINES columns names].
+        But it is possible to use a working format.
+        [LINES columns names]_xxx
+        where xxx is the number of lines present in each source.
+        
 
         Parameters
         ----------
