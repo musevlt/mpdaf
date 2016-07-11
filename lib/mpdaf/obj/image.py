@@ -276,7 +276,7 @@ class Image(ArithmeticMixin, DataArray):
     _has_wcs = True
 
     def __init__(self, filename=None, ext=None, wcs=None, data=None, var=None,
-                 unit=u.dimensionless_unscaled, copy=True, dtype=float,
+                 unit=u.dimensionless_unscaled, copy=True, dtype=None,
                  **kwargs):
         self._spflims = None
 

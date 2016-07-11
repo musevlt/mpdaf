@@ -192,7 +192,7 @@ class Spectrum(ArithmeticMixin, DataArray):
     _has_wave = True
 
     def __init__(self, filename=None, ext=None, unit=u.dimensionless_unscaled,
-                 data=None, var=None, wave=None, copy=True, dtype=float,
+                 data=None, var=None, wave=None, copy=True, dtype=None,
                  **kwargs):
         super(Spectrum, self).__init__(
             filename=filename, ext=ext, wave=wave, unit=unit, data=data,
