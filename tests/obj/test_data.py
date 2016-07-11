@@ -13,16 +13,10 @@ from astropy.io import fits
 from numpy import ma
 from mpdaf.obj import DataArray, WaveCoord, WCS, Cube
 from numpy.testing import assert_array_equal, assert_allclose
-from os.path import join
 
 from mpdaf.tools import MpdafWarning
 from ..utils import (generate_image, generate_cube, generate_spectrum,
-                     assert_masked_allclose)
-
-DATADIR = join(os.path.abspath(os.path.dirname(__file__)), '..', '..')
-TESTIMG = join(DATADIR, 'data', 'obj', 'a370II.fits')
-TESTSPE = join(DATADIR, 'data', 'obj', 'Spectrum_lines.fits')
-TESTCUBE = join(DATADIR, 'data', 'sdetect', 'minicube.fits')
+                     assert_masked_allclose, get_data_file)
 
 
 def test_deprecated_warnings(spectrum):
@@ -45,8 +39,9 @@ def test_deprecated_warnings(spectrum):
 
 def test_fits_img():
     """DataArray class: Testing FITS image reading"""
-    hdu = fits.open(TESTIMG)
-    data = DataArray(filename=TESTIMG)
+    testimg = get_data_file('obj', 'a370II.fits')
+    hdu = fits.open(testimg)
+    data = DataArray(filename=testimg)
     assert data.shape == hdu[0].data.shape
     assert data.ndim == 2
     hdu.close()
@@ -54,8 +49,9 @@ def test_fits_img():
 
 def test_fits_spectrum():
     """DataArray class: Testing FITS spectrum reading"""
-    hdu = fits.open(TESTSPE)
-    data = DataArray(filename=TESTSPE)
+    testspe = get_data_file('obj', 'Spectrum_lines.fits')
+    hdu = fits.open(testspe)
+    data = DataArray(filename=testspe)
     assert data.shape == hdu[1].data.shape
     assert data.ndim == 1
     hdu.close()
@@ -150,16 +146,15 @@ def test_clone(cube):
     assert cube2._mask is None
 
 
-def test_clone_fits():
+def test_clone_fits(minicube):
     """DataArray class: Testing the clone method with a FITS file"""
-    cube = Cube(filename=TESTCUBE)
-    im = cube[0].clone()
+    im = minicube[0].clone()
     assert im.ndim == 2
     assert im.data_header['NAXIS'] == 2
-    assert im.shape == cube.shape[1:]
+    assert im.shape == minicube.shape[1:]
     assert 'NAXIS3' not in im.data_header
 
-    sp = cube[:, 20, 20]
+    sp = minicube[:, 20, 20]
     assert_array_equal(sp.abs().data, np.abs(sp._data))
 
 

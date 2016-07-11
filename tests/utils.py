@@ -4,10 +4,18 @@ from __future__ import absolute_import, division
 
 import astropy.units as u
 import numpy as np
+import os
+
 from mpdaf.obj import Image, Cube, WCS, WaveCoord, Spectrum
 from numpy.testing import assert_array_equal, assert_allclose
+from os.path import join
 
 DEFAULT_SHAPE = (10, 6, 5)
+DATADIR = join(os.path.abspath(os.path.dirname(__file__)), '..', 'data')
+
+
+def get_data_file(*paths):
+    return join(DATADIR, *paths)
 
 
 def assert_image_equal(ima, shape=None, start=None, end=None, step=None):

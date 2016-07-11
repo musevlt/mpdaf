@@ -9,13 +9,11 @@ import pytest
 import six
 
 from astropy.table import Table
-from mpdaf.obj import Image, Cube
+from mpdaf.obj import Cube
 from mpdaf.sdetect import Source
 from numpy.testing import assert_array_equal, assert_almost_equal
-from os.path import join
 
-DATADIR = join(os.path.abspath(os.path.dirname(__file__)),
-               '..', '..', 'data', 'sdetect')
+from ..utils import get_data_file
 
 
 @pytest.fixture
@@ -36,12 +34,12 @@ def source1():
 
 @pytest.fixture
 def source2():
-    return Source.from_file(join(DATADIR, 'sing-0032.fits'))
+    return Source.from_file(get_data_file('sdetect', 'sing-0032.fits'))
 
 
 def test_init(source2):
     """Source class; testing initialisation"""
-    src = Source._light_from_file(join(DATADIR, 'sing-0032.fits'))
+    src = Source._light_from_file(get_data_file('sdetect', 'sing-0032.fits'))
     assert len(src.lines) == len(source2.lines)
 
 
@@ -103,11 +101,10 @@ def test_line(source1):
     assert lines['LBDA_OBS'][lines['LINE'] == six.b('TEST')] == 4807.
 
 
-def test_add_image(source2):
+def test_add_image(minicube, source2, a478hst):
     """Source class: testing add_image method"""
-    cube = Cube(join(DATADIR, 'minicube.fits'), dtype=np.float64)
-    source2.add_white_image(cube)
-    ima = cube.mean(axis=0)
+    source2.add_white_image(minicube)
+    ima = minicube.mean(axis=0)
 
     # The position source2.dec, source2.ra corresponds
     # to pixel index 18.817,32.432 in the cube. The default 5
@@ -129,38 +126,35 @@ def test_add_image(source2):
     # Add a square patch of an HST image equal in width and height
     # to the height of the white-light image, which has a height
     # of 25 white-light pixels.
-    hst = Image(join(DATADIR, 'a478hst-cutout.fits'))
-    source2.add_image(hst, 'HST1')
+    source2.add_image(a478hst, 'HST1')
 
     # Add the same HST image, but this time set the width and height
     # equal to the height of the above HST patch (ie. 50 pixels). This
     # should have the same result as giving it the same size as the
     # white-light image.
     size = source2.images['HST1'].shape[0]
-    source2.add_image(hst, 'HST2', size=size, minsize=size,
-                      unit_size=None)
+    source2.add_image(a478hst, 'HST2', size=size, minsize=size, unit_size=None)
     assert source2.images['HST1'][10, 10] == source2.images['HST2'][10, 10]
 
     # Add the HST image again, but this time rotate it to the same
     # orientation as the white-light image, then check that they end
     # up with the same rotation angles.
-    source2.add_image(hst, 'HST3', rotate=True)
+    source2.add_image(a478hst, 'HST3', rotate=True)
     assert_almost_equal(source2.images['HST3'].get_rot(),
                         source2.images['MUSE_WHITE'].get_rot(), 3)
 
 
-def test_add_narrow_band_image():
+def test_add_narrow_band_image(minicube):
     """Source class: testing methods on narrow bands images"""
-    cube = Cube(join(DATADIR, 'minicube.fits'))
     src = Source.from_data(ID=1, ra=63.35592651367188, dec=10.46536922454834,
                            origin=('test', 'v0', 'minicube.fits'))
     src.add_z('EMI', 0.086, 0.0001)
-    src.add_white_image(cube)
-    src.add_narrow_band_images(cube, 'EMI')
+    src.add_white_image(minicube)
+    src.add_narrow_band_images(minicube, 'EMI')
     assert 'NB_OIII5007' in src.images
     assert 'NB_HALPHA' in src.images
     assert 'NB_HBETA' in src.images
-    src.add_narrow_band_image_lbdaobs(cube, 'OBS7128', 7128)
+    src.add_narrow_band_image_lbdaobs(minicube, 'OBS7128', 7128)
     assert 'OBS7128' in src.images
     src.add_seg_images()
     assert 'SEG_MUSE_WHITE' in src.images
@@ -181,13 +175,13 @@ def test_add_narrow_band_image():
     assert 'MASK_OBJ' in src.images
     assert 'MASK_INTER' in src.images
     assert 'MASK_SKY' in src.images
-    src.extract_spectra(cube, obj_mask='MASK_OBJ', skysub=True, psf=None)
+    src.extract_spectra(minicube, obj_mask='MASK_OBJ', skysub=True, psf=None)
     assert 'MUSE_SKY' in src.spectra
     assert 'MUSE_TOT_SKYSUB' in src.spectra
     assert 'MUSE_WHITE_SKYSUB' in src.spectra
     assert 'NB_HALPHA_SKYSUB' in src.spectra
-    src.extract_spectra(cube, obj_mask='MASK_OBJ', skysub=False,
-                        psf=0.2 * np.ones(cube.shape[0]))
+    src.extract_spectra(minicube, obj_mask='MASK_OBJ', skysub=False,
+                        psf=0.2 * np.ones(minicube.shape[0]))
     assert 'MUSE_PSF' in src.spectra
     assert 'MUSE_TOT' in src.spectra
     assert 'MUSE_WHITE' in src.spectra
@@ -206,16 +200,14 @@ def test_sort_lines(source1):
 
 
 @pytest.mark.slow
-def test_SEA():
+def test_SEA(minicube, a478hst):
     """test SEA"""
-    cube = Cube(join(DATADIR, 'minicube.fits'))
-    ima = Image(join(DATADIR, 'a478hst-cutout.fits'))
-    cat = Table.read(join(DATADIR, 'cat.txt'), format='ascii')
+    cat = Table.read(get_data_file('sdetect', 'cat.txt'), format='ascii')
     size = 10
     width = 8
     margin = 10.
     fband = 3.
-    origin = ('sea', '0.0', os.path.basename(cube.filename))
+    origin = ('sea', '0.0', os.path.basename(minicube.filename))
 
     for obj in cat[0:6]:
         source = Source.from_data(obj['ID'], obj['RA'], obj['DEC'], origin)
@@ -226,16 +218,16 @@ def test_SEA():
             errz = np.nan
         source.add_z('CAT', z, errz)
         # create white image
-        source.add_white_image(cube, size, unit_size=u.arcsec)
+        source.add_white_image(minicube, size, unit_size=u.arcsec)
 
         # create narrow band images
-        source.add_narrow_band_images(cube=cube, z_desc='CAT',
+        source.add_narrow_band_images(cube=minicube, z_desc='CAT',
                                       size=None, unit_size=u.arcsec,
                                       width=width, margin=margin,
                                       fband=fband, is_sum=False)
 
         # extract images stamps
-        source.add_image(ima, 'HST_')
+        source.add_image(a478hst, 'HST_')
 
         # segmentation maps
         source.add_seg_images(DIR=None)
@@ -245,8 +237,8 @@ def test_SEA():
         source.find_intersection_mask(tags)
 
         # extract spectra
-        source.extract_spectra(cube, skysub=True, psf=None)
-        source.extract_spectra(cube, skysub=False, psf=None)
+        source.extract_spectra(minicube, skysub=True, psf=None)
+        source.extract_spectra(minicube, skysub=False, psf=None)
 
         Nz = np.array([sp.shape[0] for sp in source.spectra.values()])
         assert len(np.unique(Nz)) == 1
@@ -259,8 +251,8 @@ def test_SEA():
 
 def test_add_FSF():
     """Source class: testing add_FSF method"""
-    src = Source.from_file(join(DATADIR, 'origin-00026.fits'))
-    cube = Cube(join(DATADIR, 'subcub_mosaic.fits'))
+    src = Source.from_file(get_data_file('sdetect', 'origin-00026.fits'))
+    cube = Cube(get_data_file('sdetect', 'subcub_mosaic.fits'))
     src.add_FSF(cube)
     assert src.FSF99BET == 2.8
     assert src.FSF99FWA == 0.855
