@@ -3,9 +3,12 @@
 from __future__ import absolute_import, division, print_function
 
 import pytest
+import sys
 from mpdaf.sdetect.muselet import muselet
 
 
+@pytest.mark.xfail(sys.version_info >= (3, 3),
+                   reason="not compatible with python 3")
 def test_muselet_fast(tmpdir, minicube):
     """test MUSELET"""
     outdir = str(tmpdir)
@@ -20,6 +23,8 @@ def test_muselet_fast(tmpdir, minicube):
     assert len(raw) == 22
 
 
+@pytest.mark.xfail(sys.version_info >= (3, 3),
+                   reason="not compatible with python 3")
 @pytest.mark.slow
 def test_muselet_full(tmpdir, minicube):
     """test MUSELET"""
