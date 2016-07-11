@@ -4,6 +4,7 @@
 *.so
 *.egg-info/
 *.eggs/
+.cache/
 .coverage*
 .tox/
 tags
