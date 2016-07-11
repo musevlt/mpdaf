@@ -209,3 +209,4 @@ def test_determine_refframe():
     nose.tools.assert_equal(determine_refframe({'RADESYS': 'FK5'})[0], 'FK5')
     nose.tools.assert_equal(determine_refframe({'RADECSYS': 'FK5'})[0], 'FK5')
     nose.tools.assert_equal(determine_refframe({'RADESYS': 'ICRS'})[0], 'ICRS')
+    nose.tools.assert_equal(determine_refframe({})[0], None)

@@ -366,15 +366,19 @@ def axis_increments_from_cd(cd):
 
 
 def determine_refframe(phdr):
-    """Determine the reference frame in standard FITS WCS terms.
+    """Determine the reference frame and equinox in standard FITS WCS terms.
 
     Parameters
     ----------
     phdr : `astropy.io.fits.Header`
         Primary Header of an observation
 
-    """
+    Returns
+    -------
+    out : str, float
+        Reference frame ('ICRS', 'FK5', 'FK4') and equinox
 
+    """
     # MUSE files should have RADECSYS='FK5' and EQUINOX=2000.0
     equinox = phdr.get('EQUINOX')
     radesys = phdr.get('RADESYS') or phdr.get('RADECSYS')
@@ -383,10 +387,10 @@ def determine_refframe(phdr):
         return 'FK5', equinox
     elif radesys:
         return radesys, None
-    elif equinox is not None and equinox > 1984.:
-        return "FK5", equinox
+    elif equinox is not None:
+        return 'FK4' if equinox < 1984. else 'FK5', equinox
     else:
-        return "ICRS", None
+        return None, None
 
 
 class WCS(object):
