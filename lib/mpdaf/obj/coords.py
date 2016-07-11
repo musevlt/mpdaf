@@ -49,7 +49,7 @@ from ..tools import fix_unit_read
 
 __all__ = ('deg2sexa', 'sexa2deg', 'deg2hms', 'hms2deg', 'deg2dms', 'dms2deg',
            'image_angle_from_cd', 'axis_increments_from_cd',
-           'WCS', 'WaveCoord')
+           'WCS', 'WaveCoord', 'determine_refframe')
 
 
 def deg2sexa(x):
@@ -71,27 +71,17 @@ def deg2sexa(x):
         written like hours:minutes:seconds.
 
     """
-    x = np.array(x)
+    x = np.asarray(x)
+    ndim = x.ndim
+    x = np.atleast_2d(x)
 
-    # Is this a single-dimensional array containing a single ra,dec
-    # coordinate like [ra,dec]?
-
-    if len(np.shape(x)) == 1 and np.shape(x)[0] == 2:
-        ra = deg2hms(x[1])
-        dec = deg2dms(x[0])
-        return np.array([dec, ra])
-
-    # Or is this a 2D array of multiple [ra,dec] coordinates?
-
-    elif len(np.shape(x)) == 2 and np.shape(x)[1] == 2:
-        result = []
-        for i in range(np.shape(x)[0]):
-            ra = deg2hms(x[i][1])
-            dec = deg2dms(x[i][0])
-            result.append(np.array([dec, ra]))
-        return np.array(result)
-    else:
-        raise ValueError('Operation forbidden')
+    # FIXME: can be replaced with SkyCoord.to_string('hmsdms', sep=':')
+    result = []
+    for i in range(np.shape(x)[0]):
+        ra = deg2hms(x[i][1])
+        dec = deg2dms(x[i][0])
+        result.append(np.array([dec, ra]))
+    return np.array(result) if ndim > 1 else result[0]
 
 
 def sexa2deg(x):
@@ -114,27 +104,16 @@ def sexa2deg(x):
         array of the same dimensions as the input array.
 
     """
-    x = np.array(x)
+    x = np.asarray(x)
+    ndim = x.ndim
+    x = np.atleast_2d(x)
 
-    # Is this a single-dimensional array containing a single ra,dec
-    # coordinate like [ra,dec]?
-
-    if len(np.shape(x)) == 1 and np.shape(x)[0] == 2:
-        ra = hms2deg(x[1])
-        dec = dms2deg(x[0])
-        return np.array([dec, ra])
-
-    # Or is this a 2D array of multiple [ra,dec] coordinates?
-
-    elif len(np.shape(x)) == 2 and np.shape(x)[1] == 2:
-        result = []
-        for i in range(np.shape(x)[0]):
-            ra = hms2deg(x[i][1])
-            dec = dms2deg(x[i][0])
-            result.append(np.array([dec, ra]))
-        return np.array(result)
-    else:
-        raise ValueError('Operation forbidden')
+    result = []
+    for i in range(np.shape(x)[0]):
+        ra = hms2deg(x[i][1])
+        dec = dms2deg(x[i][0])
+        result.append(np.array([dec, ra]))
+    return np.array(result) if ndim > 1 else result[0]
 
 
 def deg2hms(x):
@@ -386,6 +365,34 @@ def axis_increments_from_cd(cd):
     return np.array([dy, dx])
 
 
+def determine_refframe(phdr):
+    """Determine the reference frame and equinox in standard FITS WCS terms.
+
+    Parameters
+    ----------
+    phdr : `astropy.io.fits.Header`
+        Primary Header of an observation
+
+    Returns
+    -------
+    out : str, float
+        Reference frame ('ICRS', 'FK5', 'FK4') and equinox
+
+    """
+    # MUSE files should have RADECSYS='FK5' and EQUINOX=2000.0
+    equinox = phdr.get('EQUINOX')
+    radesys = phdr.get('RADESYS') or phdr.get('RADECSYS')
+
+    if radesys == 'FK5' and equinox == 2000.0:
+        return 'FK5', equinox
+    elif radesys:
+        return radesys, None
+    elif equinox is not None:
+        return 'FK4' if equinox < 1984. else 'FK5', equinox
+    else:
+        return None, None
+
+
 class WCS(object):
 
     """The WCS class manages the world coordinates of the spatial axes of
@@ -496,39 +503,25 @@ class WCS(object):
     """
 
     def __init__(self, hdr=None, crpix=None, crval=(1.0, 1.0),
-                 cdelt=(1.0, 1.0), deg=False, rot=0, shape=None, cd=None):
+                 cdelt=(1.0, 1.0), deg=False, rot=0, shape=None, cd=None,
+                 frame=None, equinox=None):
         self._logger = logging.getLogger(__name__)
 
-        # Initialize the WCS object from a FITS header?
-        # If so, also keep a record of the array dimensions of the
-        # image.
-
         if hdr is not None:
+            # Initialize the WCS object from a FITS header?
             self.wcs = _wcs_from_header(hdr, naxis=2)
-            try:
-                self.naxis1 = hdr['NAXIS1']
-                self.naxis2 = hdr['NAXIS2']
-            except:
-                if shape is not None:
-                    self.naxis1 = shape[1]
-                    self.naxis2 = shape[0]
-                else:
-                    self.naxis1 = 0
-                    self.naxis2 = 0
-            # bug if naxis=3
-            # http://mail.scipy.org/pipermail/astropy/2011-April/001242.html
 
-        # If no FITS header is provided, initialize the WCS object from
-        # the other parameters of the constructor.
-
+            if frame is not None:
+                self.wcs.wcs.radesys = frame
+            if equinox is not None:
+                self.wcs.wcs.equinox = equinox
         else:
+            # Initialize the WCS object
 
             # Define a function that checks that 2D attributes are
             # either a 2-element tuple of float or int, or a float or
             # int scalar which is converted to a 2-element tuple.
-
             def check_attrs(val, types=numbers.Number):
-                """Check attribute dimensions."""
                 if isinstance(val, types):
                     return (val, val)
                 elif len(val) > 2:
@@ -545,14 +538,10 @@ class WCS(object):
             if shape is not None:
                 shape = check_attrs(shape, types=int)
 
-            # Create a pywcs object.
-
             self.wcs = pywcs.WCS(naxis=2)
 
-            # Get the FITS array indexes of the reference pixel.
-            # Beware that FITS array indexes are offset by 1 from
-            # python array indexes.
-
+            # Get the FITS array indexes of the reference pixel.  Beware that
+            # FITS array indexes are offset by 1 from python array indexes.
             if crpix is not None:
                 self.wcs.wcs.crpix = np.array([crpix[1], crpix[0]])
             elif shape is None:
@@ -561,28 +550,27 @@ class WCS(object):
                 self.wcs.wcs.crpix = (np.array([shape[1], shape[0]]) + 1) / 2.
 
             # Get the world coordinate value of reference pixel.
-
             self.wcs.wcs.crval = np.array([crval[1], crval[0]])
             if deg:  # in decimal degree
                 self.wcs.wcs.ctype = ['RA---TAN', 'DEC--TAN']
                 self.wcs.wcs.cunit = ['deg', 'deg']
+                if frame is not None:
+                    self.wcs.wcs.radesys = frame
+                if equinox is not None:
+                    self.wcs.wcs.equinox = equinox
             else:   # in pixel or arcsec
                 self.wcs.wcs.ctype = ['LINEAR', 'LINEAR']
                 self.wcs.wcs.cunit = ['pixel', 'pixel']
 
-            # If a CD rotation matrix has been provided by the caller,
-            # install it.
-
             if cd is not None and cd.shape[0] == 2 and cd.shape[1] == 2:
+                # If a CD rotation matrix has been provided by the caller,
+                # install it.
                 self.set_cd(cd)
-
-            # If no CD matrix was provided, construct one from the
-            # cdelt and rot parameters, following the official
-            # prescription given by equation 189 of Calabretta, M. R.,
-            # and Greisen, E. W, Astronomy & Astrophysics, 395,
-            # 1077-1122, 2002.
-
             else:
+                # If no CD matrix was provided, construct one from the cdelt
+                # and rot parameters, following the official prescription given
+                # by equation 189 of Calabretta, M. R., and Greisen, E. W,
+                # Astronomy & Astrophysics, 395, 1077-1122, 2002.
                 rho = np.deg2rad(rot)
                 sin_rho = np.sin(rho)
                 cos_rho = np.cos(rho)
@@ -592,24 +580,33 @@ class WCS(object):
 
             # Update the wcs object to accomodate the new value of
             # the CD matrix.
-
             self.wcs.wcs.set()
 
-            # Get the dimensions of the image array.
-
+            # Set the dimensions of the image array.
             if shape is not None:
                 self.naxis1 = shape[1]
                 self.naxis2 = shape[0]
-            else:
-                self.naxis1 = 0
-                self.naxis2 = 0
+
+    @property
+    def naxis1(self):
+        return self.wcs._naxis1
+
+    @naxis1.setter
+    def naxis1(self, value):
+        self.wcs._naxis1 = value
+
+    @property
+    def naxis2(self):
+        return self.wcs._naxis2
+
+    @naxis2.setter
+    def naxis2(self, value):
+        self.wcs._naxis2 = value
 
     def copy(self):
         """Return a copy of a WCS object."""
         out = WCS()
         out.wcs = self.wcs.deepcopy()
-        out.naxis1 = self.naxis1
-        out.naxis2 = self.naxis2
         return out
 
     def info(self):
@@ -621,14 +618,15 @@ class WCS(object):
             # center in sexadecimal
             xc = (self.naxis1 - 1) / 2.
             yc = (self.naxis2 - 1) / 2.
-            pixsky = self.pix2sky([yc, xc], unit=u.deg)
-            sexa = deg2sexa(pixsky)
-            ra = sexa[0][1]
-            dec = sexa[0][0]
-            self._logger.info('center:(%s,%s) size in arcsec:(%0.3f,%0.3f) '
-                              'step in arcsec:(%0.3f,%0.3f) rot:%0.1f deg',
-                              dec, ra, sizey, sizex, dy, dx, self.get_rot())
+            pixsky = self.pix2sky([yc, xc], unit=u.deg)[0]
+            dec, ra = deg2sexa(pixsky)
+            self._logger.info(
+                'center:(%s,%s) size:(%0.3f",%0.3f") '
+                'step:(%0.3f",%0.3f") rot:%0.1f deg frame:%s',
+                dec, ra, sizey, sizex, dy, dx, self.get_rot(),
+                self.wcs.wcs.radesys)
         except:
+            # FIXME: when is that useful ?
             pixcrd = [[0, 0], [self.naxis2 - 1, self.naxis1 - 1]]
             pixsky = self.pix2sky(pixcrd)
             dy, dx = self.get_step()
@@ -1304,34 +1302,6 @@ class WCS(object):
             self.wcs.wcs.cdelt = axis_increments_from_cd(cd, u.deg)[::-1]
 
         self.wcs.wcs.set()
-
-    def set_naxis1(self, n):
-        """Set the dimension of the X-axis of the image.
-
-        This sets the dimension of axis 1 of the python data array that holds
-        the image (ie. data.shape[1])
-
-        Parameters
-        ----------
-        n : int
-           The new dimension to give the X-axis.
-
-        """
-        self.naxis1 = n
-
-    def set_naxis2(self, n):
-        """Set the dimension of the Y-axis of the image.
-
-        This sets the dimension of axis 0 of the python data array that holds
-        the image (ie. data.shape[0])
-
-        Parameters
-        ----------
-        n : int
-           The new dimension to give the Y-axis.
-
-        """
-        self.naxis2 = n
 
     def set_crpix1(self, x):
         """Set the value of the FITS CRPIX1 parameter.

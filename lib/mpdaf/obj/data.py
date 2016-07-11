@@ -44,7 +44,7 @@ from astropy.io import fits
 from datetime import datetime
 from numpy import ma
 
-from .coords import WCS, WaveCoord
+from .coords import WCS, WaveCoord, determine_refframe
 from .objs import UnitMaskedArray, UnitArray, is_int
 from ..tools import (MpdafUnitsWarning, deprecated, fix_unit_read,
                      is_valid_fits_file, copy_header, read_slice_from_fits)
@@ -305,6 +305,8 @@ class DataArray(object):
             self.primary_header = hdulist[0].header
             self.data_header = hdr = hdulist[self._data_ext].header
 
+            frame, equinox = determine_refframe(self.primary_header)
+
             try:
                 self.unit = u.Unit(fix_unit_read(hdr['BUNIT']))
             except KeyError:
@@ -321,14 +323,14 @@ class DataArray(object):
             # WCS information?
             if self._has_wcs:
                 try:
-                    self.wcs = WCS(hdr)  # WCS object from data header
+                    self.wcs = WCS(hdr, frame=frame, equinox=equinox)
                 except fits.VerifyError as e:
                     # Workaround for
                     # https://github.com/astropy/astropy/issues/887
                     self._logger.warning(e)
                     if 'IRAF-B/P' in hdr:
                         hdr.remove('IRAF-B/P')
-                    self.wcs = WCS(hdr)
+                    self.wcs = WCS(hdr, frame=frame, equinox=equinox)
 
             # Get the wavelength coordinates.
             wave_ext = 1 if self._ndim_required == 1 else 3
@@ -898,15 +900,18 @@ class DataArray(object):
             If 'none', masked array is not saved.
 
         """
-        warnings.simplefilter('ignore')
-        header = copy_header(self.primary_header)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            header = copy_header(self.primary_header)
+
         header['date'] = (str(datetime.now()), 'creation date')
         header['author'] = ('MPDAF', 'origin of the file')
-        hdulist = [fits.PrimaryHDU(header=header)]
-        warnings.simplefilter('default')
+        hdulist = fits.HDUList([fits.PrimaryHDU(header=header)])
 
         # create cube DATA extension
-        datahdu = self.get_data_hdu(savemask=savemask)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            datahdu = self.get_data_hdu(savemask=savemask)
         hdulist.append(datahdu)
 
         # create spectrum STAT extension
@@ -919,12 +924,7 @@ class DataArray(object):
                 name='DQ', header=datahdu.header.copy(),
                 data=np.uint8(self.data.mask)))
 
-        # save to disk
-        hdu = fits.HDUList(hdulist)
-        warnings.simplefilter('ignore')
-        hdu.writeto(filename, clobber=True, output_verify='silentfix')
-        warnings.simplefilter('default')
-
+        hdulist.writeto(filename, clobber=True, output_verify='silentfix')
         self.filename = filename
 
     def sqrt(self, out=None):
