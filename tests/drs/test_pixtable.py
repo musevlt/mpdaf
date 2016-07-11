@@ -34,6 +34,10 @@ class TestBasicPixTable(unittest.TestCase):
         self.ax = np.random.randint(1, 8192, self.nrows)
         self.ay = np.random.randint(1, 8192, self.nrows)
         self.aoffset = np.random.randint(1, 8192, self.nrows)
+
+        # Make sure we have at least one ifu=1 value to avoid random failures
+        self.aifu[0] = 1
+
         self.origin = (((self.ax - self.aoffset) << MUSE_ORIGIN_SHIFT_XSLICE) |
                        (self.ay << MUSE_ORIGIN_SHIFT_YPIX) |
                        (self.aifu << MUSE_ORIGIN_SHIFT_IFU) | self.aslice)
