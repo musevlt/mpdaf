@@ -48,8 +48,8 @@ Examples of conversions::
     >>> ac = sexa2deg(ac3)
     >>> print ac
     [[  2.5   2.5]
-    [  5.    5. ]
-    [ 10.   10. ]]
+     [  5.    5. ]
+     [ 10.   10. ]]
 
 Spatial world coordinates
 =========================
