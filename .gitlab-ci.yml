@@ -19,6 +19,9 @@ astropy10:
 astropy11:
   script: tox -v -e astropy11
 
+docs:
+  script: tox -v -e docs
+
 coverage-report:
   script:
     - tox -e report
