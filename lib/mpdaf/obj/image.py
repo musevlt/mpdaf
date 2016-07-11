@@ -907,8 +907,8 @@ class Image(ArithmeticMixin, DataArray):
         wcs = res.wcs
         wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + slices[1].start)
         wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + slices[0].start)
-        wcs.set_naxis1(shape[1])
-        wcs.set_naxis2(shape[0])
+        wcs.naxis1 = shape[1]
+        wcs.naxis2 = shape[0]
 
         # Create the new unclipped sub-cube.
         return Image(wcs=wcs, unit=self.unit, copy=False,
@@ -1159,8 +1159,8 @@ class Image(ArithmeticMixin, DataArray):
         # Install the new world-coordinate transformation matrix, along
         # with the new reference pixel.
         self.wcs.set_cd(newcd)
-        self.wcs.set_naxis1(newdims[1])
-        self.wcs.set_naxis2(newdims[0])
+        self.wcs.naxis1 = newdims[1]
+        self.wcs.naxis2 = newdims[0]
 
         # Record the new value of the coordinate reference pixel,
         # being careful to convert from python 0-relative pixel
@@ -3280,8 +3280,8 @@ class Image(ArithmeticMixin, DataArray):
 
         # Update the world-coordinate description object.
         image.wcs.set_axis_increments(newinc)
-        image.wcs.set_naxis1(newdim[1])
-        image.wcs.set_naxis2(newdim[0])
+        image.wcs.naxis1 = newdim[1]
+        image.wcs.naxis2 = newdim[0]
 
         # Record the new value of the coordinate reference pixel,
         # being careful to convert from python 0-relative pixel

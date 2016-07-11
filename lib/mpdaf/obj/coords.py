@@ -1319,34 +1319,6 @@ class WCS(object):
 
         self.wcs.wcs.set()
 
-    def set_naxis1(self, n):
-        """Set the dimension of the X-axis of the image.
-
-        This sets the dimension of axis 1 of the python data array that holds
-        the image (ie. data.shape[1])
-
-        Parameters
-        ----------
-        n : int
-           The new dimension to give the X-axis.
-
-        """
-        self.naxis1 = n
-
-    def set_naxis2(self, n):
-        """Set the dimension of the Y-axis of the image.
-
-        This sets the dimension of axis 0 of the python data array that holds
-        the image (ie. data.shape[0])
-
-        Parameters
-        ----------
-        n : int
-           The new dimension to give the Y-axis.
-
-        """
-        self.naxis2 = n
-
     def set_crpix1(self, x):
         """Set the value of the FITS CRPIX1 parameter.
 

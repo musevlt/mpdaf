@@ -2026,8 +2026,8 @@ class Cube(ArithmeticMixin, DataArray):
         wcs = res.wcs
         wcs.set_crpix1(wcs.wcs.wcs.crpix[0] + slices[2].start)
         wcs.set_crpix2(wcs.wcs.wcs.crpix[1] + slices[1].start)
-        wcs.set_naxis1(shape[2])
-        wcs.set_naxis2(shape[1])
+        wcs.naxis1 = shape[2]
+        wcs.naxis2 = shape[1]
 
         # Create a new wavelength description object.
         wave = self.wave[sl]
