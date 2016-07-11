@@ -189,7 +189,7 @@ def test_resample():
     assert_almost_equal(flux1, flux2)
 
 
-@pytest.mark.veryslow
+@pytest.mark.slow
 def test_resampling_slow():
     """Spectrum class: heavy test of resampling function"""
     sig = fits.getdata("data/obj/g9-124Tsigspec.fits")

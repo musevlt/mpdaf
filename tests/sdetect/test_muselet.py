@@ -11,7 +11,7 @@ from mpdaf.sdetect.muselet import muselet
 from ..utils import get_data_file
 
 
-@pytest.mark.veryslow
+@pytest.mark.slow
 def test_muselet():
     """test MUSELET"""
     try:

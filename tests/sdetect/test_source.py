@@ -200,7 +200,6 @@ def test_sort_lines(source1):
     assert source1.lines['LINE'][0] == six.b('[OIII]2')
 
 
-@pytest.mark.slow
 def test_SEA(minicube, a478hst):
     """test SEA"""
     cat = Table.read(get_data_file('sdetect', 'cat.txt'), format='ascii')
@@ -210,7 +209,7 @@ def test_SEA(minicube, a478hst):
     fband = 3.
     origin = ('sea', '0.0', os.path.basename(minicube.filename))
 
-    for obj in cat[0:6]:
+    for obj in cat[0:3]:
         source = Source.from_data(obj['ID'], obj['RA'], obj['DEC'], origin)
         z = float(obj['Z'])
         try:
