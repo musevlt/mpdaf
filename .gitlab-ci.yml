@@ -16,6 +16,9 @@ muselet:
 astropy10:
   script: tox -v -e astropy10
 
+astropy11:
+  script: tox -v -e astropy11
+
 coverage-report:
   script:
     - tox -e report
