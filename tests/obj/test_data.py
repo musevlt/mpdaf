@@ -38,21 +38,17 @@ def test_deprecated_warnings(spectrum):
 def test_fits_img():
     """DataArray class: Testing FITS image reading"""
     testimg = get_data_file('obj', 'a370II.fits')
-    hdu = fits.open(testimg)
     data = DataArray(filename=testimg)
-    assert data.shape == hdu[0].data.shape
+    assert data.shape == (1797, 1909)
     assert data.ndim == 2
-    hdu.close()
 
 
 def test_fits_spectrum():
     """DataArray class: Testing FITS spectrum reading"""
     testspe = get_data_file('obj', 'Spectrum_lines.fits')
-    hdu = fits.open(testspe)
     data = DataArray(filename=testspe)
-    assert data.shape == hdu[1].data.shape
+    assert data.shape == (2048,)
     assert data.ndim == 1
-    hdu.close()
 
 
 def test_invalid_file():

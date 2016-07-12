@@ -5,9 +5,8 @@ import numpy as np
 from numpy.testing import (assert_array_equal, assert_allclose,
                            assert_almost_equal)
 
-
-from mpdaf.obj.objs import (is_float, is_int, bounding_box, flux2mag,
-                            mag2flux, UnitArray, UnitMaskedArray)
+from mpdaf.obj import (is_float, is_int, bounding_box, flux2mag,
+                       mag2flux, UnitArray, UnitMaskedArray)
 
 
 def test_is_float():
