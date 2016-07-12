@@ -7,8 +7,8 @@ import pytest
 from astropy.io import fits
 from mpdaf.obj import Image, Cube, Spectrum
 
-from .utils import (get_data_file, generate_cube, generate_image,
-                    generate_spectrum)
+from .tests.utils import (get_data_file, generate_cube, generate_image,
+                          generate_spectrum)
 
 
 def pytest_report_header(config):

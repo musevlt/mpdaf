@@ -13,7 +13,7 @@ from mpdaf.obj import Cube
 from mpdaf.sdetect import Source
 from numpy.testing import assert_array_equal, assert_almost_equal
 
-from ..utils import get_data_file
+from ...tests.utils import get_data_file
 
 
 @pytest.fixture
