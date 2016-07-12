@@ -1,8 +1,6 @@
 """Test on Image objects."""
 
-# import nose.tools
 from __future__ import absolute_import
-from nose.plugins.attrib import attr
 
 import astropy.units as u
 import io
@@ -36,6 +34,10 @@ class TestBasicPixTable(unittest.TestCase):
         self.ax = np.random.randint(1, 8192, self.nrows)
         self.ay = np.random.randint(1, 8192, self.nrows)
         self.aoffset = np.random.randint(1, 8192, self.nrows)
+
+        # Make sure we have at least one ifu=1 value to avoid random failures
+        self.aifu[0] = 1
+
         self.origin = (((self.ax - self.aoffset) << MUSE_ORIGIN_SHIFT_XSLICE) |
                        (self.ay << MUSE_ORIGIN_SHIFT_YPIX) |
                        (self.aifu << MUSE_ORIGIN_SHIFT_IFU) | self.aslice)
@@ -74,14 +76,12 @@ class TestBasicPixTable(unittest.TestCase):
         self.pix2 = PixTable(self.file)
         self.file.seek(0)
 
-    @attr(speed='fast')
     def test_empty_pixtable(self):
         pix = PixTable(None)
         self.assertEqual(pix.nrows, 0)
         self.assertEqual(pix.extract(), None)
         self.assertEqual(pix.get_data(), None)
 
-    @attr(speed='fast')
     def test_getters(self):
         self.assertEqual(self.nrows, self.pix.nrows)
         for name in ('xpos', 'ypos', 'data', 'dq', 'stat', 'origin'):
@@ -90,7 +90,6 @@ class TestBasicPixTable(unittest.TestCase):
             assert_array_equal(getattr(self.pix2, 'get_' + name)(),
                                getattr(self, name))
 
-    @attr(speed='fast')
     def test_get_lambda(self):
         assert_array_equal(self.lbda, self.pix.get_lambda())
         assert_array_equal(self.lbda * u.angstrom.to(u.nm),
@@ -106,21 +105,18 @@ class TestBasicPixTable(unittest.TestCase):
         ksel = (self.lbda > 6000)
         assert_array_equal(self.lbda[ksel], self.pix2.get_lambda(ksel))
 
-    @attr(speed='fast')
     def test_get_xypos(self):
         assert_array_equal(self.xpos, self.pix2.get_xpos())
         assert_array_equal(self.xpos, self.pix.get_xpos(unit=u.pix))
         assert_array_equal(self.ypos, self.pix2.get_ypos())
         assert_array_equal(self.ypos, self.pix.get_ypos(unit=u.pix))
 
-    @attr(speed='fast')
     def test_get_data(self):
         assert_array_equal(self.data, self.pix2.get_data())
         assert_array_equal(self.data, self.pix.get_data(unit=u.count))
         assert_array_equal(self.stat, self.pix2.get_stat())
         assert_array_equal(self.stat, self.pix.get_stat(unit=u.count**2))
 
-    @attr(speed='fast')
     def test_set_column(self):
         for pixt in (self.pix, self.pix2):
             pix = pixt.copy()
@@ -140,7 +136,6 @@ class TestBasicPixTable(unittest.TestCase):
             pix.set_lambda(new_lambda)
             assert_array_equal(new_lambda, pix.get_lambda())
 
-    @attr(speed='fast')
     def test_set_data(self):
         for pix in (self.pix, self.pix2):
             new_data = pix.get_data()
@@ -163,7 +158,6 @@ class TestBasicPixTable(unittest.TestCase):
             pix.set_stat(1, ksel=ksel, unit=u.count**2)
             assert_array_equal(new_stat, pix.get_stat())
 
-    @attr(speed='fast')
     def test_origin_conversion(self):
         origin = self.pix.get_origin()
         ifu = self.pix.origin2ifu(origin)
@@ -176,7 +170,6 @@ class TestBasicPixTable(unittest.TestCase):
         # assert_array_equal(self.ax,
         #                    self.origin2xpix(origin, ifu=ifu, sli=sli))
 
-    @attr(speed='fast')
     def test_extract(self):
         for numexpr in (True, False):
             if not numexpr:

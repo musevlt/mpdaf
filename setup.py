@@ -45,7 +45,8 @@ import sys
 import ez_setup
 ez_setup.use_setuptools(version='18.0')  # NOQA
 
-from setuptools import setup, find_packages, Command, Extension
+from setuptools import setup, find_packages, Extension
+from setuptools.command.test import test as TestCommand
 
 # os.environ['DISTUTILS_DEBUG'] = '1'
 
@@ -113,19 +114,18 @@ if '.dev' in __version__:
         __version__ += commit_number
 
 
-class UnitTest(Command):
-    user_options = []
+class PyTest(TestCommand):
+    user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
 
     def initialize_options(self):
-        pass
+        TestCommand.initialize_options(self)
+        self.pytest_args = []
 
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        errno = subprocess.call(['nosetests', '-a', 'speed=fast', '-a',
-                                 'speed=slow', 'lib/mpdaf', 'tests'])
-        raise SystemExit(errno)
+    def run_tests(self):
+        # import here, cause outside the eggs aren't loaded
+        import pytest
+        errno = pytest.main(self.pytest_args)
+        sys.exit(errno)
 
 
 def options(*packages, **kw):
@@ -173,7 +173,7 @@ with open('README.rst') as f:
 with open('CHANGELOG') as f:
     CHANGELOG = f.read()
 
-cmdclass = {'test': UnitTest}
+cmdclass = {'test': PyTest}
 
 ext = '.pyx' if HAVE_CYTHON else '.c'
 ext_modules = [
@@ -207,7 +207,7 @@ setup(
     extras_require={
         'all':  ['numexpr', 'fitsio'],
     },
-    tests_require=['nose'],
+    tests_require=['pytest'],
     package_dir={'': 'lib'},
     packages=find_packages('lib'),
     zip_safe=False,

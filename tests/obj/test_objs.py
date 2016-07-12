@@ -1,51 +1,42 @@
 # -*- coding: utf-8 -*-
 
 import astropy.units as u
-import nose.tools
 import numpy as np
-from nose.plugins.attrib import attr
-from numpy.testing import assert_array_equal, assert_allclose
+from numpy.testing import (assert_array_equal, assert_allclose,
+                           assert_almost_equal)
+
+from mpdaf.obj import (is_float, is_int, bounding_box, flux2mag,
+                       mag2flux, UnitArray, UnitMaskedArray)
 
 
-from mpdaf.obj.objs import (is_float, is_int, bounding_box, flux2mag,
-                            mag2flux, UnitArray, UnitMaskedArray)
-
-
-@attr(speed='fast')
 def test_is_float():
-    nose.tools.assert_true(is_float(1.2))
-    nose.tools.assert_true(is_float(1))
+    assert is_float(1.2)
+    assert is_float(1)
 
 
-@attr(speed='fast')
 def test_is_int():
-    nose.tools.assert_true(is_int(1))
-    nose.tools.assert_false(is_int(1.2))
+    assert is_int(1)
+    assert not is_int(1.2)
 
 
-@attr(speed='fast')
 def test_mag_flux():
-    nose.tools.assert_almost_equal(flux2mag(mag2flux(20, 7000), 7000), 20)
+    assert_almost_equal(flux2mag(mag2flux(20, 7000), 7000), 20)
 
 
-@attr(speed='fast')
 def test_unit_array():
     arr = np.arange(5)
-    nose.tools.assert_is(UnitArray(arr, u.m, u.m), arr)
+    assert UnitArray(arr, u.m, u.m) is arr
     assert_array_equal(UnitArray(arr, u.m, u.mm), arr * 1e3)
 
 
-@attr(speed='fast')
 def test_unit_masked_array():
     arr = np.ma.arange(5)
-    nose.tools.assert_is(UnitMaskedArray(arr, u.m, u.m), arr)
+    assert UnitMaskedArray(arr, u.m, u.m) is arr
     assert_array_equal(UnitMaskedArray(arr, u.m, u.mm), arr * 1e3)
 
 
-@attr(speed='fast')
 def test_bounding_box():
     shape = (4, 5)
-    center = (2.2, 1.8)
 
     # Check that specifying just one radius, or two identical radii
     # produce the same expected result. The requested half-width of 1
@@ -61,8 +52,8 @@ def test_bounding_box():
         [sy, sx], [uy, yx], c = bounding_box("rectangle", (2.2, 1.8), radius,
                                              posangle=0.0, shape=shape,
                                              step=[1.0, 1.0])
-        nose.tools.assert_equal(sy, slice(2, 4))
-        nose.tools.assert_equal(sx, slice(1, 3))
+        assert sy == slice(2, 4)
+        assert sx == slice(1, 3)
         assert_allclose(c, np.array([2.5, 1.5]))
 
     # Ask for a 6x6 region centered at 2.2, 1.8.
@@ -76,8 +67,8 @@ def test_bounding_box():
     [sy, sx], [uy, ux], c = bounding_box("rectangle", (2.2, 1.8), (3, 3),
                                          posangle=0.0, shape=shape,
                                          step=[1.0, 1.0])
-    nose.tools.assert_equal(sy, slice(0, 4))
-    nose.tools.assert_equal(sx, slice(0, 5))
+    assert sy == slice(0, 4)
+    assert sx == slice(0, 5)
     assert_allclose(c, np.array([2.5, 1.5]))
 
     # Place the center at 0.1,-0.1 and the radius to 1, to check the
@@ -87,10 +78,11 @@ def test_bounding_box():
     # clipping the selected pixels would be 0,1 along the Y-axis and
     # -1,0 along the X axis. After clipping only pixel 0 should remain
     # selected along the X-axis.
-    [sy, sx], [uy, ux], c = bounding_box("rectangle", (0.1, -0.1), 1, posangle=0.0,
-                                         shape=shape, step=[1.0, 1.0])
-    nose.tools.assert_equal(sy, slice(0, 2))
-    nose.tools.assert_equal(sx, slice(0, 1))
+    [sy, sx], [uy, ux], c = bounding_box("rectangle", (0.1, -0.1), 1,
+                                         posangle=0.0, shape=shape,
+                                         step=[1.0, 1.0])
+    assert sy == slice(0, 2)
+    assert sx == slice(0, 1)
     assert_allclose(c, np.array([0.5, -0.5]))
 
     # Request a region that is an odd number of pixels in width and height
@@ -98,10 +90,11 @@ def test_bounding_box():
     # centered at the center of a pixel, and the nearest pixel center is
     # 2.0,3.0, so we expect it to select pixels 1,2,3 along the Y axis,
     # and 2,3,4 along the X axis.
-    [sy, sx], [uy, ux], c = bounding_box("rectangle", (2.1, 2.8), 1.5, posangle=0.0,
+    [sy, sx], [uy, ux], c = bounding_box("rectangle", (2.1, 2.8), 1.5,
+                                         posangle=0.0,
                                          shape=shape, step=[1.0, 1.0])
-    nose.tools.assert_equal(sy, slice(1, 4))
-    nose.tools.assert_equal(sx, slice(2, 5))
+    assert sy == slice(1, 4)
+    assert sx == slice(2, 5)
     assert_allclose(c, np.array([2.0, 3.0]))
 
     # Request a region that is entirely outside the array.
@@ -109,9 +102,10 @@ def test_bounding_box():
     # center of -5,10 if it fitted in the image. The selected range along
     # the Y axis is off the lower edge of the array, so its slice should
     # be the zero pixel range slice(0,0). The selected range along the
-    # X axis is above the maximum pixel index of shape[1], so a zero pixel-range
-    # slice of slice(shape[1]-1,shape[1]-1) should be returned.
-    [sy, sx], [uy, ux], c = bounding_box("rectangle", (-5, 10), 1.5, posangle=0.0,
+    # X axis is above the maximum pixel index of shape[1], so a zero
+    # pixel-range slice of slice(shape[1]-1,shape[1]-1) should be returned.
+    [sy, sx], [uy, ux], c = bounding_box("rectangle", (-5, 10), 1.5,
+                                         posangle=0.0,
                                          shape=shape, step=[1.0, 1.0])
-    nose.tools.assert_equal(sy, slice(0, 0))
-    nose.tools.assert_equal(sx, slice(shape[1] - 1, shape[1] - 1))
+    assert sy == slice(0, 0)
+    assert sx == slice(shape[1] - 1, shape[1] - 1)

@@ -1,11 +1,9 @@
 """Test on Cube objects."""
 from __future__ import absolute_import, division
 
-import nose.tools
-from nose.plugins.attrib import attr
-
 import astropy.units as u
 import numpy as np
+import pytest
 import six
 
 from astropy.io import fits
@@ -13,8 +11,6 @@ from mpdaf.obj import Spectrum, Image, Cube, iter_spe, iter_ima, WCS, WaveCoord
 from numpy import ma
 from numpy.testing import (assert_almost_equal, assert_array_equal,
                            assert_allclose)
-from nose.tools import assert_equal
-from tempfile import NamedTemporaryFile
 
 from ..utils import (generate_cube, generate_image, generate_spectrum,
                      assert_masked_allclose)
@@ -24,19 +20,16 @@ else:
     from operator import add, sub, mul, truediv as div
 
 
-@attr(speed='fast')
-def test_copy():
+def test_copy(cube):
     """Cube class: testing copy method."""
-    cube1 = generate_cube()
-    cube2 = cube1.copy()
-    s = cube1.data.sum()
-    cube1[0, 0, 0] = 1000
-    nose.tools.assert_true(cube1.wcs.isEqual(cube2.wcs))
-    nose.tools.assert_true(cube1.wave.isEqual(cube2.wave))
-    assert_equal(s, cube2.data.sum())
+    cube2 = cube.copy()
+    s = cube.data.sum()
+    cube[0, 0, 0] = 1000
+    assert cube.wcs.isEqual(cube2.wcs)
+    assert cube.wave.isEqual(cube2.wave)
+    assert s == cube2.data.sum()
 
 
-@attr(speed='fast')
 def test_arithmetricOperator_Cube():
     """Cube class: tests arithmetic functions"""
     cube1 = generate_cube(uwave=u.nm)
@@ -65,31 +58,26 @@ def test_arithmetricOperator_Cube():
     assert_almost_equal(cube2.data, cube1.data / 25.3)
 
 
-@attr(speed='fast')
-def test_get_Cube():
+def test_get_cube(cube):
     """Cube class: tests getters"""
-    cube1 = generate_cube()
-    assert_array_equal(cube1[2, :, :].shape, (6, 5))
-    assert_equal(cube1[:, 2, 3].shape[0], 10)
-    assert_array_equal(cube1[1:7, 0:2, 0:3].shape, (6, 2, 3))
-    assert_array_equal(cube1.select_lambda(1.2, 15.6).shape, (6, 6, 5))
-    a = cube1[2:4, 0:2, 1:4]
+    assert_array_equal(cube[2, :, :].shape, (6, 5))
+    assert cube[:, 2, 3].shape[0] == 10
+    assert_array_equal(cube[1:7, 0:2, 0:3].shape, (6, 2, 3))
+    assert_array_equal(cube.select_lambda(1.2, 15.6).shape, (6, 6, 5))
+    a = cube[2:4, 0:2, 1:4]
     assert_array_equal(a.get_start(), (3.5, 0, 1))
     assert_array_equal(a.get_end(), (6.5, 1, 3))
 
 
-@attr(speed='fast')
-def test_iter_ima():
+def test_iter_ima(cube):
     """Cube class: tests Image iterator"""
-    cube1 = generate_cube()
     ones = np.ones(shape=(6, 5))
-    for ima, k in iter_ima(cube1, True):
+    for ima, k in iter_ima(cube, True):
         ima[:, :] = k * ones
-    c = np.arange(cube1.shape[0])[:, np.newaxis, np.newaxis]
-    assert_array_equal(*np.broadcast_arrays(cube1.data.data, c))
+    c = np.arange(cube.shape[0])[:, np.newaxis, np.newaxis]
+    assert_array_equal(*np.broadcast_arrays(cube.data.data, c))
 
 
-@attr(speed='fast')
 def test_iter_spe():
     """Cube class: tests Spectrum iterator"""
     cube1 = generate_cube(data=0.)
@@ -100,13 +88,11 @@ def test_iter_spe():
     assert_array_equal(*np.broadcast_arrays(cube1.data.data, y + x))
 
 
-@attr(speed='fast')
-def test_crop():
+def test_crop(cube):
     """Cube class: tests the crop method."""
-    cube1 = generate_cube()
-    cube1.data.mask[0, :, :] = True
-    cube1.crop()
-    assert_equal(cube1.shape[0], 9)
+    cube.data.mask[0, :, :] = True
+    cube.crop()
+    assert cube.shape[0] == 9
 
 
 # A function for testing the multiprocessing function, which takes an
@@ -116,7 +102,6 @@ def _multiproc_func(obj):
     return obj.data.mean() * 10.0
 
 
-@attr(speed='fast')
 def test_multiprocess():
     """Cube class: tests multiprocess"""
     data_value = 2.2
@@ -139,28 +124,23 @@ def test_multiprocess():
     assert_allclose(im.data, data_value * 10.0)
 
 
-@attr(speed='fast')
-def test_multiprocess2():
+def test_multiprocess2(cube):
     """Cube class: more tests for multiprocess"""
-    cube1 = generate_cube()
     f = Image.ee
-    ee = cube1.loop_ima_multiprocessing(f, cpu=2, verbose=False)
-    assert_equal(ee[1], cube1[1, :, :].ee())
+    ee = cube.loop_ima_multiprocessing(f, cpu=2, verbose=False)
+    assert ee[1] == cube[1, :, :].ee()
 
     f = Image.rotate
-    cub2 = cube1.loop_ima_multiprocessing(f, cpu=2, verbose=False, theta=20)
-    assert_equal(cub2[4, 3, 2], cube1[4, :, :].rotate(20)[3, 2])
+    cub2 = cube.loop_ima_multiprocessing(f, cpu=2, verbose=False, theta=20)
+    assert cub2[4, 3, 2] == cube[4, :, :].rotate(20)[3, 2]
 
     f = Spectrum.resample
-    out = cube1.loop_spe_multiprocessing(f, cpu=2, verbose=False, step=1)
-    assert_equal(out[8, 3, 2], cube1[:, 3, 2].resample(step=1)[8])
+    out = cube.loop_spe_multiprocessing(f, cpu=2, verbose=False, step=1)
+    assert out[8, 3, 2] == cube[:, 3, 2].resample(step=1)[8]
 
 
-@attr(speed='fast')
-def test_mask():
+def test_mask(cube):
     """Cube class: testing mask functionalities"""
-    cube = generate_cube()
-
     # A region of half-width=1 and half-height=1 should have a size of
     # 2x2 pixels. A 2x2 region of pixels has a center at the shared
     # corner of the 4 pixels, and the closest corner to the requested
@@ -241,15 +221,16 @@ def test_mask():
     cube = generate_cube(shape=(10, 8, 8), wcs=wcs, var=None)
     cube.mask_ellipse([3.5, 3.5], (2.5, 3.5), 45.0, unit_radius=None,
                       unit_center=None, inside=False, lmin=2, lmax=5)
-    expected_mask = np.array([[True, True, True, True, True, True, True, True],
-                              [True, True, True, False, False, False, True, True],
-                              [True, True, False, False, False, False, False, True],
-                              [True, False, False, False, False, False, False, True],
-                              [True, False, False, False, False, False, False, True],
-                              [True, False, False, False, False, False, True, True],
-                              [True, True, False, False, False, True, True, True],
-                              [True, True, True, True, True, True, True, True]],
-                             dtype=bool)
+    expected_mask = np.array([
+        [True, True, True, True, True, True, True, True],
+        [True, True, True, False, False, False, True, True],
+        [True, True, False, False, False, False, False, True],
+        [True, False, False, False, False, False, False, True],
+        [True, False, False, False, False, False, False, True],
+        [True, False, False, False, False, False, True, True],
+        [True, True, False, False, False, True, True, True],
+        [True, True, True, True, True, True, True, True]],
+        dtype=bool)
     assert_array_equal(np.any(cube.mask[:2, :, :], axis=0),
                        np.ones(cube.shape[1:]))
     assert_array_equal(np.all(cube._mask[2:5, :, :], axis=0), expected_mask)
@@ -269,7 +250,7 @@ def test_mask():
 
     # The cube was generated without any variance information.
     # Check that mask_variance() raises an error due to this.
-    with nose.tools.assert_raises(ValueError):
+    with pytest.raises(ValueError):
         cube.mask_variance(0.1)
 
     # Add an array of variances to the cube and check that mask_variance()
@@ -281,7 +262,6 @@ def test_mask():
     assert_array_equal(cube.data.mask, mask)
 
 
-@attr(speed='fast')
 def test_truncate():
     """Cube class: testing truncation"""
     cube1 = generate_cube(data=2, wave=WaveCoord(crval=1))
@@ -293,7 +273,6 @@ def test_truncate():
     assert_array_equal(cube2.get_end(), (5, 1, 3))
 
 
-@attr(speed='fast')
 def test_sum():
     """Cube class: testing sum method"""
     cube1 = generate_cube(data=1, wave=WaveCoord(crval=1))
@@ -301,18 +280,17 @@ def test_sum():
     refsum = ind.sum()
     cube1.data = (ind[:, np.newaxis, np.newaxis] *
                   np.ones((6, 5))[np.newaxis, :, :])
-    assert_equal(cube1.sum(), 6 * 5 * refsum)
+    assert cube1.sum() == 6 * 5 * refsum
     assert_array_equal(cube1.sum(axis=0).data, np.full((6, 5), refsum, float))
     weights = np.ones(shape=(10, 6, 5))
-    assert_equal(cube1.sum(weights=weights), 6 * 5 * refsum)
+    assert cube1.sum(weights=weights) == 6 * 5 * refsum
 
     weights = np.ones(shape=(10, 6, 5)) * 2
-    assert_equal(cube1.sum(weights=weights), 6 * 5 * refsum)
+    assert cube1.sum(weights=weights) == 6 * 5 * refsum
 
     assert_array_equal(cube1.sum(axis=(1, 2)).data, ind * 6 * 5)
 
 
-@attr(speed='fast')
 def test_mean():
     """Cube class: testing mean method"""
 
@@ -349,12 +327,14 @@ def test_mean():
             # Compute the expected values of the mean and its variance,
             # using a different implementation to cube.mean().
             expected_data = np.sum(data * w, axis=axis) / np.sum(w, axis=axis)
-            expected_var = np.sum(var * w**2, axis=axis) / np.sum(w, axis=axis)**2
+            expected_var = (np.sum(var * w**2, axis=axis) /
+                            np.sum(w, axis=axis)**2)
 
             # In the case any of the following tests fail, provide an
             # error message that indicates which arguments were passed
             # to cube.mean()
-            errmsg = "Failure of cube.mean(axis=%s, weights=%s)" % (axis, weights)
+            errmsg = "Failure of cube.mean(axis=%s, weights=%s)" % (
+                axis, weights)
 
             # See if the mean pixels and variances of these pixels have the
             # expected values.
@@ -365,7 +345,6 @@ def test_mean():
                 assert_allclose(mean.var, expected_var, err_msg=errmsg)
 
 
-@attr(speed='fast')
 def test_median():
     """Cube class: testing median methods"""
     cube1 = generate_cube(data=1., wave=WaveCoord(crval=1))
@@ -375,17 +354,16 @@ def test_median():
                   np.ones((6, 5))[np.newaxis, :, :])
 
     m = cube1.median()
-    assert_equal(m, median)
+    assert m == median
     m = cube1.median(axis=0)
-    assert_equal(m[3, 3], median)
+    assert m[3, 3] == median
     m = cube1.median(axis=(1, 2))
     assert_array_equal(m.data, ind)
 
-    with nose.tools.assert_raises(ValueError):
+    with pytest.raises(ValueError):
         m = cube1.median(axis=-1)
 
 
-@attr(speed='fast')
 def test_rebin():
     """Cube class: testing rebin methods"""
 
@@ -500,14 +478,15 @@ def test_rebin():
     # sum[n=0..N] = (n*(n-1))/2.
     tmp = cut + factor
     assert_allclose(np.asarray(cube2.get_start()),
-                    ((tmp * (tmp - 1)) / 2.0 - (cut * (cut - 1)) / 2.0) / factor)
+                    ((tmp * (tmp - 1)) / 2.0 -
+                     (cut * (cut - 1)) / 2.0) / factor)
 
 
-@attr(speed='fast')
 def test_get_image():
     """Cube class: testing get_image method"""
     shape = (2000, 6, 5)
-    wave = WaveCoord(crpix=1, cdelt=3.0, crval=2000, cunit=u.angstrom, shape=shape[0])
+    wave = WaveCoord(crpix=1, cdelt=3.0, crval=2000, cunit=u.angstrom,
+                     shape=shape[0])
     wcs = WCS(crval=(0, 0))
     data = np.ones(shape=shape) * 2
     cube1 = Cube(data=data, wave=wave, wcs=wcs)
@@ -530,21 +509,20 @@ def test_get_image():
     # In the cube, all spectral pixels of image pixel 0,0 were 2.0,
     # so the mean over the desired wavelength range, minus the mean
     # over background ranges either side of this should be zero.
-    assert_equal(ima[0, 0], 0)
+    assert ima[0, 0] == 0
 
     # Spectral pixels of image pixel 2,2 in the original cube were all
     # 2.0 everywhere except where the gaussian was added to 2.0. Hence
     # pixel 2,2 of the mean image should be the mean of the gaussian
     # minus the average 2.0 background.
-    nose.tools.assert_almost_equal(ima[2, 2],
-                                   cube1[lslice, 2, 2].mean() - 2, 3)
+    assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].mean() - 2, 3)
 
     # Get another mean image, but this time without subtracting off a
     # background.  Image pixel 0,0 should have a mean of 2.0, and
     # pixel 2,2 should equal the mean of the gaussian added to 2.0
     ima = cube1.get_image(wave=lrange, is_sum=False, subtract_off=False)
-    assert_equal(ima[0, 0], 2)
-    nose.tools.assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].mean(), 3)
+    assert ima[0, 0] == 2
+    assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].mean(), 3)
 
     # For this test, perform a sum over the chosen wavelength range,
     # and subtract off a background image taken from wavelength
@@ -556,22 +534,20 @@ def test_get_image():
     # pixel 2,2 using an equal number of pixels that were not affected
     # by the addition of the gaussian.
     ima = cube1.get_image(wave=lrange, is_sum=True, subtract_off=True)
-    assert_equal(ima[0, 0], 0)
-    nose.tools.assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].sum() -
-                                   cube1[lslice, 0, 0].sum(), 3)
+    assert ima[0, 0] == 0
+    assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].sum() -
+                        cube1[lslice, 0, 0].sum(), 3)
 
     # Finally, perform a sum of the chosen wavelength range without
     # subtracting a background image. This is easy to test by doing
     # equivalent sums through the cube over the chosen wavelength range.
     ima = cube1.get_image(wave=lrange, is_sum=True, subtract_off=False)
-    assert_equal(ima[0, 0], cube1[lslice, 0, 0].sum())
-    nose.tools.assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].sum())
+    assert ima[0, 0] == cube1[lslice, 0, 0].sum()
+    assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].sum())
 
 
-@attr(speed='fast')
 def test_subcube():
     """Cube class: testing sub-cube extraction methods"""
-    wcs = WCS(crval=(0, 0), crpix=1.0, deg=True)
     cube1 = generate_cube(data=1, wave=WaveCoord(crval=1))
 
     # Extract a sub-cube whose images are centered close to pixel
@@ -590,53 +566,52 @@ def test_subcube():
     # of radius 1.
     cube2 = cube1.subcube_circle_aperture(center=(2.3, 2.8), radius=1,
                                           unit_center=None, unit_radius=None)
-    assert_equal(cube2.data.mask[0, 0, 0], True)
+    assert bool(cube2.data.mask[0, 0, 0]) is True
     assert_array_equal(cube2.get_start(), (1, 2, 2))
     assert_array_equal(cube2.shape, (10, 2, 2))
 
 
-@attr(speed='fast')
 def test_aperture():
     """Cube class: testing spectrum extraction"""
     cube = generate_cube(data=1, wave=WaveCoord(crval=1))
     spe = cube.aperture(center=(2, 2.8), radius=1,
                         unit_center=None, unit_radius=None)
-    assert_equal(spe.shape[0], 10)
-    assert_equal(spe.get_start(), 1)
+    assert spe.shape[0] == 10
+    assert spe.get_start() == 1
 
 
-@attr(speed='fast')
-def test_write():
+def test_write(tmpdir):
     """Cube class: testing write"""
     unit = u.Unit('1e-20 erg/s/cm2/Angstrom')
     cube = generate_cube(data=1, wave=WaveCoord(crval=1, cunit=u.angstrom),
                          unit=unit)
     cube.data[:, 0, 0] = ma.masked
     cube.var = np.ones_like(cube.data)
-    fobj = NamedTemporaryFile()
-    cube.write(fobj.name)
 
-    hdu = fits.open(fobj)
+    testfile = str(tmpdir.join('cube.fits'))
+    cube.write(testfile)
+
+    hdu = fits.open(testfile)
     assert_array_equal(hdu[1].data.shape, cube.shape)
     assert_array_equal([h.name for h in hdu],
                        ['PRIMARY', 'DATA', 'STAT', 'DQ'])
 
     hdr = hdu[0].header
-    assert_equal(hdr['AUTHOR'], 'MPDAF')
+    assert hdr['AUTHOR'] == 'MPDAF'
 
     hdr = hdu[1].header
-    assert_equal(hdr['EXTNAME'], 'DATA')
-    assert_equal(hdr['NAXIS'], 3)
-    assert_equal(u.Unit(hdr['BUNIT']), unit)
-    assert_equal(u.Unit(hdr['CUNIT3']), u.angstrom)
-    assert_equal(hdr['NAXIS1'], cube.shape[2])
-    assert_equal(hdr['NAXIS2'], cube.shape[1])
-    assert_equal(hdr['NAXIS3'], cube.shape[0])
+    assert hdr['EXTNAME'] == 'DATA'
+    assert hdr['NAXIS'] == 3
+    assert u.Unit(hdr['BUNIT']) == unit
+    assert u.Unit(hdr['CUNIT3']) == u.angstrom
+    assert hdr['NAXIS1'] == cube.shape[2]
+    assert hdr['NAXIS2'] == cube.shape[1]
+    assert hdr['NAXIS3'] == cube.shape[0]
     for key in ('CRPIX1', 'CRPIX2'):
-        assert_equal(hdr[key], 1.0)
+        assert hdr[key] == 1.0
+    hdu.close()
 
 
-@attr(speed='fast')
 def test_get_item():
     """Cube class: testing __getitem__"""
     c = generate_cube(data=1, wave=WaveCoord(crval=1, cunit=u.angstrom))
@@ -645,27 +620,27 @@ def test_get_item():
 
     r = c[:, :2, :2]
     assert_array_equal(r.shape, (10, 2, 2))
-    assert_equal(r.primary_header['KEY'], c.primary_header['KEY'])
-    assert_equal(r.data_header['KEY'], c.data_header['KEY'])
-    nose.tools.assert_true(isinstance(r, Cube))
-    nose.tools.assert_true(r.wcs.isEqual(c.wcs[:2, :2]))
-    nose.tools.assert_true(r.wave.isEqual(c.wave))
+    assert r.primary_header['KEY'] == c.primary_header['KEY']
+    assert r.data_header['KEY'] == c.data_header['KEY']
+    assert isinstance(r, Cube)
+    assert r.wcs.isEqual(c.wcs[:2, :2])
+    assert r.wave.isEqual(c.wave)
 
     r = c[0, :, :]
     assert_array_equal(r.shape, (6, 5))
-    assert_equal(r.primary_header['KEY'], c.primary_header['KEY'])
-    assert_equal(r.data_header['KEY'], c.data_header['KEY'])
-    nose.tools.assert_true(isinstance(r, Image))
-    nose.tools.assert_true(r.wcs.isEqual(c.wcs))
-    nose.tools.assert_is_none(r.wave)
+    assert r.primary_header['KEY'] == c.primary_header['KEY']
+    assert r.data_header['KEY'] == c.data_header['KEY']
+    assert isinstance(r, Image)
+    assert r.wcs.isEqual(c.wcs)
+    assert r.wave is None
 
     r = c[:, 2, 2]
     assert_array_equal(r.shape, (10, ))
-    assert_equal(r.primary_header['KEY'], c.primary_header['KEY'])
-    assert_equal(r.data_header['KEY'], c.data_header['KEY'])
-    nose.tools.assert_true(isinstance(r, Spectrum))
-    nose.tools.assert_true(r.wave.isEqual(c.wave))
-    nose.tools.assert_is_none(r.wcs)
+    assert r.primary_header['KEY'] == c.primary_header['KEY']
+    assert r.data_header['KEY'] == c.data_header['KEY']
+    assert isinstance(r, Spectrum)
+    assert r.wave.isEqual(c.wave)
+    assert r.wcs is None
 
 
 def test_bandpass_image():
@@ -693,13 +668,13 @@ def test_bandpass_image():
     # spectral pixels. The weight of each pixel is supposed to be
     # integral of the sensitivity function over the width of the pixel.
     #
-    #| 0  |  1  |  2  |  3  |  4  |  5  |  6  |  Pixel indexes
-    #         _______________________
-    # _______|                       |_________  Sensitivities
+    # | 0  |  1  |  2  |  3  |  4  |  5  |  6  |  Pixel indexes
+    #          _______________________
+    #  _______|                       |_________  Sensitivities
     #
-    #  0.0  0.5   1.0   1.0   1.0   0.5   0.0    Weights
-    #  0.0  1.0   2.0   3.0   4.0   5.0   6.0    Pixel values vs wavelength
-    #  0.0  0.5   2.0   3.0   4.0   2.5   0.0    Pixel values * weights
+    #   0.0  0.5   1.0   1.0   1.0   0.5   0.0    Weights
+    #   0.0  1.0   2.0   3.0   4.0   5.0   6.0    Pixel values vs wavelength
+    #   0.0  0.5   2.0   3.0   4.0   2.5   0.0    Pixel values * weights
 
     weights = np.array([0.0, 0.5, 1.0, 1.0, 1.0, 0.5, 0.0])
 

@@ -2,82 +2,62 @@
 
 from __future__ import absolute_import, division
 
-from nose.plugins.attrib import attr
-
 import astropy.units as u
-import os
-import tempfile
 import numpy as np
+import pytest
 import warnings
 
 from astropy.io import fits
 from numpy import ma
 from mpdaf.obj import DataArray, WaveCoord, WCS, Cube
 from numpy.testing import assert_array_equal, assert_allclose
-from nose.tools import (assert_true, assert_equal, assert_tuple_equal,
-                        assert_is, assert_false, assert_raises)
-from os.path import join
 
 from mpdaf.tools import MpdafWarning
 from ..utils import (generate_image, generate_cube, generate_spectrum,
-                     assert_masked_allclose)
-
-DATADIR = join(os.path.abspath(os.path.dirname(__file__)), '..', '..')
-TESTIMG = join(DATADIR, 'data', 'obj', 'a370II.fits')
-TESTSPE = join(DATADIR, 'data', 'obj', 'Spectrum_lines.fits')
-TESTCUBE = join(DATADIR, 'data', 'sdetect', 'minicube.fits')
+                     assert_masked_allclose, get_data_file)
 
 
-@attr(speed='fast')
-def test_deprecated_warnings():
+def test_deprecated_warnings(spectrum):
     """DataArray class: Testing warnings for deprecated methods"""
-    sp = generate_spectrum()
-
     with warnings.catch_warnings(record=True) as w:
         # Cause all warnings to always be triggered.
         warnings.simplefilter("always")
-        sp.get_lambda(0)
+        spectrum.get_lambda(0)
         assert len(w) == 1
         assert issubclass(w[-1].category, MpdafWarning)
         assert "deprecated" in str(w[-1].message)
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        sp.resize()
+        spectrum.resize()
         assert len(w) == 1
         assert issubclass(w[-1].category, MpdafWarning)
         assert "deprecated" in str(w[-1].message)
 
 
-@attr(speed='fast')
 def test_fits_img():
     """DataArray class: Testing FITS image reading"""
-    hdu = fits.open(TESTIMG)
-    data = DataArray(filename=TESTIMG)
-    assert_equal(data.shape, hdu[0].data.shape)
-    assert_equal(data.ndim, 2)
-    hdu.close()
+    testimg = get_data_file('obj', 'a370II.fits')
+    data = DataArray(filename=testimg)
+    assert data.shape == (1797, 1909)
+    assert data.ndim == 2
 
 
-@attr(speed='fast')
 def test_fits_spectrum():
     """DataArray class: Testing FITS spectrum reading"""
-    hdu = fits.open(TESTSPE)
-    data = DataArray(filename=TESTSPE)
-    assert_equal(data.shape, hdu[1].data.shape)
-    assert_equal(data.ndim, 1)
-    hdu.close()
+    testspe = get_data_file('obj', 'Spectrum_lines.fits')
+    data = DataArray(filename=testspe)
+    assert data.shape == (2048,)
+    assert data.ndim == 1
 
 
-@attr(speed='fast')
 def test_invalid_file():
     """DataArray class: Testing invalid file reading"""
-    with assert_raises(IOError) as e:
+    with pytest.raises(IOError) as e:
         DataArray(filename='missing/file.test')
-        assert_equal(e.exception.message, 'Invalid file: missing/file.test')
+        assert e.exception.message == 'Invalid file: missing/file.test'
 
 
-@attr(speed='fast')
 def test_from_ndarray():
     """DataArray class: Testing initialization from a numpy.ndarray"""
 
@@ -93,7 +73,7 @@ def test_from_ndarray():
     d = DataArray(data=data, var=var, mask=mask)
 
     # Is the shape of the DataArray correct?
-    assert_tuple_equal(d.shape, data.shape)
+    assert d.shape == data.shape
 
     # Check that the enclosed data and variance arrays match
     # the arrays that were passed to the constructor.
@@ -106,27 +86,25 @@ def test_from_ndarray():
     # fact all references to the same mask.
     assert_array_equal(d.data.mask, mask)
     assert_array_equal(d.var.mask, mask)
-    assert_true(d.data.mask is d.mask and d.var.mask is d.mask)
+    assert d.data.mask is d.mask and d.var.mask is d.mask
 
 
-@attr(speed='fast')
 def test_from_obj():
     """DataArray class: Testing initialization from an object"""
     d = DataArray(data=np.arange(10), var=np.ones(10))
     c = Cube.new_from_obj(d)
-    assert_tuple_equal(c.shape, d.shape)
-    assert_true(np.may_share_memory(c.data, d.data))
+    assert c.shape == d.shape
+    assert np.may_share_memory(c.data, d.data)
     assert_array_equal(c.data, d.data)
     assert_array_equal(c.var, d.var)
 
     data = np.zeros(10)
     c = Cube.new_from_obj(d, data=data, copy=True)
-    assert_false(np.may_share_memory(c.data, data))
+    assert not np.may_share_memory(c.data, data)
     assert_array_equal(c.data, data)
     assert_array_equal(c.var, d.var)
 
 
-@attr(speed='fast')
 def test_copy():
     """DataArray class: Testing the copy method"""
     wcs = WCS(deg=True)
@@ -148,38 +126,32 @@ def test_copy():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
+    assert cube2.data.mask is cube2.mask
+    assert cube2.var.mask is cube2.mask
 
-    assert_true(cube2.data.mask is cube2.mask and
-                cube2.var.mask is cube2.mask)
 
-
-@attr(speed='fast')
-def test_clone():
+def test_clone(cube):
     """DataArray class: Testing the clone method"""
-    cube1 = generate_cube(shape=(10, 6, 5))
-    cube2 = cube1.clone()
-    assert_true(cube1.wcs.isEqual(cube2.wcs))
-    assert_true(cube1.wave.isEqual(cube2.wave))
-    assert_true(cube2._data is None)
-    assert_true(cube2._var is None)
-    assert_true(cube2._mask is None)
+    cube2 = cube.clone()
+    assert cube.wcs.isEqual(cube2.wcs)
+    assert cube.wave.isEqual(cube2.wave)
+    assert cube2._data is None
+    assert cube2._var is None
+    assert cube2._mask is None
 
 
-@attr(speed='fast')
-def test_clone_fits():
+def test_clone_fits(minicube):
     """DataArray class: Testing the clone method with a FITS file"""
-    cube = Cube(filename=TESTCUBE)
-    im = cube[0].clone()
-    assert_equal(im.ndim, 2)
-    assert_equal(im.data_header['NAXIS'], 2)
-    assert_equal(im.shape, cube.shape[1:])
-    assert_true('NAXIS3' not in im.data_header)
+    im = minicube[0].clone()
+    assert im.ndim == 2
+    assert im.data_header['NAXIS'] == 2
+    assert im.shape == minicube.shape[1:]
+    assert 'NAXIS3' not in im.data_header
 
-    sp = cube[:, 20, 20]
+    sp = minicube[:, 20, 20]
     assert_array_equal(sp.abs().data, np.abs(sp._data))
 
 
-@attr(speed='fast')
 def test_clone_with_data():
     """DataArray class: Testing the clone method with data"""
 
@@ -218,11 +190,10 @@ def test_clone_with_data():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(cube2.data.mask is cube2.mask and
-                cube2.var.mask is cube2.mask)
+    assert cube2.data.mask is cube2.mask
+    assert cube2.var.mask is cube2.mask
 
 
-@attr(speed='fast')
 def test_set_var():
     """DataArray class: Testing the variance setter"""
 
@@ -257,7 +228,7 @@ def test_set_var():
 
     # Remove the variance array and check that this worked.
     cube.var = None
-    assert_true(cube.var is None)
+    assert cube.var is None
 
     # Make sure that removing the variance array didn't affect
     # the mask of the data array.
@@ -265,10 +236,9 @@ def test_set_var():
 
     # Check that the data and masked properties still both hold
     # references to the same mask array.
-    assert_true(cube.data.mask is cube.mask)
+    assert cube.data.mask is cube.mask
 
 
-@attr(speed='fast')
 def test_comparisons():
     """DataArray class: Testing comparison methods"""
 
@@ -292,7 +262,7 @@ def test_comparisons():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+    assert s.data.mask is s.mask and s.var.mask is s.mask
 
     # [ __lt__ ]
 
@@ -307,7 +277,7 @@ def test_comparisons():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+    assert s.data.mask is s.mask and s.var.mask is s.mask
 
     # [ __ge__ ]
 
@@ -322,7 +292,7 @@ def test_comparisons():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+    assert s.data.mask is s.mask and s.var.mask is s.mask
 
     # [ __gt__ ]
 
@@ -337,10 +307,9 @@ def test_comparisons():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+    assert s.data.mask is s.mask and s.var.mask is s.mask
 
 
-@attr(speed='fast')
 def test_getitem():
     """DataArray class: Testing the __getitem__ method"""
 
@@ -377,7 +346,7 @@ def test_getitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+    assert s.data.mask is s.mask and s.var.mask is s.mask
 
     # Check that the wavelength of the first spectrum pixel matches that
     # of pixel za,ya,xa in the original cube.
@@ -403,7 +372,7 @@ def test_getitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+    assert s.data.mask is s.mask and s.var.mask is s.mask
 
     # Check that the world coordinates of the first pixel of the
     # image match those of pixel(za,ya,xa) of the original cube.
@@ -428,7 +397,7 @@ def test_getitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+    assert s.data.mask is s.mask and s.var.mask is s.mask
 
     # Check that the world coordinates of the first pixel of the
     # image match those of pixel(za,ya,xa) of the original cube.
@@ -451,7 +420,7 @@ def test_getitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+    assert s.data.mask is s.mask and s.var.mask is s.mask
 
     # Extract a sub-cube of values from the unmasked area of the cube
     # and check that all its data and variances are not masked.
@@ -462,10 +431,9 @@ def test_getitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+    assert s.data.mask is s.mask and s.var.mask is s.mask
 
 
-@attr(speed='fast')
 def test_setitem():
     """DataArray class: Testing the __setitem__ method"""
 
@@ -508,8 +476,8 @@ def test_setitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(cube2.data.mask is cube2.mask and
-                cube2.var.mask is cube2.mask)
+    assert cube2.data.mask is cube2.mask
+    assert cube2.var.mask is cube2.mask
 
     # Next assign the same array, but as part of a 3D DataArray
     # with variances and a mask.
@@ -526,8 +494,8 @@ def test_setitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(cube2.data.mask is cube2.mask and
-                cube2.var.mask is cube2.mask)
+    assert cube2.data.mask is cube2.mask
+    assert cube2.var.mask is cube2.mask
 
     # ----------------------------------
     # Test the assignment of sub-images.
@@ -553,8 +521,8 @@ def test_setitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(cube2.data.mask is cube2.mask and
-                cube2.var.mask is cube2.mask)
+    assert cube2.data.mask is cube2.mask
+    assert cube2.var.mask is cube2.mask
 
     # Next assign the same array, but as part of a 2D DataArray
     # with variances and a mask.
@@ -574,8 +542,8 @@ def test_setitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(cube2.data.mask is cube2.mask and
-                cube2.var.mask is cube2.mask)
+    assert cube2.data.mask is cube2.mask
+    assert cube2.var.mask is cube2.mask
 
     # -----------------------------------
     # Test the assignment of sub-spectra.
@@ -600,11 +568,10 @@ def test_setitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(cube2.data.mask is cube2.mask and
-                cube2.var.mask is cube2.mask)
+    assert cube2.data.mask is cube2.mask
+    assert cube2.var.mask is cube2.mask
 
 
-@attr(speed='fast')
 def test_get_wcs_header():
     """DataArray class: Testing the get_wcs_header method"""
 
@@ -613,10 +580,9 @@ def test_get_wcs_header():
     im = generate_image(wcs=wcs)
     hdr = im.get_wcs_header()
     hdr_wcs = WCS(hdr)
-    assert_true(wcs.isEqual(hdr_wcs))
+    assert wcs.isEqual(hdr_wcs)
 
 
-@attr(speed='fast')
 def test_get_data_hdu():
     """DataArray class: Testing the get_data_hdu method"""
 
@@ -631,15 +597,14 @@ def test_get_data_hdu():
 
     # Check that the WCS information taken from the header matches the
     # WCS information stored with the cube.
-    assert_true(cube.wcs.isEqual(hdr_wcs))
+    assert cube.wcs.isEqual(hdr_wcs)
 
     # Check that the wavelength information taken from the header
     # matches the wavelength information stored with the cube.
     hdr_wave = WaveCoord(hdr)
-    assert_true(cube.wave.isEqual(hdr_wave))
+    assert cube.wave.isEqual(hdr_wave)
 
 
-@attr(speed='fast')
 def test_get_stat_hdu():
     """DataArray class: Testing the get_stat_hdu method"""
 
@@ -660,47 +625,32 @@ def test_get_stat_hdu():
     assert_masked_allclose(ma.array(hdu_var, mask=mask), cube.var)
 
 
-@attr(speed='fast')
-def test_write():
+def test_write(tmpdir):
     """DataArray class: Testing the write method"""
 
-    nz = 5
-    ny = 20
-    nx = 10
-
-    # Create a cube, with a ramp of values assigned to the variance array.
-
-    data = np.arange(nx * ny * nz, dtype=float).reshape((nz, ny, nx))
+    shape = (5, 4, 3)
+    data = np.arange(np.prod(shape), dtype=float).reshape(shape)
     var = data / 10.0
     mask = data.astype(int) % 10 == 0
     cube = generate_cube(data=data, var=var, mask=mask, wcs=WCS(deg=True),
                          wave=WaveCoord(cunit=u.angstrom))
 
-    tmpfile = tempfile.NamedTemporaryFile(suffix=".fits")
-    filename = tmpfile.name
-    tmpfile.close()
-
-    cube.write(filename, savemask='dq')
-
-    # Read the file into a new cube.
-    cube2 = Cube(filename)
+    testfile = str(tmpdir.join('cube.fits'))
+    cube.write(testfile, savemask='dq')
 
     # Verify that the contents of the file match the original cube.
+    cube2 = Cube(testfile)
     assert_masked_allclose(cube2.data, cube.data)
     assert_masked_allclose(cube2.var, cube.var)
-    assert_true(cube2.wcs.isEqual(cube.wcs))
-    assert_true(cube2.wave.isEqual(cube.wave))
+    assert cube2.wcs.isEqual(cube.wcs)
+    assert cube2.wave.isEqual(cube.wave)
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(cube2.data.mask is cube2.mask and
-                cube2.var.mask is cube2.mask)
-
-    # Delete the temporary file.
-    os.remove(filename)
+    assert cube2.data.mask is cube2.mask
+    assert cube2.var.mask is cube2.mask
 
 
-@attr(speed='fast')
 def test_sqrt():
     """DataArray class: Testing the sqrt method"""
 
@@ -737,7 +687,7 @@ def test_sqrt():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+    assert s.data.mask is s.mask and s.var.mask is s.mask
 
     # Given a sample of value x, picked from a distribution of variance vx,
     # compute the expected variance, vs, of sqrt(x).
@@ -771,10 +721,9 @@ def test_sqrt():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(s.data.mask is s.mask and s.var.mask is s.mask)
+    assert s.data.mask is s.mask and s.var.mask is s.mask
 
 
-@attr(speed='fast')
 def test_abs():
     """DataArray class: Testing the abs method"""
 
@@ -786,7 +735,6 @@ def test_abs():
     var = 0.5
     mask = np.logical_and(ramp > -2, ramp < 2)
     spec1 = generate_spectrum(ramp, var=var, mask=mask)
-
     spec2 = spec1.abs()
 
     # Check that the unmasked values of the data array have been
@@ -798,11 +746,10 @@ def test_abs():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(spec2.data.mask is spec2.mask and
-                spec2.var.mask is spec2.mask)
+    assert spec2.data.mask is spec2.mask
+    assert spec2.var.mask is spec2.mask
 
 
-@attr(speed='fast')
 def test_unmask():
     """DataArray class: Testing the unmask method"""
 
@@ -829,11 +776,10 @@ def test_unmask():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    assert spec.data.mask is spec.mask
+    assert spec.var.mask is spec.mask
 
 
-@attr(speed='fast')
 def test_mask_variance():
     """DataArray class: Testing the mask_variance method"""
 
@@ -861,11 +807,10 @@ def test_mask_variance():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    assert spec.data.mask is spec.mask
+    assert spec.var.mask is spec.mask
 
 
-@attr(speed='fast')
 def test_mask_selection():
     """DataArray class: Testing the mask_selection method"""
 
@@ -890,11 +835,10 @@ def test_mask_selection():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    assert spec.data.mask is spec.mask
+    assert spec.var.mask is spec.mask
 
 
-@attr(speed='fast')
 def test_shared_masks():
     """DataArray class: Testing shared masks"""
 
@@ -938,8 +882,8 @@ def test_shared_masks():
     spec.var = new_var
     assert_masked_allclose(spec.var, ma.array(new_var, mask=expected_mask))
     assert_masked_allclose(spec.data, ma.array(old_data, mask=expected_mask))
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    assert spec.data.mask is spec.mask
+    assert spec.var.mask is spec.mask
 
     # ----------------------------------------------------------------
     # Assign a MaskedArray of the same shape to DataArray.var:
@@ -970,8 +914,8 @@ def test_shared_masks():
     assert_masked_allclose(spec.var,
                            ma.array(new_var.data, mask=expected_mask))
     assert_masked_allclose(spec.data, ma.array(old_data, mask=expected_mask))
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    assert spec.data.mask is spec.mask
+    assert spec.var.mask is spec.mask
 
     # ----------------------------------------------------------------
     # Assign a numpy.ndarray of the same shape to DataArray.data:
@@ -999,8 +943,8 @@ def test_shared_masks():
     spec.data = new_data
     assert_masked_allclose(spec.var, ma.array(old_var, mask=expected_mask))
     assert_masked_allclose(spec.data, ma.array(new_data, mask=expected_mask))
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    assert spec.data.mask is spec.mask
+    assert spec.var.mask is spec.mask
 
     # ----------------------------------------------------------------
     # Assign a MaskedArray of the same shape to DataArray.data:
@@ -1034,8 +978,8 @@ def test_shared_masks():
     assert_masked_allclose(spec.var, ma.array(old_var, mask=expected_mask))
     assert_masked_allclose(spec.data,
                            ma.array(new_data, mask=expected_mask))
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    assert spec.data.mask is spec.mask
+    assert spec.var.mask is spec.mask
 
     # ----------------------------------------------------------------
     # Assign a numpy.ndarray of a different shape to DataArray.var:
@@ -1115,8 +1059,8 @@ def test_shared_masks():
 #     spec.data = new_data
 #     assert_masked_allclose(spec.var, ma.array(old_var, mask=old_mask))
 #     assert_masked_allclose(spec.data, ma.array(new_data, mask=expected_mask))
-#     assert_true(spec.data.mask is spec.mask)
-#     assert_true(spec.var.mask is not spec.mask)
+#     assert spec.data.mask is spec.mask
+#     assert spec.var.mask is not spec.mask
 #
 #     #. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 #     # Now that the size of the data array has been changed, try assigning
@@ -1182,8 +1126,8 @@ def test_shared_masks():
 #     assert_masked_allclose(spec.var, ma.array(old_var, mask=old_mask))
 #     assert_masked_allclose(spec.data,
 #                            ma.array(new_data.data, mask=expected_mask))
-#     assert_true(spec.data.mask is spec.mask)
-#     assert_true(spec.var.mask is not spec.mask)
+#     assert spec.data.mask is spec.mask
+#     assert spec.var.mask is not spec.mask
 #
 #     # ----------------------------------------------------------------
 #     # Directly modify the masks of the data, var and masked properties.
@@ -1259,8 +1203,8 @@ def test_shared_masks():
     assert_array_equal(spec.data.mask, expected_mask)
     assert_array_equal(spec.var.mask, expected_mask)
     assert_array_equal(spec.mask, expected_mask)
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    assert spec.data.mask is spec.mask
+    assert spec.var.mask is spec.mask
 
     # ----------------------------------------------------------------
     # Attempt to assign a mask of a different size to the masked property.
@@ -1299,8 +1243,8 @@ def test_shared_masks():
     assert_masked_allclose(spec.var, ma.array(old_var, mask=expected_mask))
     assert_allclose(spec.data.data[30:32], old_data[30:32])
     assert_allclose(spec.var.data[32:34], old_var[32:34])
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    assert spec.data.mask is spec.mask
+    assert spec.var.mask is spec.mask
 
     # ----------------------------------------------------------------
     # Check that in-place arithmetic operations work when they mask
@@ -1327,11 +1271,10 @@ def test_shared_masks():
     spec.var[32:34] *= ma.array([2.0, 2.0], mask=[True, False])
     assert_masked_allclose(spec.data, ma.array(new_data, mask=expected_mask))
     assert_masked_allclose(spec.var, ma.array(new_var, mask=expected_mask))
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    assert spec.data.mask is spec.mask
+    assert spec.var.mask is spec.mask
 
 
-@attr(speed='fast')
 def test_non_masked_data():
     """DataArray class: Testing non-masked data"""
 
@@ -1355,7 +1298,7 @@ def test_non_masked_data():
                            ma.array(old_data, mask=ma.nomask))
     assert_masked_allclose(template_spec.var,
                            ma.array(old_var, mask=ma.nomask))
-    assert_is(template_spec.mask, ma.nomask)
+    assert template_spec.mask is ma.nomask
 
     # Assign a new ndarray data array and a new ndarray variance array
     # of the same size, and check that this doesn't trigger masks to be
@@ -1368,7 +1311,7 @@ def test_non_masked_data():
 
     assert_masked_allclose(spec.data, ma.array(new_data, mask=ma.nomask))
     assert_masked_allclose(spec.var, ma.array(new_var, mask=ma.nomask))
-    assert_is(spec.mask, ma.nomask)
+    assert spec.mask is ma.nomask
 
     # Assign ndarray arrays of a new size to the data and var properties.
 
@@ -1381,7 +1324,7 @@ def test_non_masked_data():
 #
 #     assert_masked_allclose(spec.data, ma.array(new_data, mask=ma.nomask))
 #     assert_masked_allclose(spec.var, ma.array(new_var, mask=ma.nomask))
-#     assert_is(spec.mask, ma.nomask)
+#     assert spec.mask is ma.nomask
 
     # Assign a masked array of the same size to the data property.
     new_mask = ma.make_mask_none(n)
@@ -1400,8 +1343,8 @@ def test_non_masked_data():
                            ma.array(new_data.data, mask=expected_mask))
     assert_masked_allclose(spec.var,
                            ma.array(old_var, mask=expected_mask))
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    assert spec.data.mask is spec.mask
+    assert spec.var.mask is spec.mask
 
     # Assign a masked array of the same size to the var property.
     new_mask = ma.make_mask_none(n)
@@ -1421,5 +1364,5 @@ def test_non_masked_data():
                            ma.array(old_data, mask=expected_mask))
     assert_masked_allclose(spec.var,
                            ma.array(new_var.data, mask=expected_mask))
-    assert_true(spec.data.mask is spec.mask and
-                spec.var.mask is spec.mask)
+    assert spec.data.mask is spec.mask
+    assert spec.var.mask is spec.mask

@@ -1,7 +1,6 @@
 """Test on Image objects."""
 
 from __future__ import absolute_import, print_function
-from nose.plugins.attrib import attr
 
 import numpy as np
 import os
@@ -39,25 +38,23 @@ class TestCubeList(unittest.TestCase):
         print('>>> Remove test dir')
         shutil.rmtree(cls.tmpdir)
 
-    def test_header(self, cube):
+    def assert_header(self, cube):
         self.assertEqual(cube.primary_header['FOO'], 'BAR')
         self.assertNotIn('CUBEIDX', cube.primary_header)
         self.assertEqual(cube.primary_header['OBJECT'], 'OBJECT 0')
         self.assertEqual(cube.data_header['OBJECT'], 'OBJECT 0')
         self.assertEqual(cube.primary_header['EXPTIME'], 100 * self.ncubes)
 
-    @attr(speed='fast')
     def test_median(self):
         clist = CubeList(self.cubenames)
         combined_cube = np.ones(self.shape)
 
         for method in (clist.median, clist.pymedian):
             cube, expmap, stat_pix = method(header={'FOO': 'BAR'})
-            self.test_header(cube)
+            self.assert_header(cube)
             assert_array_equal(cube.data, combined_cube)
             assert_array_equal(expmap.data, self.expmap)
 
-    @attr(speed='fast')
     def test_combine(self):
         clist = CubeList(self.cubenames)
         combined_cube = np.full(self.shape, 2, dtype=float)
@@ -69,17 +66,16 @@ class TestCubeList(unittest.TestCase):
             else:
                 cube, expmap, stat_pix, rejmap = out
 
-            self.test_header(cube)
+            self.assert_header(cube)
             assert_array_equal(cube.data, combined_cube)
             assert_array_equal(expmap.data, self.expmap)
 
-    @attr(speed='fast')
     def test_mosaic_combine(self):
         clist = CubeMosaic(self.cubenames, self.cubenames[0])
         combined_cube = np.full(self.shape, 2, dtype=float)
 
         cube, expmap, stat_pix, rejmap = clist.pycombine(header={'FOO': 'BAR'})
 
-        self.test_header(cube)
+        self.assert_header(cube)
         assert_array_equal(cube.data, combined_cube)
         assert_array_equal(expmap.data, self.expmap)

@@ -3,7 +3,9 @@
 *.pyc
 *.so
 *.egg-info/
-.coverage
+*.eggs/
+.cache/
+.coverage*
 .tox/
 tags
 build/

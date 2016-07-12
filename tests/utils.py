@@ -4,28 +4,18 @@ from __future__ import absolute_import, division
 
 import astropy.units as u
 import numpy as np
+import os
+
 from mpdaf.obj import Image, Cube, WCS, WaveCoord, Spectrum
 from numpy.testing import assert_array_equal, assert_allclose
-from nose.tools import assert_is
+from os.path import join
 
 DEFAULT_SHAPE = (10, 6, 5)
+DATADIR = join(os.path.abspath(os.path.dirname(__file__)), '..', 'data')
 
 
-def astronomical_image():
-    """Return a test image from a real observation """
-
-    ima = Image("data/obj/a370II.fits")
-
-    # The CD matrix of the above image includes a small shear term
-    # which means that the image can't be displayed accurately with
-    # rectangular pixels. All of the functions in MPDAF assume
-    # rectangular pixels, so replace the CD matrix with a similar one
-    # that doesn't have a shear component.
-
-    ima.wcs.set_cd(np.array([[2.30899476e-5, -5.22301199e-5],
-                             [-5.22871997e-5, -2.30647413e-5]]))
-
-    return ima
+def get_data_file(*paths):
+    return join(DATADIR, *paths)
 
 
 def assert_image_equal(ima, shape=None, start=None, end=None, step=None):
@@ -69,7 +59,7 @@ def assert_masked_allclose(d1, d2):
         # Check that they have identical masks.
 
         if d1.mask is np.ma.nomask or d2.mask is np.ma.nomask:
-            assert_is(d2.mask, d1.mask)
+            assert d2.mask is d1.mask
         else:
             assert_array_equal(d1.mask, d2.mask)
 
@@ -122,20 +112,20 @@ def _generate_test_data(data=2.3, var=1.0, mask=None, shape=None, unit=u.ct,
         data = data * np.ones(shape, dtype=type(data))
     elif data is not None:
         data = np.array(data, copy=copy)
-        np.testing.assert_equal(shape, data.shape)
+        assert shape == data.shape
 
     if np.isscalar(var):
         var = var * np.ones(shape, dtype=type(var))
     elif var is not None:
         var = np.array(var, copy=copy)
-        np.testing.assert_equal(shape, var.shape)
+        assert shape == var.shape
 
     if mask is None:
         mask = False
 
     if not np.isscalar(mask):
         mask = np.array(mask, copy=copy, dtype=bool)
-        np.testing.assert_equal(shape, mask.shape)
+        assert shape == mask.shape
 
     # Substitute default world-coordinates where not specified.
     if ndim == 2:
