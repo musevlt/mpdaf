@@ -45,7 +45,8 @@ import sys
 import ez_setup
 ez_setup.use_setuptools(version='18.0')  # NOQA
 
-from setuptools import setup, find_packages, Command, Extension
+from setuptools import setup, find_packages, Extension
+from setuptools.command.test import test as TestCommand
 
 # os.environ['DISTUTILS_DEBUG'] = '1'
 
@@ -113,6 +114,20 @@ if '.dev' in __version__:
         __version__ += commit_number
 
 
+class PyTest(TestCommand):
+    user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
+
+    def initialize_options(self):
+        TestCommand.initialize_options(self)
+        self.pytest_args = []
+
+    def run_tests(self):
+        # import here, cause outside the eggs aren't loaded
+        import pytest
+        errno = pytest.main(self.pytest_args)
+        sys.exit(errno)
+
+
 def options(*packages, **kw):
     flag_map = {'-I': 'include_dirs', '-L': 'library_dirs', '-l': 'libraries'}
 
@@ -158,7 +173,7 @@ with open('README.rst') as f:
 with open('CHANGELOG') as f:
     CHANGELOG = f.read()
 
-cmdclass = {}
+cmdclass = {'test': PyTest}
 
 ext = '.pyx' if HAVE_CYTHON else '.c'
 ext_modules = [
@@ -192,7 +207,6 @@ setup(
     extras_require={
         'all':  ['numexpr', 'fitsio'],
     },
-    setup_requires=['pytest-runner'],
     tests_require=['pytest'],
     package_dir={'': 'lib'},
     packages=find_packages('lib'),
