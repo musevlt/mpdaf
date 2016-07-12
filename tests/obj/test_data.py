@@ -3,8 +3,6 @@
 from __future__ import absolute_import, division
 
 import astropy.units as u
-import os
-import tempfile
 import numpy as np
 import pytest
 import warnings
@@ -631,31 +629,21 @@ def test_get_stat_hdu():
     assert_masked_allclose(ma.array(hdu_var, mask=mask), cube.var)
 
 
-def test_write():
+def test_write(tmpdir):
     """DataArray class: Testing the write method"""
 
-    nz = 5
-    ny = 20
-    nx = 10
-
-    # Create a cube, with a ramp of values assigned to the variance array.
-
-    data = np.arange(nx * ny * nz, dtype=float).reshape((nz, ny, nx))
+    shape = (5, 4, 3)
+    data = np.arange(np.prod(shape), dtype=float).reshape(shape)
     var = data / 10.0
     mask = data.astype(int) % 10 == 0
     cube = generate_cube(data=data, var=var, mask=mask, wcs=WCS(deg=True),
                          wave=WaveCoord(cunit=u.angstrom))
 
-    tmpfile = tempfile.NamedTemporaryFile(suffix=".fits")
-    filename = tmpfile.name
-    tmpfile.close()
-
-    cube.write(filename, savemask='dq')
-
-    # Read the file into a new cube.
-    cube2 = Cube(filename)
+    testfile = str(tmpdir.join('cube.fits'))
+    cube.write(testfile, savemask='dq')
 
     # Verify that the contents of the file match the original cube.
+    cube2 = Cube(testfile)
     assert_masked_allclose(cube2.data, cube.data)
     assert_masked_allclose(cube2.var, cube.var)
     assert cube2.wcs.isEqual(cube.wcs)
@@ -665,9 +653,6 @@ def test_write():
     # references to the same mask array.
     assert cube2.data.mask is cube2.mask
     assert cube2.var.mask is cube2.mask
-
-    # Delete the temporary file.
-    os.remove(filename)
 
 
 def test_sqrt():

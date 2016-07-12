@@ -11,7 +11,6 @@ from mpdaf.obj import Spectrum, Image, Cube, iter_spe, iter_ima, WCS, WaveCoord
 from numpy import ma
 from numpy.testing import (assert_almost_equal, assert_array_equal,
                            assert_allclose)
-from tempfile import NamedTemporaryFile
 
 from ..utils import (generate_cube, generate_image, generate_spectrum,
                      assert_masked_allclose)
@@ -581,17 +580,18 @@ def test_aperture():
     assert spe.get_start() == 1
 
 
-def test_write():
+def test_write(tmpdir):
     """Cube class: testing write"""
     unit = u.Unit('1e-20 erg/s/cm2/Angstrom')
     cube = generate_cube(data=1, wave=WaveCoord(crval=1, cunit=u.angstrom),
                          unit=unit)
     cube.data[:, 0, 0] = ma.masked
     cube.var = np.ones_like(cube.data)
-    fobj = NamedTemporaryFile()
-    cube.write(fobj.name)
 
-    hdu = fits.open(fobj)
+    testfile = str(tmpdir.join('cube.fits'))
+    cube.write(testfile)
+
+    hdu = fits.open(testfile)
     assert_array_equal(hdu[1].data.shape, cube.shape)
     assert_array_equal([h.name for h in hdu],
                        ['PRIMARY', 'DATA', 'STAT', 'DQ'])
@@ -609,6 +609,7 @@ def test_write():
     assert hdr['NAXIS3'] == cube.shape[0]
     for key in ('CRPIX1', 'CRPIX2'):
         assert hdr[key] == 1.0
+    hdu.close()
 
 
 def test_get_item():

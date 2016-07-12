@@ -3,15 +3,14 @@
 from __future__ import absolute_import
 
 import os
-import tempfile
 import warnings
 
 from mpdaf.tools import util
 
 
-def test_chdir():
+def test_chdir(tmpdir):
     cwd = os.getcwd()
-    tmp = tempfile.mkdtemp()
+    tmp = str(tmpdir)
     with util.chdir(tmp):
         assert tmp == os.getcwd()
 
