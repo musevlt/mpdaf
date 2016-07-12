@@ -1,10 +1,10 @@
 [run]
 source = mpdaf
 omit =
-   mpdaf/conftest.py
-   mpdaf/*setup*
-   mpdaf/*tests/*
-   mpdaf/version*
+   lib/mpdaf/conftest.py
+   lib/mpdaf/*setup*
+   lib/mpdaf/*tests/*
+   lib/mpdaf/version*
 
 [report]
 show_missing = false
