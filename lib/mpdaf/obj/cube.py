@@ -2126,6 +2126,60 @@ class Cube(ArithmeticMixin, DataArray):
             self._logger.info('returning spectrum at nearest spaxel')
         return spec
 
+    def fftconvolve(self, other, inplace=False):
+        """Convolve a Cube with a 3D array or another Cube.
+
+        The convolution is performed by multiplying the Fourier
+        transforms of the two 3D arrays. This is much faster than the
+        traditional discrete convolution equation when the size of
+        other is large.
+
+        Masked values in self.data and self.var are replaced with
+        zeros before the convolution is performed.
+
+        If self.var exists, the variances are propagated using the
+        equation:
+
+          result.var = self.var (*) other**2
+
+        where (*) indicates convolution. This equation is the result
+        of the usual rules of error-propagation, when applied to the
+        discrete convolution equation.
+
+        Masked pixels in the input data remain masked in the output.
+
+        Uses `scipy.signal.fftconvolve`.
+
+        Parameters
+        ----------
+        other : Cube or np.ndarray
+            The 3D array with which to convolve the cube in self.data.
+            This array can be the same size as self, or it can be a
+            smaller array, such as a small 3D gaussian to use for
+            smoothing the larger cube.
+
+            When ``other`` contains a symmetric filtering function, such
+            as a two-dimensional gaussian, the center of the function
+            should be placed at the center of pixel:
+
+             ``(other.shape - 1) // 2``
+
+            If ``other`` is an MPDAF Cube object, note that only its
+            data array is used. Masked values in this array are
+            treated as zero. Any variances found in other.var are
+            ignored.
+        inplace : bool
+            If False (the default), return the results in a new Cube.
+            If True, record the result in self and return that.
+
+        Returns
+        -------
+        out : `~mpdaf.obj.Cube`
+
+        """
+        # Delegate the task to DataArray._fftconvolve()
+        return self._fftconvolve(other=other, inplace=inplace)
+
     @deprecated('get_lambda method is deprecated, use select_lambda instead')
     def get_lambda(self, lbda_min, lbda_max=None, unit_wave=u.angstrom):
         """DEPRECATED: See `~mpdaf.obj.Cube.select_lambda` instead."""
@@ -2223,3 +2277,4 @@ def _process_ima(arglist):
     except Exception as inst:
         raise type(inst)(str(inst) + '\n The error occurred '
                          'while processing image [%i,:,:]' % k)
+

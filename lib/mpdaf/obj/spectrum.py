@@ -2091,66 +2091,58 @@ class Spectrum(ArithmeticMixin, DataArray):
         res._convolve(other)
         return res
 
-    def _fftconvolve(self, other):
-        """Convolve the spectrum with a other spectrum or an array using fft.
-
-        Uses `scipy.signal.fftconvolve`. self and other must have the
-        same size.
-
-        Parameters
-        ----------
-        other : 1d-array or Spectrum
-            Second spectrum or 1d-array.
-        """
-        try:
-            if isinstance(other, Spectrum):
-                if self.shape != other.shape:
-                    raise IOError('Operation forbidden '
-                                  'for spectra with different sizes')
-                else:
-                    data = other._data
-                    if self.unit != other.unit:
-                        data = (data * other.unit).to(self.unit).value
-                    self._data = signal.fftconvolve(self._data, data, mode='same')
-                    if self._var is not None:
-                        self._var = signal.fftconvolve(self._var, data, mode='same')
-        except IOError as e:
-            raise e
-        except:
-            try:
-                self._data = signal.fftconvolve(self._data, other, mode='same')
-                if self._var is not None:
-                    self._var = signal.fftconvolve(self._var, other, mode='same')
-            except:
-                raise IOError('Operation forbidden')
-
     def fftconvolve(self, other, inplace=False):
-        """Return the convolution of the spectrum with a other spectrum or an
-        array using fft.
+        """Convolve a Spectrum with a 1D array or another Spectrum.
 
-        Uses `scipy.signal.fftconvolve`. self and other must have the
-        same size.
+        The convolution is performed by multiplying the Fourier
+        transforms of the two 1D arrays. This is much faster than the
+        traditional discrete convolution equation when the size of
+        other is large.
+
+        Masked values in self.data and self.var are replaced with
+        zeros before the convolution is performed.
+
+        If self.var exists, the variances are propagated using the
+        equation:
+
+          result.var = self.var (*) other**2
+
+        where (*) indicates convolution. This is what is indicated by
+        the usual rules of error-propagation through the discrete
+        convolution equation.
+
+        Masked pixels in the input data remain masked in the output.
+
+        Uses `scipy.signal.fftconvolve`.
 
         Parameters
         ----------
-        other : 1d-array or Spectrum
-            Second spectrum or 1d-array.
+        other : Spectrum or np.ndarray
+            The 1D array with which to convolve the spectrum in self.data.
+            This array can be an array of the same size as self.data, or it
+            can be a smaller array, such as a small gaussian to use for
+            smoothing the larger spectrum.
+
+            When ``other`` contains a symmetric filtering function,
+            such as a gaussian profile, the center of the function
+            should be placed at the center of pixel:
+
+             ``(other.shape - 1) // 2``
+
+            If other is an MPDAF Spectrum object, note that only its data
+            array is used. Masked values in this array are treated
+            as zero. Any variances found in other.var are ignored.
         inplace : bool
-            If False, return a convolved copy of the spectrum (the default).
-            If True, convolve the original spectrum in-place, and return that.
+            If False (the default), return the results in a new Spectrum.
+            If True, record the result in self and return that.
 
         Returns
         -------
-        out : Spectrum
+        out : `~mpdaf.obj.Spectrum`
+
         """
-        # Should we convolve the spectrum in-place, or convolve a copy?
-
-        res = self if inplace else self.copy()
-
-        # Convolve the result object in-place.
-
-        res._fftconvolve(other)
-        return res
+        # Delegate the task to DataArray._fftconvolve()
+        return self._fftconvolve(other=other, inplace=inplace)
 
     def _correlate(self, other):
         """Cross-correlate the spectrum with a other spectrum or an array.

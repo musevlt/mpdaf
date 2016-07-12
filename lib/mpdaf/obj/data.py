@@ -41,6 +41,7 @@ import warnings
 
 from astropy import units as u
 from astropy.io import fits
+from scipy import signal
 from datetime import datetime
 from numpy import ma
 
@@ -1272,3 +1273,104 @@ class DataArray(object):
             res.wave.rebin(factor[0])
 
         return res
+
+    def _fftconvolve(self, other, inplace=False):
+        """Convolve a DataArray with an array of the same number of dimensions.
+
+        The convolution is performed by multiplying the Fourier
+        transforms of the two arrays. This is much faster than the
+        traditional discrete convolution equation when the size of
+        other is large.
+
+        Masked values in self.data and self.var are replaced with
+        zeros before the convolution is performed. Any variances in
+        self.var are propagated correctly.
+
+        If self.var exists, the variances are propagated using the
+        equation:
+
+         result.var = self.var (*) other**2
+
+        where (*) indicates convolution. This equation is the result
+        of the usual rules of error-propagation, when applied to the
+        discrete convolution equation.
+
+        Masked pixels in the input data remain masked in the output.
+
+        Uses `scipy.signal.fftconvolve`.
+
+        Parameters
+        ----------
+        other : DataArray or np.ndarray
+          The array with which to convolve the contents of self.
+          This must have the same number of dimensions as self, but
+          it can have fewer elements. When this array contains a
+          symmetric filtering function, the center of the function
+          should be placed at the center of pixel,
+          ``(other.shape - 1)//2``. Note that passing a DataArray object
+          is equivalent to just passing its DataArray.data member. Its
+          variances are ignored.
+        inplace : bool
+            If False (the default), return a new object containing the
+            convolved array.
+            If True, record the convolved array in self and return self.
+
+        Returns
+        -------
+        out : `~mpdaf.obj.DataArray`
+
+        """
+
+        out = self if inplace else self.copy()
+
+        # The other array must have the same rank as self.
+        if out.ndim != other.ndim:
+            raise IOError('The other array must have the same rank as self')
+
+        # The number of elements along each axis of other can be less than
+        # or equal to the number in self.
+        if np.any(np.asarray(other.shape) > np.asarray(self.shape)):
+            raise IOError('The other array must be no larger than self')
+
+        # Get the array to convolve with.
+        if not isinstance(other, DataArray):
+            kernel = other
+        else:
+            kernel = other.data
+
+        # Replace any masked pixels in the convolution kernel with zeros.
+        if isinstance(kernel, ma.MaskedArray) and ma.count_masked(kernel) > 0:
+            kernel = kernel.filled(0.0)
+
+        # Are there any masked pixels in self.data and self.var?
+        masked = self._mask is not None and self._mask.sum() > 0
+
+        # Replace any masked pixels in out._data with zeros, being
+        # careful to avoid making a redundant copy of the data
+        # array if there are no bad pixels to be zeroed.
+        if masked:
+            out._data = out.data.filled(0.0)
+        elif out._mask is None and ~np.isfinite(out._data.sum()):
+            out._data = out._data.copy()
+            out._data[~np.isfinite(out._data)] = 0.0
+
+        # Convolve the data array with the kernel.
+        out._data = signal.fftconvolve(out._data, kernel, mode="same")
+
+        # Are there any variances to be propagated?
+        if out._var is not None:
+
+            # Replace any masked pixels in out._var with zeros, being
+            # careful to avoid making a redundant copy of the variance
+            # array if there are no bad pixels to be zeroed.
+            if masked:
+                out._var = out.var.filled(0.0)
+            elif out._mask is None and ~np.isfinite(out._var.sum()):
+                out._var = out._var.copy()
+                out._var[~np.isfinite(out._var)] = 0.0
+
+            # Convolve the var array with the square of the kernel to
+            # propagate them.
+            out._var = signal.fftconvolve(out._var, kernel**2, mode="same")
+
+        return out

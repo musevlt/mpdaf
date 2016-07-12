@@ -3715,61 +3715,58 @@ class Image(ArithmeticMixin, DataArray):
         else:
             return False
 
-    def fftconvolve(self, other, interp='no', inplace=False):
-        """Return the convolution of the image with other using fft.
+    def fftconvolve(self, other, inplace=False):
+        """Convolve an Image with a 2D array or another Image.
+
+        The convolution is performed by multiplying the Fourier
+        transforms of the two images. This is much faster than the
+        traditional discrete convolution equation when the size of
+        other is large.
+
+        Masked values in self.data and self.var are replaced with
+        zeros before the convolution is performed.
+
+        If self.var exists, the variances are propagated using the
+        equation:
+
+          result.var = self.var (*) other**2
+
+        where (*) indicates convolution. This equation is the result
+        of the usual rules of error-propagation, when applied to the
+        discrete convolution equation.
+
+        Masked pixels in the input data remain masked in the output.
 
         Uses `scipy.signal.fftconvolve`.
 
         Parameters
         ----------
-        other : 2d-array or Image
-            Second Image or 2d-array.
-        interp : 'no' | 'linear' | 'spline'
-            if 'no', data median value replaced masked values.
-            if 'linear', linear interpolation of the masked values.
-            if 'spline', spline interpolation of the masked values.
+        other : Image or np.ndarray
+            The 2D array with which to convolve the image in self.data.
+            This array can be an image of the same size as self, or it
+            can be a smaller image, such as a small gaussian to use for
+            smoothing the larger image.
+
+            When ``other`` contains a symmetric filtering function, such
+            as a two-dimensional gaussian, the center of the function
+            should be placed at the center of pixel:
+
+             ``(other.shape - 1) // 2``
+
+            If other is an MPDAF Image object, note that only its data
+            array is used. Masked values in this array are treated
+            as zero. Any variances found in other.var are ignored.
         inplace : bool
-            If False, return a convolved copy of the image (the default).
-            If True, convolve the original image in-place, and return that.
+            If False (the default), return the results in a new Image.
+            If True, record the result in self and return that.
 
         Returns
         -------
         out : `~mpdaf.obj.Image`
 
         """
-
-        out = self if inplace else self.copy()
-
-        if not isinstance(other, DataArray):
-            if out.shape[0] != other.shape[0] \
-                    or out.shape[1] != other.shape[1]:
-                raise IOError('Operation forbidden for images '
-                              'with different sizes')
-
-            # Get a copy of the data array with masked values filled.
-            data = out._prepare_data(interp)
-            out._data = signal.fftconvolve(data, other, mode='same')
-
-            if out._var is not None:
-                out._var = signal.fftconvolve(out._var, other, mode='same')
-        elif other.ndim == 2:
-            if out.shape[0] != other.shape[0] \
-                    or out.shape[1] != other.shape[1]:
-                raise IOError('Operation forbidden for images '
-                              'with different sizes')
-
-            # Get copies of the data arrays with masked values filled.
-            data = out._prepare_data(interp)
-            other_data = other._prepare_data(interp)
-            other_data = UnitMaskedArray(other_data, other.unit, out.unit)
-            out._data = signal.fftconvolve(data, other_data, mode='same')
-
-            if out._var is not None:
-                out._var = signal.fftconvolve(out._var,
-                                              other_data, mode='same')
-        else:
-            raise IOError('Operation forbidden')
-        return out
+        # Delegate the task to DataArray._fftconvolve()
+        return self._fftconvolve(other=other, inplace=inplace)
 
     def fftconvolve_gauss(self, center=None, flux=1., fwhm=(1., 1.),
                           peak=False, rot=0., factor=1, unit_center=u.deg,
