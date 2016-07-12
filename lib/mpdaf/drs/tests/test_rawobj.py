@@ -7,7 +7,7 @@ import os
 import pytest
 from mpdaf.drs import RawFile
 
-from ..utils import get_data_file
+from ...tests.utils import get_data_file
 
 DATA_PATH = get_data_file('drs', 'raw.fits')
 MISSING = not os.path.exists(DATA_PATH)

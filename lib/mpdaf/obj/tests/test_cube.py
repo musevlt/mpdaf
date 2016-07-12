@@ -12,8 +12,8 @@ from numpy import ma
 from numpy.testing import (assert_almost_equal, assert_array_equal,
                            assert_allclose)
 
-from ..utils import (generate_cube, generate_image, generate_spectrum,
-                     assert_masked_allclose)
+from ...tests.utils import (generate_cube, generate_image, generate_spectrum,
+                            assert_masked_allclose)
 if six.PY2:
     from operator import add, sub, mul, div
 else:

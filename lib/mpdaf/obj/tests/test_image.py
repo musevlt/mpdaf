@@ -11,8 +11,8 @@ from mpdaf.obj import Image, WCS, gauss_image, moffat_image
 from numpy.testing import (assert_array_equal, assert_allclose,
                            assert_almost_equal)
 
-from ..utils import (assert_image_equal, generate_image, generate_cube,
-                     assert_masked_allclose)
+from ...tests.utils import (assert_image_equal, generate_image, generate_cube,
+                            assert_masked_allclose)
 
 if six.PY2:
     from operator import add, sub, mul, div

@@ -11,7 +11,7 @@ from mpdaf.obj import Spectrum, Image, Cube, WCS, WaveCoord
 from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_almost_equal)
 
-from ..utils import get_data_file
+from ...tests.utils import get_data_file
 
 
 def test_copy(spec_var):

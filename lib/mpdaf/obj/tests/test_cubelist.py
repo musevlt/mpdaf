@@ -9,7 +9,7 @@ import tempfile
 import unittest
 from mpdaf.obj import CubeList, CubeMosaic
 from numpy.testing import assert_array_equal
-from ..utils import generate_cube
+from ...tests.utils import generate_cube
 
 
 class TestCubeList(unittest.TestCase):

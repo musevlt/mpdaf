@@ -7,14 +7,13 @@ import numpy as np
 import pytest
 import warnings
 
-from astropy.io import fits
 from numpy import ma
 from mpdaf.obj import DataArray, WaveCoord, WCS, Cube
 from numpy.testing import assert_array_equal, assert_allclose
 
 from mpdaf.tools import MpdafWarning
-from ..utils import (generate_image, generate_cube, generate_spectrum,
-                     assert_masked_allclose, get_data_file)
+from ...tests.utils import (generate_image, generate_cube, generate_spectrum,
+                            assert_masked_allclose, get_data_file)
 
 
 def test_deprecated_warnings(spectrum):
