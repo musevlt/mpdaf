@@ -4,8 +4,8 @@ import astropy
 import numpy as np
 import pytest
 
-from mpdaf.obj import Image, Cube
-from mpdaf.sdetect import Source
+from astropy.io import fits
+from mpdaf.obj import Image, Cube, Spectrum
 
 from .utils import (get_data_file, generate_cube, generate_image,
                     generate_spectrum)
@@ -38,6 +38,22 @@ def a370II():
     ima.wcs.set_cd(np.array([[2.30899476e-5, -5.22301199e-5],
                              [-5.22871997e-5, -2.30647413e-5]]))
     return ima
+
+
+@pytest.fixture
+def spec_var():
+    return Spectrum(get_data_file('obj', 'Spectrum_Variance.fits'), ext=[0, 1])
+
+
+@pytest.fixture
+def spec_novar():
+    return Spectrum(get_data_file('obj', 'Spectrum_Novariance.fits'))
+
+
+@pytest.fixture
+def spec_g9():
+    sig = fits.getdata(get_data_file('obj', 'g9-124Tsigspec.fits'))
+    return Spectrum(get_data_file('obj', 'g9-124Tspec.fits'), var=sig * sig)
 
 
 @pytest.fixture

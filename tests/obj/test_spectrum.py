@@ -3,7 +3,6 @@
 from __future__ import absolute_import, division
 
 import pytest
-
 import numpy as np
 
 from astropy import units as u
@@ -11,16 +10,16 @@ from astropy.io import fits
 from mpdaf.obj import Spectrum, Image, Cube, WCS, WaveCoord
 from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_almost_equal)
-from tempfile import NamedTemporaryFile
+
+from ..utils import get_data_file
 
 
-def test_copy():
+def test_copy(spec_var):
     """Spectrum class: testing copy method."""
-    spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
-    spe = spvar.copy()
-    assert spvar.wave.isEqual(spe.wave)
-    assert spvar.data.sum() == spe.data.sum()
-    assert spvar.var.sum() == spe.var.sum()
+    spe = spec_var.copy()
+    assert spec_var.wave.isEqual(spe.wave)
+    assert spec_var.data.sum() == spe.data.sum()
+    assert spec_var.var.sum() == spe.var.sum()
 
 
 def test_selection(spectrum):
@@ -91,7 +90,7 @@ def test_arithmetric():
                               sp1data * image1.data[np.newaxis, :, :])
 
 
-def test_get_Spectrum():
+def test_get_Spectrum(spec_var):
     """Spectrum class: testing getters"""
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm)
     spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]) * 2.3,
@@ -101,16 +100,15 @@ def test_get_Spectrum():
     a = spectrum1.subspec(1.2, 15.6, unit=u.nm)
     assert a.shape[0] == 6
 
-    spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
-    unit = spvar.wave.unit
-    spvarcut = spvar.subspec(5560, 5590, unit=unit)
+    unit = spec_var.wave.unit
+    spvarcut = spec_var.subspec(5560, 5590, unit=unit)
     assert spvarcut.shape[0] == 48
     assert_almost_equal(spvarcut.get_start(unit=unit), 5560.25, 2)
     assert_almost_equal(spvarcut.get_end(unit=unit), 5589.89, 2)
     assert_almost_equal(spvarcut.get_step(unit=unit), 0.63, 2)
 
 
-def test_spectrum_methods():
+def test_spectrum_methods(spec_var, spec_novar):
     """Spectrum class: testing sum/mean/abs/sqrt methods"""
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm, shape=10)
     spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
@@ -129,23 +127,21 @@ def test_spectrum_methods():
     mean2 = spectrum2.mean()
     assert_almost_equal(mean1, mean2)
 
-    spnovar = Spectrum('data/obj/Spectrum_Novariance.fits')
-    spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
-    spvar2 = spvar.abs()
-    assert spvar2[23] == np.abs(spvar[23])
-    spvar2 = spvar.abs().sqrt()
-    assert spvar2[8] == np.sqrt(np.abs(spvar[8]))
-    assert_almost_equal(spvar.mean(), 11.526, 2)
-    assert_almost_equal(spnovar.mean(), 11.101, 2)
+    spvar2 = spec_var.abs()
+    assert spvar2[23] == np.abs(spec_var[23])
+    spvar2 = spec_var.abs().sqrt()
+    assert spvar2[8] == np.sqrt(np.abs(spec_var[8]))
+    assert_almost_equal(spec_var.mean(), 11.526, 2)
+    assert_almost_equal(spec_novar.mean(), 11.101, 2)
     spvarsum = spvar2 + 4 * spvar2 - 56 / spvar2
 
     assert_almost_equal(spvarsum[10],
                         spvar2[10] + 4 * spvar2[10] - 56 / spvar2[10], 2)
-    assert_almost_equal(spvar.get_step(), 0.630, 2)
-    assert_almost_equal(spvar.get_start(), 4602.604, 2)
-    assert_almost_equal(spvar.get_end(), 7184.289, 2)
-    assert_almost_equal(spvar.get_range()[0], 4602.604, 2)
-    assert_almost_equal(spvar.get_range()[1], 7184.289, 2)
+    assert_almost_equal(spec_var.get_step(), 0.630, 2)
+    assert_almost_equal(spec_var.get_start(), 4602.604, 2)
+    assert_almost_equal(spec_var.get_end(), 7184.289, 2)
+    assert_almost_equal(spec_var.get_range()[0], 4602.604, 2)
+    assert_almost_equal(spec_var.get_range()[1], 7184.289, 2)
 
 
 def test_gauss_fit():
@@ -167,15 +163,13 @@ def test_gauss_fit():
     assert_almost_equal(spem.fwhm(gauss.lpeak), 20, 0)
 
 
-def test_crop():
+def test_crop(spec_g9):
     """Spectrum class: testing resize method"""
-    sig = fits.getdata("data/obj/g9-124Tsigspec.fits")
-    spe = Spectrum("data/obj/g9-124Tspec.fits", var=sig * sig)
-    unit = spe.wave.unit
-    spe.mask_region(lmax=5000, unit=unit)
-    spe.mask_region(lmin=6500, unit=unit)
-    spe.crop()
-    assert int((6500 - 5000) / spe.get_step(unit=unit)) == spe.shape[0]
+    unit = spec_g9.wave.unit
+    spec_g9.mask_region(lmax=5000, unit=unit)
+    spec_g9.mask_region(lmin=6500, unit=unit)
+    spec_g9.crop()
+    assert int((6500 - 5000) / spec_g9.get_step(unit=unit)) == spec_g9.shape[0]
 
 
 def test_resample():
@@ -190,32 +184,28 @@ def test_resample():
 
 
 @pytest.mark.slow
-def test_resampling_slow():
+def test_resampling_slow(spec_var, spec_novar, spec_g9):
     """Spectrum class: heavy test of resampling function"""
-    sig = fits.getdata("data/obj/g9-124Tsigspec.fits")
-    spe = Spectrum("data/obj/g9-124Tspec.fits", var=sig * sig)
-    unit = spe.wave.unit
-    flux1 = spe.sum(weight=False) * spe.wave.get_step(unit=unit)
-    spe2 = spe.resample(0.3, unit=unit)
+    unit = spec_g9.wave.unit
+    flux1 = spec_g9.sum(weight=False) * spec_g9.wave.get_step(unit=unit)
+    spe2 = spec_g9.resample(0.3, unit=unit)
     flux2 = spe2.sum(weight=False) * spe2.wave.get_step(unit=unit)
     assert_almost_equal(flux1, flux2, 1)
 
-    spnovar = Spectrum('data/obj/Spectrum_Novariance.fits')
-    unit = spnovar.wave.unit
-    flux1 = spnovar.sum() * spnovar.wave.get_step(unit=unit)
-    spnovar2 = spnovar.resample(4, unit=unit)
+    unit = spec_novar.wave.unit
+    flux1 = spec_novar.sum() * spec_novar.wave.get_step(unit=unit)
+    spnovar2 = spec_novar.resample(4, unit=unit)
     flux2 = spnovar2.sum() * spnovar2.wave.get_step(unit=unit)
     assert_almost_equal(flux1, flux2, 0)
 
-    spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
-    unit = spvar.wave.unit
-    flux1 = spvar.sum(weight=False) * spvar.wave.get_step(unit=unit)
-    spvar2 = spvar.resample(4, unit=unit)
+    unit = spec_var.wave.unit
+    flux1 = spec_var.sum(weight=False) * spec_var.wave.get_step(unit=unit)
+    spvar2 = spec_var.resample(4, unit=unit)
     flux2 = spvar2.sum(weight=False) * spvar2.wave.get_step(unit=unit)
     assert_almost_equal(flux1, flux2, 0)
 
 
-def test_rebin():
+def test_rebin(spec_var, spec_novar, spec_g9):
     """Spectrum class: testing rebin function"""
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, shape=10)
     spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]) * 2.3,
@@ -228,99 +218,92 @@ def test_rebin():
     flux2 = spectrum2.sum() * spectrum2.wave.get_step(unit=unit)
     assert_almost_equal(flux1, flux2, 2)
 
-    sig = fits.getdata("data/obj/g9-124Tsigspec.fits")
-    spe = Spectrum("data/obj/g9-124Tspec.fits", var=sig * sig)
-    unit = spe.wave.unit
+    unit = spec_g9.wave.unit
     factor = 3
-    s = slice(0, factor * (spe.shape[0] // factor))
-    flux1 = spe[s].sum() * spe[s].wave.get_step(unit=unit)
-    spe2 = spe.rebin(factor, margin='left')
+    s = slice(0, factor * (spec_g9.shape[0] // factor))
+    flux1 = spec_g9[s].sum() * spec_g9[s].wave.get_step(unit=unit)
+    spe2 = spec_g9.rebin(factor, margin='left')
     flux2 = spe2.sum() * spe2.wave.get_step(unit=unit)
     assert_almost_equal(flux1, flux2, 2)
 
-    spnovar = Spectrum('data/obj/Spectrum_Novariance.fits')
-    unit = spnovar.wave.unit
+    unit = spec_novar.wave.unit
     factor = 4
-    s = slice(0, factor * (spnovar.shape[0] // factor))
-    flux1 = spnovar[s].sum() * spnovar[s].wave.get_step(unit=unit)
-    spnovar2 = spnovar.rebin(factor, margin='left')
+    s = slice(0, factor * (spec_novar.shape[0] // factor))
+    flux1 = spec_novar[s].sum() * spec_novar[s].wave.get_step(unit=unit)
+    spnovar2 = spec_novar.rebin(factor, margin='left')
     flux2 = spnovar2.sum() * spnovar2.wave.get_step(unit=unit)
     assert_almost_equal(flux1, flux2, 2)
 
-    spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
-    unit = spvar.wave.unit
+    unit = spec_var.wave.unit
     factor = 4
-    s = slice(0, factor * (spvar.shape[0] // factor))
-    flux1 = spvar[s].sum(weight=False) * spvar[s].wave.get_step(unit=unit)
-    spvar2 = spvar.rebin(factor, margin='left')
+    s = slice(0, factor * (spec_var.shape[0] // factor))
+    flux1 = spec_var[s].sum(weight=False) * \
+        spec_var[s].wave.get_step(unit=unit)
+    spvar2 = spec_var.rebin(factor, margin='left')
     flux2 = spvar2.sum(weight=False) * spvar2.wave.get_step(unit=unit)
     assert_almost_equal(flux1, flux2, 2)
 
 
-def test_truncate():
+def test_truncate(spec_g9):
     """Spectrum class: testing truncate function"""
-    sig = fits.getdata("data/obj/g9-124Tsigspec.fits")
-    spe = Spectrum("data/obj/g9-124Tspec.fits", var=sig * sig)
-    unit = spe.wave.unit
-    spe.truncate(4950, 5050, unit=unit)
-    assert spe.shape[0] == 160
+    unit = spec_g9.wave.unit
+    spec_g9.truncate(4950, 5050, unit=unit)
+    assert spec_g9.shape[0] == 160
 
 
-def test_interpolation():
+def test_interpolation(spec_var, spec_novar):
     """Spectrum class: testing interpolations"""
-    spnovar = Spectrum('data/obj/Spectrum_Novariance.fits')
-    uspnovar = spnovar.wave.unit
-    spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
-    uspvar = spvar.wave.unit
-    spvar.mask_region(5575, 5585, unit=uspvar)
-    spvar.mask_region(6296, 6312, unit=uspvar)
-    spvar.mask_region(6351, 6375, unit=uspvar)
-    spnovar.mask_region(5575, 5585, unit=uspnovar)
-    spnovar.mask_region(6296, 6312, unit=uspnovar)
-    spnovar.mask_region(6351, 6375, unit=uspnovar)
-    spm1 = spvar.copy()
+    uspnovar = spec_novar.wave.unit
+    uspvar = spec_var.wave.unit
+    spec_var.mask_region(5575, 5585, unit=uspvar)
+    spec_var.mask_region(6296, 6312, unit=uspvar)
+    spec_var.mask_region(6351, 6375, unit=uspvar)
+    spec_novar.mask_region(5575, 5585, unit=uspnovar)
+    spec_novar.mask_region(6296, 6312, unit=uspnovar)
+    spec_novar.mask_region(6351, 6375, unit=uspnovar)
+    spm1 = spec_var.copy()
     spm1.interp_mask()
-    spm2 = spvar.copy()
+    spm2 = spec_var.copy()
     spm2.interp_mask(spline=True)
-    spvarcut1 = spvar.subspec(5550, 5590, unit=uspvar)
-    spvarcut2 = spnovar.subspec(5550, 5590, unit=uspnovar)
+    spvarcut1 = spec_var.subspec(5550, 5590, unit=uspvar)
+    spvarcut2 = spec_novar.subspec(5550, 5590, unit=uspnovar)
     spvarcut3 = spm1.subspec(5550, 5590, unit=uspvar)
     spvarcut4 = spm2.subspec(5550, 5590, unit=uspvar)
-    assert_almost_equal(spvar.mean(5550, 5590, unit=uspvar), spvarcut1.mean())
-    assert_almost_equal(spnovar.mean(5550, 5590, unit=uspnovar),
+    assert_almost_equal(spec_var.mean(5550, 5590, unit=uspvar),
+                        spvarcut1.mean())
+    assert_almost_equal(spec_novar.mean(5550, 5590, unit=uspnovar),
                         spvarcut2.mean())
     assert_almost_equal(spm1.mean(5550, 5590, unit=uspvar), spvarcut3.mean())
     assert_almost_equal(spm2.mean(5550, 5590, unit=uspvar), spvarcut4.mean())
 
 
-def test_poly_fit():
+def test_poly_fit(spec_var):
     """Spectrum class: testing polynomial fit"""
-    spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
-    polyfit1 = spvar.poly_fit(12)
-    spfit1 = spvar.copy()
+    polyfit1 = spec_var.poly_fit(12)
+    spfit1 = spec_var.copy()
     spfit1.poly_val(polyfit1)
-    spfit2 = spvar.poly_spec(10)
-    spfit3 = spvar.poly_spec(10, weight=False)
+    spfit2 = spec_var.poly_spec(10)
+    spfit3 = spec_var.poly_spec(10, weight=False)
     assert_almost_equal(spfit1.mean(), 11.1, 1)
     assert_almost_equal(spfit2.mean(), 11.1, 1)
     assert_almost_equal(spfit3.mean(), 11.1, 1)
 
 
-def test_filter():
+def test_filter(spec_var):
     """Spectrum class: testing filters"""
-    sp = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
-    sp.unit = u.Unit('erg/cm2/s/Angstrom')
-    sp.wave.unit = u.angstrom
-    assert_almost_equal(sp.abmag_band(5000.0, 1000.0), -22.837, 2)
-    assert_almost_equal(sp.abmag_filter([4000, 5000, 6000], [0.1, 1.0, 0.3]),
+    spec_var.unit = u.Unit('erg/cm2/s/Angstrom')
+    spec_var.wave.unit = u.angstrom
+    assert_almost_equal(spec_var.abmag_band(5000.0, 1000.0), -22.837, 2)
+    assert_almost_equal(spec_var.abmag_filter([4000, 5000, 6000],
+                                              [0.1, 1.0, 0.3]),
                         -23.077, 2)
-    assert_almost_equal(sp.abmag_filter_name('U'), 99)
-    assert_almost_equal(sp.abmag_filter_name('B'), -22.278, 2)
+    assert_almost_equal(spec_var.abmag_filter_name('U'), 99)
+    assert_almost_equal(spec_var.abmag_filter_name('B'), -22.278, 2)
 
 
 def test_mag():
     """Spectrum class: testing magnitude computations."""
-    Vega = Spectrum('data/obj/Vega.fits')
+    Vega = Spectrum(get_data_file('obj', 'Vega.fits'))
     Vega.unit = u.Unit('2E-17 erg / (Angstrom cm2 s)')
     Vega.wave.wcs.wcs.cunit[0] = u.angstrom
     assert_almost_equal(Vega.abmag_filter_name('V'), 0, 1)
@@ -385,17 +368,14 @@ def test_integrate():
     assert result.unit == u.ct * u.nm
 
 
-def test_write():
+def test_write(tmpdir):
     """Spectrum class: testing write."""
+    testfile = str(tmpdir.join('spec.fits'))
     sp = Spectrum(data=np.arange(10), wave=WaveCoord(cunit=u.nm))
-    fobj = NamedTemporaryFile()
-    sp.write(fobj.name)
+    sp.write(testfile)
 
-    hdu = fits.open(fobj)
-    # print repr(hdu[0].header)
-    # print '========='
-    # print repr(hdu[1].header)
-    assert_array_equal(hdu[1].data.shape, sp.shape)
+    with fits.open(testfile) as hdu:
+        assert_array_equal(hdu[1].data.shape, sp.shape)
 
     hdr = hdu[1].header
     assert hdr['EXTNAME'] == 'DATA'
@@ -405,9 +385,7 @@ def test_write():
 
     # Same with Angstrom
     sp = Spectrum(data=np.arange(10), wave=WaveCoord(cunit=u.angstrom))
-    fobj = NamedTemporaryFile()
-    sp.write(fobj.name)
+    sp.write(testfile)
 
-    hdu = fits.open(fobj)
-    hdr = hdu[1].header
-    assert u.Unit(hdr['CUNIT1']) == u.angstrom
+    with fits.open(testfile) as hdu:
+        assert u.Unit(hdu[1].header['CUNIT1']) == u.angstrom

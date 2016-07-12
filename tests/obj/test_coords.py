@@ -4,17 +4,20 @@ from __future__ import absolute_import, division
 
 import astropy.units as u
 import numpy as np
+
 from astropy import wcs as pywcs
 from astropy.io import fits
 from mpdaf.obj import WCS, WaveCoord, deg2sexa, sexa2deg, determine_refframe
 from numpy.testing import assert_allclose, assert_array_equal
+
+from ..utils import get_data_file
 
 
 class TestWCS(object):
 
     def test_from_hdr(self):
         """WCS class: testing constructor """
-        h = fits.getheader('data/obj/a370II.fits')
+        h = fits.getheader(get_data_file('obj', 'a370II.fits'))
         wcs = WCS(h)
         h2 = wcs.to_header()
         wcs2 = WCS(h2)
@@ -24,7 +27,7 @@ class TestWCS(object):
 
     def test_from_hdr2(self):
         """WCS class: testing constructor 2 """
-        h = fits.open('data/sdetect/a478hst-cutout.fits')
+        h = fits.open(get_data_file('sdetect', 'a478hst-cutout.fits'))
         frame, equinox = determine_refframe(h[0].header)
         wcs = WCS(h[1].header, frame=frame, equinox=equinox)
         assert wcs.wcs.wcs.equinox == 2000.0
@@ -92,7 +95,7 @@ class TestWaveCoord(object):
 
     def test_from_hdr(self):
         """WaveCoord class: testing constructor """
-        h = fits.getheader('data/obj/Spectrum_Novariance.fits')
+        h = fits.getheader(get_data_file('obj', 'Spectrum_Novariance.fits'))
         wave = WaveCoord(h)
         h2 = wave.to_header()
         wave2 = WaveCoord(h2)
