@@ -329,7 +329,7 @@ def test_rotate():
     # the output pixel is interpolated from identically valued
     # pixels on either side of it in the input image.
 
-    test_value = 10 * peak
+    test_value = peak
     for pixel in old_pixels:
         py = pixel[0]
         px = pixel[1]

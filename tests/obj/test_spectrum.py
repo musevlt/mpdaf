@@ -141,16 +141,16 @@ def test_spectrum_methods():
     nose.tools.assert_equal(spvar2[23], np.abs(spvar[23]))
     spvar2 = spvar.abs().sqrt()
     nose.tools.assert_equal(spvar2[8], np.sqrt(np.abs(spvar[8])))
-    nose.tools.assert_almost_equal(spvar.mean(), 11.526547845374727)
-    nose.tools.assert_almost_equal(spnovar.mean(), 11.101086376675089)
+    nose.tools.assert_almost_equal(spvar.mean(), 11.526, 2)
+    nose.tools.assert_almost_equal(spnovar.mean(), 11.101, 2)
     spvarsum = spvar2 + 4 * spvar2 - 56 / spvar2
 
-    nose.tools.assert_almost_equal(spvarsum[10], spvar2[10] + 4 * spvar2[10] - 56 / spvar2[10])
-    nose.tools.assert_almost_equal(spvar.get_step(), 0.630448220641262)
-    nose.tools.assert_almost_equal(spvar.get_start(), 4602.6040286827802)
-    nose.tools.assert_almost_equal(spvar.get_end(), 7184.289492208748)
-    nose.tools.assert_almost_equal(spvar.get_range()[0], 4602.60402868)
-    nose.tools.assert_almost_equal(spvar.get_range()[1], 7184.28949221)
+    nose.tools.assert_almost_equal(spvarsum[10], spvar2[10] + 4 * spvar2[10] - 56 / spvar2[10], 2)
+    nose.tools.assert_almost_equal(spvar.get_step(), 0.630, 2)
+    nose.tools.assert_almost_equal(spvar.get_start(), 4602.604, 2)
+    nose.tools.assert_almost_equal(spvar.get_end(), 7184.289, 2)
+    nose.tools.assert_almost_equal(spvar.get_range()[0], 4602.604, 2)
+    nose.tools.assert_almost_equal(spvar.get_range()[1], 7184.289, 2)
 
 
 @attr(speed='fast')
@@ -236,7 +236,7 @@ def test_rebin():
     flux1 = spectrum1[s].sum() * spectrum1[s].wave.get_step(unit=unit)
     spectrum2 = spectrum1.rebin(factor, margin='left')
     flux2 = spectrum2.sum() * spectrum2.wave.get_step(unit=unit)
-    nose.tools.assert_almost_equal(flux1, flux2)
+    nose.tools.assert_almost_equal(flux1, flux2, 2)
 
     sig = fits.getdata("data/obj/g9-124Tsigspec.fits")
     spe = Spectrum("data/obj/g9-124Tspec.fits", var=sig * sig)
@@ -246,7 +246,7 @@ def test_rebin():
     flux1 = spe[s].sum() * spe[s].wave.get_step(unit=unit)
     spe2 = spe.rebin(factor, margin='left')
     flux2 = spe2.sum() * spe2.wave.get_step(unit=unit)
-    nose.tools.assert_almost_equal(flux1, flux2)
+    nose.tools.assert_almost_equal(flux1, flux2, 2)
 
     spnovar = Spectrum('data/obj/Spectrum_Novariance.fits')
     unit = spnovar.wave.unit
@@ -255,7 +255,7 @@ def test_rebin():
     flux1 = spnovar[s].sum() * spnovar[s].wave.get_step(unit=unit)
     spnovar2 = spnovar.rebin(factor, margin='left')
     flux2 = spnovar2.sum() * spnovar2.wave.get_step(unit=unit)
-    nose.tools.assert_almost_equal(flux1, flux2)
+    nose.tools.assert_almost_equal(flux1, flux2, 2)
 
     spvar = Spectrum('data/obj/Spectrum_Variance.fits', ext=[0, 1])
     unit = spvar.wave.unit
@@ -264,7 +264,7 @@ def test_rebin():
     flux1 = spvar[s].sum(weight=False) * spvar[s].wave.get_step(unit=unit)
     spvar2 = spvar.rebin(factor, margin='left')
     flux2 = spvar2.sum(weight=False) * spvar2.wave.get_step(unit=unit)
-    nose.tools.assert_almost_equal(flux1, flux2)
+    nose.tools.assert_almost_equal(flux1, flux2, 2)
 
 
 @attr(speed='fast')
