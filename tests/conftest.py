@@ -51,12 +51,6 @@ def spec_novar():
 
 
 @pytest.fixture
-def spec_g9():
-    sig = fits.getdata(get_data_file('obj', 'g9-124Tsigspec.fits'))
-    return Spectrum(get_data_file('obj', 'g9-124Tspec.fits'), var=sig * sig)
-
-
-@pytest.fixture
 def cube():
     return generate_cube()
 

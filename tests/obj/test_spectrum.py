@@ -163,13 +163,13 @@ def test_gauss_fit():
     assert_almost_equal(spem.fwhm(gauss.lpeak), 20, 0)
 
 
-def test_crop(spec_g9):
+def test_crop(spec_var):
     """Spectrum class: testing resize method"""
-    unit = spec_g9.wave.unit
-    spec_g9.mask_region(lmax=5000, unit=unit)
-    spec_g9.mask_region(lmin=6500, unit=unit)
-    spec_g9.crop()
-    assert int((6500 - 5000) / spec_g9.get_step(unit=unit)) == spec_g9.shape[0]
+    spec_var.mask_region(lmax=5000)
+    spec_var.mask_region(lmin=6500)
+    spec_var.crop()
+    assert int((6500 - 5000) / spec_var.get_step(unit=spec_var.wave.unit)) == \
+        spec_var.shape[0]
 
 
 def test_resample():
@@ -184,14 +184,8 @@ def test_resample():
 
 
 @pytest.mark.slow
-def test_resampling_slow(spec_var, spec_novar, spec_g9):
+def test_resampling_slow(spec_var, spec_novar):
     """Spectrum class: heavy test of resampling function"""
-    unit = spec_g9.wave.unit
-    flux1 = spec_g9.sum(weight=False) * spec_g9.wave.get_step(unit=unit)
-    spe2 = spec_g9.resample(0.3, unit=unit)
-    flux2 = spe2.sum(weight=False) * spe2.wave.get_step(unit=unit)
-    assert_almost_equal(flux1, flux2, 1)
-
     unit = spec_novar.wave.unit
     flux1 = spec_novar.sum() * spec_novar.wave.get_step(unit=unit)
     spnovar2 = spec_novar.resample(4, unit=unit)
@@ -205,7 +199,7 @@ def test_resampling_slow(spec_var, spec_novar, spec_g9):
     assert_almost_equal(flux1, flux2, 0)
 
 
-def test_rebin(spec_var, spec_novar, spec_g9):
+def test_rebin(spec_var, spec_novar):
     """Spectrum class: testing rebin function"""
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, shape=10)
     spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]) * 2.3,
@@ -216,14 +210,6 @@ def test_rebin(spec_var, spec_novar, spec_g9):
     flux1 = spectrum1[s].sum() * spectrum1[s].wave.get_step(unit=unit)
     spectrum2 = spectrum1.rebin(factor, margin='left')
     flux2 = spectrum2.sum() * spectrum2.wave.get_step(unit=unit)
-    assert_almost_equal(flux1, flux2, 2)
-
-    unit = spec_g9.wave.unit
-    factor = 3
-    s = slice(0, factor * (spec_g9.shape[0] // factor))
-    flux1 = spec_g9[s].sum() * spec_g9[s].wave.get_step(unit=unit)
-    spe2 = spec_g9.rebin(factor, margin='left')
-    flux2 = spe2.sum() * spe2.wave.get_step(unit=unit)
     assert_almost_equal(flux1, flux2, 2)
 
     unit = spec_novar.wave.unit
@@ -244,11 +230,10 @@ def test_rebin(spec_var, spec_novar, spec_g9):
     assert_almost_equal(flux1, flux2, 2)
 
 
-def test_truncate(spec_g9):
+def test_truncate(spec_var):
     """Spectrum class: testing truncate function"""
-    unit = spec_g9.wave.unit
-    spec_g9.truncate(4950, 5050, unit=unit)
-    assert spec_g9.shape[0] == 160
+    spec_var.truncate(4950, 5050)
+    assert spec_var.shape[0] == 160
 
 
 def test_interpolation(spec_var, spec_novar):
