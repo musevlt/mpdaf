@@ -1,3 +1,11 @@
+[run]
+source = mpdaf
+omit =
+   mpdaf/conftest.py
+   mpdaf/*setup*
+   mpdaf/*tests/*
+   mpdaf/version*
+
 [report]
 show_missing = false
 exclude_lines =
