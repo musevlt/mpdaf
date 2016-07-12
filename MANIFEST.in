@@ -4,11 +4,9 @@ include LICENSE
 include tox.ini
 include ez_setup.py
 
-graft data
 graft doc
 graft lib
 graft src
-graft tests
 
 prune doc/api
 prune doc/build
