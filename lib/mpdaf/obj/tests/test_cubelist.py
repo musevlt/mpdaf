@@ -4,12 +4,21 @@ from __future__ import absolute_import, print_function
 
 import numpy as np
 import os
+import pytest
 import shutil
 import tempfile
 import unittest
+
 from mpdaf.obj import CubeList, CubeMosaic
 from numpy.testing import assert_array_equal
 from ...tests.utils import generate_cube
+
+try:
+    import fitsio  # NOQA
+except ImportError:
+    HAS_FITSIO = False
+else:
+    HAS_FITSIO = True
 
 
 class TestCubeList(unittest.TestCase):
@@ -45,6 +54,7 @@ class TestCubeList(unittest.TestCase):
         self.assertEqual(cube.data_header['OBJECT'], 'OBJECT 0')
         self.assertEqual(cube.primary_header['EXPTIME'], 100 * self.ncubes)
 
+    @pytest.mark.skipif(not HAS_FITSIO, reason="requires fitsio")
     def test_median(self):
         clist = CubeList(self.cubenames)
         combined_cube = np.ones(self.shape)
@@ -55,6 +65,7 @@ class TestCubeList(unittest.TestCase):
             assert_array_equal(cube.data, combined_cube)
             assert_array_equal(expmap.data, self.expmap)
 
+    @pytest.mark.skipif(not HAS_FITSIO, reason="requires fitsio")
     def test_combine(self):
         clist = CubeList(self.cubenames)
         combined_cube = np.full(self.shape, 2, dtype=float)
@@ -70,6 +81,7 @@ class TestCubeList(unittest.TestCase):
             assert_array_equal(cube.data, combined_cube)
             assert_array_equal(expmap.data, self.expmap)
 
+    @pytest.mark.skipif(not HAS_FITSIO, reason="requires fitsio")
     def test_mosaic_combine(self):
         clist = CubeMosaic(self.cubenames, self.cubenames[0])
         combined_cube = np.full(self.shape, 2, dtype=float)
