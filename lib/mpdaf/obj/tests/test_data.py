@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 import warnings
 
+from astropy.io import fits
 from numpy import ma
 from mpdaf.obj import DataArray, WaveCoord, WCS, Cube
 from numpy.testing import assert_array_equal, assert_allclose
@@ -44,9 +45,12 @@ def test_fits_img():
 
 def test_fits_spectrum():
     """DataArray class: Testing FITS spectrum reading"""
-    testspe = get_data_file('obj', 'Spectrum_lines.fits')
-    data = DataArray(filename=testspe)
-    assert data.shape == (2048,)
+    testspe = get_data_file('obj', 'Spectrum_Variance.fits')
+    with pytest.warns(fits.verify.VerifyWarning) as record:
+        data = DataArray(filename=testspe, ext=0,
+                         fits_kwargs={'checksum': True})
+    assert len(record) == 13
+    assert data.shape == (4096,)
     assert data.ndim == 1
 
 
@@ -635,14 +639,18 @@ def test_write(tmpdir):
                          wave=WaveCoord(cunit=u.angstrom))
 
     testfile = str(tmpdir.join('cube.fits'))
-    cube.write(testfile, savemask='dq')
+    cube.write(testfile, savemask='dq', checksum=True)
 
     # Verify that the contents of the file match the original cube.
-    cube2 = Cube(testfile)
+    cube2 = Cube(testfile, fits_kwargs={'checksum': True})
     assert_masked_allclose(cube2.data, cube.data)
     assert_masked_allclose(cube2.var, cube.var)
     assert cube2.wcs.isEqual(cube.wcs)
     assert cube2.wave.isEqual(cube.wave)
+
+    for k in ('DATASUM', 'CHECKSUM'):
+        for hdr in (cube2.primary_header, cube2.data_header):
+            assert k in hdr
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
