@@ -580,8 +580,8 @@ class Spectrum(ArithmeticMixin, DataArray):
         # fftconvolve requires that the kernel be no larger than the array
         # that it is convolving, so reduce the size of the kernel array if
         # needed. Be careful to choose an odd sized array.
-        if gshape > self.shape:
-            gshape = self.shape if self.shape % 2 != 0 else (self.shape - 1)
+        if gshape > self.shape[0]:
+            gshape = self.shape[0] if self.shape[0] % 2 != 0 else (self.shape[0] - 1)
 
         # Sample the gaussian filter symmetrically around the central pixel.
         gx = np.arange(gshape, dtype=float) - gshape // 2
@@ -648,11 +648,8 @@ class Spectrum(ArithmeticMixin, DataArray):
         # If the user didn't specify this, use newwave.shape, which
         # holds the number of pixels of size 'step' needed to sample
         # from 'start' to the end of the current wavelength range.
-        if shape is None:
-            newshape = newwave.shape
-        else:
-            newshape = shape
-            newwave.shape = newshape
+        if shape is not None:
+            newwave.shape = shape
 
         # Get the existing wavelength step size in the new units.
         oldstep = self.wave.get_step(unit)
