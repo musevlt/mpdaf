@@ -533,121 +533,99 @@ class Spectrum(ArithmeticMixin, DataArray):
         # Delegate the rebinning to the generic DataArray function.
         return self._rebin(factor, margin, inplace)
 
-    def _resample(self, step, start=None, shape=None,
-                  spline=False, notnoise=False, unit=u.angstrom):
-        """Resample spectrum data to different wavelength step size.
-
-        Uses `scipy.integrate.quad`.
+    def _decimation_filter(self, newstep, atten, unit=None):
+        """This is a private function Spectrum.resample(), used to apply
+        a decimation filter prior to resampling.
 
         Parameters
         ----------
         step : float
-            New pixel size in spectral direction.
-        start : float
-            Spectral position of the first new pixel.
-            It can be set or kept at the edge of the old first one.
+            The new pixel size along the wavelength axis of the spectrum.
+        atten : float
+            The minimum attenuation (dB), of the antialiasing
+            decimation filter at the Nyquist folding frequency of the
+            new pixel size. Larger attenuations suppress aliasing
+            better at the expense of worsened resolution. A good value
+            to choose is 40dB, which produces a response that is very
+            similar to a blackman filter applied within the Fourier
+            plane, but with less ringing in the image plane.
         unit : `astropy.units.Unit`
-            type of the wavelength coordinates
-        shape : int
-            Size of the new spectrum.
-        spline : bool
-            Linear/spline interpolation to interpolate masked values.
-        notnoise : bool
-            True if the noise Variance spectrum is not interpolated
-            (if it exists).
+            The wavelength units of the step argument. A value of None
+            is equivalent to specifying self.wave.unit.
 
         """
-        lrange = self.get_range(unit)
-        if start is not None and start > lrange[1]:
-            raise ValueError('Start value outside the spectrum range')
-        if start is not None and start < lrange[0]:
-            n = int((lrange[0] - start) / step)
-            start = lrange[0] + (n + 1) * step
 
-        newwave = self.wave.resample(step, start, unit)
-        if shape is None:
-            newshape = newwave.shape
-        else:
-            newshape = min(shape, newwave.shape)
-            newwave.shape = newshape
+        # Convert the attenuation from dB to a linear scale factor.
+        gcut = 10.0**(-atten / 20.0)
 
-        dmin = np.ma.min(self.data)
-        dmax = np.ma.max(self.data)
-        if dmin == dmax:
-            self._data = np.ones(newshape, dtype=np.float) * dmin
-        else:
-            data = self._interp_data(spline)
-            f = lambda x: data[self.wave.pixel(x, unit=unit, nearest=True)]
-            self._data = np.empty(newshape, dtype=np.float)
-            pix = np.arange(newshape + 1, dtype=np.float)
-            x = (pix - newwave.get_crpix() + 1) * newwave.get_step(unit) \
-                + newwave.get_crval(unit) - 0.5 * newwave.get_step(unit)
+        # Calculate the Nyquist folding frequency of the new pixel size.
+        nyquist_folding_freq = 0.5 / newstep
 
-            lbdamax = self.get_end(unit) + 0.5 * self.get_step(unit)
-            if x[-1] > lbdamax:
-                x[-1] = lbdamax
+        # Calculate the standard deviation of a Gaussian whose Fourier
+        # transform drops from unity at the center to gcut at the Nyquist
+        # folding frequency.
+        sigma = 0.5 / np.pi / nyquist_folding_freq * np.sqrt(-2.0*np.log(gcut))
 
-            for i in range(newshape):
-                self._data[i] = \
-                    integrate.quad(f, x[i], x[i + 1], full_output=1)[0] \
-                    / newwave.get_step(unit)
+        # Convert the standard deviation from wavelength units to input pixels.
+        sigma /= self.get_step(unit=unit)
 
-        if self._mask is not np.ma.nomask:
-            self._mask = ~(np.isfinite(self._data))
+        # Choose dimensions for the gaussian filtering kernel. Choose an
+        # extent from -4*sigma to +4*sigma. This truncates the gaussian
+        # where it drops to about 3e-4 of its peak.  The following
+        # calculation ensures that the dimensions of the array are odd, so
+        # that the gaussian will be symmetrically sampled either side of a
+        # central pixel. This prevents spectral shifts.
+        gshape = int(np.ceil(4.0 * sigma)) * 2 + 1
 
-        if self._var is not None and not notnoise:
-            dmin = np.min(self._var)
-            dmax = np.max(self._var)
-            if dmin == dmax:
-                self._var = np.ones(newshape, dtype=np.float) * dmin
-            else:
-                f = lambda x: self._var[int(self.wave.pixel(x, unit=unit) + 0.5)]
-                var = np.empty(newshape, dtype=np.float)
-                for i in range(newshape):
-                    var[i] = \
-                        integrate.quad(f, x[i], x[i + 1], full_output=1)[0] \
-                        / newwave.get_step(unit)
-                self._var = var
+        # fftconvolve requires that the kernel be no larger than the array
+        # that it is convolving, so reduce the size of the kernel array if
+        # needed. Be careful to choose an odd sized array.
+        if gshape > self.shape:
+            gshape = self.shape if self.shape % 2 != 0 else (self.shape - 1)
 
-            if self._mask is not np.ma.nomask:
-                self._mask = self._mask | ~(np.isfinite(self._var)) | (self._var <= 0)
+        # Sample the gaussian filter symmetrically around the central pixel.
+        gx = np.arange(gshape, dtype=float) - gshape // 2
+        gy = np.exp(-0.5 * (gx/sigma)**2)
 
-        else:
-            self._var = None
+        # Area-normalize the gaussian profile.
+        gy /= gy.sum()
 
-        self.wave = newwave
+        # Filter the spectrum with the gaussian filter.
+        self.fftconvolve(gy, inplace=True)
 
-    def resample(self, step, start=None, shape=None,
-                 spline=False, notnoise=False, unit=u.angstrom, inplace=False):
-        """Return a spectrum resampled to a different wavelength interval.
-
-        Uses `scipy.integrate.quad`.
+    def resample(self, step, start=None, shape=None, unit=u.angstrom,
+                     inplace=False, atten=40.0, cutoff=0.25):
+        """Resample a spectrum to have a different wavelength interval.
 
         Parameters
         ----------
         step : float
-            The new pixel size in the spectral direction.
+            The new pixel size along the wavelength axis of the spectrum.
         start : float
-            The wavelength of the first new pixel.  The default is
-            None, which arranges that the minimum wavelength of
-            the resampled spectrum is the same as the minimum
-            wavelength of the original spectrum.
+            The wavelength at the center of the first pixel of the resampled
+            spectrum.  If None (the default) the center of the first pixel
+            has the same wavelength before and after resampling.
         unit : `astropy.units.Unit`
             The wavelength units of the step and start arguments.
+            The default is u.angstrom.
         shape : int
-            The array dimension of the new spectrum (ie. the number
-            of spectral pixels).
-        spline : bool
-            If False (the default), use a linear interpolation to
-            interpolate over masked pixels.
-            If True, use a spline interpolation to interpolate over
-            masked values.
-        notnoise : bool
-            If False (the default), resample the variances, if any.
-            If True discard any variances.
+            The dimension of the array of the new spectrum (ie. the number
+            of spectral pixels). If this is not specified, the shape is
+            selected to encompass the wavelength range from the chosen
+            start wavelength to the ending wavelength of the input spectrum.
         inplace : bool
             If False, return a resampled copy of the spectrum (the default).
             If True, resample the original spectrum in-place, and return that.
+        atten : float
+            The minimum attenuation (dB), of the antialiasing
+            decimation filter at the Nyquist folding frequency of the
+            new pixel size. Larger attenuations suppress aliasing
+            better at the expense of worsened resolution. The default
+            attenuation is 40.0 dB. To disable antialiasing, specify
+            atten=0.0.
+        cutoff : float
+            Mask each output pixel of which at least this fraction of the
+            pixel was interpolated from masked input pixels.
 
         Returns
         -------
@@ -656,12 +634,103 @@ class Spectrum(ArithmeticMixin, DataArray):
         """
         # Should we resample the spectrum in-place, or resample a copy?
 
-        res = self if inplace else self.copy()
+        out = self if inplace else self.copy()
 
-        # Resample the result object in-place.
+        # Don't allow the spectrum to be started beyond the far end of
+        # the spectrum, because this would result in an empty spectrum.
+        if start is not None and start > self.get_end(unit):
+            raise ValueError('The start value is past the end of the spectrum range')
 
-        res._resample(step, start, shape, spline, notnoise, unit)
-        return res
+        # Get wavelength world coordinates of the output spectrum.
+        newwave = self.wave.resample(step, start, unit)
+
+        # How many pixels should there be in the resampled spectrum?
+        # If the user didn't specify this, use newwave.shape, which
+        # holds the number of pixels of size 'step' needed to sample
+        # from 'start' to the end of the current wavelength range.
+        if shape is None:
+            newshape = newwave.shape
+        else:
+            newshape = shape
+            newwave.shape = newshape
+
+        # Get the existing wavelength step size in the new units.
+        oldstep = self.wave.get_step(unit)
+
+        # If the spectrum is being resampled to a larger pixel size,
+        # then a decimation filter should be applied before
+        # resampling, to ensure that the new pixel size doesn't
+        # undersample rapidly changing features in the spectrum.
+
+        if step > oldstep and atten > 0.0:
+            out._decimation_filter(step, atten, unit=unit)
+
+        # Get the data, mask (and variance) arrays, and replace bad pixels with
+        # zeros.
+        if out._mask is not None:         # Is out.data a masked array?
+            data = out.data.filled(0.0)
+            if out._var is not None:
+                var = out.var.filled(0.0)
+            else:
+                var = None
+            mask = out._mask
+        else:                             # Is out.data just a numpy array?
+            mask = ~isfinite(out._data)
+            data = out._data.copy()
+            data[mask] = 0.0
+            if out.var is not None:
+                var = out.var.copy()
+                var[mask] = 0.0
+            else:
+                var = None
+
+        # Get the coordinates of the pixels of the input and output spectra.
+        xi = self.wave.coord()
+        xo = newwave.coord()
+
+        # Get a resampled versions of the data array, optionally the variance
+        # array, and a floating point version of the mask array. Note that the
+        # choice of linear interpolation is required to preserve flux.
+        data = interpolate.griddata(xi, data, xo, method="linear", fill_value=np.nan)
+        if var is not None:
+            var = interpolate.griddata(xi, var, xo, method="linear",
+                                       fill_value=np.nan)
+        mask = interpolate.griddata(xi, mask.astype(float), xo, method="linear",
+                                    fill_value=1.0)
+
+        # Create a new boolean mask in which all pixels that had an integrated
+        # contribution of more than 'cutoff' originally masked pixels are
+        # masked. Note that setting the cutoff to the "obvious" value of zero
+        # results in lots of pixels being masked that are far away from any
+        # masked pixels, due to precision errors in the griddata()
+        # function.  Limit the minimum value of the cutoff to avoid this.
+        mask = np.greater(mask, max(cutoff, 1.0e-6))
+
+        # If masked arrays were not in use in the original spectrum, fill
+        # bad pixels with NaNs.
+        if out._mask is None:
+            data[mask] = np.nan
+            if var is not None:
+                var[mask] = np.nan
+            mask = None
+
+        # Install the resampled arrays.
+        out._data = data
+        out._var = var
+        out._mask = mask
+
+        # Install the new wavelength world coordinates.
+        out.wave = newwave
+
+        # When up-sampling, decimation filter the output spectrum. The
+        # combination of this and the linear interpolation of the preceding
+        # griddata() produces a much better interpolation than a cubic spline
+        # filter can. In particular, a spline interpolation does not conserve
+        # flux, whereas linear interpolation plus decimation filtering does.
+        if step < oldstep and atten > 0.0:
+            out._decimation_filter(step, atten, unit=unit)
+
+        return out
 
     def mean(self, lmin=None, lmax=None, weight=True, unit=u.angstrom):
         """Compute the mean flux over a specified wavelength range.
