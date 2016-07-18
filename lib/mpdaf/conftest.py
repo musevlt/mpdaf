@@ -4,7 +4,6 @@ import astropy
 import numpy as np
 import pytest
 
-from astropy.io import fits
 from mpdaf.obj import Image, Cube, Spectrum
 
 from .tests.utils import (get_data_file, generate_cube, generate_image,
