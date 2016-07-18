@@ -5,6 +5,7 @@ omit =
    lib/mpdaf/*setup*
    lib/mpdaf/*tests/*
    lib/mpdaf/version*
+   lib/mpdaf/scripts/update_license.py
 
 [report]
 show_missing = false
