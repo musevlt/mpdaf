@@ -888,17 +888,22 @@ class DataArray(object):
                              exclude=('CD*', 'PC*'), unit=self.unit**2)
         return fits.ImageHDU(name=name, data=var, header=header)
 
-    def write(self, filename, savemask='dq'):
+    def write(self, filename, savemask='dq', checksum=False):
         """Save the data to a FITS file.
+
+        Overwrite the file if it exists.
 
         Parameters
         ----------
         filename : str
             The FITS filename.
         savemask : str
-            If 'dq', the mask array is saved in DQ extension
-            If 'nan', masked data are replaced by nan in DATA extension.
-            If 'none', masked array is not saved.
+            If 'dq', the mask array is saved in a ``DQ`` extension
+            If 'nan', masked data are replaced by nan in the ``DATA`` extension
+            If 'none', masked array is not saved
+        checksum : bool
+            If ``True``, adds both ``DATASUM`` and ``CHECKSUM`` cards to the
+            headers of all HDU's written to the file.
 
         """
         with warnings.catch_warnings():
@@ -925,7 +930,8 @@ class DataArray(object):
                 name='DQ', header=datahdu.header.copy(),
                 data=np.uint8(self.data.mask)))
 
-        hdulist.writeto(filename, clobber=True, output_verify='silentfix')
+        hdulist.writeto(filename, clobber=True, output_verify='silentfix',
+                        checksum=checksum)
         self.filename = filename
 
     def sqrt(self, out=None):
