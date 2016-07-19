@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 import warnings
 
-from astropy.io import fits
+from astropy.io.fits.verify import VerifyWarning
 from numpy import ma
 from mpdaf.obj import DataArray, WaveCoord, WCS, Cube
 from numpy.testing import assert_array_equal, assert_allclose
@@ -46,10 +46,11 @@ def test_fits_img():
 def test_fits_spectrum():
     """DataArray class: Testing FITS spectrum reading"""
     testspe = get_data_file('obj', 'Spectrum_Variance.fits')
-    with pytest.warns(fits.verify.VerifyWarning) as record:
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
         data = DataArray(filename=testspe, ext=0,
                          fits_kwargs={'checksum': True})
-    assert len(record) == 13
+    assert len([ww for ww in w if ww.category is VerifyWarning]) == 8
     assert data.shape == (4096,)
     assert data.ndim == 1
 
