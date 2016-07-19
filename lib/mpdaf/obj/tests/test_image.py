@@ -462,7 +462,7 @@ def test_rebin():
 
 
 def test_fftconvolve():
-    """Image class: testing convolution methods."""
+    """Image class: testing FFT convolution method."""
     wcs = WCS(cdelt=(0.2, 0.3), crval=(8.5, 12), shape=(40, 30), deg=True)
     data = np.zeros((40, 30))
     data[19, 14] = 1
@@ -482,3 +482,37 @@ def test_fftconvolve():
     assert_almost_equal(m.center[0], 8.5)
     assert_almost_equal(m.center[1], 12)
     # ima3 = ima.correlate2d(np.ones((40, 30)))
+
+def test_convolve():
+    """Image class: testing discrete convolution method."""
+
+    data_shape = (12, 25)
+    wcs = WCS(cdelt=(1.0, 1.0), crval=(0.0, 0.0), shape=data_shape)
+
+    # Create a test data array whose pixels are all zero except one pixel.
+    data = np.zeros(data_shape)
+    data[7,5] = 1.0
+
+    # Also mask a few points.
+    mask = np.zeros(data_shape, dtype=bool)
+    mask[5,3] = True
+
+    # Encapsulate the data array in an Image container.
+    ima = Image(wcs=wcs, data=data, mask=mask)
+
+    # Create a symmetric convolution kernel with an even number of elements
+    # along one dimension and and odd number along the other dimension.
+    # Make the kernel symmetric around (shape-1)//2. This requires that
+    # the final column be all zeros.
+    kern = np.array([[0.1,  0.25, 0.1,  0.0],
+                     [0.25, 0.50, 0.25, 0.0],
+                     [0.1,  0.25, 0.1,  0.0]])
+
+    # Convolve the test image with the kernel.
+    ima.convolve(kern, inplace=True)
+
+    # The image should consist of a copy of the convolution kernel, centered
+    # such that pixels (kern.shape-1)//2 is at pixel 7,5 of data.
+    expected_data = np.ma.array(data=np.zeros(data_shape), mask=mask)
+    expected_data.data[6:9,4:8] = kern
+    assert_masked_allclose(ima.data, expected_data)
