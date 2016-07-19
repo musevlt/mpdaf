@@ -192,8 +192,18 @@ class DataArray(object):
     filename : str
         FITS file name, default to None.
     hdulist : `astropy.fits.HDUList`
-        HDU list class, used instead of fits.open(filename) if not None,
+        HDU list class, used instead of ``fits.open(filename)`` if not None,
         to avoid opening the FITS file.
+    data : numpy.ndarray or list
+        Data array, passed to `numpy.ma.MaskedArray`.
+    mask : bool or numpy.ma.nomask or numpy.ndarray
+        Mask used for the creation of the ``.data`` MaskedArray. If mask is
+        False (default value), a mask array of the same size of the data array
+        is created. To avoid creating an array, it is possible to use
+        numpy.ma.nomask, but in this case several methods will break if
+        they use the mask.
+    var : numpy.ndarray or list
+        Variance array, passed to `numpy.ma.MaskedArray`.
     ext : int or (int,int) or str or (str,str)
         Number/name of the data extension or numbers/names of the data and
         variance extensions.
@@ -204,16 +214,12 @@ class DataArray(object):
         Passed to `numpy.ma.MaskedArray`.
     dtype : numpy.dtype
         Type of the data. Passed to `numpy.ma.MaskedArray`.
-    data : numpy.ndarray or list
-        Data array, passed to `numpy.ma.MaskedArray`.
-    var : numpy.ndarray or list
-        Variance array, passed to `numpy.ma.MaskedArray`.
-    mask : bool or numpy.ma.nomask or numpy.ndarray
-        Mask used for the creation of the ``.data`` MaskedArray. If mask is
-        False (default value), a mask array of the same size of the data array
-        is created. To avoid creating an array, it is possible to use
-        numpy.ma.nomask, but in this case several methods will break if
-        they use the mask.
+    primary_header : `astropy.io.fits.Header`
+        FITS primary header instance.
+    data_header : `astropy.io.fits.Header`
+        FITS data header instance.
+    fits_kwargs : dict
+        Additional arguments that can be passed to `astropy.io.fits.open`.
 
     Attributes
     ----------
@@ -273,7 +279,8 @@ class DataArray(object):
                 raise IOError('Invalid file: %s' % filename)
 
             if hdulist is None:
-                hdulist = fits.open(filename)
+                fits_kwargs = kwargs.pop('fits_kwargs', {})
+                hdulist = fits.open(filename, **fits_kwargs)
                 close_hdu = True
             else:
                 close_hdu = False
@@ -888,17 +895,22 @@ class DataArray(object):
                              exclude=('CD*', 'PC*'), unit=self.unit**2)
         return fits.ImageHDU(name=name, data=var, header=header)
 
-    def write(self, filename, savemask='dq'):
+    def write(self, filename, savemask='dq', checksum=False):
         """Save the data to a FITS file.
+
+        Overwrite the file if it exists.
 
         Parameters
         ----------
         filename : str
             The FITS filename.
         savemask : str
-            If 'dq', the mask array is saved in DQ extension
-            If 'nan', masked data are replaced by nan in DATA extension.
-            If 'none', masked array is not saved.
+            If 'dq', the mask array is saved in a ``DQ`` extension
+            If 'nan', masked data are replaced by nan in the ``DATA`` extension
+            If 'none', masked array is not saved
+        checksum : bool
+            If ``True``, adds both ``DATASUM`` and ``CHECKSUM`` cards to the
+            headers of all HDU's written to the file.
 
         """
         with warnings.catch_warnings():
@@ -925,7 +937,8 @@ class DataArray(object):
                 name='DQ', header=datahdu.header.copy(),
                 data=np.uint8(self.data.mask)))
 
-        hdulist.writeto(filename, clobber=True, output_verify='silentfix')
+        hdulist.writeto(filename, clobber=True, output_verify='silentfix',
+                        checksum=checksum)
         self.filename = filename
 
     def sqrt(self, out=None):
