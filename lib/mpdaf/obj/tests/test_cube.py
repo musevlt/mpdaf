@@ -30,7 +30,7 @@ def test_copy(cube):
     assert s == cube2.data.sum()
 
 
-def test_arithmetricOperator_Cube():
+def test_arithmetic():
     """Cube class: tests arithmetic functions"""
     cube1 = generate_cube(uwave=u.nm)
     image1 = generate_image(wcs=cube1.wcs, unit=2 * u.ct)
@@ -57,6 +57,41 @@ def test_arithmetricOperator_Cube():
     cube2 = cube1 / 25.3
     assert_almost_equal(cube2.data, cube1.data / 25.3)
 
+
+def test_arithmetic_errors(cube):
+    cube = generate_cube()
+    image1 = generate_image(wcs=cube.wcs)
+    image1.wcs.set_crval1(10)
+    with pytest.raises(ValueError):
+        cube2 = image1 + cube
+
+    spectrum1 = generate_spectrum(wave=cube.wave)
+    spectrum1.wave.set_crval(25)
+    with pytest.raises(ValueError):
+        cube2 = spectrum1 + cube
+
+    spectrum1 = generate_spectrum(wave=cube.wave)
+    spectrum1.wave.shape = 12
+    with pytest.raises(ValueError):
+        cube2 = spectrum1 + cube
+
+
+def test_arithmetic_variance(cube):
+    cube = generate_cube()
+    image1 = generate_image(wcs=cube.wcs, var=None)
+    cube2 = image1 + cube
+    assert_almost_equal(cube.var, cube2.var)
+
+    cube2 = image1 * cube
+    assert_almost_equal(cube2.var, cube.var*image1.data*image1.data)
+
+    cube.var = None
+    image1 = generate_image(wcs=cube.wcs)
+    cube2 = image1 + cube
+    assert_almost_equal(cube2.var, np.tile(image1.var, (cube2.shape[0], 1, 1)))
+
+    cube2 = image1 * cube
+    assert_almost_equal(cube2.var, image1.var*cube.data*cube.data)
 
 def test_get_cube(cube):
     """Cube class: tests getters"""
