@@ -147,6 +147,8 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
 
     fwcube = np.ones((5, size2, size3)) * fw[:, np.newaxis, np.newaxis]
 
+    hdr = wcs.to_header()
+
     for k in range(2, size1 - 3):
         sys.stdout.write("Narrow band:%d/%d\r" % (k, size1 - 3))
         leftmin = max(0, k - 2 - delta)
@@ -174,13 +176,14 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
         sizeright = rightmax - rightmin
         contmean = ((sizeleft * contleft + sizeright * contright) /
                     (sizeleft + sizeright))
-        imnb = Image(wcs=wcs, data=np.ma.filled(imslice - contmean, np.nan),
-                     unit=unit, copy=False)
         kstr = "%04d" % k
-        imnb.write('nb/nb' + kstr + '.fits', savemask='nan')
-
+        imnb = np.ma.filled(imslice - contmean, np.nan)
+        hdulist = pyfits.HDUList([pyfits.PrimaryHDU(),
+                                  pyfits.ImageHDU(name='DATA', data=imnb, header=hdr)])
+        hdulist.writeto('nb/nb%04d.fits'%k, clobber=True)
+        
         if nbcube:
-            outnbcube[k, :, :] = imnb.data.data[:, :]
+            outnbcube[k, :, :] = imnb[:, :]
 
         if expmap is None:
             f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' +
