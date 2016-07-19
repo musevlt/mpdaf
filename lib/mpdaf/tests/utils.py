@@ -239,8 +239,7 @@ def generate_spectrum(data=None, var=1.0, mask=None, shape=None,
                                crpix=crpix, cdelt=cdelt, crval=crval)
 
 
-def generate_cube(data=2.3, var=1.0, mask=None, shape=None, uwave=u.angstrom,
-                  unit=u.ct, wcs=None, wave=None, copy=True):
+def generate_cube(data=2.3, var=1.0, **kwargs):
     """Generate a simple cube for unit tests.
 
     The data array can either be specified explicitly, or its shape
@@ -277,6 +276,4 @@ def generate_cube(data=2.3, var=1.0, mask=None, shape=None, uwave=u.angstrom,
         If true (default), the data, variance and mask arrays are copied.
 
     """
-    return _generate_test_data(data=data, var=var, mask=mask, shape=shape,
-                               unit=unit, uwave=uwave, wcs=wcs, wave=wave,
-                               copy=copy, ndim=3)
+    return _generate_test_data(data=data, var=var, ndim=3, **kwargs)
