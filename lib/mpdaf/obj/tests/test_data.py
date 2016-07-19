@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 import warnings
 
-from astropy.io.fits.verify import VerifyWarning
+from astropy.utils.exceptions import AstropyUserWarning
 from numpy import ma
 from mpdaf.obj import DataArray, WaveCoord, WCS, Cube
 from numpy.testing import assert_array_equal, assert_allclose
@@ -50,7 +50,7 @@ def test_fits_spectrum():
         warnings.simplefilter("always")
         data = DataArray(filename=testspe, ext=0,
                          fits_kwargs={'checksum': True})
-    assert len([ww for ww in w if ww.category is VerifyWarning]) == 8
+    assert len([ww for ww in w if ww.category is AstropyUserWarning]) == 4
     assert data.shape == (4096,)
     assert data.ndim == 1
 
