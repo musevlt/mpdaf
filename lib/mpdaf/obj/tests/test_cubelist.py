@@ -48,11 +48,32 @@ class TestCubeList(unittest.TestCase):
         shutil.rmtree(cls.tmpdir)
 
     def assert_header(self, cube):
-        self.assertEqual(cube.primary_header['FOO'], 'BAR')
-        self.assertNotIn('CUBEIDX', cube.primary_header)
-        self.assertEqual(cube.primary_header['OBJECT'], 'OBJECT 0')
-        self.assertEqual(cube.data_header['OBJECT'], 'OBJECT 0')
-        self.assertEqual(cube.primary_header['EXPTIME'], 100 * self.ncubes)
+        assert cube.primary_header['FOO'] == 'BAR'
+        assert 'CUBEIDX' not in cube.primary_header
+        assert cube.primary_header['OBJECT'] == 'OBJECT 0'
+        assert cube.data_header['OBJECT'] == 'OBJECT 0'
+        assert cube.primary_header['EXPTIME'] == 100 * self.ncubes
+
+    def test_get_item(self):
+        clist = CubeList(self.cubenames)
+        assert_array_equal(clist[0, 2, 2], self.cubevals)
+        assert_array_equal(np.array([a.data for a in clist[0, :, :]])[:, 0, 0],
+                           self.cubevals)
+        with pytest.raises(ValueError):
+            clist[2, 2]
+
+    def test_checks(self):
+        cube = generate_cube(shape=(3, 2, 1))
+        cube.write(os.path.join(self.tmpdir, 'cube-tmp.fits'), savemask='nan')
+        clist = CubeList(self.cubenames[:1] + [cube.filename])
+        assert clist.check_dim() is False
+        assert clist.check_wcs() is False
+
+        cube = generate_cube(shape=self.shape, crval=12.)
+        cube.write(os.path.join(self.tmpdir, 'cube-tmp.fits'), savemask='nan')
+        clist = CubeList(self.cubenames[:1] + [cube.filename])
+        assert clist.check_dim() is True
+        assert clist.check_wcs() is False
 
     @pytest.mark.skipif(not HAS_FITSIO, reason="requires fitsio")
     def test_median(self):
@@ -80,6 +101,17 @@ class TestCubeList(unittest.TestCase):
             self.assert_header(cube)
             assert_array_equal(cube.data, combined_cube)
             assert_array_equal(expmap.data, self.expmap)
+
+        for method in (clist.combine, clist.pycombine):
+            cube = method(nclip=(5., 5.), var='stat_mean')[0]
+            assert_array_equal(cube.data, combined_cube)
+
+    @pytest.mark.skipif(not HAS_FITSIO, reason="requires fitsio")
+    def test_combine_scale(self):
+        clist = CubeList(self.cubenames, scalelist=[2.]*self.ncubes)
+        combined_cube = np.full(self.shape, 2*2, dtype=float)
+        cube, expmap, stat_pix = clist.combine(header={'FOO': 'BAR'})
+        assert_array_equal(cube.data, combined_cube)
 
     @pytest.mark.skipif(not HAS_FITSIO, reason="requires fitsio")
     def test_mosaic_combine(self):
