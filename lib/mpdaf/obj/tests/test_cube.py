@@ -30,7 +30,7 @@ def test_copy(cube):
     assert s == cube2.data.sum()
 
 
-def test_arithmetric():
+def test_arithmetic():
     """Cube class: tests arithmetic functions"""
     cube1 = generate_cube(uwave=u.nm)
     image1 = generate_image(wcs=cube1.wcs, unit=2 * u.ct)
@@ -58,7 +58,7 @@ def test_arithmetric():
     assert_almost_equal(cube2.data, cube1.data / 25.3)
 
 
-def test_arithmetric_errors(cube):
+def test_arithmetic_errors(cube):
     cube = generate_cube()
     image1 = generate_image(wcs=cube.wcs)
     image1.wcs.set_crval1(10)
@@ -76,7 +76,7 @@ def test_arithmetric_errors(cube):
         cube2 = spectrum1 + cube
 
 
-def test_arithmetric_variance(cube):
+def test_arithmetic_variance(cube):
     cube = generate_cube()
     image1 = generate_image(wcs=cube.wcs, var=None)
     cube2 = image1 + cube
