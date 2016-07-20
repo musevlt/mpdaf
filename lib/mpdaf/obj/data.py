@@ -1287,42 +1287,62 @@ class DataArray(object):
 
         return res
 
-    def _fftconvolve(self, other, inplace=False):
-        """Convolve a DataArray with an array of the same number of dimensions.
-
-        The convolution is performed by multiplying the Fourier
-        transforms of the two arrays. This is much faster than the
-        traditional discrete convolution equation when the size of
-        other is large.
+    def _convolve(self, convolution_function, other, inplace=False):
+        """Convolve a DataArray with an array of the same number of dimensions
+        using a specified convolution function.
 
         Masked values in self.data and self.var are replaced with
-        zeros before the convolution is performed. Any variances in
-        self.var are propagated correctly.
+        zeros before the convolution is performed. However masked
+        pixels in the input data remain masked in the output.
+
+        Any variances in self.var are propagated correctly.
 
         If self.var exists, the variances are propagated using the
         equation:
 
          result.var = self.var (*) other**2
 
-        where (*) indicates convolution. This equation is the result
-        of the usual rules of error-propagation, when applied to the
+        where (*) indicates convolution. This equation can be derived
+        by applying the usual rules of error-propagation to the
         discrete convolution equation.
 
-        Masked pixels in the input data remain masked in the output.
 
-        Uses `scipy.signal.fftconvolve`.
+        Uses `scipy.signal.convolve`.
 
         Parameters
         ----------
+        fn : function
+            The convolution function to use, chosen from:
+
+              - scipy.signal.fftconvolve
+                This exploits the Fourier convolution theorem to
+                perform the convolution via multiplication in the
+                Fourier plane. It's speed scales as O(Nd x log(Nd)),
+                where Nd=self.data.size.
+              - scipy.signal.convolve
+                This uses the discrete convolution equation. It's
+                speed scales as O(Nd x No), where Nd=self.data.size
+                and No=other.data.size.
+
+            In general fftconvolve() is faster than convolve() except
+            when other.data only contains a few pixels. However
+            fftconvolve uses a lot more memory than convolve(), so
+            convolve() is sometimes the only reasonable choice. In
+            particular, fftconvolve allocates two arrays whose
+            dimensions are the sum of self.shape and other.shape,
+            rounded up to a power of two. These arrays can be
+            impractically large for some input data-sets.
         other : DataArray or np.ndarray
           The array with which to convolve the contents of self.
           This must have the same number of dimensions as self, but
           it can have fewer elements. When this array contains a
           symmetric filtering function, the center of the function
           should be placed at the center of pixel,
-          ``(other.shape - 1)//2``. Note that passing a DataArray object
-          is equivalent to just passing its DataArray.data member. Its
-          variances are ignored.
+          ``(other.shape - 1)//2``.
+
+          Note that passing a DataArray object is equivalent to just
+          passing its DataArray.data member. If it has any variances,
+          these are ignored.
         inplace : bool
             If False (the default), return a new object containing the
             convolved array.
@@ -1368,7 +1388,7 @@ class DataArray(object):
             out._data[~np.isfinite(out._data)] = 0.0
 
         # Convolve the data array with the kernel.
-        out._data = signal.fftconvolve(out._data, kernel, mode="same")
+        out._data = convolution_function(out._data, kernel, mode="same")
 
         # Are there any variances to be propagated?
         if out._var is not None:
@@ -1384,6 +1404,6 @@ class DataArray(object):
 
             # Convolve the var array with the square of the kernel to
             # propagate them.
-            out._var = signal.fftconvolve(out._var, kernel**2, mode="same")
+            out._var = convolution_function(out._var, kernel**2, mode="same")
 
         return out

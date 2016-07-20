@@ -2126,48 +2126,49 @@ class Cube(ArithmeticMixin, DataArray):
             self._logger.info('returning spectrum at nearest spaxel')
         return spec
 
-    def fftconvolve(self, other, inplace=False):
-        """Convolve a Cube with a 3D array or another Cube.
+    def convolve(self, other, inplace=False):
+        """Convolve a Cube with a 3D array or another Cube, using the
+        discrete convolution equation.
 
-        The convolution is performed by multiplying the Fourier
-        transforms of the two 3D arrays. This is much faster than the
-        traditional discrete convolution equation when the size of
-        other is large.
+        This function, which uses the discrete convolution equation, is
+        usually slower than Cube.fftconvolve(). However it can be faster when
+        other.data.size is small, and it always uses much less memory, so it
+        is sometimes the only practical choice.
 
-        Masked values in self.data and self.var are replaced with
-        zeros before the convolution is performed.
+        Masked values in self.data and self.var are replaced with zeros before
+        the convolution is performed, but they are masked again after the
+        convolution.
 
-        If self.var exists, the variances are propagated using the
-        equation:
+        If self.var exists, the variances are propagated using the equation:
 
           result.var = self.var (*) other**2
 
-        where (*) indicates convolution. This equation is the result
-        of the usual rules of error-propagation, when applied to the
-        discrete convolution equation.
+        where (*) indicates convolution. This equation can be derived by
+        applying the usual rules of error-propagation to the discrete
+        convolution equation.
 
-        Masked pixels in the input data remain masked in the output.
+        The speed of this function scales as O(Nd x No) where
+        Nd=self.data.size and No=other.data.size.
 
-        Uses `scipy.signal.fftconvolve`.
+        Uses `scipy.signal.convolve`.
 
         Parameters
         ----------
         other : Cube or np.ndarray
             The 3D array with which to convolve the cube in self.data.
-            This array can be the same size as self, or it can be a
-            smaller array, such as a small 3D gaussian to use for
-            smoothing the larger cube.
+            This can be an 3D array of the same size as self, or it
+            can be a smaller array, such as a small 3D gaussian to use to
+            smooth the larger cube.
 
             When ``other`` contains a symmetric filtering function, such
-            as a two-dimensional gaussian, the center of the function
+            as a 3-dimensional gaussian, the center of the function
             should be placed at the center of pixel:
 
              ``(other.shape - 1) // 2``
 
-            If ``other`` is an MPDAF Cube object, note that only its
-            data array is used. Masked values in this array are
-            treated as zero. Any variances found in other.var are
-            ignored.
+            If other is an MPDAF Cube object, note that only its data
+            array is used. Masked values in this array are treated
+            as zero, and any variances found in other.var are ignored.
         inplace : bool
             If False (the default), return the results in a new Cube.
             If True, record the result in self and return that.
@@ -2177,8 +2178,67 @@ class Cube(ArithmeticMixin, DataArray):
         out : `~mpdaf.obj.Cube`
 
         """
-        # Delegate the task to DataArray._fftconvolve()
-        return self._fftconvolve(other=other, inplace=inplace)
+        # Delegate the task to DataArray._convolve()
+        return self._convolve(signal.convolve, other=other, inplace=inplace)
+
+    def fftconvolve(self, other, inplace=False):
+        """Convolve a Cube with a 3D array or another Cube, using the
+        Fourier convolution theorem.
+
+        This function, which performs the convolution by multiplying the
+        Fourier transforms of the two arrays, is usually much faster than
+        Cube.convolve(), except when other.data.size is small. However it uses
+        much more memory, so Cube.convolve() is sometimes a better choice.
+
+        Masked values in self.data and self.var are replaced with zeros before
+        the convolution is performed, but they are masked again after the
+        convolution.
+
+        If self.var exists, the variances are propagated using the equation:
+
+          result.var = self.var (*) other**2
+
+        where (*) indicates convolution. This equation can be derived by
+        applying the usual rules of error-propagation to the discrete
+        convolution equation.
+
+        The speed of this function scales as O(Nd x log(Nd)) where
+        Nd=self.data.size.  It temporarily allocates a pair of arrays that
+        have the sum of the shapes of self.shape and other.shape, rounded up
+        to a power of two along each axis. This can involve a lot of memory
+        being allocated. For this reason, when other.shape is small,
+        Cube.convolve() may be more efficient than Cube.fftconvolve().
+
+        Uses `scipy.signal.fftconvolve`.
+
+        Parameters
+        ----------
+        other : Cube or np.ndarray
+            The 3D array with which to convolve the cube in self.data.
+            This array can be the same size as self, or it can be a
+            smaller array, such as a small 3D gaussian to use to
+            smooth the larger cube.
+
+            When ``other`` contains a symmetric filtering function, such as a
+            3-dimensional gaussian, the center of the function should be
+            placed at the center of pixel:
+
+             ``(other.shape - 1) // 2``
+
+            If ``other`` is an MPDAF Cube object, note that only its data
+            array is used. Masked values in this array are treated as
+            zero, and any variances found in other.var are ignored.
+        inplace : bool
+            If False (the default), return the results in a new Cube.
+            If True, record the result in self and return that.
+
+        Returns
+        -------
+        out : `~mpdaf.obj.Cube`
+
+        """
+        # Delegate the task to DataArray._convolve()
+        return self._convolve(signal.fftconvolve, other=other, inplace=inplace)
 
     @deprecated('get_lambda method is deprecated, use select_lambda instead')
     def get_lambda(self, lbda_min, lbda_max=None, unit_wave=u.angstrom):
@@ -2277,4 +2337,3 @@ def _process_ima(arglist):
     except Exception as inst:
         raise type(inst)(str(inst) + '\n The error occurred '
                          'while processing image [%i,:,:]' % k)
-

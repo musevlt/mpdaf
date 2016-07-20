@@ -1,6 +1,6 @@
 """Test on Spectrum objects."""
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 import pytest
 import numpy as np
@@ -9,7 +9,7 @@ from astropy import units as u
 from astropy.io import fits
 from mpdaf.obj import Spectrum, Image, Cube, WCS, WaveCoord
 from numpy.testing import (assert_array_almost_equal, assert_array_equal,
-                           assert_almost_equal)
+                           assert_almost_equal, assert_allclose)
 
 from ...tests.utils import get_data_file
 
@@ -173,30 +173,111 @@ def test_crop(spec_var):
 
 
 def test_resample():
-    """Spectrum class: testing resampling function"""
-    wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm, shape=10)
-    spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]) * 2.3,
-                         wave=wave)
-    flux1 = spectrum1.sum() * spectrum1.wave.get_step()
-    spectrum2 = spectrum1.resample(0.3)
-    flux2 = spectrum2.sum() * spectrum2.wave.get_step()
-    assert_almost_equal(flux1, flux2)
+    """Spectrum class: Test resampling"""
 
+    # Choose the dimensions of the spectrum, choosing a large number that is
+    # *not* a convenient power of 2.
+    oldshape = 4000
 
-@pytest.mark.slow
-def test_resampling_slow(spec_var, spec_novar):
-    """Spectrum class: heavy test of resampling function"""
-    unit = spec_novar.wave.unit
-    flux1 = spec_novar.sum() * spec_novar.wave.get_step(unit=unit)
-    spnovar2 = spec_novar.resample(4, unit=unit)
-    flux2 = spnovar2.sum() * spnovar2.wave.get_step(unit=unit)
-    assert_almost_equal(flux1, flux2, 0)
+    # Choose the wavelength pixel size and the default wavelength units.
+    oldstep = 1.0
+    oldunit = u.angstrom
 
-    unit = spec_var.wave.unit
-    flux1 = spec_var.sum(weight=False) * spec_var.wave.get_step(unit=unit)
-    spvar2 = spec_var.resample(4, unit=unit)
-    flux2 = spvar2.sum(weight=False) * spvar2.wave.get_step(unit=unit)
-    assert_almost_equal(flux1, flux2, 0)
+    # Create the wavelength axis coordinates.
+    wave = WaveCoord(crpix=2.0, cdelt=oldstep, crval=0.5, cunit=oldunit,
+                     shape=oldshape)
+
+    # Specify the desired increase in pixel size, and the resulting pixel size.
+    factor = 6.5
+    newstep = ((factor*oldstep)*oldunit).to(u.nm).value
+
+    # Specify the wavelength at which the peak of the resampled spectrum should
+    # be expected.
+    expected_peak_wave = 3000.0
+
+    # Create the array in which the test spectrum will be composed.
+    data = np.zeros(oldshape)
+
+    # Get the wavelength coordinates of each pixel in the spectrum.
+    w = wave.coord()
+
+    # Add the following list gaussians to the spectrum, where each
+    # gaussian is specified as: (amplitude, sigma_in_pixels,
+    # center_wavelength). Given that narrow gaussians are reduced in
+    # amplitude by resampling more than wide gaussians, we arrange
+    # that the peak gaussian before and after correctly resampling are
+    # different.
+    gaussians = [(0.5,  12.0,   800.0),
+                 (0.7,   5.0,   1200.0),
+                 (0.4, 700.0,   1600.0),
+                 (1.5,   2.6,   1980.0),             # Peak before resampling
+                 (1.2,   2.6,   2000.0),
+                 (1.3,  15.0,   expected_peak_wave), # Peak if resampled correctly
+                 (1.0,   2.0,   3200.0)]
+    for amp,sigma,center in gaussians:
+        sigma *= oldstep
+        data += amp * np.exp(-0.5 * ((center - w)/sigma)**2)
+
+    # Fill the variance array with a simple window function.
+    var = np.hamming(oldshape)
+
+    # Add gaussian random noise to the spectrum, but leave 3 output
+    # pixel widths zero at each end of the spectrum so that the PSF of
+    # the output grid doesn't spread flux from the edges off the edge
+    # of the output grid. It takes about 3 pixel widths for the gaussian
+    # PSF to drop to about 0.01 of its peak.
+    margin = np.ceil(3*factor).astype(int)
+    data[margin:-margin] += np.random.normal(scale=0.1,size=data.shape-2*margin)
+
+    # Install the spectral data in a Spectrum container.
+    oldsp = Spectrum(data=data, var=var, wave=wave)
+
+    # Mask a few pixels.
+    masked_slice = slice(900,910)
+    oldsp.mask[masked_slice] = True
+
+    # Create a down-sampled version of the input spectrum.
+    newsp = oldsp.resample(newstep, unit=u.nm)
+
+    # Check that the integral flux in the resampled spectrum matches that of
+    # the original spectrum.
+    expected_flux = oldsp.sum(weight=False) * oldsp.wave.get_step(unit=oldunit)
+    actual_flux = newsp.sum(weight=False) * newsp.wave.get_step(unit=oldunit)
+    assert_allclose(actual_flux, expected_flux, 1e-2)
+
+    # Do the same test, but with fluxes weighted by the inverse of the variances.
+    expected_flux = oldsp.sum(weight=True) * oldsp.wave.get_step(unit=oldunit)
+    actual_flux = newsp.sum(weight=True) * newsp.wave.get_step(unit=oldunit)
+    assert_allclose(actual_flux, expected_flux, 1e-2)
+
+    # Check that the peak of the resampled spectrum is at the wavelength
+    # where the strongest gaussian was centered in the input spectrum.
+    assert_allclose(np.argmax(newsp.data),
+                    newsp.wave.pixel(expected_peak_wave, nearest=True))
+
+    # Now upsample the downsampled spectrum to the original pixel size.
+    # This won't recover the same spectrum, since higher spatial frequencies
+    # are lost when downsampling, but the total flux should be about the
+    # same, and the peak should be at the same wavelength as the peak in
+    # original spectrum within one pixel width of the downsampled spectrum.
+    newsp2 = newsp.resample(oldstep, unit=oldunit)
+
+    # Check that the doubly resampled spectrum has the same integrated flux
+    # as the original.
+    expected_flux = oldsp.sum(weight=False) * oldsp.wave.get_step(unit=oldunit)
+    actual_flux = newsp2.sum(weight=False) * newsp2.wave.get_step(unit=oldunit)
+    assert_allclose(actual_flux, expected_flux, 1e-2)
+
+    # Check that the peak of the up-sampled spectrum is at the wavelength
+    # of the peak of the down-sampled spectrum to within the pixel resolution
+    # of the downsampled spectrum.
+    assert_allclose(newsp.wave.pixel(newsp2.wave.coord(np.argmax(newsp2.data)),
+                                     nearest=True),
+                    newsp.wave.pixel(expected_peak_wave, nearest=True))
+
+    # Check that pixels that were masked in the input spectrum are still
+    # masked in the final spectrum.
+    np.testing.assert_equal(newsp2.mask[masked_slice], oldsp.mask[masked_slice])
 
 
 def test_rebin(spec_var, spec_novar):
@@ -374,3 +455,14 @@ def test_write(tmpdir):
 
     with fits.open(testfile) as hdu:
         assert u.Unit(hdu[1].header['CUNIT1']) == u.angstrom
+        
+def test_resample2():
+    """Spectrum class: testing resampling function 
+    with a spectrum of integers and resampling to a smaller pixel size"""
+    wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm)
+    spectrum1 = Spectrum(data=np.array([0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0]),
+                         wave=wave)
+    flux1 = spectrum1.sum() * spectrum1.wave.get_step()
+    spectrum2 = spectrum1.resample(0.3)
+    flux2 = spectrum2.sum() * spectrum2.wave.get_step()
+    assert_almost_equal(flux1, flux2, 2)
