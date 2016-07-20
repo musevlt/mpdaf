@@ -8,8 +8,6 @@ from mpdaf.sdetect import muselet
 from mpdaf.sdetect import Catalog
 
 
-@pytest.mark.xfail(sys.version_info >= (3, 3),
-                   reason="not compatible with python 3")
 def test_muselet_fast(tmpdir, minicube):
     """test MUSELET"""
     outdir = str(tmpdir)
@@ -34,8 +32,6 @@ def test_muselet_fast(tmpdir, minicube):
     assert len(raw) == len(cat_raw)
 
 
-@pytest.mark.xfail(sys.version_info >= (3, 3),
-                   reason="not compatible with python 3")
 @pytest.mark.slow
 def test_muselet_full(tmpdir, minicube):
     """test MUSELET"""
