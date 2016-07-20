@@ -205,8 +205,8 @@ def step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta):
     logger.info("muselet - Opening: " + cubename)
     c = Cube(cubename, copy=False, dtype=np.float32)
 
-    mvar = c.var
-    mvar[np.isnan(mvar)] = np.inf
+    mvar = c.var.filled(np.inf)
+    mvar[mvar <= 0] = np.inf
     c._var = None
 
     size1, size2, size3 = c.shape
