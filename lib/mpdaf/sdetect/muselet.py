@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import absolute_import, division
 
 import astropy.units as u
+import io
 import logging
 import numpy as np
 import os
@@ -266,8 +267,8 @@ def step2(cmd_sex):
         os.chmod('dosex', st.st_mode | stat.S_IEXEC)
         out = subprocess.check_output('./dosex', shell=True,
                                       stderr=subprocess.STDOUT)
-        with open('dosex.log', 'w') as f:
-            f.write(out)
+        with io.open('dosex.log', 'w', encoding='utf8') as f:
+            f.write(out.decode('utf-8'))
 
 
 def step3(cubename, ima_size, clean, skyclean, radius, nlines_max):
