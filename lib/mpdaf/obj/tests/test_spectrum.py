@@ -455,3 +455,14 @@ def test_write(tmpdir):
 
     with fits.open(testfile) as hdu:
         assert u.Unit(hdu[1].header['CUNIT1']) == u.angstrom
+        
+def test_resample2():
+    """Spectrum class: testing resampling function 
+    with a spectrum of integers and resampling to a smaller pixel size"""
+    wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm)
+    spectrum1 = Spectrum(data=np.array([0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0]),
+                         wave=wave)
+    flux1 = spectrum1.sum() * spectrum1.wave.get_step()
+    spectrum2 = spectrum1.resample(0.3)
+    flux2 = spectrum2.sum() * spectrum2.wave.get_step()
+    assert_almost_equal(flux1, flux2, 2)
