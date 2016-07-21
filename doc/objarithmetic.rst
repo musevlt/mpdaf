@@ -16,13 +16,6 @@ a given axis or axes of the cube:
    and a `~mpdaf.obj.Spectrum` is returned.
 
 .. ipython::
-   :suppress:
-
-   In [4]: import sys
-
-   In [4]: from mpdaf import setup_logging
-
-.. ipython::
   :okwarning:
 
   @suppress

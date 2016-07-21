@@ -84,13 +84,6 @@ of sky that they cover. They do this by creating a new object whose pixels are
 the mean of several neighboring pixels of the input object.
 
 .. ipython::
-   :suppress:
-
-   In [4]: import sys
-
-   In [4]: from mpdaf import setup_logging
-
-.. ipython::
   :okwarning:
 
   @suppress

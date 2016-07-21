@@ -9,13 +9,6 @@ Spectrum, Image and Cube objects provide a `copy <mpdaf.obj.DataArray.copy>`
 method that returns a deep copy of these objects.  For example:
 
 .. ipython::
-   :suppress:
-
-   In [4]: import sys
-
-   In [4]: from mpdaf import setup_logging
-
-.. ipython::
    :okwarning:
 
    @suppress

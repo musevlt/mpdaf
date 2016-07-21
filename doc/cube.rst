@@ -17,13 +17,6 @@ fluxes. Finally a mask array is provided for indicating bad pixels.
 The fluxes and their variances are stored in numpy masked arrays, so virtually
 all numpy and scipy functions can be applied to them.
 
-.. ipython::
-   :suppress:
-
-   In [1]: import sys
-
-   In [2]: from mpdaf import setup_logging
-
 Preliminary imports:
 
 .. ipython::

@@ -15,14 +15,6 @@ this array can be modified implicitly or explicitly via operations on the data,
 variance or mask arrays. For example:
 
 .. ipython::
-   :suppress:
-
-   In [4]: import sys
-
-   In [4]: from mpdaf import setup_logging
-
-
-.. ipython::
    :okwarning:
 
    In [1]: import numpy as np

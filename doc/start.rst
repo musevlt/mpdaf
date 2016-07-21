@@ -2,13 +2,6 @@
 Getting Started
 ***************
 
-.. ipython::
-   :suppress:
-
-   In [4]: import sys
-
-   In [4]: from mpdaf import setup_logging
-
 Importing MPDAF
 ---------------
 

@@ -67,15 +67,6 @@ array[k,p,q], where k is the spectral axis, and p and q are the
 spatial axes:
 
 .. ipython::
-   :suppress:
-
-   In [4]: import sys
-
-   In [4]: from mpdaf import setup_logging
-
-   In [2]: import matplotlib.pyplot as plt
-
-.. ipython::
   :okwarning:
 
   @suppress
