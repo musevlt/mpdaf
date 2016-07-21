@@ -87,13 +87,17 @@ numpydoc_show_class_members = False
 # numpydoc_use_plots = True
 
 ipython_savefig_dir = '_static/_generated'
-ipython_execlines = [
-    'from __future__ import division, print_function',
-    'import numpy as np',
-    'import matplotlib.pyplot as plt',
-    'import os',
-    'os.chdir("../lib/mpdaf/data")'
-]
+ipython_execlines = """\
+from __future__ import division, print_function
+import numpy as np
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import os
+os.chdir('../lib/mpdaf/data')
+plt.style.use('ggplot')
+mpl.rc('image', cmap='coolwarm')
+mpl.rc('figure', figsize=(7,5))
+""".splitlines()
 
 # Class documentation should contain *both* the class docstring and
 # the __init__ docstring

@@ -333,7 +333,7 @@ to a spectrum. This can be used to fit the continuum:
   In [3]: spe.plot()
 
   @savefig Spectrum_cont.png width=4in
-  In [4]: cont.plot(color='r')
+  In [4]: cont.plot(color='b')
 
 
 .. ipython::

@@ -167,7 +167,7 @@ spectrum that was obtained in the previous example:
   In [3]: sp1.plot()
 
   @savefig Cube3.png width=4in
-  In [4]: cont1.plot(color='r')
+  In [4]: cont1.plot()
 
 Next we do the same to a single pixel at the edge of the galaxy:
 
@@ -180,7 +180,7 @@ Next we do the same to a single pixel at the edge of the galaxy:
   In [3]: sp1.plot()
 
   @savefig Cube4.png width=4in
-  In [4]: sp1.poly_spec(5).plot(color='r')
+  In [4]: sp1.poly_spec(5).plot()
 
 In principle, the above procedure could be performed to each pixel by writing
 a nested loop over the X and Y axes of the cube. However, instead of using two
@@ -303,9 +303,9 @@ isolate the emission line by truncating the object datacube in wavelength:
   # Obtain the overall spectrum of the above sub-cube.
   In [8]: sp1 = emi1.sum(axis=(1,2))
 
-  # Plot the sub-spectrum in red over the original spectrum.
+  # Plot the sub-spectrum over the original spectrum.
   @savefig Cube8.png width=4in
-  In [9]: sp1.plot(color='r')
+  In [9]: sp1.plot()
 
   @suppress
   In [10]: obj1 = None ; cont1 = None ; line1 = None
@@ -356,7 +356,7 @@ the Hα line and the continuum mean flux at the same location:
   In [2]: k = line1.data.argmax()
 
   @savefig Cube10.png width=4in
-  In [3]: line1[55-10:55+11].plot(color='r')
+  In [3]: line1[55-10:55+11].plot(color='b')
 
   # Integrate by summing pixels, multiplied by the pixel width.
   In [4]: fline = (line1[55-10:55+11].sum()*line1.unit) * (line1.get_step(unit=line1.wave.unit)*line1.wave.unit)
