@@ -632,8 +632,12 @@ class Source(object):
         hist = set(filter(lambda k: re.match('HIST\d\d\d', k), keys))
         keys = keys - excluded_cards - coms - hist
 
-        for key in itertools.chain(keys, coms, hist):
+        for key in keys:
             info(self.header.cards[key])
+        for key in itertools.chain(sorted(coms), sorted(hist)):
+            info("%s = %s / %s"%(self.header.cards[key][0],
+                                 self.header.cards[key][1],
+                                 self.header.cards[key][2]))
 
         if any([self.spectra, self.images, self.cubes, self.tables]):
             print('')
