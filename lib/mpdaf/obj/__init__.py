@@ -38,4 +38,3 @@ from .data import *
 from .image import *
 from .objs import *
 from .spectrum import *
-from .plt_zscale import *
