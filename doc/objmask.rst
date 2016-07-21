@@ -15,14 +15,6 @@ this array can be modified implicitly or explicitly via operations on the data,
 variance or mask arrays. For example:
 
 .. ipython::
-   :suppress:
-
-   In [4]: import sys
-
-   In [4]: from mpdaf import setup_logging
-
-
-.. ipython::
    :okwarning:
 
    In [1]: import numpy as np
@@ -31,7 +23,7 @@ variance or mask arrays. For example:
 
    In [2]: from mpdaf.obj import Image
 
-   In [3]: ima = Image('../data/obj/a370II.fits')
+   In [3]: ima = Image('obj/a370II.fits')
 
    In [3]: ima.data[1000:1500, 800:1800] = np.ma.masked
 

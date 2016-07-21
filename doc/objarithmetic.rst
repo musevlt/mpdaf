@@ -16,23 +16,13 @@ a given axis or axes of the cube:
    and a `~mpdaf.obj.Spectrum` is returned.
 
 .. ipython::
-   :suppress:
-
-   In [4]: import sys
-
-   In [4]: from mpdaf import setup_logging
-
-.. ipython::
   :okwarning:
-
-  @suppress
-  In [1]: setup_logging(stream=sys.stdout)
 
   In [1]: import matplotlib.pyplot as plt
 
   In [1]: from mpdaf.obj import Cube
 
-  In [2]: cube = Cube('../data/sdetect/minicube.fits')
+  In [2]: cube = Cube('sdetect/minicube.fits')
 
   In [3]: cube.info()
 
@@ -92,7 +82,7 @@ axis of the cube.
   In [16]: cube2 = cube * ima / spe
 
   In [17]: cube2.info()
-  [INFO] 3681 x 40 x 40 Cube (../data/sdetect/minicube.fits)
+  [INFO] 3681 x 40 x 40 Cube (sdetect/minicube.fits)
   [INFO] .data(3681 x 40 x 40) (1e-20 erg / (Angstrom cm2 s)), .var(3681 x 40 x 40)
   [INFO] center:(10:27:56.3962,04:13:25.3588) size in arcsec:(8.000,8.000) step in arcsec:(0.200,0.200) rot:-0.0 deg
   [INFO] wavelength: min:4749.89 max:9349.89 step:1.25 Angstrom

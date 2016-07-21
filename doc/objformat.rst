@@ -67,24 +67,12 @@ array[k,p,q], where k is the spectral axis, and p and q are the
 spatial axes:
 
 .. ipython::
-   :suppress:
-
-   In [4]: import sys
-
-   In [4]: from mpdaf import setup_logging
-
-   In [2]: import matplotlib.pyplot as plt
-
-.. ipython::
   :okwarning:
-
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
 
   In [2]: from mpdaf.obj import Cube
 
   # data array is read from the file (extension number 0)
-  In [1]: cube = Cube(filename='../data/sdetect/minicube.fits')
+  In [1]: cube = Cube(filename='sdetect/minicube.fits')
 
   # The 3 dimensions of the cube:
   In [2]: cube.shape
@@ -108,9 +96,6 @@ Cube.data.  Finally `Cube[k1:k2,p1:p2,q1:q2] <mpdaf.obj.Cube.__getitem__>`
 returns a sub-cube, as demonstrated in the following example:
 
 .. ipython::
-
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
 
   In [2]: cube.info()
 
@@ -206,11 +191,11 @@ the world-coordinate values of the first and last pixels of each axis:
 
 .. ipython::
 
-  In [1]: print cube.get_start(unit_wave=u.nm, unit_wcs=u.deg), cube.get_end(unit_wave=u.nm, unit_wcs=u.deg)
+  In [1]: print(cube.get_start(unit_wave=u.nm, unit_wcs=u.deg), cube.get_end(unit_wave=u.nm, unit_wcs=u.deg))
 
-  In [1]: print ima1.get_start(unit=u.deg), ima2.get_end(unit=u.deg)
+  In [1]: print(ima1.get_start(unit=u.deg), ima2.get_end(unit=u.deg))
 
-  In [1]: print spe.get_start(unit=u.angstrom), spe.get_end(unit=u.angstrom)
+  In [1]: print(spe.get_start(unit=u.angstrom), spe.get_end(unit=u.angstrom))
 
 Note that when the declination axis is rotated away from the vertical axis of
 the image, the coordinates returned by `get_start <mpdaf.obj.Image.get_start>`

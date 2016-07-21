@@ -38,15 +38,15 @@ Examples of conversions::
     >>> from mpdaf.obj import deg2sexa,sexa2deg
     >>> ac = np.array([2.5,2.5])
     >>> ac2 = [ac,ac*2,ac*4]
-    >>> print ac2
+    >>> print(ac2)
     [array([ 2.5,  2.5]), array([ 5.,  5.]), array([ 10.,  10.])]
     >>> ac3 = deg2sexa(ac2)
-    >>> print ac3
+    >>> print(ac3)
     [['02:30:00' '00:10:00']
     ['05:00:00' '00:20:00']
     ['10:00:00' '00:40:00']]
     >>> ac = sexa2deg(ac3)
-    >>> print ac
+    >>> print(ac)
     [[  2.5   2.5]
      [  5.    5. ]
      [ 10.   10. ]]

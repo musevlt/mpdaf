@@ -17,13 +17,6 @@ fluxes. Finally a mask array is provided for indicating bad pixels.
 The fluxes and their variances are stored in numpy masked arrays, so virtually
 all numpy and scipy functions can be applied to them.
 
-.. ipython::
-   :suppress:
-
-   In [1]: import sys
-
-   In [2]: from mpdaf import setup_logging
-
 Preliminary imports:
 
 .. ipython::
@@ -48,9 +41,6 @@ There are two common ways to obtain a `~mpdaf.obj.Cube` object:
 
 .. ipython::
 
-  @suppress
-  In [1]: setup_logging(stream=sys.stdout)
-
   In [2]: wcs1 = WCS(crval=0, cdelt=0.2)
 
   In [3]: wave1 = WaveCoord(cdelt=1.25, crval=4000.0, cunit=u.angstrom)
@@ -72,11 +62,8 @@ There are two common ways to obtain a `~mpdaf.obj.Cube` object:
 .. ipython::
   :okwarning:
 
-  @suppress
-  In [1]: setup_logging(stream=sys.stdout)
-
   # data and variance arrays read from the file (extension DATA and STAT)
-  In [2]: obj1 = Cube('../data/obj/CUBE.fits')
+  In [2]: obj1 = Cube('obj/CUBE.fits')
 
   In [3]: obj1.info()
 
@@ -167,7 +154,7 @@ spectrum that was obtained in the previous example:
   In [3]: sp1.plot()
 
   @savefig Cube3.png width=4in
-  In [4]: cont1.plot(color='r')
+  In [4]: cont1.plot()
 
 Next we do the same to a single pixel at the edge of the galaxy:
 
@@ -180,7 +167,7 @@ Next we do the same to a single pixel at the edge of the galaxy:
   In [3]: sp1.plot()
 
   @savefig Cube4.png width=4in
-  In [4]: sp1.poly_spec(5).plot(color='r')
+  In [4]: sp1.poly_spec(5).plot()
 
 In principle, the above procedure could be performed to each pixel by writing
 a nested loop over the X and Y axes of the cube. However, instead of using two
@@ -198,7 +185,7 @@ six spectra of a small 2 x 3 pixel sub-cube, and determine their peak values:
 
   @verbatim
   In [4]: for sp in iter_spe(small):
-     ...:     print sp.data.max()
+     ...:     print(sp.data.max())
      ...:
 
 Now let's use the same approach to do the continuum subtraction procedure.  We
@@ -232,9 +219,6 @@ a cube and return a new cube that contains the resulting spectra:
 
 .. ipython::
   :okwarning:
-
-  @suppress
-  In [1]: setup_logging(stream=sys.stdout)
 
   In [2]: from mpdaf.obj import Spectrum
 
@@ -282,9 +266,6 @@ isolate the emission line by truncating the object datacube in wavelength:
 
 .. ipython::
 
-  @suppress
-  In [1]: setup_logging(stream=sys.stdout)
-
   In [2]: plt.figure()
 
   # Obtain the overall spectrum of the cube.
@@ -303,9 +284,9 @@ isolate the emission line by truncating the object datacube in wavelength:
   # Obtain the overall spectrum of the above sub-cube.
   In [8]: sp1 = emi1.sum(axis=(1,2))
 
-  # Plot the sub-spectrum in red over the original spectrum.
+  # Plot the sub-spectrum over the original spectrum.
   @savefig Cube8.png width=4in
-  In [9]: sp1.plot(color='r')
+  In [9]: sp1.plot()
 
   @suppress
   In [10]: obj1 = None ; cont1 = None ; line1 = None
@@ -356,7 +337,7 @@ the Hα line and the continuum mean flux at the same location:
   In [2]: k = line1.data.argmax()
 
   @savefig Cube10.png width=4in
-  In [3]: line1[55-10:55+11].plot(color='r')
+  In [3]: line1[55-10:55+11].plot(color='b')
 
   # Integrate by summing pixels, multiplied by the pixel width.
   In [4]: fline = (line1[55-10:55+11].sum()*line1.unit) * (line1.get_step(unit=line1.wave.unit)*line1.wave.unit)
@@ -367,7 +348,7 @@ the Hα line and the continuum mean flux at the same location:
   # Compute the equivalent width of the line.
   In [6]: ew = fline/cline
 
-  In [7]: print fline, cline, ew
+  In [7]: print(fline, cline, ew)
 
 Finally we repeat this for all datacube spectra, and we save the Hα flux and
 equivalent width in two images.  We start by creating two images with identical
@@ -431,11 +412,8 @@ convolution by a gaussian kernel.
 .. ipython::
   :okwarning:
 
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
-
   # Data and variance arrays read from the file (extension DATA and STAT)
-  In [6]: cube = Cube('../data/obj/Central_Datacube_bkg.fits')
+  In [6]: cube = Cube('obj/Central_Datacube_bkg.fits')
 
 First, we use the image iterator `~mpdaf.obj.iter_ima`, which operates
 similarly to the spectrum iterator described earlier on this page, except that

@@ -76,4 +76,4 @@ for example, a pixel with calibration defects, known as a hot pixel and saturate
   
   In [2]: flag = euro3D.DQ_PIXEL['CalibrationFileDefect'] + euro3D.DQ_PIXEL['HotPixel'] + euro3D.DQ_PIXEL['ADSaturation']
   
-  In [3]: print flag
+  In [3]: print(flag)
