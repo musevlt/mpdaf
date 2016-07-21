@@ -198,7 +198,7 @@ six spectra of a small 2 x 3 pixel sub-cube, and determine their peak values:
 
   @verbatim
   In [4]: for sp in iter_spe(small):
-     ...:     print sp.data.max()
+     ...:     print(sp.data.max())
      ...:
 
 Now let's use the same approach to do the continuum subtraction procedure.  We
@@ -367,7 +367,7 @@ the Hα line and the continuum mean flux at the same location:
   # Compute the equivalent width of the line.
   In [6]: ew = fline/cline
 
-  In [7]: print fline, cline, ew
+  In [7]: print(fline, cline, ew)
 
 Finally we repeat this for all datacube spectra, and we save the Hα flux and
 equivalent width in two images.  We start by creating two images with identical

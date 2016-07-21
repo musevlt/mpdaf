@@ -119,9 +119,9 @@ We create the `~mpdaf.MUSE.FSF` object like this:
 
   In [3]: fsf_array, fwhm_pix, fwhm_arcsec = fsf.get_FSF(lbda=[5000, 9000], step=0.2, size=21, beta=2.8, a=0.885, b=-2.94E-05)
   
-  In [4]: print fwhm_pix
+  In [4]: print(fwhm_pix)
   
-  In [5]: print fwhm_arcsec
+  In [5]: print(fwhm_arcsec)
   
   In [27]: plt.figure()
 

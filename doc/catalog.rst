@@ -49,7 +49,7 @@ See the differences between the two format on the single lines detected by musel
 
   In [4]: cat = Catalog.from_sources(single, fmt='default')
   
-  In [5]: print cat
+  In [5]: print(cat)
    ID        RA        DEC      ORIGIN ORIGIN_V      CUBE      Z_EMI   Z_EMI_MAX ... [SII]_FLUX_ERR [SII]_LBDA_OBS [SII]_LBDA_OBS_ERR _FLUX _FLUX_ERR _LBDA_OBS _LBDA_OBS_ERR
   unitless    deg        deg                                    unitless  unitless ...                   Angstrom         Angstrom                       Angstrom    Angstrom  
   -------- ---------- ---------- ------- -------- ------------- -------- --------- ... -------------- -------------- ------------------ ----- --------- --------- -------------
@@ -100,7 +100,7 @@ See the differences between the two format on the single lines detected by musel
   
   In [7]: cat = Catalog.from_sources(single, fmt='working')
 
-  In [8]: print cat
+  In [8]: print(cat)
      ID        RA        DEC      ORIGIN ORIGIN_V      CUBE      Z_EMI   Z_EMI_MAX ... LBDA_OBS005 LBDA_OBS_ERR005 LINE005  FLUX006 FLUX_ERR006 LBDA_OBS006 LBDA_OBS_ERR006 LINE006 
   unitless    deg        deg                                    unitless  unitless ...   Angstrom      Angstrom    unitless                       Angstrom      Angstrom    unitless
   -------- ---------- ---------- ------- -------- ------------- -------- --------- ... ----------- --------------- -------- ------- ----------- ----------- --------------- --------

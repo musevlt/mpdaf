@@ -88,6 +88,7 @@ numpydoc_show_class_members = False
 
 ipython_savefig_dir = '_static/_generated'
 ipython_execlines = [
+    'from __future__ import division, print_function',
     'import numpy as np',
     'import matplotlib.pyplot as plt',
     'import os',

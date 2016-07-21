@@ -206,11 +206,11 @@ the world-coordinate values of the first and last pixels of each axis:
 
 .. ipython::
 
-  In [1]: print cube.get_start(unit_wave=u.nm, unit_wcs=u.deg), cube.get_end(unit_wave=u.nm, unit_wcs=u.deg)
+  In [1]: print(cube.get_start(unit_wave=u.nm, unit_wcs=u.deg), cube.get_end(unit_wave=u.nm, unit_wcs=u.deg))
 
-  In [1]: print ima1.get_start(unit=u.deg), ima2.get_end(unit=u.deg)
+  In [1]: print(ima1.get_start(unit=u.deg), ima2.get_end(unit=u.deg))
 
-  In [1]: print spe.get_start(unit=u.angstrom), spe.get_end(unit=u.angstrom)
+  In [1]: print(spe.get_start(unit=u.angstrom), spe.get_end(unit=u.angstrom))
 
 Note that when the declination axis is rotated away from the vertical axis of
 the image, the coordinates returned by `get_start <mpdaf.obj.Image.get_start>`
