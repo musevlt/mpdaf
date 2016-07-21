@@ -413,14 +413,17 @@ class Catalog(Table):
 
         # raise a warning if the type is not the same between each source
         for i in range(len(names_hdr)):
-            check = np.unique(np.asarray([type(row[i]) for row in data_rows]))
+            check = set([type(r[i]) for r in data_rows])
             if len(check) > 1:
-                logger.warning('column %s is defined with different types(%s) that will be converted to %s' % (names[i], check, dtype[i]))
+                logger.warning('column %s is defined with different types(%s) '
+                               'that will be converted to %s',
+                               names[i], check, dtype[i])
 
         t = cls(rows=data_rows, names=names, masked=True, dtype=dtype)
 
         # format
-        for name, desc, unit, fmt in zip(names_hdr, desc_hdr, unit_hdr, format_hdr):
+        for name, desc, unit, fmt in zip(names_hdr, desc_hdr, unit_hdr,
+                                         format_hdr):
             t[name].description = desc
             t[name].unit = unit
             t[name].format = fmt

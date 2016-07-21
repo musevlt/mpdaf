@@ -3,12 +3,9 @@
 from __future__ import absolute_import, division, print_function
 
 import pytest
-import sys
 from mpdaf.sdetect import SourceList
 
 
-@pytest.mark.xfail(sys.version_info >= (3, 3),
-                   reason="not compatible with python 3")
 def test_sourcelist(tmpdir, source1, source2):
     with pytest.raises(ValueError):
         SourceList.from_path('not/a/real/path')
