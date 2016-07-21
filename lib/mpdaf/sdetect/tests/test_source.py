@@ -29,7 +29,7 @@ def test_init():
 
 def test_from_data():
     src = Source.from_data(ID=1, ra=63.35592651367188, dec=10.46536922454834,
-                           origin=('test', 'v0', 'minicube.fits'),
+                           origin=('test', 'v0', 'minicube.fits', 'v0'),
                            proba=1.0, confi=2, extras={'FOO': 'BAR'})
 
     assert src.DPROBA == 1.0
@@ -139,7 +139,7 @@ def test_history(source1):
 def test_line():
     """Source class: testing add_line methods"""
     src = Source.from_data(ID=1, ra=63.35, dec=10.46,
-                           origin=('test', 'v0', 'minicube.fits'))
+                           origin=('test', 'v0', 'minicube.fits', 'v0'))
 
     src.add_line(['LBDA_OBS', 'LBDA_OBS_ERR', 'LINE'], [4810.123, 3.0, 'TEST'],
                  units=[u.angstrom, u.angstrom, None],
