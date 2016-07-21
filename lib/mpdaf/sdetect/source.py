@@ -374,7 +374,7 @@ class Source(object):
         header['ORIGIN'] = (origin[0], 'detection software')
         header['ORIGIN_V'] = (origin[1], 'version of the detection software')
         header['CUBE'] = (os.path.basename(origin[2]), 'datacube')
-        header['CUBE_V'] = (os.path.basename(origin[3]), 'version of the datacube')
+        header['CUBE_V'] = (origin[3], 'version of the datacube')
         if proba is not None:
             header['DPROBA'] = (proba, 'Detection probability')
         if confi is not None:
