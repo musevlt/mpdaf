@@ -276,6 +276,10 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max):
                 "redshifts")
 
     c = Cube(cubename)
+    if 'CUBE_V' in c.primary_header:
+        cubevers = '%s'%c.primary_header['CUBE_V']
+    else:
+        cubevers = ''
 
     wlmin = c.wave.get_start(unit=u.angstrom)
     dw = c.wave.get_step(unit=u.angstrom)
@@ -402,7 +406,7 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max):
 
     # Sources list
     continuum_lines = SourceList()
-    origin = ('muselet', __version__, cubename)
+    origin = ('muselet', __version__, cubename, cubevers)
 
     # write all continuum lines here:
     raw_catalog = SourceList()

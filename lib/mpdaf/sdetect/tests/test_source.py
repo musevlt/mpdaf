@@ -29,7 +29,7 @@ def source1():
              six.b('[OIII]2')]
     lines = Table(names=col_lines, rows=[line1, line2])
     return Source.from_data(ID=1, ra=-65.1349958, dec=140.3057987,
-                            origin=('test', 'v0', 'cube.fits'), lines=lines)
+                            origin=('test', 'v0', 'cube.fits', 'v0'), lines=lines)
 
 
 @pytest.fixture
@@ -148,7 +148,7 @@ def test_add_image(source2, a478hst):
 def test_add_narrow_band_image(minicube):
     """Source class: testing methods on narrow bands images"""
     src = Source.from_data(ID=1, ra=63.35592651367188, dec=10.46536922454834,
-                           origin=('test', 'v0', 'minicube.fits'))
+                           origin=('test', 'v0', 'minicube.fits', 'v0'))
     src.add_z('EMI', 0.086, 0.0001)
     src.add_white_image(minicube)
     src.add_narrow_band_images(minicube, 'EMI')
@@ -207,7 +207,7 @@ def test_SEA(minicube, a478hst):
     width = 8
     margin = 10.
     fband = 3.
-    origin = ('sea', '0.0', os.path.basename(minicube.filename))
+    origin = ('sea', '0.0', os.path.basename(minicube.filename), 'v0')
 
     for obj in cat[0:3]:
         source = Source.from_data(obj['ID'], obj['RA'], obj['DEC'], origin)

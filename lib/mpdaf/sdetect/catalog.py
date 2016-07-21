@@ -167,9 +167,14 @@ class Catalog(Table):
         index = names_hdr.index('CUBE')
         names_hdr.insert(5, names_hdr.pop(index))
         tuple_hdr.insert(5, tuple_hdr.pop(index))
-        index = names_hdr.index('CUBE_V')
-        names_hdr.insert(6, names_hdr.pop(index))
-        tuple_hdr.insert(6, tuple_hdr.pop(index))
+        if 'CUBE_V' in names_hdr:
+            index = names_hdr.index('CUBE_V')
+            names_hdr.insert(6, names_hdr.pop(index))
+            tuple_hdr.insert(6, tuple_hdr.pop(index))
+        else:
+            logger.warning('CUBE_V keyword in missing. It will be soon mandatory and its absecne will return an error')
+            names_hdr.insert(6, '')
+            tuple_hdr.insert(6, (type('1'), 'datacube version'))
 
         dtype_hdr = [c[0] for c in tuple_hdr]
         # type of mandatory keywords

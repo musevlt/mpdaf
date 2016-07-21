@@ -287,7 +287,7 @@ class Source(object):
     def __init__(self, header, lines=None, mag=None, z=None, spectra=None,
                  images=None, cubes=None, tables=None, mask_invalid=True):
         # Check required keywords in the FITS header
-        for key in ('RA', 'DEC', 'ID', 'CUBE', 'ORIGIN', 'ORIGIN_V'):
+        for key in ('RA', 'DEC', 'ID', 'CUBE', 'CUBE_V', 'ORIGIN', 'ORIGIN_V'):
             if key not in header:
                 raise IOError('{} keyword is mandatory to create a Source '
                               'object'.format(key))
@@ -332,6 +332,7 @@ class Source(object):
             2- Version of the detector software which creates this object
             3- Name of the FITS data cube from which this object has been
             extracted.
+            4- Version of the FITS data cube
         proba : float
             Detection probability
         confi : int
@@ -372,7 +373,8 @@ class Source(object):
         header['DEC'] = (dec, 'DEC u.degree %.7f')
         header['ORIGIN'] = (origin[0], 'detection software')
         header['ORIGIN_V'] = (origin[1], 'version of the detection software')
-        header['CUBE'] = (os.path.basename(origin[2]), 'MUSE data cube')
+        header['CUBE'] = (os.path.basename(origin[2]), 'datacube')
+        header['CUBE_V'] = (os.path.basename(origin[3]), 'version of the datacube')
         if proba is not None:
             header['DPROBA'] = (proba, 'Detection probability')
         if confi is not None:
@@ -490,6 +492,10 @@ class Source(object):
                 logger = logging.getLogger(__name__)
                 logger.warning(e)
         hdulist.close()
+        if 'CUBE_V' not in hdr:
+            logger = logging.getLogger(__name__)
+            logger.warning('CUBE_V keyword in missing. It will be soon mandatory and its absence will return an error')
+            hdr['CUBE_V'] = ('', 'datacube version')
         return cls(hdr, lines, mag, z, spectra, images, cubes, tables,
                    mask_invalid=mask_invalid)
 
@@ -529,6 +535,12 @@ class Source(object):
                 logger.warning(e)
 
         hdulist.close()
+        
+        if 'CUBE_V' not in hdr:
+            logger = logging.getLogger(__name__)
+            logger.warning('CUBE_V keyword in missing. It will be soon mandatory and its absence will return an error')
+            hdr['CUBE_V'] = ('', 'datacube version')
+        
         return cls(hdr, lines, mag, z, None, None, None, tables)
 
     def write(self, filename):
@@ -2017,6 +2029,6 @@ class SourceList(list):
 
         slist = cls()
         for f in glob.glob(path + '/*.fits'):
-            slist.append(self.source_class.from_file(f))
+            slist.append(cls.source_class.from_file(f))
 
         return slist
