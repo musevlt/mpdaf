@@ -185,7 +185,7 @@ class Catalog(Table):
         dtype_hdr[4] = type('1')
         dtype_hdr[5] = type('1')
         dtype_hdr[6] = type('1')
-        
+
         desc_hdr = [c[1][:c[1].find('u.')] if c[1].find('u.') != -1 else c[1][:c[1].find('%')] if c[1].find('%') != -1 else c[1] for c in tuple_hdr]
         unit_hdr = [c[1][c[1].find('u.'):].split()[0][2:] if c[1].find('u.') != -1 else None for c in tuple_hdr]
         format_hdr = [c[1][c[1].find('%'):].split()[0] if c[1].find('%') != -1 else None for c in tuple_hdr]
@@ -244,7 +244,8 @@ class Catalog(Table):
                             d[col] = source.lines.dtype[col]
                             unit[col] = source.lines[col].unit
 
-                        for line, mask in zip(source.lines['LINE'].data.data, source.lines['LINE'].data.mask):
+                        for line, mask in zip(source.lines['LINE'].data.data,
+                                              source.lines['LINE'].data.mask):
                             if not mask and line != 'None':
                                 try:
                                     float(line)
@@ -295,7 +296,7 @@ class Catalog(Table):
                 else:
                     k = [h[key] if key in keys else INVALID[typ]]
                     if type(k[0]) == type('1'):
-                        raise ValueError('column %s: could not convert string to %s'%(key, typ))
+                        raise ValueError('column %s: could not convert string to %s' % (key, typ))
                     row += k
 
             # magnitudes
@@ -414,8 +415,8 @@ class Catalog(Table):
         for i in range(len(names_hdr)):
             check = np.unique(np.asarray([type(row[i]) for row in data_rows]))
             if len(check) > 1:
-                logger.warning('column %s is defined with different types(%s) that will be converted to %s'%(names[i], check, dtype[i]))
-            
+                logger.warning('column %s is defined with different types(%s) that will be converted to %s' % (names[i], check, dtype[i]))
+
         t = cls(rows=data_rows, names=names, masked=True, dtype=dtype)
 
         # format
@@ -473,7 +474,6 @@ class Catalog(Table):
         But it is possible to use a working format.
         [LINES columns names]_xxx
         where xxx is the number of lines present in each source.
-        
 
         Parameters
         ----------
