@@ -289,8 +289,8 @@ class Source(object):
         # Check required keywords in the FITS header
         for key in ('RA', 'DEC', 'ID', 'CUBE', 'CUBE_V', 'ORIGIN', 'ORIGIN_V'):
             if key not in header:
-                raise IOError('{} keyword is mandatory to create a Source '
-                              'object'.format(key))
+                raise ValueError('{} keyword is mandatory to create a Source '
+                                 'object'.format(key))
 
         self.header = header
         # Table LINES
@@ -413,10 +413,8 @@ class Source(object):
         elif isinstance(ext, six.string_types):
             extnames = [h.name for h in hdulist[1:] if re.findall(ext, h.name)]
         else:
-            extnames = []
-            for e in ext:
-                extnames += [h.name for h in hdulist[1:]
-                             if re.findall(e, h.name)]
+            extnames = [h.name for e in ext
+                        for h in hdulist[1:] if re.findall(e, h.name)]
 
         lines = (_read_masked_table(hdulist, 'LINES') if 'LINES' in extnames
                  else None)
@@ -819,6 +817,7 @@ class Source(object):
                 zmin, zmax = errz
             except:
                 raise ValueError('Wrong type for errz in add_z')
+
         if self.z is None:
             if z != -9999:
                 self.z = Table(names=['Z_DESC', 'Z', 'Z_MIN', 'Z_MAX'],
@@ -838,12 +837,13 @@ class Source(object):
                 self.z['Z_DESC'].unit = 'unitless'
         else:
             if desc in self.z['Z_DESC']:
+                sel = self.z['Z_DESC'] == desc
                 if z != -9999:
-                    self.z['Z'][self.z['Z_DESC'] == desc] = z
-                    self.z['Z_MIN'][self.z['Z_DESC'] == desc] = zmin
-                    self.z['Z_MAX'][self.z['Z_DESC'] == desc] = zmax
+                    self.z['Z'][sel] = z
+                    self.z['Z_MIN'][sel] = zmin
+                    self.z['Z_MAX'][sel] = zmax
                 else:
-                    index = np.where((self.z['Z_DESC'] == desc))[0][0]
+                    index = np.where(sel)[0][0]
                     self.z.remove_row(index)
             else:
                 if z != -9999:
