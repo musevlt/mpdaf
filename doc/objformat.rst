@@ -84,7 +84,7 @@ spatial axes:
   In [2]: from mpdaf.obj import Cube
 
   # data array is read from the file (extension number 0)
-  In [1]: cube = Cube(filename='../data/sdetect/minicube.fits')
+  In [1]: cube = Cube(filename='sdetect/minicube.fits')
 
   # The 3 dimensions of the cube:
   In [2]: cube.shape

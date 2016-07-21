@@ -14,9 +14,9 @@ In order to present the `~mpdaf.sdetect.Catalog` class, we will first run `~mpda
 
   In [1]: from mpdaf.sdetect import muselet
 
-  In [2]: cont, single, raw = muselet('../data/sdetect/minicube.fits',nbcube=False, del_sex=True)                       
+  In [2]: cont, single, raw = muselet('sdetect/minicube.fits',nbcube=False, del_sex=True)                       
   SExtractor version 2.19.5 (2014-03-21)
-  [INFO] muselet - Opening: ../data/sdetect/minicube.fits
+  [INFO] muselet - Opening: sdetect/minicube.fits
   [INFO] muselet - STEP 1: creates white light, variance, RGB and narrow-band images
   [INFO] muselet - STEP 2: runs SExtractor on white light, RGB and narrow-band images
   ...
@@ -159,7 +159,7 @@ Then, we visualize these sources on our white image by using `~mpdaf.sdetect.Cat
 
   In [10]: from mpdaf.obj import Cube
 
-  In [11]: cube = Cube('../data/sdetect/minicube.fits')
+  In [11]: cube = Cube('sdetect/minicube.fits')
 
   In [12]: ima = cube.sum(axis=0)
 

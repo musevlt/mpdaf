@@ -87,6 +87,12 @@ numpydoc_show_class_members = False
 # numpydoc_use_plots = True
 
 ipython_savefig_dir = '_static/_generated'
+ipython_execlines = [
+    'import numpy as np',
+    'import matplotlib.pyplot as plt',
+    'import os',
+    'os.chdir("../lib/mpdaf/data")'
+]
 
 # Class documentation should contain *both* the class docstring and
 # the __init__ docstring

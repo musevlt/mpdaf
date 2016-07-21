@@ -79,12 +79,12 @@ There are two common ways to obtain a `Spectrum <mpdaf.obj.Spectrum>` object:
   In [5]: setup_logging(stream=sys.stdout)
 
   # data array is read from the file (extension number 0)
-  In [4]: spe = Spectrum(filename='../data/obj/Spectrum_Variance.fits', ext=0)
+  In [4]: spe = Spectrum(filename='obj/Spectrum_Variance.fits', ext=0)
 
   In [10]: spe.info()
 
   # data and variance arrays read from the file (extension numbers 1 and 2)
-  In [4]: spe = Spectrum(filename='../data/obj/Spectrum_Variance.fits', ext=[0, 1])
+  In [4]: spe = Spectrum(filename='obj/Spectrum_Variance.fits', ext=[0, 1])
 
   In [10]: spe.info()
 
@@ -132,7 +132,7 @@ The original spectrum and its variance is first loaded:
 .. ipython::
   :okwarning:
 
-  In [5]: spvar = Spectrum('../data/obj/Spectrum_Variance.fits',ext=[0,1])
+  In [5]: spvar = Spectrum('obj/Spectrum_Variance.fits',ext=[0,1])
 
 Next the `mask_region <mpdaf.obj.Spectrum.mask_region>` method is used to mask a
 strong sky emission line around 5577 Angstroms:
@@ -241,7 +241,7 @@ fitted. The spectrum and associated variances are first loaded:
 .. ipython::
   :okwarning:
 
-  In [1]: specline = Spectrum('../data/obj/Spectrum_lines.fits')
+  In [1]: specline = Spectrum('obj/Spectrum_lines.fits')
 
 The spectrum around the [OIII] line is then plotted:
 

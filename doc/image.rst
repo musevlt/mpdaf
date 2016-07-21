@@ -70,7 +70,7 @@ There are two common ways to obtain an `~mpdaf.obj.Image` object:
   In [5]: setup_logging(stream=sys.stdout)
 
   # data and variance arrays read from the file (extension DATA and STAT)
-  In [2]: ima = Image('../data/obj/IMAGE-HDFS-1.34.fits')
+  In [2]: ima = Image('obj/IMAGE-HDFS-1.34.fits')
 
   In [10]: ima.info()
 
@@ -173,7 +173,7 @@ pixels can be adjusted to account for relative pointing errors:
   In [1]: setup_logging(stream=sys.stdout)
 
   # Read a small part of an HST image
-  In [2]: imahst = Image('../data/obj/HST-HDFS.fits')
+  In [2]: imahst = Image('obj/HST-HDFS.fits')
 
   # Resample the HST image onto the coordinate grid of the MUSE image
   In [3]: ima2hst = imahst.align_with_image(ima)
@@ -264,7 +264,7 @@ method:
 .. ipython::
   :okwarning:
 
-  In [1]: im = Image('../data/obj/a370II.fits')
+  In [1]: im = Image('obj/a370II.fits')
 
   In [1]: seg = im.segment(minsize=10, background=2100)
 

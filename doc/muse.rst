@@ -146,7 +146,7 @@ MUSE mosaic field map
 
   In [1]: from mpdaf.MUSE import FieldsMap
 
-  In [7]: fmap = FieldsMap('../data/sdetect/subcub_mosaic.fits', extname='FIELDMAP')
+  In [7]: fmap = FieldsMap('sdetect/subcub_mosaic.fits', extname='FIELDMAP')
   
 `~mpdaf.MUSE.FieldsMap.get_pixel_fields` returns a list of fields that cover a given pixel (y, x):
 

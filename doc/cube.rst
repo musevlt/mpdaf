@@ -76,7 +76,7 @@ There are two common ways to obtain a `~mpdaf.obj.Cube` object:
   In [1]: setup_logging(stream=sys.stdout)
 
   # data and variance arrays read from the file (extension DATA and STAT)
-  In [2]: obj1 = Cube('../data/obj/CUBE.fits')
+  In [2]: obj1 = Cube('obj/CUBE.fits')
 
   In [3]: obj1.info()
 
@@ -435,7 +435,7 @@ convolution by a gaussian kernel.
   In [5]: setup_logging(stream=sys.stdout)
 
   # Data and variance arrays read from the file (extension DATA and STAT)
-  In [6]: cube = Cube('../data/obj/Central_Datacube_bkg.fits')
+  In [6]: cube = Cube('obj/Central_Datacube_bkg.fits')
 
 First, we use the image iterator `~mpdaf.obj.iter_ima`, which operates
 similarly to the spectrum iterator described earlier on this page, except that

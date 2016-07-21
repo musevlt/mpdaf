@@ -25,7 +25,7 @@ method that returns a deep copy of these objects.  For example:
 
    In [1]: import numpy as np
 
-   In [2]: specline = Spectrum('../data/obj/Spectrum_lines.fits')
+   In [2]: specline = Spectrum('obj/Spectrum_lines.fits')
 
    In [4]: specline.info()
 

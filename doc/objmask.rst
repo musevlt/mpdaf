@@ -31,7 +31,7 @@ variance or mask arrays. For example:
 
    In [2]: from mpdaf.obj import Image
 
-   In [3]: ima = Image('../data/obj/a370II.fits')
+   In [3]: ima = Image('obj/a370II.fits')
 
    In [3]: ima.data[1000:1500, 800:1800] = np.ma.masked
 

@@ -17,7 +17,7 @@ sub-image that just contains the unmasked elliptical region:
 
    In [2]: from mpdaf.obj import Image
 
-   In [3]: ima = Image('../data/obj/a370II.fits')
+   In [3]: ima = Image('obj/a370II.fits')
 
    In [2]: center=[-1.5642, 39.9620]
 
@@ -96,7 +96,7 @@ the mean of several neighboring pixels of the input object.
   @suppress
   In [5]: setup_logging(stream=sys.stdout)
 
-  In [3]: ima = Image('../data/obj/a370II.fits')
+  In [3]: ima = Image('obj/a370II.fits')
 
   In [8]: ima.info()
 
@@ -129,7 +129,7 @@ center of pixel [0,0]:
   @suppress
   In [5]: setup_logging(stream=sys.stdout)
 
-  In [3]: ima = Image('../data/obj/a370II.fits')
+  In [3]: ima = Image('obj/a370II.fits')
 
   In [8]: ima.info()
 
