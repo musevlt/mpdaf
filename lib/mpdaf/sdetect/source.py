@@ -1994,11 +1994,11 @@ class SourceList(list):
             Format of the catalog. The format differs for the LINES table.
         """
         if not os.path.exists(path):
-            raise IOError("Invalid path: {0}".format(path))
+            raise ValueError("Invalid path: {}".format(path))
 
         path = os.path.normpath(path)
+        path2 = os.path.join(path, name)
 
-        path2 = path + '/' + name
         if not os.path.exists(path2):
             os.makedirs(path2)
         else:
@@ -2018,6 +2018,9 @@ class SourceList(list):
         try:
             cat.write(fcat)
         except:
+            logger = logging.getLogger(__name__)
+            logger.warning('Failed to write in FITS format, trying txt',
+                           exc_info=True)
             cat.write(fcat.replace('.fits', '.txt'), format='ascii')
 
     @classmethod
@@ -2028,10 +2031,11 @@ class SourceList(list):
         Parameters
         ----------
         path : str
-            Directory containing Source files
+            Directory containing `mpdaf.sdetect.Source` files
+
         """
         if not os.path.exists(path):
-            raise IOError("Invalid path: {0}".format(path))
+            raise ValueError("Invalid path: {}".format(path))
 
         slist = cls()
         for f in glob.glob(path + '/*.fits'):
