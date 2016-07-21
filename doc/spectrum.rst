@@ -40,9 +40,6 @@ There are two common ways to obtain a `Spectrum <mpdaf.obj.Spectrum>` object:
 
 .. ipython::
 
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
-
   In [6]: wave1 = WaveCoord(cdelt=1.25, crval=4000.0, cunit= u.angstrom)
 
   # numpy data array
@@ -67,9 +64,6 @@ There are two common ways to obtain a `Spectrum <mpdaf.obj.Spectrum>` object:
 
 .. ipython::
   :okwarning:
-
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
 
   # data array is read from the file (extension number 0)
   In [4]: spe = Spectrum(filename='obj/Spectrum_Variance.fits', ext=0)
@@ -250,9 +244,6 @@ automatically weighted by the variances of the spectrum:
 
 .. ipython::
 
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
-
   @savefig Spectrum_specline1.png width=4in
   In [3]: OIII = specline.gauss_fit(lmin=8350, lmax=8420, unit=u.angstrom, plot=True)
 
@@ -264,9 +255,6 @@ Next a fit is performed to the fainter Hbeta line, again using the variances
 to weight the least-squares Gaussian fit:
 
 .. ipython::
-
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
 
   In [5]: plt.figure()
 
@@ -291,9 +279,6 @@ If the wavelength of the line is already known, `line_gauss_fit
 line by fixing the Gaussian center:
 
 .. ipython::
-
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
 
   In [5]: plt.figure()
 

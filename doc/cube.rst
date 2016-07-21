@@ -41,9 +41,6 @@ There are two common ways to obtain a `~mpdaf.obj.Cube` object:
 
 .. ipython::
 
-  @suppress
-  In [1]: setup_logging(stream=sys.stdout)
-
   In [2]: wcs1 = WCS(crval=0, cdelt=0.2)
 
   In [3]: wave1 = WaveCoord(cdelt=1.25, crval=4000.0, cunit=u.angstrom)
@@ -64,9 +61,6 @@ There are two common ways to obtain a `~mpdaf.obj.Cube` object:
 
 .. ipython::
   :okwarning:
-
-  @suppress
-  In [1]: setup_logging(stream=sys.stdout)
 
   # data and variance arrays read from the file (extension DATA and STAT)
   In [2]: obj1 = Cube('obj/CUBE.fits')
@@ -226,9 +220,6 @@ a cube and return a new cube that contains the resulting spectra:
 .. ipython::
   :okwarning:
 
-  @suppress
-  In [1]: setup_logging(stream=sys.stdout)
-
   In [2]: from mpdaf.obj import Spectrum
 
   In [3]: cont2 = obj1.loop_spe_multiprocessing(f=Spectrum.poly_spec, deg=5)
@@ -274,9 +265,6 @@ Next we compute the equivalent width of the Hα emission in the galaxy.  First w
 isolate the emission line by truncating the object datacube in wavelength:
 
 .. ipython::
-
-  @suppress
-  In [1]: setup_logging(stream=sys.stdout)
 
   In [2]: plt.figure()
 
@@ -423,9 +411,6 @@ convolution by a gaussian kernel.
 
 .. ipython::
   :okwarning:
-
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
 
   # Data and variance arrays read from the file (extension DATA and STAT)
   In [6]: cube = Cube('obj/Central_Datacube_bkg.fits')

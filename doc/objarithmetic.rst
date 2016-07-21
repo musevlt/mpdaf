@@ -18,9 +18,6 @@ a given axis or axes of the cube:
 .. ipython::
   :okwarning:
 
-  @suppress
-  In [1]: setup_logging(stream=sys.stdout)
-
   In [1]: import matplotlib.pyplot as plt
 
   In [1]: from mpdaf.obj import Cube

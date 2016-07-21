@@ -86,9 +86,6 @@ the mean of several neighboring pixels of the input object.
 .. ipython::
   :okwarning:
 
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
-
   In [3]: ima = Image('obj/a370II.fits')
 
   In [8]: ima.info()
@@ -118,9 +115,6 @@ center of pixel [0,0]:
 
 .. ipython::
   :okwarning:
-
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
 
   In [3]: ima = Image('obj/a370II.fits')
 

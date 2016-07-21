@@ -69,9 +69,6 @@ spatial axes:
 .. ipython::
   :okwarning:
 
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
-
   In [2]: from mpdaf.obj import Cube
 
   # data array is read from the file (extension number 0)
@@ -99,9 +96,6 @@ Cube.data.  Finally `Cube[k1:k2,p1:p2,q1:q2] <mpdaf.obj.Cube.__getitem__>`
 returns a sub-cube, as demonstrated in the following example:
 
 .. ipython::
-
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
 
   In [2]: cube.info()
 

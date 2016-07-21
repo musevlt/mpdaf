@@ -40,9 +40,6 @@ There are two common ways to obtain an `~mpdaf.obj.Image` object:
 
 .. ipython::
 
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
-
   In [6]: wcs1 = WCS(crval=0, cdelt=0.2)
 
   # numpy data array
@@ -58,9 +55,6 @@ There are two common ways to obtain an `~mpdaf.obj.Image` object:
 
 .. ipython::
   :okwarning:
-
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
 
   # data and variance arrays read from the file (extension DATA and STAT)
   In [2]: ima = Image('obj/IMAGE-HDFS-1.34.fits')
@@ -161,9 +155,6 @@ pixels can be adjusted to account for relative pointing errors:
 
 .. ipython::
   :okwarning:
-
-  @suppress
-  In [1]: setup_logging(stream=sys.stdout)
 
   # Read a small part of an HST image
   In [2]: imahst = Image('obj/HST-HDFS.fits')
@@ -285,9 +276,6 @@ For a first approximation, some simple analysis methods are applied:
 
 .. ipython::
 
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
-
   # background value and its standard deviation
   In [1]: source.background()
 
@@ -302,9 +290,6 @@ isocontours (`~mpdaf.obj.Image.gauss_fit`):
 
 .. ipython::
 
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
-
   In [1]: gfit = source.gauss_fit(plot=False)
 
   @savefig Image11.png width=4in
@@ -315,9 +300,6 @@ functions of ground-based telescope observations, so next we perform a 2D MOFFAT
 fit to the same source (`~mpdaf.obj.Image.moffat_fit`):
 
 .. ipython::
-
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
 
   In [1]: mfit = source.moffat_fit(plot=True)
 
@@ -355,9 +337,6 @@ Finally we estimate the energy received from the source:
  - The `~mpdaf.obj.Image.eer_curve` method returns the normalized enclosed energy as a function radius.
 
 .. ipython::
-
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
 
   # Obtain the encircled flux within a radius of one FWHM of the source
   In [4]: source.ee(radius=source.fwhm(), cont=source.background()[0])

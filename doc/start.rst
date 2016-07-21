@@ -31,9 +31,6 @@ example:
 .. ipython::
   :okwarning:
 
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
-
   # data and variance arrays are read from DATA and STAT extensions of the file
   In [2]: cube = Cube('obj/CUBE.fits')
 
