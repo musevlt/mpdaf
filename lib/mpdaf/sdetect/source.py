@@ -818,6 +818,9 @@ class Source(object):
             except:
                 raise ValueError('Wrong type for errz in add_z')
 
+        if isinstance(desc, six.text_type):
+            desc = desc.encode('utf8')
+
         if self.z is None:
             if z != -9999:
                 self.z = Table(names=['Z_DESC', 'Z', 'Z_MIN', 'Z_MAX'],
@@ -866,6 +869,9 @@ class Source(object):
         errm : float
             Magnitude error.
         """
+        if isinstance(band, six.text_type):
+            band = band.encode('utf8')
+
         if self.mag is None:
             self.mag = Table(names=['BAND', 'MAG', 'MAG_ERR'],
                              rows=[[band, m, errm]],

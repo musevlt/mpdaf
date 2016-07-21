@@ -116,18 +116,18 @@ def test_write(tmpdir, source2):
 
     src = Source.from_file(filename)
 
-    sel = np.where(src.mag['BAND'] == six.b('TEST2'))[0][0]
+    sel = np.where(src.mag['BAND'] == 'TEST2')[0][0]
     assert src.mag['MAG'][sel] == 24.5
     assert src.mag['MAG_ERR'][sel] == 0.01
 
     assert 'z_test2' not in src.z['Z_DESC']
 
-    sel = np.where(src.z['Z_DESC'] == six.b('z_test'))[0][0]
+    sel = np.where(src.z['Z_DESC'] == 'z_test')[0][0]
     assert src.z['Z'][sel] == 0.07
     assert src.z['Z_MIN'][sel] == 0.07 - 0.007 / 2
     assert src.z['Z_MAX'][sel] == 0.07 + 0.007 / 2
 
-    sel = np.where(src.z['Z_DESC'] == six.b('z_test3'))[0][0]
+    sel = np.where(src.z['Z_DESC'] == 'z_test3')[0][0]
     assert src.z['Z'][sel] == 2.0
     assert src.z['Z_MIN'][sel] == 1.8
     assert src.z['Z_MAX'][sel] == 2.5
@@ -175,7 +175,7 @@ def test_line():
     src.add_line(['LBDA_OBS'], [4807.0], match=('LINE', 'TEST'))
     src.add_line(['LBDA_OBS'], [6000.0], match=('LINE', 'TESTMISS', False))
 
-    assert six.b('NEWCOL') in lines.colnames
+    assert 'NEWCOL' in lines.colnames
     assert six.b('TESTMISS') not in lines['LINE']
     assert lines['LBDA_OBS'][lines['LINE'] == six.b('TEST')][0] == 4807.
 
