@@ -244,15 +244,25 @@ class Catalog(Table):
                             d[col] = source.lines.dtype[col]
                             unit[col] = source.lines[col].unit
 
-                        for line, mask in zip(source.lines['LINE'].data.data,
-                                              source.lines['LINE'].data.mask):
-                            if not mask and line != 'None':
-                                try:
-                                    float(line)
-                                    logger.warning('source %d: line labeled \"%s\" not loaded' % (source.ID, line))
-                                except:
-                                    names_lines += ['%s_%s' % (line.replace('_', ''), col) for col in colnames]
-
+                        if np.ma.isMaskedArray(source.lines['LINE'].data):
+                        
+                            for line, mask in zip(source.lines['LINE'].data.data,
+                                                  source.lines['LINE'].data.mask):
+                                if not mask and line != 'None':
+                                    try:
+                                        float(line)
+                                        logger.warning('source %d: line labeled \"%s\" not loaded' % (source.ID, line))
+                                    except:
+                                        names_lines += ['%s_%s' % (line.replace('_', ''), col) for col in colnames]
+                        else:
+                            for line in source.lines['LINE'].data:
+                                if line != None:
+                                    try:
+                                        float(line)
+                                        logger.warning('source %d: line labeled \"%s\" not loaded' % (source.ID, line))
+                                    except:
+                                        names_lines += ['%s_%s' % (line.replace('_', ''), col) for col in colnames]
+                                        
                 names_lines = list(set(np.concatenate([names_lines])))
                 names_lines.sort()
                 dtype_lines = [d['_'.join(name.split('_')[1:])] for name in names_lines]
@@ -344,7 +354,7 @@ class Catalog(Table):
                             for typ in dtype_lines:
                                 row += [INVALID[typ.type]]
                         else:
-                            copy = source.lines['LINE'].data.data
+                            copy = source.lines['LINE'].data.copy()
                             for i in range(len(source.lines)):
                                 source.lines['LINE'][i] = source.lines['LINE'][i].replace('_', '')
                             for name, typ in zip(names_lines, dtype_lines):
@@ -356,8 +366,7 @@ class Catalog(Table):
                                     row += [source.lines[colname][source.lines['LINE'] == line].data.data[0]]
                                 else:
                                     row += [INVALID[typ.type]]
-                            for i in range(len(source.lines)):
-                                source.lines['LINE'][i] = copy[i]
+                            source.lines['LINE'] = copy
                     elif fmt == 'working':
                         keys = source.lines.colnames
                         if lmax == 1:
