@@ -2870,12 +2870,14 @@ class Image(ArithmeticMixin, DataArray):
 
         """
 
-        # Convert newstep to the newinc argument used by regrid().
-
+        # Convert newstep to the newinc argument used by regrid(),
+        # being careful to preserve the signs of the existing
+        # coordinate increments.
+        step_signs = np.sign(self.get_axis_increments())
         if is_number(newstep):
-            newinc = abs(newstep)
+            newinc = step_signs * abs(newstep)
         else:
-            newinc = [abs(newstep[0]), -abs(newstep[1])]
+            newinc = step_signs * abs(np.asarray(newstep))
 
         # Convert newstart to the refpos,refpix arguments expected by regrid().
 
