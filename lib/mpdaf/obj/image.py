@@ -4180,8 +4180,8 @@ class Image(ArithmeticMixin, DataArray):
         row = int(y + 0.5)
 
         # Is the mouse pointer within the image?
-        if col >= 0 and col < self.shape[0] and \
-                row >= 0 and row < self.shape[1]:
+        if row >= 0 and row < self.shape[0] and \
+                col >= 0 and col < self.shape[1]:
             pixsky = self.wcs.pix2sky([row, col], unit=self._unit)
             yc = pixsky[0][0]
             xc = pixsky[0][1]
