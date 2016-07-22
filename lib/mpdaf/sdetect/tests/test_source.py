@@ -16,35 +16,103 @@ from numpy.testing import assert_array_equal, assert_almost_equal
 from ...tests.utils import get_data_file
 
 
-@pytest.fixture
-def source1():
-    col_lines = ['LBDA_OBS', 'LBDA_OBS_ERR',
-                 'FWHM_OBS', 'FWHM_OBS_ERR',
-                 'LBDA_REST', 'LBDA_REST_ERR',
-                 'FWHM_REST', 'FWHM_REST_ERR',
-                 'FLUX', 'FLUX_ERR', 'LINE']
-    line1 = [5550, 10, 2.3, 0.2, 5600.0, 11.0, 2.5, 0.4, 28.0, 3.1,
-             six.b('[OIII]')]
-    line2 = [5550, 10, 2.3, 0.2, 5600.0, 11.0, 2.5, 0.4, 28.0879, 3.1,
-             six.b('[OIII]2')]
-    lines = Table(names=col_lines, rows=[line1, line2])
-    return Source.from_data(ID=1, ra=-65.1349958, dec=140.3057987,
-                            origin=('test', 'v0', 'cube.fits', 'v0'), lines=lines)
-
-
-@pytest.fixture
-def source2():
-    return Source.from_file(get_data_file('sdetect', 'sing-0032.fits'))
-
-
-def test_init(source2):
+def test_light():
     """Source class; testing initialisation"""
     src = Source._light_from_file(get_data_file('sdetect', 'sing-0032.fits'))
-    assert len(src.lines) == len(source2.lines)
+    assert len(src.lines) == 1
 
 
-def test_arg(source1):
-    """Source class: testing argument setter/getter"""
+def test_init():
+    with pytest.raises(ValueError):
+        Source({})
+
+
+def test_from_data():
+    src = Source.from_data(ID=1, ra=63.35592651367188, dec=10.46536922454834,
+                           origin=('test', 'v0', 'minicube.fits', 'v0'),
+                           proba=1.0, confi=2, extras={'FOO': 'BAR'})
+
+    assert src.DPROBA == 1.0
+    assert src.CONFI == 2
+    assert src.FOO == 'BAR'
+
+    src.test = 24.12
+    assert src.test == 24.12
+
+    src.add_attr('test', 'toto')
+    assert src.test == 'toto'
+
+    src.add_attr('test', 1.2345, desc='my keyword', unit=u.deg, fmt='.2f')
+    assert src.header.comments['TEST'] == 'my keyword u.deg %.2f'
+
+    src.remove_attr('test')
+    with pytest.raises(AttributeError):
+        src.test
+
+
+def test_from_file(tmpdir, source2):
+    filename = get_data_file('sdetect', 'sing-0032.fits')
+    src = Source.from_file(filename, ext='NB*')
+    assert 'NB7317' in src.images
+
+    src = Source.from_file(filename, ext=['NB*'])
+    assert 'NB7317' in src.images
+
+    src = Source.from_file(filename, ext='FOO')
+    assert 'NB7317' not in src.images
+
+
+def test_write(tmpdir, source2):
+    filename = str(tmpdir.join('source.fits'))
+
+    source2.add_mag('TEST', 2380, 46)
+    source2.add_mag('TEST2', 23.5, 0.1)
+    source2.add_mag('TEST2', 24.5, 0.01)
+
+    source2.add_z('z_test', 0.07, errz=0.007)
+    source2.add_z('z_test2', 1.0, errz=-9999)
+    source2.add_z('z_test3', 2.0, errz=(1.5, 2.2))
+    source2.add_z('z_test3', 2.0, errz=(1.8, 2.5))
+
+    with pytest.raises(ValueError):
+        source2.add_z('z_error', 2.0, errz=[0.001])
+
+    sel = np.where(source2.z['Z_DESC'] == six.b('z_test2'))[0][0]
+    assert source2.z['Z'][sel] == 1.0
+    assert source2.z['Z_MIN'][sel] is np.ma.masked
+    assert source2.z['Z_MAX'][sel] is np.ma.masked
+
+    source2.add_z('z_test2', -9999)
+    assert six.b('z_test2') not in source2.z['Z_DESC']
+
+    # cube = Cube(data=np.zeros((2, 2, 2)))
+    # source2.add_cube(cube, 'MUSE_WHITE', size=2, unit_size=None)
+    # source2.add_white_image(cube)
+    # source2.extract_spectra(cube)
+    source2.write(filename)
+    source2.info()
+    source2 = None
+
+    src = Source.from_file(filename)
+
+    sel = np.where(src.mag['BAND'] == 'TEST2')[0][0]
+    assert src.mag['MAG'][sel] == 24.5
+    assert src.mag['MAG_ERR'][sel] == 0.01
+
+    assert 'z_test2' not in src.z['Z_DESC']
+
+    sel = np.where(src.z['Z_DESC'] == 'z_test')[0][0]
+    assert src.z['Z'][sel] == 0.07
+    assert src.z['Z_MIN'][sel] == 0.07 - 0.007 / 2
+    assert src.z['Z_MAX'][sel] == 0.07 + 0.007 / 2
+
+    sel = np.where(src.z['Z_DESC'] == 'z_test3')[0][0]
+    assert src.z['Z'][sel] == 2.0
+    assert src.z['Z_MIN'][sel] == 1.8
+    assert src.z['Z_MAX'][sel] == 2.5
+
+
+def test_comments(source1):
     source1.add_comment('This is a test', 'mpdaf')
     assert source1.com001 == 'This is a test'
     source1.add_comment('an other', 'mpdaf')
@@ -54,11 +122,9 @@ def test_arg(source1):
     assert source1.com002 == 'an other'
     source1.remove_comment(1)
     source1.remove_comment(2)
-    source1.test = 24.12
-    assert source1.test == 24.12
-    source1.add_attr('test', 'toto')
-    assert source1.test == 'toto'
-    source1.remove_attr('test')
+
+
+def test_history(source1):
     source1.add_history('test_arg unitary test', 'mpdaf')
     assert source1.hist001 == 'test_arg unitary test'
     source1.add_history('an other', 'mpdaf')
@@ -70,35 +136,27 @@ def test_arg(source1):
     source1.remove_history(2)
 
 
-def test_z(source1):
-    """Source class: testing add_z method"""
-    source1.add_z('z_test', 0.07, 0.007)
-    z = source1.z
-    key = six.b('z_test')
-    assert z['Z'][z['Z_DESC'] == key] == 0.07
-    assert z['Z_MIN'][z['Z_DESC'] == key] == 0.07 - 0.007 / 2
-    assert z['Z_MAX'][z['Z_DESC'] == key] == 0.07 + 0.007 / 2
-
-
-def test_mag(source1):
-    """Source class: testing add_mag method"""
-    source1.add_mag('TEST', 2380, 46)
-    mag = source1.mag
-    assert mag['MAG'][mag['BAND'] == six.b('TEST')] == 2380
-    assert mag['MAG_ERR'][mag['BAND'] == six.b('TEST')] == 46
-
-
-def test_line(source1):
+def test_line():
     """Source class: testing add_line methods"""
-    cols = ['LBDA_OBS', 'LBDA_OBS_ERR', 'LINE']
-    values = [4810.0, 3.0, 'TEST']
-    source1.add_line(cols, values)
-    lines = source1.lines
-    assert lines['LBDA_OBS'][lines['LINE'] == six.b('TEST')] == 4810.
-    cols = ['LBDA_OBS']
-    values = [4807.0]
-    source1.add_line(cols, values, match=('LINE', 'TEST'))
-    assert lines['LBDA_OBS'][lines['LINE'] == six.b('TEST')] == 4807.
+    src = Source.from_data(ID=1, ra=63.35, dec=10.46,
+                           origin=('test', 'v0', 'minicube.fits', 'v0'))
+
+    src.add_line(['LBDA_OBS', 'LBDA_OBS_ERR', 'LINE'], [4810.123, 3.0, 'TEST'],
+                 units=[u.angstrom, u.angstrom, None],
+                 desc=['wavelength', 'error', 'name'],
+                 fmt=['.2f', '.3f', None])
+    lines = src.lines
+    assert lines['LBDA_OBS'].unit == u.angstrom
+    assert lines['LBDA_OBS'][lines['LINE'] == six.b('TEST')][0] == 4810.123
+
+    src.add_line(['LBDA_OBS', 'NEWCOL', 'NEWCOL2', 'NEWCOL3', 'LINE'],
+                 [4807.0, 2, 5.55, 'my new col', 'TEST2'])
+    src.add_line(['LBDA_OBS'], [4807.0], match=('LINE', 'TEST'))
+    src.add_line(['LBDA_OBS'], [6000.0], match=('LINE', 'TESTMISS', False))
+
+    assert 'NEWCOL' in lines.colnames
+    assert six.b('TESTMISS') not in lines['LINE']
+    assert lines['LBDA_OBS'][lines['LINE'] == six.b('TEST')][0] == 4807.
 
 
 def test_add_image(source2, a478hst):
@@ -148,7 +206,8 @@ def test_add_image(source2, a478hst):
 def test_add_narrow_band_image(minicube):
     """Source class: testing methods on narrow bands images"""
     src = Source.from_data(ID=1, ra=63.35592651367188, dec=10.46536922454834,
-                           origin=('test', 'v0', 'minicube.fits', 'v0'))
+                           origin=('test', 'v0', 'minicube.fits', 'v0'),
+                           proba=1.0, confi=2, extras={'FOO': 'BAR'})
     src.add_z('EMI', 0.086, 0.0001)
     src.add_white_image(minicube)
     src.add_narrow_band_images(minicube, 'EMI')
@@ -257,9 +316,3 @@ def test_add_FSF():
     assert src.FSF99BET == 2.8
     assert src.FSF99FWA == 0.855
     assert src.FSF99FWB == -3.551e-05
-
-#
-#     def test_catalog():
-#         """Source class: tests catalog creation"""
-#         cat = Catalog.from_sources([source1, source2])
-#         print cat
