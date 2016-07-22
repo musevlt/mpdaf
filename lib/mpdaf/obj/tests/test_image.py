@@ -9,7 +9,7 @@ import six
 
 from mpdaf.obj import Image, WCS, gauss_image, moffat_image
 from numpy.testing import (assert_array_equal, assert_allclose,
-                           assert_almost_equal)
+                           assert_almost_equal, assert_equal)
 
 from ...tests.utils import (assert_image_equal, generate_image, generate_cube,
                             assert_masked_allclose)
@@ -470,6 +470,7 @@ def test_fftconvolve():
     ima2 = ima.fftconvolve_gauss(center=None, flux=1., fwhm=(20000., 10000.),
                                  peak=False, rot=60., factor=1,
                                  unit_center=u.deg, unit_fwhm=u.arcsec)
+    
     g = ima2.gauss_fit(verbose=False)
     assert_almost_equal(g.fwhm[0], 20000, 2)
     assert_almost_equal(g.fwhm[1], 10000, 2)
@@ -516,3 +517,25 @@ def test_convolve():
     expected_data = np.ma.array(data=np.zeros(data_shape), mask=mask)
     expected_data.data[6:9,4:8] = kern
     assert_masked_allclose(ima.data, expected_data)
+    
+def test_dtype():
+    """Image class: testing dtype."""
+    wcs = WCS(cdelt=(0.2, 0.3), crval=(8.5, 12), shape=(40, 30), deg=True)
+    data = np.zeros((40, 30))
+    data[19, 14] = 1
+    ima = Image(wcs=wcs, data=data, dtype=np.int)
+    ima2 = ima.fftconvolve_gauss(center=None, flux=1., fwhm=(20000., 10000.),
+                                 peak=False, rot=60., factor=1,
+                                 unit_center=u.deg, unit_fwhm=u.arcsec)
+    
+    g = ima2.gauss_fit(verbose=False)
+    assert_almost_equal(g.fwhm[0], 20000, 2)
+    assert_almost_equal(g.fwhm[1], 10000, 2)
+    assert_almost_equal(g.center[0], 8.5)
+    assert_almost_equal(g.center[1], 12)
+    assert_equal(ima2.dtype, np.float64)
+    
+    ima3 = ima2.resample(newdim=(32,24), newstart=None,newstep=ima2.get_step(unit=u.arcsec)*0.8)
+    assert_equal(ima3.dtype, np.float64)
+    
+    

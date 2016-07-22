@@ -67,7 +67,6 @@ class LazyData(object):
         obj_dict['_data'] = data
         obj_dict['_mask'] = mask
         obj._loaded_data = True
-        obj.dtype = data.dtype
         return mask if self.label == '_mask' else data
 
     def __get__(self, obj, owner=None):
@@ -268,7 +267,7 @@ class DataArray(object):
         self.filename = filename
         self.wcs = None
         self.wave = None
-        self.dtype = dtype
+        self._dtype = dtype
         self.unit = unit
         self.data_header = data_header or fits.Header()
         self.primary_header = primary_header or fits.Header()
@@ -356,11 +355,11 @@ class DataArray(object):
 
             # Use a specified numpy data array?
             if data is not None:
-                if self.dtype is None:
-                    self.dtype = data.dtype
+                if self._dtype is None:
+                    self._dtype = data.dtype
                 # Force data to be in double instead of float
-                if self.dtype == np.float32:
-                    self.dtype = np.float64
+                if self._dtype == np.float32:
+                    self._dtype = np.float64
                 if isinstance(data, ma.MaskedArray):
                     self._data = np.array(data.data, dtype=self.dtype,
                                           copy=copy)
@@ -448,6 +447,15 @@ class DataArray(object):
                          for i in range(self.ndim, 0, -1))
         except (KeyError, TypeError):
             return None
+        
+    @property
+    def dtype(self):
+        """The type of the data."""
+        if self._loaded_data:
+            return self._data.dtype
+        else:
+            return self._dtype
+        
 
     @property
     def data(self):
@@ -740,7 +748,7 @@ class DataArray(object):
                     item=item)
                 if self._var_ext is not None:
                     var = read_slice_from_fits(hdu, ext=self._var_ext,
-                                               dtype=self.dtype, item=item)[0]
+                                               dtype=np.float64, item=item)[0]
                 if mask is None:
                     mask = ~(np.isfinite(data))
         else:
