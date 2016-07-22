@@ -314,7 +314,7 @@ class Source(object):
             self.masked_invalid()
 
     @classmethod
-    def from_data(cls, ID, ra, dec, origin, proba=None, confi=None,
+    def from_data(cls, ID, ra, dec, origin, proba=None, confid=None,
                   extras=None, lines=None, mag=None, z=None, spectra=None,
                   images=None, cubes=None, tables=None, mask_invalid=True):
         """Source constructor from a list of data.
@@ -335,7 +335,7 @@ class Source(object):
             4- Version of the FITS data cube
         proba : float
             Detection probability
-        confi : int
+        confid : int
             Expert confidence index
         extras : dict{key: value} or dict{key: (value, comment)}
             Extra keywords
@@ -377,8 +377,8 @@ class Source(object):
         header['CUBE_V'] = (origin[3], 'version of the datacube')
         if proba is not None:
             header['DPROBA'] = (proba, 'Detection probability')
-        if confi is not None:
-            header['CONFI'] = (confi, 'Confidence index')
+        if confid is not None:
+            header['CONFID'] = (confid, 'Confidence index')
         if extras is not None:
             header.update(extras)
 

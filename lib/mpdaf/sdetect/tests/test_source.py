@@ -30,10 +30,10 @@ def test_init():
 def test_from_data():
     src = Source.from_data(ID=1, ra=63.35592651367188, dec=10.46536922454834,
                            origin=('test', 'v0', 'minicube.fits', 'v0'),
-                           proba=1.0, confi=2, extras={'FOO': 'BAR'})
+                           proba=1.0, confid=2, extras={'FOO': 'BAR'})
 
     assert src.DPROBA == 1.0
-    assert src.CONFI == 2
+    assert src.CONFID == 2
     assert src.FOO == 'BAR'
 
     src.test = 24.12
@@ -207,7 +207,7 @@ def test_add_narrow_band_image(minicube):
     """Source class: testing methods on narrow bands images"""
     src = Source.from_data(ID=1, ra=63.35592651367188, dec=10.46536922454834,
                            origin=('test', 'v0', 'minicube.fits', 'v0'),
-                           proba=1.0, confi=2, extras={'FOO': 'BAR'})
+                           proba=1.0, confid=2, extras={'FOO': 'BAR'})
     src.add_z('EMI', 0.086, 0.0001)
     src.add_white_image(minicube)
     src.add_narrow_band_images(minicube, 'EMI')
