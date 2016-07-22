@@ -159,17 +159,17 @@ else:
 
 def memory_usage_psutil():
     # return the memory usage in MB
-    import psutil
+    try:
+        import psutil
+    except ImportError:
+        return 0
     process = psutil.Process(os.getpid())
     mem = process.memory_info()[0] / float(2 ** 20)
     return mem
 
 
 def memory_usage_resource():
-    try:
-        import resource
-    except ImportError:
-        return 0
+    import resource
     rusage_denom = 1024.
     if sys.platform == 'darwin':
         # ... it seems that in OSX the output is different units ...
