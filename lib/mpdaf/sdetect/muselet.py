@@ -47,6 +47,7 @@ from astropy.io import fits as pyfits
 from astropy.table import Table
 from os.path import join
 from six.moves import range
+import time
 
 from ..obj import Cube, Image
 from ..sdetect import Source, SourceList
@@ -92,12 +93,13 @@ def remove_files():
     shutil.rmtree('nb')
 
 
-def write_white(data, mvar, size1, wcs, unit):
+def write_white(data, mvar, size1, wcs, unit, cmd_sex):
     weight_data = np.ma.average(data[1:size1 - 1, :, :],
                                 weights=1. / mvar[1:size1 - 1, :, :], axis=0)
     weight = Image(wcs=wcs, data=np.ma.filled(weight_data, np.nan), unit=unit,
                    copy=False)
     weight.write('white.fits', savemask='nan')
+    subprocess.Popen([cmd_sex, 'white.fits'])
 
 
 def write_inv_variance(expmap, mvar, size1, wcs, unit):
@@ -111,25 +113,59 @@ def write_inv_variance(expmap, mvar, size1, wcs, unit):
     fullvar.write('inv_variance.fits', savemask='nan')
 
 
-def write_rgb(data, mvar, size1, wcs, unit):
+def write_rgb(data, mvar, size1, wcs, unit, cmd_sex):
+    #B
     nsfilter = int(size1 / 3.0)
     bdata = np.ma.average(data[1:nsfilter, :, :],
                           weights=1. / mvar[1:nsfilter, :, :], axis=0)
     bdata = np.ma.filled(bdata, np.nan)
+    b = Image(wcs=wcs, data=bdata, unit=unit, copy=False)
+    b.write('whiteb.fits', savemask='nan')
+    pb = subprocess.Popen([cmd_sex, '-CATALOG_NAME', 'B.cat',
+                           '-CATALOG_TYPE', 'ASCII_HEAD',
+                           'white.fits,whiteb.fits'])
+    #G
     gdata = np.ma.average(data[nsfilter:2 * nsfilter, :, :],
                           weights=1. / mvar[nsfilter:2 * nsfilter, :, :],
                           axis=0)
     gdata = np.ma.filled(gdata, np.nan)
+    g = Image(wcs=wcs, data=gdata, unit=unit, copy=False)
+    g.write('whiteg.fits', savemask='nan')
+    pg = subprocess.Popen([cmd_sex, '-CATALOG_NAME', 'G.cat',
+                           '-CATALOG_TYPE', 'ASCII_HEAD',
+                           'white.fits,whiteg.fits'])
+    #R
     rdata = np.ma.average(data[2 * nsfilter:size1 - 1, :, :],
                           weights=1. / mvar[2 * nsfilter:size1 - 1, :, :],
                           axis=0)
     rdata = np.ma.filled(rdata, np.nan)
     r = Image(wcs=wcs, data=rdata, unit=unit, copy=False)
-    g = Image(wcs=wcs, data=gdata, unit=unit, copy=False)
-    b = Image(wcs=wcs, data=bdata, unit=unit, copy=False)
     r.write('whiter.fits', savemask='nan')
-    g.write('whiteg.fits', savemask='nan')
-    b.write('whiteb.fits', savemask='nan')
+    pr = subprocess.Popen([cmd_sex, '-CATALOG_NAME', 'R.cat',
+                           '-CATALOG_TYPE', 'ASCII_HEAD',
+                           'white.fits,whiter.fits'])
+    
+    pb.wait()
+    tB = Table.read('B.cat', format='ascii.sextractor')
+    pg.wait()
+    tG = Table.read('G.cat', format='ascii.sextractor')
+    pr.wait()
+    tR = Table.read('R.cat', format='ascii.sextractor')
+  
+    names = ('NUMBER', 'X_IMAGE', 'Y_IMAGE',
+             'MAG_APER_B', 'MAGERR_APER_B',
+             'MAG_APER_G', 'MAGERR_APER_G',
+             'MAG_APER_R', 'MAGERR_APER_R')
+    tBGR = Table([tB['NUMBER'], tB['X_IMAGE'], tB['Y_IMAGE'],
+                  tB['MAG_APER'], tB['MAGERR_APER'],
+                  tG['MAG_APER'], tG['MAGERR_APER'],
+                  tR['MAG_APER'], tR['MAGERR_APER']], names=names)
+    tBGR.write('BGR.cat', format='ascii.fixed_width_two_line')
+  
+    os.remove('B.cat')
+    os.remove('G.cat')
+    os.remove('R.cat')
+    
 
 
 def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
@@ -139,17 +175,23 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
         os.mkdir("nb")
     except:
         pass
+    
+    with chdir('nb'):
+        # tests here if the files default.sex, default.conv, default.nnw and
+        # default.param exist.  Otherwise copy them
+        setup_config_files_nb()
+        shutil.copy('../inv_variance.fits', 'inv_variance.fits')
 
     if nbcube:
         outnbcube = np.empty(data.shape, dtype=np.float32)
-
-    f2 = open("nb/dosex", 'w')
 
     fwcube = np.ones((5, size2, size3)) * fw[:, np.newaxis, np.newaxis]
 
     hdr = wcs.to_header()
     
     data0 = np.ma.filled(data, 0)
+    
+    proc = []
 
     for k in range(2, size1 - 3):
         sys.stdout.write("Narrow band:%d/%d\r" % (k, size1 - 3))
@@ -160,8 +202,6 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
         imslice = np.average(data0[k - 2:k + 3, :, :],
                              weights=fwcube / mvar[k - 2:k + 3, :, :],
                              axis=0)
-        
-        
         if leftmax == 1:
             contleft = data0[0, :, :]
         elif leftmax > leftmin + 1:
@@ -189,22 +229,28 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
         if nbcube:
             outnbcube[k, :, :] = imnb[:, :]
 
-        if expmap is None:
-            f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' +
-                     kstr + '.cat nb' + kstr + '.fits\n')
-        else:
-            expmap[k, :, :].write('nb/exp' + kstr + '.fits', savemask='nan')
-            f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' +
-                     kstr + '.cat -WEIGHT_IMAGE exp' + kstr + '.fits nb' +
-                     kstr + '.fits\n')
+        with chdir('nb'):
+            if expmap is None:
+                p = subprocess.Popen([cmd_sex, '-CATALOG_TYPE', 'ASCII_HEAD',
+                                  '-CATALOG_NAME', 'nb%s.cat'%kstr,
+                                  'nb%s.fits'%kstr])
+            else:
+                expmap[k, :, :].write('exp' + kstr + '.fits', savemask='nan')
+                p = subprocess.Popen([cmd_sex,'-CATALOG_TYPE', 'ASCII_HEAD',
+                                  '-CATALOG_NAME', 'nb%s.cat'%kstr,
+                                  '-WEIGHT_IMAGE', 'exp%s.fits'%kstr,
+                                  'nb%s.fits'%kstr])
 
+            proc.append(p)
     sys.stdout.write("\n")
     sys.stdout.flush()
-    f2.close()
 
     if nbcube:
         outnbcubename = 'NB_' + os.path.basename(cubename)
         pyfits.writeto(outnbcubename, outnbcube, data_header, clobber=True)
+        
+    for p in proc:
+        p.wait()
 
 
 def step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta):
@@ -225,57 +271,63 @@ def step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta):
         expmap = Cube(expmapcube)
 
     logger.info("muselet - STEP 1: creates white light, variance, RGB and "
-                "narrow-band images")
-
-    write_white(c.data, mvar, size1, c.wcs, c.unit)
-    write_inv_variance(expmap, mvar, size1, c.wcs, c.unit)
-    write_rgb(c.data, mvar, size1, c.wcs, c.unit)
-    write_nb(c.data, mvar, expmap, size1, size2, size3, fw, nbcube, delta,
-             c.wcs, c.unit, cmd_sex, cubename, c.data_header)
-
-
-def step2(cmd_sex):
-    logger = logging.getLogger(__name__)
-    logger.info("muselet - STEP 2: runs SExtractor on white light, RGB and "
-                "narrow-band images")
+                "narrow-band images and runs SExtractor on them")
+    
     # tests here if the files default.sex, default.conv, default.nnw and
     # default.param exist.  Otherwise copy them
     setup_config_files()
 
-    subprocess.call(cmd_sex + ' white.fits', shell=True)
-    subprocess.call(cmd_sex + ' -CATALOG_NAME R.cat -CATALOG_TYPE ASCII_HEAD white.fits,whiter.fits', shell=True)
-    subprocess.call(cmd_sex + ' -CATALOG_NAME G.cat -CATALOG_TYPE ASCII_HEAD white.fits,whiteg.fits', shell=True)
-    subprocess.call(cmd_sex + ' -CATALOG_NAME B.cat -CATALOG_TYPE ASCII_HEAD white.fits,whiteb.fits', shell=True)
+    write_white(c.data, mvar, size1, c.wcs, c.unit, cmd_sex)
+    write_inv_variance(expmap, mvar, size1, c.wcs, c.unit)
+    write_rgb(c.data, mvar, size1, c.wcs, c.unit, cmd_sex)
+    write_nb(c.data, mvar, expmap, size1, size2, size3, fw, nbcube, delta,
+             c.wcs, c.unit, cmd_sex, cubename, c.data_header)
 
-    tB = Table.read('B.cat', format='ascii.sextractor')
-    tG = Table.read('G.cat', format='ascii.sextractor')
-    tR = Table.read('R.cat', format='ascii.sextractor')
 
-    names = ('NUMBER', 'X_IMAGE', 'Y_IMAGE',
-             'MAG_APER_B', 'MAGERR_APER_B',
-             'MAG_APER_G', 'MAGERR_APER_G',
-             'MAG_APER_R', 'MAGERR_APER_R')
-    tBGR = Table([tB['NUMBER'], tB['X_IMAGE'], tB['Y_IMAGE'],
-                  tB['MAG_APER'], tB['MAGERR_APER'],
-                  tG['MAG_APER'], tG['MAGERR_APER'],
-                  tR['MAG_APER'], tR['MAGERR_APER']], names=names)
-    tBGR.write('BGR.cat', format='ascii.fixed_width_two_line')
+# def step2(cmd_sex):
+#     logger = logging.getLogger(__name__)
+#     logger.info("muselet - STEP 2: runs SExtractor on white light, RGB and "
+#                 "narrow-band images")
+#     # tests here if the files default.sex, default.conv, default.nnw and
+#     # default.param exist.  Otherwise copy them
+#     setup_config_files()
 
-    os.remove('B.cat')
-    os.remove('G.cat')
-    os.remove('R.cat')
+    #subprocess.Popen(["rm","-r","some.file"])
+#     subprocess.call(cmd_sex + ' white.fits', shell=True)
+#     subprocess.call(cmd_sex + ' -CATALOG_NAME R.cat -CATALOG_TYPE ASCII_HEAD white.fits,whiter.fits', shell=True)
+#     subprocess.call(cmd_sex + ' -CATALOG_NAME G.cat -CATALOG_TYPE ASCII_HEAD white.fits,whiteg.fits', shell=True)
+#     subprocess.call(cmd_sex + ' -CATALOG_NAME B.cat -CATALOG_TYPE ASCII_HEAD white.fits,whiteb.fits', shell=True)
+# 
+#     tB = Table.read('B.cat', format='ascii.sextractor')
+#     
+#     tG = Table.read('G.cat', format='ascii.sextractor')
+#     tR = Table.read('R.cat', format='ascii.sextractor')
+#  
+#     names = ('NUMBER', 'X_IMAGE', 'Y_IMAGE',
+#              'MAG_APER_B', 'MAGERR_APER_B',
+#              'MAG_APER_G', 'MAGERR_APER_G',
+#              'MAG_APER_R', 'MAGERR_APER_R')
+#     tBGR = Table([tB['NUMBER'], tB['X_IMAGE'], tB['Y_IMAGE'],
+#                   tB['MAG_APER'], tB['MAGERR_APER'],
+#                   tG['MAG_APER'], tG['MAGERR_APER'],
+#                   tR['MAG_APER'], tR['MAGERR_APER']], names=names)
+#     tBGR.write('BGR.cat', format='ascii.fixed_width_two_line')
+#  
+#     os.remove('B.cat')
+#     os.remove('G.cat')
+#     os.remove('R.cat')
 
-    with chdir('nb'):
-        # tests here if the files default.sex, default.conv, default.nnw and
-        # default.param exist.  Otherwise copy them
-        setup_config_files_nb()
-        shutil.copy('../inv_variance.fits', 'inv_variance.fits')
-        st = os.stat('dosex')
-        os.chmod('dosex', st.st_mode | stat.S_IEXEC)
-        out = subprocess.check_output('./dosex', shell=True,
-                                      stderr=subprocess.STDOUT)
-        with io.open('dosex.log', 'w', encoding='utf8') as f:
-            f.write(out.decode('utf-8'))
+#     with chdir('nb'):
+#         # tests here if the files default.sex, default.conv, default.nnw and
+#         # default.param exist.  Otherwise copy them
+#         setup_config_files_nb()
+#         shutil.copy('../inv_variance.fits', 'inv_variance.fits')
+#         st = os.stat('dosex')
+#         os.chmod('dosex', st.st_mode | stat.S_IEXEC)
+#         out = subprocess.check_output('./dosex', shell=True,
+#                                       stderr=subprocess.STDOUT)
+#         with io.open('dosex.log', 'w', encoding='utf8') as f:
+#             f.write(out.decode('utf-8'))
 
 
 def step3(cubename, ima_size, clean, skyclean, radius, nlines_max):
