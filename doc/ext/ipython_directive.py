@@ -285,8 +285,9 @@ def block_parser(part, rgxin, rgxout, fmtin, fmtout):
 class EmbeddedSphinxShell(object):
     """An embedded IPython instance to run inside Sphinx"""
 
-    def __init__(self, exec_lines=None):
+    def __init__(self, exec_lines=None, app=None):
 
+        self.app = app
         self.cout = StringIO()
 
         if exec_lines is None:
@@ -366,6 +367,8 @@ class EmbeddedSphinxShell(object):
             if not more:
                 source_raw = splitter.raw_reset()
                 self.IP.run_cell(source_raw, store_history=store_history)
+                if not self.IP.last_execution_succeeded:
+                    self.app.warn('Failed to execute line: {}'.format(line))
         finally:
             sys.stdout = stdout
 
@@ -910,7 +913,8 @@ class IPythonDirective(Directive):
 
             # Must be called after (potentially) importing matplotlib and
             # setting its backend since exec_lines might import pylab.
-            self.shell = EmbeddedSphinxShell(exec_lines)
+            self.shell = EmbeddedSphinxShell(
+                exec_lines, self.state.document.settings.env.app)
 
             # Store IPython directive to enable better error messages
             self.shell.directive = self
