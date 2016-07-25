@@ -135,15 +135,6 @@ class Catalog(Table):
             hist = ['HIST']
         else:
             hist = []
-   
-#         i = 1
-#         while 'COM%03d' % i in list(d.keys()):
-#             excluded_cards.append('COM%03d' % i)
-#             i += 1
-#         i = 1
-#         while 'HIST%03d' % i in list(d.keys()):
-#             excluded_cards.append('HIST%03d' % i)
-#             i += 1
 
         d = {key: value for key, value in d.items() if key in keys}
         names_hdr = list(d.keys())
@@ -193,7 +184,11 @@ class Catalog(Table):
         # magnitudes
         lmag = [len(source.mag) for source in sources if source.mag is not None]
         if len(lmag) != 0:
-            names_mag = list(set(np.concatenate([source.mag['BAND'].data.data for source in sources
+            if np.ma.isMaskedArray(source.mag['BAND'].data): 
+                names_mag = list(set(np.concatenate([source.mag['BAND'].data.data for source in sources
+                                                 if source.mag is not None])))
+            else:
+                names_mag = list(set(np.concatenate([source.mag['BAND'].data for source in sources
                                                  if source.mag is not None])))
             names_mag += ['%s_ERR' % mag for mag in names_mag]
             names_mag.sort()
@@ -203,7 +198,11 @@ class Catalog(Table):
         # redshifts
         lz = [len(source.z) for source in sources if source.z is not None]
         if len(lz) != 0:
-            names_z = list(set(np.concatenate([source.z['Z_DESC'].data.data for source in sources
+            if np.ma.isMaskedArray(source.z['Z_DESC'].data):
+                names_z = list(set(np.concatenate([source.z['Z_DESC'].data.data for source in sources
+                                               if source.z is not None])))
+            else:
+                names_z = list(set(np.concatenate([source.z['Z_DESC'].data for source in sources
                                                if source.z is not None])))
             names_z = ['Z_%s' % z for z in names_z]
             colnames = list(set(np.concatenate([source.z.colnames for source in sources if source.z is not None])))
@@ -315,32 +314,56 @@ class Catalog(Table):
                     row += [np.nan for key in names_mag]
                 else:
                     keys = source.mag['BAND']
-                    for key in names_mag:
-                        if key in keys:
-                            row += [source.mag['MAG'][source.mag['BAND'] == key].data.data[0]]
-                        elif key[-4:] == '_ERR' and key[:-4] in keys:
-                            row += [source.mag['MAG_ERR'][source.mag['BAND'] == key[:-4]].data.data[0]]
-                        else:
-                            row += [np.nan]
+                    if np.ma.isMaskedArray(source.mag['BAND'].data): 
+                        for key in names_mag:
+                            if key in keys:
+                                row += [source.mag['MAG'][source.mag['BAND'] == key].data.data[0]]
+                            elif key[-4:] == '_ERR' and key[:-4] in keys:
+                                row += [source.mag['MAG_ERR'][source.mag['BAND'] == key[:-4]].data.data[0]]
+                            else:
+                                row += [np.nan]
+                    else:
+                        for key in names_mag:
+                            if key in keys:
+                                row += [source.mag['MAG'][source.mag['BAND'] == key].data[0]]
+                            elif key[-4:] == '_ERR' and key[:-4] in keys:
+                                row += [source.mag['MAG_ERR'][source.mag['BAND'] == key[:-4]].data[0]]
+                            else:
+                                row += [np.nan]
             
             # redshifts
             if len(lz) != 0:
                 if source.z is None:
                     row += [np.nan for key in names_z]
                 else:
-                    keys = source.z['Z_DESC']
-                    for key in names_z:
-                        key = key[2:]
-                        if key in keys:
-                            row += [source.z['Z'][source.z['Z_DESC'] == key].data.data[0]]
-                        elif key[-4:] == '_MAX' and key[:-4] in keys:
-                            row += [source.z['Z_MAX'][source.z['Z_DESC'] == key[:-4]].data.data[0]]
-                        elif key[-4:] == '_MIN' and key[:-4] in keys:
-                            row += [source.z['Z_MIN'][source.z['Z_DESC'] == key[:-4]].data.data[0]]
-                        elif key[-4:] == '_ERR' and key[:-4] in keys:
-                            row += [source.z['Z_ERR'][source.z['Z_DESC'] == key[:-4]].data.data[0]]
-                        else:
-                            row += [np.nan]
+                    if np.ma.isMaskedArray(source.z['Z_DESC'].data):
+                        keys = source.z['Z_DESC']
+                        for key in names_z:
+                            key = key[2:]
+                            if key in keys:
+                                row += [source.z['Z'][source.z['Z_DESC'] == key].data.data[0]]
+                            elif key[-4:] == '_MAX' and key[:-4] in keys:
+                                row += [source.z['Z_MAX'][source.z['Z_DESC'] == key[:-4]].data.data[0]]
+                            elif key[-4:] == '_MIN' and key[:-4] in keys:
+                                row += [source.z['Z_MIN'][source.z['Z_DESC'] == key[:-4]].data.data[0]]
+                            elif key[-4:] == '_ERR' and key[:-4] in keys:
+                                row += [source.z['Z_ERR'][source.z['Z_DESC'] == key[:-4]].data.data[0]]
+                            else:
+                                row += [np.nan]
+                    else:
+                        keys = source.z['Z_DESC']
+                        for key in names_z:
+                            key = key[2:]
+                            if key in keys:
+                                row += [source.z['Z'][source.z['Z_DESC'] == key].data[0]]
+                            elif key[-4:] == '_MAX' and key[:-4] in keys:
+                                row += [source.z['Z_MAX'][source.z['Z_DESC'] == key[:-4]].data[0]]
+                            elif key[-4:] == '_MIN' and key[:-4] in keys:
+                                row += [source.z['Z_MIN'][source.z['Z_DESC'] == key[:-4]].data[0]]
+                            elif key[-4:] == '_ERR' and key[:-4] in keys:
+                                row += [source.z['Z_ERR'][source.z['Z_DESC'] == key[:-4]].data[0]]
+                            else:
+                                row += [np.nan]
             
             # lines
             if len(llines) != 0:
@@ -357,15 +380,26 @@ class Catalog(Table):
                             copy = source.lines['LINE'].data.copy()
                             for i in range(len(source.lines)):
                                 source.lines['LINE'][i] = source.lines['LINE'][i].replace('_', '')
-                            for name, typ in zip(names_lines, dtype_lines):
-                                colname = '_'.join(name.split('_')[1:])
-                                line = name.split('_')[0]
-                                if 'LINE' in source.lines.colnames and \
-                                   colname in source.lines.colnames and \
-                                   line in source.lines['LINE'].data.data:
-                                    row += [source.lines[colname][source.lines['LINE'] == line].data.data[0]]
-                                else:
-                                    row += [INVALID[typ.type]]
+                            if np.ma.isMaskedArray(source.lines['LINE'].data):
+                                for name, typ in zip(names_lines, dtype_lines):
+                                    colname = '_'.join(name.split('_')[1:])
+                                    line = name.split('_')[0]
+                                    if 'LINE' in source.lines.colnames and \
+                                       colname in source.lines.colnames and \
+                                       line in source.lines['LINE'].data.data:
+                                        row += [source.lines[colname][source.lines['LINE'] == line].data.data[0]]
+                                    else:
+                                        row += [INVALID[typ.type]]
+                            else:
+                                for name, typ in zip(names_lines, dtype_lines):
+                                    colname = '_'.join(name.split('_')[1:])
+                                    line = name.split('_')[0]
+                                    if 'LINE' in source.lines.colnames and \
+                                       colname in source.lines.colnames and \
+                                       line in source.lines['LINE'].data:
+                                        row += [source.lines[colname][source.lines['LINE'] == line].data[0]]
+                                    else:
+                                        row += [INVALID[typ.type]]
                             source.lines['LINE'] = copy
                     elif fmt == 'working':
                         keys = source.lines.colnames
