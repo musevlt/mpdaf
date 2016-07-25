@@ -168,20 +168,6 @@ def memory_usage_psutil():
     return mem
 
 
-def memory_usage_resource():
-    import resource
-    rusage_denom = 1024.
-    if sys.platform == 'darwin':
-        # ... it seems that in OSX the output is different units ...
-        rusage_denom = rusage_denom * rusage_denom
-    mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / rusage_denom
-    return mem
-
-
-# mem_resource = []
-# mem_psutil = []
-
-
 #-----------------------------------------------------------------------------
 # Globals
 #-----------------------------------------------------------------------------
@@ -431,10 +417,7 @@ class EmbeddedSphinxShell(object):
         is_savefig = decorator is not None and \
                      decorator.startswith('@savefig')
 
-        # mem_resource.append(memory_usage_resource())
-        # mem_psutil.append(memory_usage_psutil())
-        print("{} / {} : {}".format(int(memory_usage_resource()),
-                                    int(memory_usage_psutil()), input))
+        print("{} Mb : {}".format(int(memory_usage_psutil()), input))
 
         input_lines = input.split('\n')
         if len(input_lines) > 1:
