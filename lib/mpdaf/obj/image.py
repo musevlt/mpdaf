@@ -2870,12 +2870,14 @@ class Image(ArithmeticMixin, DataArray):
 
         """
 
-        # Convert newstep to the newinc argument used by regrid().
-
+        # Convert newstep to the newinc argument used by regrid(),
+        # being careful to preserve the signs of the existing
+        # coordinate increments.
+        step_signs = np.sign(self.get_axis_increments())
         if is_number(newstep):
-            newinc = abs(newstep)
+            newinc = step_signs * abs(newstep)
         else:
-            newinc = [abs(newstep[0]), -abs(newstep[1])]
+            newinc = step_signs * abs(np.asarray(newstep))
 
         # Convert newstart to the refpos,refpix arguments expected by regrid().
 
@@ -4178,8 +4180,8 @@ class Image(ArithmeticMixin, DataArray):
         row = int(y + 0.5)
 
         # Is the mouse pointer within the image?
-        if col >= 0 and col < self.shape[0] and \
-                row >= 0 and row < self.shape[1]:
+        if row >= 0 and row < self.shape[0] and \
+                col >= 0 and col < self.shape[1]:
             pixsky = self.wcs.pix2sky([row, col], unit=self._unit)
             yc = pixsky[0][0]
             xc = pixsky[0][1]
