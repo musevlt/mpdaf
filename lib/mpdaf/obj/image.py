@@ -3715,37 +3715,39 @@ class Image(ArithmeticMixin, DataArray):
         else:
             return False
 
-    def fftconvolve(self, other, inplace=False):
-        """Convolve an Image with a 2D array or another Image.
+    def convolve(self, other, inplace=False):
+        """Convolve an Image with a 2D array or another Image, using the
+        discrete convolution equation.
 
-        The convolution is performed by multiplying the Fourier
-        transforms of the two images. This is much faster than the
-        traditional discrete convolution equation when the size of
-        other is large.
+        This function, which uses the discrete convolution equation, is
+        usually slower than Image.fftconvolve(). However it can be faster when
+        other.data.size is small, and it always uses much less memory, so it
+        is sometimes the only practical choice.
 
-        Masked values in self.data and self.var are replaced with
-        zeros before the convolution is performed.
+        Masked values in self.data and self.var are replaced with zeros before
+        the convolution is performed, but they are masked again after the
+        convolution.
 
-        If self.var exists, the variances are propagated using the
-        equation:
+        If self.var exists, the variances are propagated using the equation:
 
           result.var = self.var (*) other**2
 
-        where (*) indicates convolution. This equation is the result
-        of the usual rules of error-propagation, when applied to the
-        discrete convolution equation.
+        where (*) indicates convolution. This equation can be derived by
+        applying the usual rules of error-propagation to the discrete
+        convolution equation.
 
-        Masked pixels in the input data remain masked in the output.
+        The speed of this function scales as O(Nd x No) where
+        Nd=self.data.size and No=other.data.size.
 
-        Uses `scipy.signal.fftconvolve`.
+        Uses `scipy.signal.convolve`.
 
         Parameters
         ----------
         other : Image or np.ndarray
             The 2D array with which to convolve the image in self.data.
             This array can be an image of the same size as self, or it
-            can be a smaller image, such as a small gaussian to use for
-            smoothing the larger image.
+            can be a smaller image, such as a small gaussian to use to
+            smooth the larger image.
 
             When ``other`` contains a symmetric filtering function, such
             as a two-dimensional gaussian, the center of the function
@@ -3765,8 +3767,68 @@ class Image(ArithmeticMixin, DataArray):
         out : `~mpdaf.obj.Image`
 
         """
-        # Delegate the task to DataArray._fftconvolve()
-        return self._fftconvolve(other=other, inplace=inplace)
+        # Delegate the task to DataArray._convolve()
+        return self._convolve(signal.convolve, other=other, inplace=inplace)
+
+    def fftconvolve(self, other, inplace=False):
+        """Convolve an Image with a 2D array or another Image, using the
+        Fourier convolution theorem.
+
+        This function, which performs the convolution by multiplying the
+        Fourier transforms of the two images, is usually much faster than
+        Image.convolve(), except when other.data.size is small. However it
+        uses much more memory, so Image.convolve() is sometimes a better
+        choice.
+
+        Masked values in self.data and self.var are replaced with zeros before
+        the convolution is performed, but they are masked again after the
+        convolution.
+
+        If self.var exists, the variances are propagated using the equation:
+
+          result.var = self.var (*) other**2
+
+        where (*) indicates convolution. This equation can be derived by
+        applying the usual rules of error-propagation to the discrete
+        convolution equation.
+
+        The speed of this function scales as O(Nd x log(Nd)) where
+        Nd=self.data.size.  It temporarily allocates a pair of arrays that
+        have the sum of the shapes of self.shape and other.shape, rounded up
+        to a power of two along each axis. This can involve a lot of memory
+        being allocated. For this reason, when other.shape is small,
+        Image.convolve() may be more efficient than Image.fftconvolve().
+
+        Uses `scipy.signal.fftconvolve`.
+
+        Parameters
+        ----------
+        other : Image or np.ndarray
+            The 2D array with which to convolve the image in self.data.  This
+            array can be an image of the same size as self, or it can be a
+            smaller image, such as a small 2D gaussian to use to smooth the
+            larger image.
+
+            When ``other`` contains a symmetric filtering function, such as a
+            two-dimensional gaussian, the center of the function should be
+            placed at the center of pixel:
+
+             ``(other.shape - 1) // 2``
+
+            If other is an MPDAF Image object, note that only its data array
+            is used. Masked values in this array are treated as zero. Any
+            variances found in other.var are ignored.
+        inplace : bool
+            If False (the default), return the results in a new Image.
+            If True, record the result in self and return that.
+
+        Returns
+        -------
+        out : `~mpdaf.obj.Image`
+
+        """
+        # Delegate the task to DataArray._convolve()
+        return self._convolve(signal.fftconvolve, other=other, inplace=inplace)
 
     def fftconvolve_gauss(self, center=None, flux=1., fwhm=(1., 1.),
                           peak=False, rot=0., factor=1, unit_center=u.deg,

@@ -134,7 +134,6 @@ import tempfile
 import ast
 import warnings
 import shutil
-import resource
 
 
 # Third-party
@@ -156,6 +155,32 @@ if PY3:
     from io import StringIO
 else:
     from StringIO import StringIO
+
+
+def memory_usage_psutil():
+    # return the memory usage in MB
+    try:
+        import psutil
+    except ImportError:
+        return 0
+    process = psutil.Process(os.getpid())
+    mem = process.memory_info()[0] / float(2 ** 20)
+    return mem
+
+
+def memory_usage_resource():
+    import resource
+    rusage_denom = 1024.
+    if sys.platform == 'darwin':
+        # ... it seems that in OSX the output is different units ...
+        rusage_denom = rusage_denom * rusage_denom
+    mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / rusage_denom
+    return mem
+
+
+# mem_resource = []
+# mem_psutil = []
+
 
 #-----------------------------------------------------------------------------
 # Globals
@@ -406,7 +431,11 @@ class EmbeddedSphinxShell(object):
         is_savefig = decorator is not None and \
                      decorator.startswith('@savefig')
 
-        print(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss, input)
+        # mem_resource.append(memory_usage_resource())
+        # mem_psutil.append(memory_usage_psutil())
+        print("{} / {} : {}".format(int(memory_usage_resource()),
+                                    int(memory_usage_psutil()), input))
+
         input_lines = input.split('\n')
         if len(input_lines) > 1:
             if input_lines[-1] != "":
@@ -907,9 +936,14 @@ class IPythonDirective(Directive):
         #NOTE: this may be borked if there are multiple seen_doc tmp files
         #check time stamp?
         if not self.state.document.current_source in self.seen_docs:
-            self.shell.IP.history_manager.reset()
-            self.shell.IP.execution_count = 1
-            self.shell.IP.prompt_manager.width = 0
+            print('=====\n', self.state.document.current_source, '\n=====')
+            self.shell.IP.reset()
+            try:
+                self.shell.IP.prompt_manager.width = 0
+            except:
+                # Removed in IPython 5
+                pass
+
             self.seen_docs.add(self.state.document.current_source)
 
         # and attach to shell so we don't have to pass them around

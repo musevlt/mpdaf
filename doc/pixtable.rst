@@ -83,7 +83,7 @@ We read the `~mpdaf.drs.PixTable` from the disk and check its basic informations
   7    origin      ImageHDU         8   (1, 323885723)   int32
   [INFO] None
 
-  In [6]: print pix.nrows
+  In [6]: print(pix.nrows)
   323885723
 
 This is a pixtable containing a MUSE exposure of HDFS.
@@ -332,7 +332,7 @@ OK, so now we can test it on our object pixtable::
 
   In [58]: res = fitgauss(y, x, data, data.max(), center, 0.7/3600.)
 
-  In [59]: print 'Peak:',res[0][0], 'Center:',res[0][1:3], 'Fwhm:',res[0][3]*2.355*3600
+  In [59]: print('Peak:',res[0][0], 'Center:',res[0][1:3], 'Fwhm:',res[0][3]*2.355*3600)
   Peak: 1465.94006348 Center: [ 0.  0.] Fwhm: 0.7
 
 We have used `~mpdaf.drs.PixTable.get_data` to have the data column.
@@ -347,7 +347,7 @@ In place of the relative coordinates, we can use the absolute position on the sk
 
   In [62]: res = fitgauss(y, x, data, data.max(), center, 0.7/3600.)
 
-  In [63]: print 'Peak:',res[0][0], 'Center:',res[0][1:3], 'Fwhm:',res[0][3]*2.355*3600
+  In [63]: print('Peak:',res[0][0], 'Center:',res[0][1:3], 'Fwhm:',res[0][3]*2.355*3600)
   Peak: 1465.94006348 Center: [ -60.56826963  338.23752675] Fwhm: 0.7
 
 

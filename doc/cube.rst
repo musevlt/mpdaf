@@ -17,13 +17,6 @@ fluxes. Finally a mask array is provided for indicating bad pixels.
 The fluxes and their variances are stored in numpy masked arrays, so virtually
 all numpy and scipy functions can be applied to them.
 
-.. ipython::
-   :suppress:
-
-   In [1]: import sys
-
-   In [2]: from mpdaf import setup_logging
-
 Preliminary imports:
 
 .. ipython::
@@ -48,9 +41,6 @@ There are two common ways to obtain a `~mpdaf.obj.Cube` object:
 
 .. ipython::
 
-  @suppress
-  In [1]: setup_logging(stream=sys.stdout)
-
   In [2]: wcs1 = WCS(crval=0, cdelt=0.2)
 
   In [3]: wave1 = WaveCoord(cdelt=1.25, crval=4000.0, cunit=u.angstrom)
@@ -72,11 +62,8 @@ There are two common ways to obtain a `~mpdaf.obj.Cube` object:
 .. ipython::
   :okwarning:
 
-  @suppress
-  In [1]: setup_logging(stream=sys.stdout)
-
   # data and variance arrays read from the file (extension DATA and STAT)
-  In [2]: obj1 = Cube('../data/obj/CUBE.fits')
+  In [2]: obj1 = Cube('obj/CUBE.fits')
 
   In [3]: obj1.info()
 
@@ -198,7 +185,7 @@ six spectra of a small 2 x 3 pixel sub-cube, and determine their peak values:
 
   @verbatim
   In [4]: for sp in iter_spe(small):
-     ...:     print sp.data.max()
+     ...:     print(sp.data.max())
      ...:
 
 Now let's use the same approach to do the continuum subtraction procedure.  We
@@ -232,9 +219,6 @@ a cube and return a new cube that contains the resulting spectra:
 
 .. ipython::
   :okwarning:
-
-  @suppress
-  In [1]: setup_logging(stream=sys.stdout)
 
   In [2]: from mpdaf.obj import Spectrum
 
@@ -281,9 +265,6 @@ Next we compute the equivalent width of the Hα emission in the galaxy.  First w
 isolate the emission line by truncating the object datacube in wavelength:
 
 .. ipython::
-
-  @suppress
-  In [1]: setup_logging(stream=sys.stdout)
 
   In [2]: plt.figure()
 
@@ -367,7 +348,7 @@ the Hα line and the continuum mean flux at the same location:
   # Compute the equivalent width of the line.
   In [6]: ew = fline/cline
 
-  In [7]: print fline, cline, ew
+  In [7]: print(fline, cline, ew)
 
 Finally we repeat this for all datacube spectra, and we save the Hα flux and
 equivalent width in two images.  We start by creating two images with identical
@@ -431,11 +412,8 @@ convolution by a gaussian kernel.
 .. ipython::
   :okwarning:
 
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
-
   # Data and variance arrays read from the file (extension DATA and STAT)
-  In [6]: cube = Cube('../data/obj/Central_Datacube_bkg.fits')
+  In [6]: cube = Cube('obj/Central_Datacube_bkg.fits')
 
 First, we use the image iterator `~mpdaf.obj.iter_ima`, which operates
 similarly to the spectrum iterator described earlier on this page, except that

@@ -17,7 +17,7 @@ sub-image that just contains the unmasked elliptical region:
 
    In [2]: from mpdaf.obj import Image
 
-   In [3]: ima = Image('../data/obj/a370II.fits')
+   In [3]: ima = Image('obj/a370II.fits')
 
    In [2]: center=[-1.5642, 39.9620]
 
@@ -84,19 +84,9 @@ of sky that they cover. They do this by creating a new object whose pixels are
 the mean of several neighboring pixels of the input object.
 
 .. ipython::
-   :suppress:
-
-   In [4]: import sys
-
-   In [4]: from mpdaf import setup_logging
-
-.. ipython::
   :okwarning:
 
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
-
-  In [3]: ima = Image('../data/obj/a370II.fits')
+  In [3]: ima = Image('obj/a370II.fits')
 
   In [8]: ima.info()
 
@@ -126,10 +116,7 @@ center of pixel [0,0]:
 .. ipython::
   :okwarning:
 
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
-
-  In [3]: ima = Image('../data/obj/a370II.fits')
+  In [3]: ima = Image('obj/a370II.fits')
 
   In [8]: ima.info()
 

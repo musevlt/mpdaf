@@ -2,13 +2,6 @@
 Getting Started
 ***************
 
-.. ipython::
-   :suppress:
-
-   In [4]: import sys
-
-   In [4]: from mpdaf import setup_logging
-
 Importing MPDAF
 ---------------
 
@@ -38,11 +31,8 @@ example:
 .. ipython::
   :okwarning:
 
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
-
   # data and variance arrays are read from DATA and STAT extensions of the file
-  In [2]: cube = Cube('../data/obj/CUBE.fits')
+  In [2]: cube = Cube('obj/CUBE.fits')
 
   In [10]: cube.info()
 

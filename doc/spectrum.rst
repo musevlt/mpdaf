@@ -15,13 +15,6 @@ calculations. Finally a mask array is provided for indicating bad pixels.
 The fluxes and their variances are stored in numpy masked arrays, so
 virtually all numpy and scipy functions can be applied to them.
 
-.. ipython::
-   :suppress:
-
-   In [4]: import sys
-
-   In [4]: from mpdaf import setup_logging
-
 Preliminary imports:
 
 .. ipython::
@@ -46,9 +39,6 @@ There are two common ways to obtain a `Spectrum <mpdaf.obj.Spectrum>` object:
   they can be numpy masked arrays in which bad pixels have been masked.
 
 .. ipython::
-
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
 
   In [6]: wave1 = WaveCoord(cdelt=1.25, crval=4000.0, cunit= u.angstrom)
 
@@ -75,16 +65,13 @@ There are two common ways to obtain a `Spectrum <mpdaf.obj.Spectrum>` object:
 .. ipython::
   :okwarning:
 
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
-
   # data array is read from the file (extension number 0)
-  In [4]: spe = Spectrum(filename='../data/obj/Spectrum_Variance.fits', ext=0)
+  In [4]: spe = Spectrum(filename='obj/Spectrum_Variance.fits', ext=0)
 
   In [10]: spe.info()
 
   # data and variance arrays read from the file (extension numbers 1 and 2)
-  In [4]: spe = Spectrum(filename='../data/obj/Spectrum_Variance.fits', ext=[0, 1])
+  In [4]: spe = Spectrum(filename='obj/Spectrum_Variance.fits', ext=[0, 1])
 
   In [10]: spe.info()
 
@@ -132,7 +119,7 @@ The original spectrum and its variance is first loaded:
 .. ipython::
   :okwarning:
 
-  In [5]: spvar = Spectrum('../data/obj/Spectrum_Variance.fits',ext=[0,1])
+  In [5]: spvar = Spectrum('obj/Spectrum_Variance.fits',ext=[0,1])
 
 Next the `mask_region <mpdaf.obj.Spectrum.mask_region>` method is used to mask a
 strong sky emission line around 5577 Angstroms:
@@ -241,7 +228,7 @@ fitted. The spectrum and associated variances are first loaded:
 .. ipython::
   :okwarning:
 
-  In [1]: specline = Spectrum('../data/obj/Spectrum_lines.fits')
+  In [1]: specline = Spectrum('obj/Spectrum_lines.fits')
 
 The spectrum around the [OIII] line is then plotted:
 
@@ -257,9 +244,6 @@ automatically weighted by the variances of the spectrum:
 
 .. ipython::
 
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
-
   @savefig Spectrum_specline1.png width=4in
   In [3]: OIII = specline.gauss_fit(lmin=8350, lmax=8420, unit=u.angstrom, plot=True)
 
@@ -271,9 +255,6 @@ Next a fit is performed to the fainter Hbeta line, again using the variances
 to weight the least-squares Gaussian fit:
 
 .. ipython::
-
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
 
   In [5]: plt.figure()
 
@@ -298,9 +279,6 @@ If the wavelength of the line is already known, `line_gauss_fit
 line by fixing the Gaussian center:
 
 .. ipython::
-
-  @suppress
-  In [5]: setup_logging(stream=sys.stdout)
 
   In [5]: plt.figure()
 

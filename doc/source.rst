@@ -45,61 +45,60 @@ A `~mpdaf.sdetect.Source` object O consist of:
 Create a source
 ===============
 
-First, we create a source object from spatial coordinates (by using `~mpdaf.sdetect.Source.from_data`)::
+First, we create a source object from spatial coordinates (by using `~mpdaf.sdetect.Source.from_data`):
+
+.. ipython::
 
   In [1]: from mpdaf.sdetect import Source
 
-  In [2]: s = Source.from_data(ID=36, ra=338.2260, dec=-60.5640, origin=('test','v0.0','DATACUBE-HDFS.fits'))
+  In [2]: s = Source.from_data(ID=36, ra=338.2260, dec=-60.5640, origin=('test','v0.0','DATACUBE-HDFS.fits', 'v1.34'))
 
-`~mpdaf.sdetect.Source.info` print informations::
+`~mpdaf.sdetect.Source.info` print informations:
+
+.. ipython::
 
   In [3]: s.info()
-  [INFO] ORIGIN  = 'test    '           / detection software                             
-  [INFO] CUBE    = 'DATACUBE-HDFS.fits' / MUSE data cube                                 
-  [INFO] RA      =              338.226 / RA u.degree %.7f                               
-  [INFO] ORIGIN_V= 'v0.0    '           / version of the detection software              
-  [INFO] DEC     =              -60.564 / DEC u.degree %.7f                              
-  [INFO] ID      =                   36 / object ID u.unitless %d
   
-Informations have been save in the pyfits header instance but we can access and update each of them as an attribute::
+Informations have been save in the pyfits header instance but we can access and update each of them as an attribute:
+
+.. ipython::
 
   In [4]: s.ORIGIN
-  Out[4]: 'test'
 
   In [5]: s.ORIGIN = 'test2'
   
 It is easy to add a new information that will be save as keyword in the FITS header.
 For example we save the pixel coordinates::
 
-  In [17]: s.y, s.x = cube.wcs.sky2pix((s.dec,s.ra))[0]
+  In [6]: from mpdaf.obj import Cube
+
+  In [7]: cube = Cube('DATACUBE-HDFS-1.34.fits')
+
+  In [8]: s.y, s.x = cube.wcs.sky2pix((s.dec,s.ra))[0]
   
 Nevertheless, the special methods `~mpdaf.sdetect.Source.add_comment` and `~mpdaf.sdetect.Source.add_history` are recommended to save comment and history with the good syntax.
   
 Now, we use the method `~mpdaf.sdetect.Source.add_cube` to extract and save in the Source object a subcube of 5 arcseconds centered on the source center and for the 5000:8500 Angstroem range::
 
-  In [4]: from mpdaf.obj import Cube
-
-  In [5]: cube = Cube('DATACUBE-HDFS-1.34.fits')
-
-  In [6]: s.add_cube(cube, 'MUSE', size=5, lbda=(5000,8500))
+  In [9]: s.add_cube(cube, 'MUSE', size=5, lbda=(5000,8500))
 
 `~mpdaf.sdetect.Source.add_white_image` method computes from the MUSE data cube a white image of 5 arcseconds around the object and appends it to the images dictionary::
 
-  In [7]: s.add_white_image(cube=cube, size=5)
+  In [10]: s.add_white_image(cube=cube, size=5)
 
-  In [8]: s.images['MUSE_WHITE'].plot(title='MUSE_WHITE')
-  Out[8]: <matplotlib.image.AxesImage at 0x7f66cdcee590>
+  In [11]: s.images['MUSE_WHITE'].plot(title='MUSE_WHITE')
+  Out[11]: <matplotlib.image.AxesImage at 0x7f66cdcee590>
   
 .. image::  _static/sources/source1.png
 
 `~mpdaf.sdetect.Source.add_image` extracts an image centered on the source center and appends it to the images dictionary.
 We can for example extract an HST image centered on the source center and append it to the images dictionary::
 
-  In [9]: from mpdaf.obj import Image
+  In [12]: from mpdaf.obj import Image
 
-  In [10]: ima_hst = Image('f606_comb.fits')
+  In [13]: ima_hst = Image('f606_comb.fits')
 
-  In [11]: s.add_image(ima_hst, name='HST_F606W')
+  In [14]: s.add_image(ima_hst, name='HST_F606W')
   
 .. image::  _static/sources/source2.png
 
@@ -112,7 +111,7 @@ In the same way:
  
 At the end our Source looks like that::
 
-  In [12]: s.info()
+  In [15]: s.info()
   [INFO] ORIGIN  = 'test2   '           / detection software                             
   [INFO] CUBE    = 'DATACUBE-HDFS.fits' / MUSE data cube                                 
   [INFO] RA      =              338.226 / RA u.degree %.7f                               
@@ -128,7 +127,7 @@ At the end our Source looks like that::
  
 We can now `~mpdaf.sdetect.Source.write` the Source object in a FITS file and load it latter by using `~mpdaf.sdetect.Source.from_file`::
  
-  In [13]: s.write('source%04d.fits'%s.id)
+  In [16]: s.write('source%04d.fits'%s.id)
   
 Extract spectra
 ===============

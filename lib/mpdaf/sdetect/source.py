@@ -287,10 +287,10 @@ class Source(object):
     def __init__(self, header, lines=None, mag=None, z=None, spectra=None,
                  images=None, cubes=None, tables=None, mask_invalid=True):
         # Check required keywords in the FITS header
-        for key in ('RA', 'DEC', 'ID', 'CUBE', 'ORIGIN', 'ORIGIN_V'):
+        for key in ('RA', 'DEC', 'ID', 'CUBE', 'CUBE_V', 'ORIGIN', 'ORIGIN_V'):
             if key not in header:
-                raise IOError('{} keyword is mandatory to create a Source '
-                              'object'.format(key))
+                raise ValueError('{} keyword is mandatory to create a Source '
+                                 'object'.format(key))
 
         self.header = header
         # Table LINES
@@ -314,7 +314,7 @@ class Source(object):
             self.masked_invalid()
 
     @classmethod
-    def from_data(cls, ID, ra, dec, origin, proba=None, confi=None,
+    def from_data(cls, ID, ra, dec, origin, proba=None, confid=None,
                   extras=None, lines=None, mag=None, z=None, spectra=None,
                   images=None, cubes=None, tables=None, mask_invalid=True):
         """Source constructor from a list of data.
@@ -332,9 +332,10 @@ class Source(object):
             2- Version of the detector software which creates this object
             3- Name of the FITS data cube from which this object has been
             extracted.
+            4- Version of the FITS data cube
         proba : float
             Detection probability
-        confi : int
+        confid : int
             Expert confidence index
         extras : dict{key: value} or dict{key: (value, comment)}
             Extra keywords
@@ -372,11 +373,12 @@ class Source(object):
         header['DEC'] = (dec, 'DEC u.degree %.7f')
         header['ORIGIN'] = (origin[0], 'detection software')
         header['ORIGIN_V'] = (origin[1], 'version of the detection software')
-        header['CUBE'] = (os.path.basename(origin[2]), 'MUSE data cube')
+        header['CUBE'] = (os.path.basename(origin[2]), 'datacube')
+        header['CUBE_V'] = (origin[3], 'version of the datacube')
         if proba is not None:
             header['DPROBA'] = (proba, 'Detection probability')
-        if confi is not None:
-            header['CONFI'] = (confi, 'Confidence index')
+        if confid is not None:
+            header['CONFID'] = (confid, 'Confidence index')
         if extras is not None:
             header.update(extras)
 
@@ -411,10 +413,8 @@ class Source(object):
         elif isinstance(ext, six.string_types):
             extnames = [h.name for h in hdulist[1:] if re.findall(ext, h.name)]
         else:
-            extnames = []
-            for e in ext:
-                extnames += [h.name for h in hdulist[1:]
-                             if re.findall(e, h.name)]
+            extnames = [h.name for e in ext
+                        for h in hdulist[1:] if re.findall(e, h.name)]
 
         lines = (_read_masked_table(hdulist, 'LINES') if 'LINES' in extnames
                  else None)
@@ -490,6 +490,10 @@ class Source(object):
                 logger = logging.getLogger(__name__)
                 logger.warning(e)
         hdulist.close()
+        if 'CUBE_V' not in hdr:
+            logger = logging.getLogger(__name__)
+            logger.warning('CUBE_V keyword in missing. It will be soon mandatory and its absence will return an error')
+            hdr['CUBE_V'] = ('', 'datacube version')
         return cls(hdr, lines, mag, z, spectra, images, cubes, tables,
                    mask_invalid=mask_invalid)
 
@@ -529,6 +533,12 @@ class Source(object):
                 logger.warning(e)
 
         hdulist.close()
+        
+        if 'CUBE_V' not in hdr:
+            logger = logging.getLogger(__name__)
+            logger.warning('CUBE_V keyword in missing. It will be soon mandatory and its absence will return an error')
+            hdr['CUBE_V'] = ('', 'datacube version')
+        
         return cls(hdr, lines, mag, z, None, None, None, tables)
 
     def write(self, filename):
@@ -632,8 +642,12 @@ class Source(object):
         hist = set(filter(lambda k: re.match('HIST\d\d\d', k), keys))
         keys = keys - excluded_cards - coms - hist
 
-        for key in itertools.chain(keys, coms, hist):
+        for key in keys:
             info(self.header.cards[key])
+        for key in itertools.chain(sorted(coms), sorted(hist)):
+            info("%s = %s / %s"%(self.header.cards[key][0],
+                                 self.header.cards[key][1],
+                                 self.header.cards[key][2]))
 
         if any([self.spectra, self.images, self.cubes, self.tables]):
             print('')
@@ -803,6 +817,10 @@ class Source(object):
                 zmin, zmax = errz
             except:
                 raise ValueError('Wrong type for errz in add_z')
+
+        if isinstance(desc, six.text_type):
+            desc = desc.encode('utf8')
+
         if self.z is None:
             if z != -9999:
                 self.z = Table(names=['Z_DESC', 'Z', 'Z_MIN', 'Z_MAX'],
@@ -822,12 +840,13 @@ class Source(object):
                 self.z['Z_DESC'].unit = 'unitless'
         else:
             if desc in self.z['Z_DESC']:
+                sel = self.z['Z_DESC'] == desc
                 if z != -9999:
-                    self.z['Z'][self.z['Z_DESC'] == desc] = z
-                    self.z['Z_MIN'][self.z['Z_DESC'] == desc] = zmin
-                    self.z['Z_MAX'][self.z['Z_DESC'] == desc] = zmax
+                    self.z['Z'][sel] = z
+                    self.z['Z_MIN'][sel] = zmin
+                    self.z['Z_MAX'][sel] = zmax
                 else:
-                    index = np.where((self.z['Z_DESC'] == desc))[0][0]
+                    index = np.where(sel)[0][0]
                     self.z.remove_row(index)
             else:
                 if z != -9999:
@@ -850,6 +869,9 @@ class Source(object):
         errm : float
             Magnitude error.
         """
+        if isinstance(band, six.text_type):
+            band = band.encode('utf8')
+
         if self.mag is None:
             self.mag = Table(names=['BAND', 'MAG', 'MAG_ERR'],
                              rows=[[band, m, errm]],
@@ -1972,11 +1994,11 @@ class SourceList(list):
             Format of the catalog. The format differs for the LINES table.
         """
         if not os.path.exists(path):
-            raise IOError("Invalid path: {0}".format(path))
+            raise ValueError("Invalid path: {}".format(path))
 
         path = os.path.normpath(path)
+        path2 = os.path.join(path, name)
 
-        path2 = path + '/' + name
         if not os.path.exists(path2):
             os.makedirs(path2)
         else:
@@ -1996,6 +2018,9 @@ class SourceList(list):
         try:
             cat.write(fcat)
         except:
+            logger = logging.getLogger(__name__)
+            logger.warning('Failed to write in FITS format, trying txt',
+                           exc_info=True)
             cat.write(fcat.replace('.fits', '.txt'), format='ascii')
 
     @classmethod
@@ -2006,13 +2031,14 @@ class SourceList(list):
         Parameters
         ----------
         path : str
-            Directory containing Source files
+            Directory containing `mpdaf.sdetect.Source` files
+
         """
         if not os.path.exists(path):
-            raise IOError("Invalid path: {0}".format(path))
+            raise ValueError("Invalid path: {}".format(path))
 
         slist = cls()
         for f in glob.glob(path + '/*.fits'):
-            slist.append(self.source_class.from_file(f))
+            slist.append(cls.source_class.from_file(f))
 
         return slist

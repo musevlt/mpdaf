@@ -9,23 +9,13 @@ Spectrum, Image and Cube objects provide a `copy <mpdaf.obj.DataArray.copy>`
 method that returns a deep copy of these objects.  For example:
 
 .. ipython::
-   :suppress:
-
-   In [4]: import sys
-
-   In [4]: from mpdaf import setup_logging
-
-.. ipython::
    :okwarning:
-
-   @suppress
-   In [5]: setup_logging(stream=sys.stdout)
 
    In [1]: from mpdaf.obj import Spectrum
 
    In [1]: import numpy as np
 
-   In [2]: specline = Spectrum('../data/obj/Spectrum_lines.fits')
+   In [2]: specline = Spectrum('obj/Spectrum_lines.fits')
 
    In [4]: specline.info()
 
@@ -51,9 +41,6 @@ spectrum is cloned, and then the clone is assigned a zero-filled data array.
 
 .. ipython::
 
-   @suppress
-   In [5]: setup_logging(stream=sys.stdout)
-
    In [5]: spe2 = spe.clone()
 
    In [1]: spe2.info()
@@ -75,9 +62,6 @@ cloned and the cloning method is passed ``np.zeros``, to create a zero-filled
 data array.
 
 .. ipython::
-
-   @suppress
-   In [5]: setup_logging(stream=sys.stdout)
 
    In [5]: spe3 = spe.clone(data_init=np.zeros)
 
