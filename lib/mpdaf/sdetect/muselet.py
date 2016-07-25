@@ -148,6 +148,8 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
     fwcube = np.ones((5, size2, size3)) * fw[:, np.newaxis, np.newaxis]
 
     hdr = wcs.to_header()
+    
+    data0 = np.ma.filled(data, 0)
 
     for k in range(2, size1 - 3):
         sys.stdout.write("Narrow band:%d/%d\r" % (k, size1 - 3))
@@ -158,26 +160,28 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
         imslice = np.ma.average(data[k - 2:k + 3, :, :],
                                 weights=fwcube / mvar[k - 2:k + 3, :, :],
                                 axis=0)
+        
+        
         if leftmax == 1:
-            contleft = data[0, :, :]
+            contleft = data0[0, :, :]
         elif leftmax > leftmin + 1:
-            contleft = np.ma.median(data[leftmin:leftmax, :, :], axis=0)
+            contleft = np.median(data0[leftmin:leftmax, :, :], axis=0)
         elif rightmax == size1:
-            contleft = data[-1, :, :]
+            contleft = data0[-1, :, :]
         else:
-            contleft = data[0, :, :]
+            contleft = data0[0, :, :]
 
         if rightmax > rightmin:
-            contright = np.ma.median(data[rightmin:rightmax, :, :], axis=0)
+            contright = np.median(data0[rightmin:rightmax, :, :], axis=0)
         else:
-            contright = data[0, :, :]
+            contright = data0[0, :, :]
 
         sizeleft = leftmax - leftmin
         sizeright = rightmax - rightmin
         contmean = ((sizeleft * contleft + sizeright * contright) /
                     (sizeleft + sizeright))
         kstr = "%04d" % k
-        imnb = np.ma.filled(imslice - contmean, np.nan)
+        imnb = np.ma.filled(imslice, np.nan) - contmean
         hdulist = pyfits.HDUList([pyfits.PrimaryHDU(),
                                   pyfits.ImageHDU(name='DATA', data=imnb, header=hdr)])
         hdulist.writeto('nb/nb%04d.fits'%k, clobber=True)
