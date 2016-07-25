@@ -774,8 +774,8 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
         if step == 1:
             step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta)
 
-        if step <= 2:
-            step2(cmd_sex)
+#         if step <= 2:
+#             step2(cmd_sex)
 
         if step <= 3:
             continuum_lines, single_lines, raw_catalog = step3(
