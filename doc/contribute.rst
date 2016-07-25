@@ -5,8 +5,7 @@ Contributing
 This page gives some advices on how to contribute code to MPDAF. Astropy has
 a `well-detailed documentation`_ on contributing to an open-source project
 using Git, which is also mostly applicable to MPDAF, except for a few
-differences: MPDAF uses a Gitlab instance instead of Github, and the tests
-runner is `nose`_ instead of py.test.
+differences. MPDAF uses a Gitlab instance instead of Github.
 
 Getting an account
 ------------------
@@ -67,9 +66,9 @@ recommended to add a few tests to test the new feature you developed.
 It is also a good idea to run the tests locally before pushing to the server,
 to find errors more quickly and avoid running too many builds on the server.
 
-To run the tests, you need to install `nose`_::
+To run the tests, you need to install `pytest`_::
 
-    pip install nose
+    pip install pytest
 
 And run::
 
@@ -84,7 +83,7 @@ It is also possible to run tests on multiple Python versions with `tox`_::
 .. _build status: https://git-cral.univ-lyon1.fr/MUSE/mpdaf/builds
 .. _git-cral: https://git-cral.univ-lyon1.fr
 .. _Merge request: https://git-cral.univ-lyon1.fr/MUSE/mpdaf/merge_requests
-.. _nose: https://nose.readthedocs.io/en/latest/
+.. _pytest: https://pytest.org/
 .. _tox: http://tox.readthedocs.io/en/stable/
 .. _virtual environment: http://docs.astropy.org/en/latest/development/workflow/virtual_pythons.html
 .. _well-detailed documentation: http://docs.astropy.org/en/latest/development/workflow/development_workflow.html

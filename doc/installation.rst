@@ -16,7 +16,7 @@ MPDAF has the following strict requirements:
 
 Several additional packages can be installed for optional features:
 
-- `Nose <http://pypi.python.org/pypi/nose/>`_, to run the unit tests.
+- `Pytest <http://pytest.org/>`_, to run the unit tests.
 - `Numexpr <http://pypi.python.org/pypi/numexpr>`_, to optimize some
   computations with pixtables.
 - `fitsio <https://pypi.python.org/pypi/fitsio>`_, a Python wrapper for
@@ -95,6 +95,6 @@ Tips for Mac OS users
 Unit tests
 ==========
 
-To run the unit tests, you need to install the *nose* package, then run::
+To run the unit tests, you need to install the *pytest* package, then run::
 
     $ python setup.py test
