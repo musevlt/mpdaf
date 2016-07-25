@@ -516,22 +516,6 @@ class Source(object):
         mag = _read_masked_table(hdulist, 'MAG') if 'MAG' in hdulist else None
         z = _read_masked_table(hdulist, 'Z') if 'Z' in hdulist else None
 
-        tables = {}
-        for i in range(1, len(hdulist)):
-            try:
-                hdu = hdulist[i]
-                if 'EXTNAME' not in hdu.header:
-                    raise IOError('%s: Extension %d without EXTNAME' % (
-                        os.path.basename(filename), i))
-
-                extname = hdu.header['EXTNAME']
-                # tables
-                if extname[:3] == 'TAB':
-                    tables[extname[4:]] = _read_masked_table(hdulist, extname)
-            except Exception as e:
-                logger = logging.getLogger(__name__)
-                logger.warning(e)
-
         hdulist.close()
         
         if 'CUBE_V' not in hdr:
@@ -539,7 +523,7 @@ class Source(object):
             logger.warning('CUBE_V keyword in missing. It will be soon mandatory and its absence will return an error')
             hdr['CUBE_V'] = ('', 'datacube version')
         
-        return cls(hdr, lines, mag, z, None, None, None, tables)
+        return cls(hdr, lines, mag, z, None, None, None, None)
 
     def write(self, filename):
         """Write the source object in a FITS file.
