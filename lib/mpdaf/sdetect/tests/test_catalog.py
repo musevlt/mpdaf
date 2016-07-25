@@ -2,6 +2,9 @@
 
 from __future__ import absolute_import, division, print_function
 
+import pytest
+import sys
+
 from mpdaf.sdetect import Catalog
 
 from numpy.testing import assert_array_equal
