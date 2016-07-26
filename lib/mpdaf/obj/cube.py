@@ -1203,6 +1203,7 @@ class Cube(ArithmeticMixin, DataArray):
             If True, rebin the original cube in-place, and return that.
 
         """
+        factor = np.asarray(factor)
         return self._rebin(factor, margin, inplace)
 
     def loop_spe_multiprocessing(self, f, cpu=None, verbose=True, **kargs):
