@@ -1374,3 +1374,32 @@ def test_non_masked_data():
                            ma.array(new_var.data, mask=expected_mask))
     assert spec.data.mask is spec.mask
     assert spec.var.mask is spec.mask
+    
+def test_float32_ndarray():
+
+    nz = 2
+    ny = 3
+    nx = 4
+    ntotal = nz * ny * nx
+    data = np.arange(ntotal).reshape(nz, ny, nx).astype(np.float32)
+    var = np.random.rand(ntotal).reshape(nz, ny, nx) - 0.5
+    mask = var < 0.0
+
+    # Create a DataArray with the above contents.
+    d = DataArray(data=data, var=var, mask=mask)
+
+    # Is the shape of the DataArray correct?
+    assert d.shape == data.shape
+
+    # Check that the enclosed data and variance arrays match
+    # the arrays that were passed to the constructor.
+    assert_allclose(d.data, data)
+    assert_allclose(d.var, var)
+
+    # Make sure that the enclosed data and var arrays are
+    # masked arrays that both have the mask that was passed to the
+    # constructor, and that these and the masked property are in
+    # fact all references to the same mask.
+    assert_array_equal(d.data.mask, mask)
+    assert_array_equal(d.var.mask, mask)
+    assert d.data.mask is d.mask and d.var.mask is d.mask

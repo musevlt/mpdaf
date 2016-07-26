@@ -84,3 +84,10 @@ The intermediate methods `get_data_hdu <mpdaf.obj.Cube.get_data_hdu>` and
 `get_stat_hdu <mpdaf.obj.Cube.get_stat_hdu>` can also be used to generate
 astropy.io.fits.ImageHDU objects that correspond to the DATA and STAT
 extensions.
+
+.. ipython::
+   :suppress:
+
+   In [4]: plt.close("all")
+
+   In [4]: %reset -f

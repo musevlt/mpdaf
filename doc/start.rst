@@ -108,6 +108,6 @@ built-in ``help()`` function:
 .. ipython::
    :suppress:
 
-   In [4]: cube = None ; ima = None ; sp = None
-
    In [4]: plt.close("all")
+
+   In [4]: %reset -f

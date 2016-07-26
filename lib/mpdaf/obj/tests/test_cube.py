@@ -416,7 +416,7 @@ def test_rebin():
 
     # Rebin each of the axes such as to leave only 2 pixels along each
     # dimension.
-    factor = np.array([2, 3, 4])
+    factor = (2, 3, 4)
     cube2 = cube1.rebin(factor=factor)
 
     # Compute the expected output cube, given that the input cube is a
