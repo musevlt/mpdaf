@@ -58,7 +58,7 @@ BACKPHOTO_TYPE  LOCAL          # can be "GLOBAL" or "LOCAL"
  
 #------------------------------ Check Image ----------------------------------
  
-CHECKIMAGE_TYPE SEGMENTATION    # can be one of "NONE", "BACKGROUND",
+CHECKIMAGE_TYPE NONE            # can be one of "NONE", "BACKGROUND",
                                 # "MINIBACKGROUND", "-BACKGROUND", "OBJECTS",
                                 # "-OBJECTS", "SEGMENTATION", "APERTURES",
                                 # or "FILTERED"
@@ -72,4 +72,4 @@ MEMORY_BUFSIZE  512            # number of lines in buffer
  
 #----------------------------- Miscellaneous ---------------------------------
  
-VERBOSE_TYPE    NORMAL          # can be "QUIET", "NORMAL" or "FULL"
+VERBOSE_TYPE    QUIET           # can be "QUIET", "NORMAL" or "FULL"
