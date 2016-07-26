@@ -356,8 +356,8 @@ class DataArray(object):
             # Use a specified numpy data array?
             if data is not None:
                 # Force data to be in double instead of float
-                if self.dtype is None and data.dtype==np.float32: 
-                    self.dtype = np.float64
+                if self._dtype is None and data.dtype==np.float32: 
+                    self._dtype = np.float64
                 if isinstance(data, ma.MaskedArray):
                     self._data = np.array(data.data, dtype=self.dtype,
                                           copy=copy)
