@@ -277,8 +277,8 @@ def step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta):
     # default.param exist.  Otherwise copy them
     setup_config_files()
 
-    write_white(c.data, mvar, size1, c.wcs, c.unit, cmd_sex)
     write_inv_variance(expmap, mvar, size1, c.wcs, c.unit)
+    write_white(c.data, mvar, size1, c.wcs, c.unit, cmd_sex)
     write_rgb(c.data, mvar, size1, c.wcs, c.unit, cmd_sex)
     write_nb(c.data, mvar, expmap, size1, size2, size3, fw, nbcube, delta,
              c.wcs, c.unit, cmd_sex, cubename, c.data_header)
