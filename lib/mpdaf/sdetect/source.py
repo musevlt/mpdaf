@@ -237,6 +237,7 @@ def _read_mpdaf_obj(cls, hdulist, ext, **kwargs):
             os.path.basename(filename), ext, cls.__name__, e))
     return obj
 
+
 def _read_table(hdulist, extname, **kwargs):
     """Read a masked Table from a FITS HDUList."""
     t = _read_ext(Table, hdulist, extname, **kwargs)
@@ -249,18 +250,6 @@ def _read_table(hdulist, extname, **kwargs):
     return t
 
 
-# def _read_masked_table(hdulist, extname, **kwargs):
-#     """Read a masked Table from a FITS HDUList."""
-#     t = _read_ext(Table, hdulist, extname, masked=True)
-#     h = hdulist[extname].header
-#     for i in range(h['TFIELDS']):
-#         try:
-#             t.columns[i].unit = h['TUNIT%d' % (i + 1)]
-#         except:
-#             pass
-#     return t
-
-# _read_masked_table = partial(_read_ext, Table, masked=True)
 _read_spectrum = partial(_read_mpdaf_obj, Spectrum)
 _read_image = partial(_read_mpdaf_obj, Image)
 _read_cube = partial(_read_mpdaf_obj, Cube)
@@ -427,8 +416,8 @@ class Source(object):
             extnames = [h.name for e in ext
                         for h in hdulist[1:] if re.findall(e, h.name)]
 
-        lines = (_read_table(hdulist, 'LINES', masked=True) if 'LINES' in extnames
-                 else None)
+        lines = (_read_table(hdulist, 'LINES', masked=True)
+                 if 'LINES' in extnames else None)
         if lines is not None:
             for name in lines.colnames:
                 if 'LBDA' in name or 'EQW' in name:
@@ -496,8 +485,8 @@ class Source(object):
                             cubes[name] = _read_cube(hdulist, ext, ima=False)
                     elif start == 'TAB':
                         tables[extname[4:]] = _read_table(hdulist,
-                                                                 extname,
-                                                                 masked=True)
+                                                          extname,
+                                                          masked=True)
             except Exception as e:
                 logger = logging.getLogger(__name__)
                 logger.warning(e)
@@ -529,12 +518,12 @@ class Source(object):
         z = _read_table(hdulist, 'Z', masked=False) if 'Z' in hdulist else None
 
         hdulist.close()
-        
+
         if 'CUBE_V' not in hdr:
             logger = logging.getLogger(__name__)
             logger.warning('CUBE_V keyword in missing. It will be soon mandatory and its absence will return an error')
             hdr['CUBE_V'] = ('', 'datacube version')
-        
+
         return cls(hdr, lines, mag, z, None, None, None, None, mask_invalid=False)
 
     def write(self, filename):
@@ -641,9 +630,9 @@ class Source(object):
         for key in keys:
             info(self.header.cards[key])
         for key in itertools.chain(sorted(coms), sorted(hist)):
-            info("%s = %s / %s"%(self.header.cards[key][0],
-                                 self.header.cards[key][1],
-                                 self.header.cards[key][2]))
+            info("%s = %s / %s" % (self.header.cards[key][0],
+                                   self.header.cards[key][1],
+                                   self.header.cards[key][2]))
 
         if any([self.spectra, self.images, self.cubes, self.tables]):
             print('')
