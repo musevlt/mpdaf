@@ -89,6 +89,65 @@ emlines = {1215.67: 'LYALPHA1216',
            6731.0: '[SII]6731'}
 
 
+TABLES_SCHEMA = {
+    'MAG': {
+        'BAND': {
+            'description': 'Filter name',
+            'unit': 'unitless',
+            'dtype': 'S20'
+        },
+        'MAG': {
+            'format': '.3f',
+            'description': 'AB Magnitude',
+            'unit': 'unitless',
+            'dtype': 'f8'
+        },
+        'MAG_ERR': {
+            'format': '.3f',
+            'description': 'Error in AB Magnitude',
+            'unit': 'unitless',
+            'dtype': 'f8'
+        }
+    },
+    'Z': {
+        'Z': {
+            'description': 'Estimated redshift',
+            'format': '.4f',
+            'unit': 'unitless',
+            'dtype': 'f8',
+            'masked_value': -9999
+        },
+        'Z_MIN': {
+            'description': 'Lower bound of estimated redshift',
+            'format': '.4f',
+            'unit': 'unitless',
+            'dtype': 'f8',
+            'masked_value': -9999
+        },
+        'Z_MAX': {
+            'description': 'Upper bound of estimated redshift',
+            'format': '.4f',
+            'unit': 'unitless',
+            'dtype': 'f8',
+            'masked_value': -9999
+        },
+        'Z_DESC': {
+            'description': 'Type of redshift',
+            'unit': 'unitless',
+            'dtype': 'S20',
+        },
+        # ZERR ?
+    }
+}
+
+
+def _set_table_attributes(name, table):
+    for colname, attributes in TABLES_SCHEMA[name].items():
+        for attr, value in attributes.items():
+            if attr not in ('dtype', 'masked_value'):
+                setattr(table[colname], attr, value)
+
+
 def vacuum2air(vac):
     """in angstroms."""
     vac = np.array(vac)
@@ -307,9 +366,8 @@ class Source(object):
         self.cubes = cubes or {}
         # Dictionary TABLES
         self.tables = tables or {}
-        # logger
+
         self._logger = logging.getLogger(__name__)
-        # mask invalid
         if mask_invalid:
             self.masked_invalid()
 
@@ -408,6 +466,7 @@ class Source(object):
         cubes = {}
         tables = {}
         lines = mag = z = None
+        logger = logging.getLogger(__name__)
 
         if ext is None:
             extnames = [h.name for h in hdulist[1:]]
@@ -427,35 +486,11 @@ class Source(object):
 
         if 'MAG' in extnames:
             mag = _read_table(hdulist, 'MAG', masked=True)
-            for name in mag.colnames:
-                mag[name].unit = 'unitless'
-                if name == 'BAND':
-                    mag[name].description = 'Filter name'
-                elif name == 'MAG_ERR':
-                    mag[name].format = '.3f'
-                    mag[name].description = 'Error in AB Magnitude'
-                elif name == 'MAG':
-                    mag[name].format = '.3f'
-                    mag[name].description = 'AB Magnitude'
+            _set_table_attributes('MAG', mag)
 
         if 'Z' in extnames:
             z = _read_table(hdulist, 'Z', masked=True)
-            for name in z.colnames:
-                z[name].unit = 'unitless'
-                if name == 'Z_DESC':
-                    z[name].description = 'Redshift description'
-                elif name == 'Z_MIN':
-                    z[name].format = '.4f'
-                    z[name].description = 'Lower bound of estimated redshift'
-                elif name == 'Z_MAX':
-                    z[name].format = '.4f'
-                    z[name].description = 'Upper bound of estimated redshift'
-                elif name == 'Z_ERR':
-                    z[name].format = '.4f'
-                    z[name].description = 'Error of estimated redshift'
-                elif name == 'Z':
-                    z[name].format = '.4f'
-                    z[name].description = 'Estimated redshift'
+            _set_table_attributes('Z', z)
 
         for i, hdu in enumerate(hdulist[1:]):
             try:
@@ -487,11 +522,9 @@ class Source(object):
                         tables[extname[4:]] = _read_table(hdulist, extname,
                                                           masked=True)
             except Exception as e:
-                logger = logging.getLogger(__name__)
                 logger.warning(e)
         hdulist.close()
         if 'CUBE_V' not in hdr:
-            logger = logging.getLogger(__name__)
             logger.warning('CUBE_V keyword in missing. It will be soon '
                            'mandatory and its absence will return an error')
             hdr['CUBE_V'] = ('', 'datacube version')
@@ -810,21 +843,11 @@ class Source(object):
 
         if self.z is None:
             if z != -9999:
-                self.z = Table(names=['Z_DESC', 'Z', 'Z_MIN', 'Z_MAX'],
-                               rows=[[desc, z, zmin, zmax]],
-                               dtype=('S20', 'f8', 'f8', 'f8'),
-                               masked=True)
-                self.z['Z'].format = '.4f'
-                self.z['Z'].description = 'Estimated redshift'
-                self.z['Z'].unit = 'unitless'
-                self.z['Z_MIN'].format = '.4f'
-                self.z['Z_MIN'].description = 'Lower bound of estimated redshift'
-                self.z['Z_MIN'].unit = 'unitless'
-                self.z['Z_MAX'].format = '.4f'
-                self.z['Z_MAX'].description = 'Upper bound of estimated redshift'
-                self.z['Z_MAX'].unit = 'unitless'
-                self.z['Z_DESC'].description = 'Type of redshift'
-                self.z['Z_DESC'].unit = 'unitless'
+                names = ('Z_DESC', 'Z', 'Z_MIN', 'Z_MAX')
+                dtypes = [TABLES_SCHEMA['Z'][name]['dtype'] for name in names]
+                self.z = Table(names=names, rows=[[desc, z, zmin, zmax]],
+                               dtype=dtypes, masked=True)
+                _set_table_attributes('Z', self.z)
         else:
             if desc in self.z['Z_DESC']:
                 sel = self.z['Z_DESC'] == desc
@@ -860,16 +883,11 @@ class Source(object):
             band = band.encode('utf8')
 
         if self.mag is None:
-            self.mag = Table(names=['BAND', 'MAG', 'MAG_ERR'],
-                             rows=[[band, m, errm]],
-                             dtype=('S20', 'f8', 'f8'),
-                             masked=True)
-            self.mag['MAG'].format = '.3f'
-            self.mag['MAG'].description = 'AB Magnitude'
-            self.mag['MAG'].unit = 'unitless'
-            self.mag['MAG_ERR'].format = '.3f'
-            self.mag['MAG_ERR'].description = 'Error in AB Magnitude'
-            self.mag['MAG_ERR'].unit = 'unitless'
+            names = ['BAND', 'MAG', 'MAG_ERR']
+            dtypes = [TABLES_SCHEMA['MAG'][name]['dtype'] for name in names]
+            self.mag = Table(names=names, rows=[[band, m, errm]],
+                             dtype=dtypes, masked=True)
+            _set_table_attributes('MAG', self.mag)
         else:
             if band in self.mag['BAND']:
                 self.mag['MAG'][self.mag['BAND'] == band] = m
