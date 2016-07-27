@@ -407,6 +407,7 @@ class Source(object):
         images = {}
         cubes = {}
         tables = {}
+        lines = mag = z = None
 
         if ext is None:
             extnames = [h.name for h in hdulist[1:]]
@@ -416,17 +417,16 @@ class Source(object):
             extnames = [h.name for e in ext
                         for h in hdulist[1:] if re.findall(e, h.name)]
 
-        lines = (_read_table(hdulist, 'LINES', masked=True)
-                 if 'LINES' in extnames else None)
-        if lines is not None:
+        if 'LINES' in extnames:
+            lines = _read_table(hdulist, 'LINES', masked=True)
             for name in lines.colnames:
                 if 'LBDA' in name or 'EQW' in name:
                     lines[name].format = '.2f'
                 if 'FLUX' in name or 'FWHM' in name:
                     lines[name].format = '.1f'
 
-        mag = _read_table(hdulist, 'MAG', masked=True) if 'MAG' in extnames else None
-        if mag is not None:
+        if 'MAG' in extnames:
+            mag = _read_table(hdulist, 'MAG', masked=True)
             for name in mag.colnames:
                 mag[name].unit = 'unitless'
                 if name == 'BAND':
@@ -438,8 +438,8 @@ class Source(object):
                     mag[name].format = '.3f'
                     mag[name].description = 'AB Magnitude'
 
-        z = _read_table(hdulist, 'Z', masked=True) if 'Z' in extnames else None
-        if z is not None:
+        if 'Z' in extnames:
+            z = _read_table(hdulist, 'Z', masked=True)
             for name in z.colnames:
                 z[name].unit = 'unitless'
                 if name == 'Z_DESC':
@@ -484,8 +484,7 @@ class Source(object):
                         elif start == 'CUB':
                             cubes[name] = _read_cube(hdulist, ext, ima=False)
                     elif start == 'TAB':
-                        tables[extname[4:]] = _read_table(hdulist,
-                                                          extname,
+                        tables[extname[4:]] = _read_table(hdulist, extname,
                                                           masked=True)
             except Exception as e:
                 logger = logging.getLogger(__name__)
@@ -493,7 +492,8 @@ class Source(object):
         hdulist.close()
         if 'CUBE_V' not in hdr:
             logger = logging.getLogger(__name__)
-            logger.warning('CUBE_V keyword in missing. It will be soon mandatory and its absence will return an error')
+            logger.warning('CUBE_V keyword in missing. It will be soon '
+                           'mandatory and its absence will return an error')
             hdr['CUBE_V'] = ('', 'datacube version')
         return cls(hdr, lines, mag, z, spectra, images, cubes, tables,
                    mask_invalid=mask_invalid)
@@ -509,22 +509,24 @@ class Source(object):
         filename : str
             FITS filename
         """
-        hdulist = pyfits.open(filename)
-        hdr = hdulist[0].header
-
-        lines = (_read_table(hdulist, 'LINES', masked=False) if 'LINES' in hdulist
-                 else None)
-        mag = _read_table(hdulist, 'MAG', masked=False) if 'MAG' in hdulist else None
-        z = _read_table(hdulist, 'Z', masked=False) if 'Z' in hdulist else None
-
-        hdulist.close()
+        lines = mag = z = None
+        with pyfits.open(filename) as hdulist:
+            hdr = hdulist[0].header
+            if 'LINES' in hdulist:
+                lines = _read_table(hdulist, 'LINES', masked=False)
+            if 'MAG' in hdulist:
+                mag = _read_table(hdulist, 'MAG', masked=False)
+            if 'Z' in hdulist:
+                z = _read_table(hdulist, 'Z', masked=False)
 
         if 'CUBE_V' not in hdr:
             logger = logging.getLogger(__name__)
-            logger.warning('CUBE_V keyword in missing. It will be soon mandatory and its absence will return an error')
+            logger.warning('CUBE_V keyword in missing. It will be soon '
+                           'mandatory and its absence will return an error')
             hdr['CUBE_V'] = ('', 'datacube version')
 
-        return cls(hdr, lines, mag, z, None, None, None, None, mask_invalid=False)
+        return cls(hdr, lines, mag, z, None, None, None, None,
+                   mask_invalid=False)
 
     def write(self, filename):
         """Write the source object in a FITS file.
