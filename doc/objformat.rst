@@ -231,7 +231,7 @@ must be performed using the `set_wcs <mpdaf.obj.Cube.set_wcs>` method:
   @savefig ObjFormatMaskedIma2.png width=4in
   In [8]: ima2.plot()
 
- .. ipython::
+.. ipython::
    :suppress:
 
    In [4]: plt.close("all")

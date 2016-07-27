@@ -10,14 +10,6 @@
 tags
 build/
 dist/
-data/drs/Central_PIXTABLE_REDUCED_11_positioned.fits
-data/drs/REC_Central_PIXTABLE_REDUCED_11_positioned.fits
-data/fusion/cube.fits
-data/fusion/small_pixtable1.fits
-data/fusion/small_pixtable2.fits
-data/obj/Central_DATACUBE_FINAL_11to20_2012-05-16.fits
-data/obj/image.fits.gz
-data/obj/image_variance.fits.gz
 doc/api/
 doc/_build/
 htmlcov/

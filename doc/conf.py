@@ -94,7 +94,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpdaf import setup_logging
-os.chdir('../lib/mpdaf/data')
+if os.path.relpath(os.curdir, start=os.pardir) != 'data': os.chdir('../lib/mpdaf/data')
 setup_logging(stream=sys.stdout)
 """.splitlines()
 
