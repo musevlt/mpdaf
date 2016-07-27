@@ -199,9 +199,9 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
         leftmax = k - 2
         rightmin = k + 3
         rightmax = min(size1, k + 3 + delta)
-        imslice = np.average(data0[k - 2:k + 3, :, :],
-                             weights=fwcube / mvar[k - 2:k + 3, :, :],
-                             axis=0)
+        imslice = np.ma.average(data[k - 2:k + 3, :, :],
+                                weights=fwcube / mvar[k - 2:k + 3, :, :],
+                                axis=0)
         if leftmax == 1:
             contleft = data0[0, :, :]
         elif leftmax > leftmin + 1:
