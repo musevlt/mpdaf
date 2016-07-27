@@ -184,7 +184,7 @@ class Catalog(Table):
         # magnitudes
         lmag = [len(source.mag) for source in sources if source.mag is not None]
         if len(lmag) != 0:
-            names_mag = list(set(np.concatenate([source.mag.filled()['BAND'].data for source in sources
+            names_mag = list(set(np.concatenate([source.mag['BAND'].data for source in sources
                                                  if source.mag is not None])))
             names_mag += ['%s_ERR' % mag for mag in names_mag]
             names_mag.sort()
@@ -194,7 +194,7 @@ class Catalog(Table):
         # redshifts
         lz = [len(source.z) for source in sources if source.z is not None]
         if len(lz) != 0:
-            names_z = list(set(np.concatenate([source.z.filled()['Z_DESC'].data for source in sources
+            names_z = list(set(np.concatenate([source.z['Z_DESC'].data for source in sources
                                                if source.z is not None])))
             names_z = ['Z_%s' % z for z in names_z]
             colnames = list(set(np.concatenate([source.z.colnames for source in sources if source.z is not None])))
@@ -235,24 +235,13 @@ class Catalog(Table):
                             d[col] = source.lines.dtype[col]
                             unit[col] = source.lines[col].unit
 
-                        if np.ma.isMaskedArray(source.lines['LINE'].data):
-                        
-                            for line, mask in zip(source.lines['LINE'].data.data,
-                                                  source.lines['LINE'].data.mask):
-                                if not mask and line != 'None':
-                                    try:
-                                        float(line)
-                                        logger.warning('source %d: line labeled \"%s\" not loaded' % (source.ID, line))
-                                    except:
-                                        names_lines += ['%s_%s' % (line.replace('_', ''), col) for col in colnames]
-                        else:
-                            for line in source.lines['LINE'].data:
-                                if line != None:
-                                    try:
-                                        float(line)
-                                        logger.warning('source %d: line labeled \"%s\" not loaded' % (source.ID, line))
-                                    except:
-                                        names_lines += ['%s_%s' % (line.replace('_', ''), col) for col in colnames]
+                        for line in source.lines['LINE'].data:
+                            if line != None:
+                                try:
+                                    float(line)
+                                    logger.warning('source %d: line labeled \"%s\" not loaded' % (source.ID, line))
+                                except:
+                                    names_lines += ['%s_%s' % (line.replace('_', ''), col) for col in colnames]
                                         
                 names_lines = list(set(np.concatenate([names_lines])))
                 names_lines.sort()
@@ -308,9 +297,9 @@ class Catalog(Table):
                     keys = source.mag['BAND']
                     for key in names_mag:
                         if key in keys:
-                            row += [source.mag.filled()['MAG'][source.mag['BAND'] == key].data[0]]
+                            row += [source.mag['MAG'][source.mag['BAND'] == key].data[0]]
                         elif key[-4:] == '_ERR' and key[:-4] in keys:
-                            row += [source.mag.filled()['MAG_ERR'][source.mag['BAND'] == key[:-4]].data[0]]
+                            row += [source.mag['MAG_ERR'][source.mag['BAND'] == key[:-4]].data[0]]
                         else:
                             row += [np.nan]
             
@@ -323,13 +312,13 @@ class Catalog(Table):
                     for key in names_z:
                         key = key[2:]
                         if key in keys:
-                            row += [source.z.filled()['Z'][source.z['Z_DESC'] == key].data[0]]
+                            row += [source.z['Z'][source.z['Z_DESC'] == key].data[0]]
                         elif key[-4:] == '_MAX' and key[:-4] in keys:
-                            row += [source.z.filled()['Z_MAX'][source.z['Z_DESC'] == key[:-4]].data[0]]
+                            row += [source.z['Z_MAX'][source.z['Z_DESC'] == key[:-4]].data[0]]
                         elif key[-4:] == '_MIN' and key[:-4] in keys:
-                            row += [source.z.filled()['Z_MIN'][source.z['Z_DESC'] == key[:-4]].data[0]]
+                            row += [source.z['Z_MIN'][source.z['Z_DESC'] == key[:-4]].data[0]]
                         elif key[-4:] == '_ERR' and key[:-4] in keys:
-                            row += [source.z.filled()['Z_ERR'][source.z['Z_DESC'] == key[:-4]].data[0]]
+                            row += [source.z['Z_ERR'][source.z['Z_DESC'] == key[:-4]].data[0]]
                         else:
                             row += [np.nan]
             
@@ -348,26 +337,15 @@ class Catalog(Table):
                             copy = source.lines['LINE'].data.copy()
                             for i in range(len(source.lines)):
                                 source.lines['LINE'][i] = source.lines['LINE'][i].replace('_', '')
-                            if np.ma.isMaskedArray(source.lines['LINE'].data):
-                                for name, typ in zip(names_lines, dtype_lines):
-                                    colname = '_'.join(name.split('_')[1:])
-                                    line = name.split('_')[0]
-                                    if 'LINE' in source.lines.colnames and \
-                                       colname in source.lines.colnames and \
-                                       line in source.lines['LINE'].data.data:
-                                        row += [source.lines[colname][source.lines['LINE'] == line].data.data[0]]
-                                    else:
-                                        row += [INVALID[typ.type]]
-                            else:
-                                for name, typ in zip(names_lines, dtype_lines):
-                                    colname = '_'.join(name.split('_')[1:])
-                                    line = name.split('_')[0]
-                                    if 'LINE' in source.lines.colnames and \
-                                       colname in source.lines.colnames and \
-                                       line in source.lines['LINE'].data:
-                                        row += [source.lines[colname][source.lines['LINE'] == line].data[0]]
-                                    else:
-                                        row += [INVALID[typ.type]]
+                            for name, typ in zip(names_lines, dtype_lines):
+                                colname = '_'.join(name.split('_')[1:])
+                                line = name.split('_')[0]
+                                if 'LINE' in source.lines.colnames and \
+                                   colname in source.lines.colnames and \
+                                   line in source.lines['LINE'].data:
+                                    row += [source.lines[colname][source.lines['LINE'] == line].data[0]]
+                                else:
+                                    row += [INVALID[typ.type]]
                             source.lines['LINE'] = copy
                     elif fmt == 'working':
                         keys = source.lines.colnames
