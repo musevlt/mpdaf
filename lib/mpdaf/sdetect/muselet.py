@@ -36,6 +36,7 @@ from __future__ import absolute_import, division
 import astropy.units as u
 import io
 import logging
+import multiprocessing
 import numpy as np
 import os
 import shutil
@@ -191,6 +192,8 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
     
     data0 = np.ma.filled(data, 0)
     
+    limit = multiprocessing.cpu_count() - 1
+    
     proc = []
 
     for k in range(2, size1 - 3):
@@ -242,6 +245,11 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
                                   'nb%s.fits'%kstr])
 
             proc.append(p)
+            
+        if len(proc) == limit:
+            for p in proc:
+                p.wait()
+            proc = []
     sys.stdout.write("\n")
     sys.stdout.flush()
 
@@ -249,8 +257,7 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
         outnbcubename = 'NB_' + os.path.basename(cubename)
         pyfits.writeto(outnbcubename, outnbcube, data_header, clobber=True)
         
-    for p in proc:
-        p.wait()
+    
 
 
 def step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta):
