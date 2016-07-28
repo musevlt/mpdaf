@@ -85,31 +85,28 @@ def test_write(tmpdir, source2):
     source2.add_z('z_test2', -9999)
     assert six.b('z_test2') not in source2.z['Z_DESC']
 
-    # cube = Cube(data=np.zeros((2, 2, 2)))
-    # source2.add_cube(cube, 'MUSE_WHITE', size=2, unit_size=None)
-    # source2.add_white_image(cube)
-    # source2.extract_spectra(cube)
     source2.write(filename)
     source2.info()
     source2 = None
 
-    src = Source.from_file(filename)
+    for method in (Source.from_file, Source._light_from_file):
+        src = method(filename)
 
-    sel = np.where(src.mag['BAND'] == 'TEST2')[0][0]
-    assert src.mag['MAG'][sel] == 24.5
-    assert src.mag['MAG_ERR'][sel] == 0.01
+        sel = np.where(src.mag['BAND'] == 'TEST2')[0][0]
+        assert src.mag['MAG'][sel] == 24.5
+        assert src.mag['MAG_ERR'][sel] == 0.01
 
-    assert 'z_test2' not in src.z['Z_DESC']
+        assert 'z_test2' not in src.z['Z_DESC']
 
-    sel = np.where(src.z['Z_DESC'] == 'z_test')[0][0]
-    assert src.z['Z'][sel] == 0.07
-    assert src.z['Z_MIN'][sel] == 0.07 - 0.007 / 2
-    assert src.z['Z_MAX'][sel] == 0.07 + 0.007 / 2
+        sel = np.where(src.z['Z_DESC'] == 'z_test')[0][0]
+        assert src.z['Z'][sel] == 0.07
+        assert src.z['Z_MIN'][sel] == 0.07 - 0.007 / 2
+        assert src.z['Z_MAX'][sel] == 0.07 + 0.007 / 2
 
-    sel = np.where(src.z['Z_DESC'] == 'z_test3')[0][0]
-    assert src.z['Z'][sel] == 2.0
-    assert src.z['Z_MIN'][sel] == 1.8
-    assert src.z['Z_MAX'][sel] == 2.5
+        sel = np.where(src.z['Z_DESC'] == 'z_test3')[0][0]
+        assert src.z['Z'][sel] == 2.0
+        assert src.z['Z_MIN'][sel] == 1.8
+        assert src.z['Z_MAX'][sel] == 2.5
 
 
 def test_comments(source1):
@@ -159,6 +156,25 @@ def test_line():
     assert lines['LBDA_OBS'][lines['LINE'] == six.b('TEST')][0] == 4807.
 
 
+def test_add_cube(source2, minicube, tmpdir):
+    """Source class: testing add_cube method"""
+    with pytest.raises(ValueError):
+        source2.add_cube(minicube, 'TEST')
+
+    lbda = (5000, 5500)
+    source2.add_white_image(minicube, size=minicube.shape[1:], unit_size=None)
+    source2.add_cube(minicube, 'TEST1', lbda=lbda)
+    lmin, lmax = minicube.wave.pixel(lbda, unit=u.angstrom, nearest=True)
+    assert (source2.cubes['TEST1'].shape ==
+            (lmax - lmin + 1,) + source2.images['MUSE_WHITE'].shape)
+
+    filename = str(tmpdir.join('source.fits'))
+    source2.write(filename)
+    src = Source.from_file(filename)
+    assert 'MUSE_WHITE' in src.images
+    assert 'TEST1' in src.cubes
+
+
 def test_add_image(source2, a478hst):
     """Source class: testing add_image method"""
     minicube = Cube(get_data_file('sdetect', 'minicube.fits'), dtype=float)
@@ -203,7 +219,7 @@ def test_add_image(source2, a478hst):
                         source2.images['MUSE_WHITE'].get_rot(), 3)
 
 
-def test_add_narrow_band_image(minicube):
+def test_add_narrow_band_image(minicube, tmpdir):
     """Source class: testing methods on narrow bands images"""
     src = Source.from_data(ID=1, ra=63.35592651367188, dec=10.46536922454834,
                            origin=('test', 'v0', 'minicube.fits', 'v0'),
@@ -232,20 +248,21 @@ def test_add_narrow_band_image(minicube):
                        ~(src.images['MASK_SKY'].data.data.astype(bool)))
     assert_array_equal(src.images['MASK_INTER'].data.data,
                        np.zeros(src.images['MASK_INTER'].shape))
-    assert 'MASK_OBJ' in src.images
-    assert 'MASK_INTER' in src.images
-    assert 'MASK_SKY' in src.images
     src.extract_spectra(minicube, obj_mask='MASK_OBJ', skysub=True, psf=None)
-    assert 'MUSE_SKY' in src.spectra
-    assert 'MUSE_TOT_SKYSUB' in src.spectra
-    assert 'MUSE_WHITE_SKYSUB' in src.spectra
-    assert 'NB_HALPHA_SKYSUB' in src.spectra
     src.extract_spectra(minicube, obj_mask='MASK_OBJ', skysub=False,
                         psf=0.2 * np.ones(minicube.shape[0]))
-    assert 'MUSE_PSF' in src.spectra
-    assert 'MUSE_TOT' in src.spectra
-    assert 'MUSE_WHITE' in src.spectra
-    assert 'NB_HALPHA' in src.spectra
+
+    filename = str(tmpdir.join('source.fits'))
+    src.write(filename)
+    src = Source.from_file(filename)
+
+    for name in ('MASK_OBJ', 'MASK_INTER', 'MASK_SKY'):
+        assert name in src.images
+
+    for name in ('MUSE_SKY', 'MUSE_TOT_SKYSUB', 'MUSE_WHITE_SKYSUB',
+                 'NB_HALPHA_SKYSUB', 'MUSE_PSF', 'MUSE_TOT', 'MUSE_WHITE',
+                 'NB_HALPHA'):
+        assert name in src.spectra
 
     Ny = np.array([ima.shape[0] for ima in src.images.values()])
     assert len(np.unique(Ny)) == 1

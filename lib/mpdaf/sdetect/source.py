@@ -995,10 +995,10 @@ class Source(object):
 
     def add_image(self, image, name, size=None, minsize=2.0,
                   unit_size=u.arcsec, rotate=False):
-        """Extract an small image centered on the source center from the input
+        """Extract an image centered on the source center from the input
         image and append it to the images dictionary.
 
-        Extracted image saved in self.images['name'].
+        Extracted image saved in ``self.images[name]``.
 
         Parameters
         ----------
@@ -1011,8 +1011,8 @@ class Source(object):
             axis and the image is square. If None, the size of the white image
             extension is taken if it exists.
         unit_size : `astropy.units.Unit`
-            Size and minsize unit.
-            Arcseconds by default (use None for size in pixels)
+            Unit of ``size`` and ``minsize``. Arcseconds by default
+            (use None for size in pixels).
         minsize : float
             The minimum size of the output image.
         rotate : bool
@@ -1023,8 +1023,8 @@ class Source(object):
         if size is None:
             try:
                 white_ima = self.images['MUSE_WHITE']
-            except:
-                raise IOError('Size of the image is required')
+            except KeyError:
+                raise ValueError('Size of the image is required')
             if white_ima.wcs.sameStep(image.wcs):
                 size = white_ima.shape[0]
                 if unit_size is not None:
@@ -1038,29 +1038,27 @@ class Source(object):
                     if unit_size != u.arcsec:
                         minsize = (minsize * unit_size).to(u.arcsec).value
                 unit_size = u.arcsec
+
+        center = (self.dec, self.ra)
+        kwargs = dict(minsize=minsize, unit_center=u.deg, unit_size=unit_size)
         if rotate:
             try:
                 white_ima = self.images['MUSE_WHITE']
-            except:
-                raise IOError('MUSE_WHITE image is required to get the PA')
+            except KeyError:
+                raise ValueError('MUSE_WHITE image is required to get the '
+                                 'rotation angle')
             pa_white = white_ima.get_rot()
             pa = image.get_rot()
             if np.abs(pa_white - pa) > 1.e-3:
-                subima = image.subimage((self.dec, self.ra), size * 1.5, minsize=minsize,
-                                        unit_center=u.deg, unit_size=unit_size)
-                uniq = np.unique(subima.data.data)
+                image = image.subimage(center, size * 1.5, **kwargs)
+                uniq = np.unique(image.data.data)
                 if ((uniq == 0) | (uniq == 1)).all():
-                    subima = subima.rotate(pa_white - pa, order=0)
+                    image = image.rotate(pa_white - pa, order=0)
                 else:
-                    subima = subima.rotate(pa_white - pa)
-                subima = subima.subimage((self.dec, self.ra), size, minsize=minsize,
-                                         unit_center=u.deg, unit_size=unit_size)
-            else:
-                subima = image.subimage((self.dec, self.ra), size, minsize=minsize,
-                                        unit_center=u.deg, unit_size=unit_size)
-        else:
-            subima = image.subimage((self.dec, self.ra), size, minsize=minsize,
-                                    unit_center=u.deg, unit_size=unit_size)
+                    image = image.rotate(pa_white - pa)
+
+        subima = image.subimage(center, size, **kwargs)
+
         if subima is None:
             self._logger.warning('Image %s not added. Source outside or at the'
                                  ' edges', name)
@@ -1072,7 +1070,7 @@ class Source(object):
         """Extract a cube centered on the source center and append it to the
         cubes dictionary.
 
-        Extracted cube saved in self.cubes['name'].
+        Extracted cube saved in ``self.cubes[name]``.
 
         Parameters
         ----------
@@ -1087,18 +1085,19 @@ class Source(object):
         lbda : (float, float) or None
             If not None, tuple giving the wavelength range.
         unit_size : `astropy.units.Unit`
-            unit of the size value (arcseconds by default)
-            If None, size is in pixels
+            Unit of the size value (arcseconds by default). If None, size is
+            in pixels.
         unit_wave : `astropy.units.Unit`
-            Wavelengths unit (angstrom by default)
-            If None, inputs are in pixels
+            Wavelengths unit (angstrom by default). If None, inputs are in
+            pixels.
 
         """
         if size is None:
             try:
                 white_ima = self.images['MUSE_WHITE']
-            except:
-                raise IOError('Size of the image is required')
+            except KeyError:
+                raise ValueError('Size of the image is required')
+
             if white_ima.wcs.sameStep(cube.wcs):
                 size = white_ima.shape[0]
                 unit_size = None
@@ -1106,10 +1105,9 @@ class Source(object):
                 size = white_ima.wcs.get_step(unit=u.arcsec)[0] * white_ima.shape[0]
                 unit_size = u.arcsec
 
-        subcub = cube.subcube(center=(self.dec, self.ra), size=size, lbda=lbda,
-                              unit_center=u.deg, unit_size=unit_size,
-                              unit_wave=unit_wave)
-        self.cubes[name] = subcub
+        self.cubes[name] = cube.subcube(
+            center=(self.dec, self.ra), size=size, lbda=lbda,
+            unit_center=u.deg, unit_size=unit_size, unit_wave=unit_wave)
 
     def add_white_image(self, cube, size=5, unit_size=u.arcsec):
         """Compute the white images from the MUSE data cube and appends it to
