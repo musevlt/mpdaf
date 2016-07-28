@@ -44,10 +44,13 @@ import sys
 from astropy.coordinates import SkyCoord
 from astropy.table import Table, Column, hstack, vstack
 from astropy import units as u
+from astropy.utils import minversion
 from matplotlib.patches import Ellipse
 import re
 from six.moves import range, zip
 import string
+
+ASTROPY_LT_1_1 = not minversion('astropy', '1.1')
 
 INVALID = {
     type(1): -9999, np.int_: -9999,
@@ -74,7 +77,7 @@ class Catalog(Table):
     @classmethod
     def read(cls, *args, **kwargs):
         t = Table.read(*args, **kwargs)
-        if 'ID' in t.colnames:
+        if not ASTROPY_LT_1_1 and 'ID' in t.colnames:
             t.add_index('ID')
         return t
 
@@ -417,7 +420,8 @@ class Catalog(Table):
 
         t = cls(rows=data_rows, names=names, masked=True, dtype=dtype)
         #index
-        t.add_index('ID')
+        if not ASTROPY_LT_1_1:
+            t.add_index('ID')
 
         # format
         for name, desc, unit, fmt in zip(names_hdr, desc_hdr, unit_hdr,
