@@ -70,6 +70,13 @@ class Catalog(Table):
             if name in self.colnames:
                 self.rename_column(name, name.upper())
         self.masked_invalid()
+        
+    @classmethod
+    def read(cls, *args, **kwargs):
+        t = Table.read(*args, **kwargs)
+        if 'ID' in t.colnames:
+            t.add_index('ID')
+        return t
 
     @classmethod
     def from_sources(cls, sources, fmt='default'):
@@ -409,6 +416,8 @@ class Catalog(Table):
                                names[i], check, dtype[i])
 
         t = cls(rows=data_rows, names=names, masked=True, dtype=dtype)
+        #index
+        t.add_index('ID')
 
         # format
         for name, desc, unit, fmt in zip(names_hdr, desc_hdr, unit_hdr,
