@@ -62,32 +62,31 @@ def test_from_file(tmpdir, source2):
     assert 'NB7317' not in src.images
 
 
-def test_write(tmpdir, source2):
+def test_loc(source1):
+    assert source1.z.primary_key == ('Z_DESC', )
+    assert source1.mag.primary_key == ('BAND', )
+
+    assert source1.z.loc['z_test']['Z'] == 0.07
+    assert source1.mag.loc['TEST2']['MAG'] == 24.5
+
+
+def test_write(tmpdir, source1):
     filename = str(tmpdir.join('source.fits'))
 
-    source2.add_mag('TEST', 2380, 46)
-    source2.add_mag('TEST2', 23.5, 0.1)
-    source2.add_mag('TEST2', 24.5, 0.01)
-
-    source2.add_z('z_test', 0.07, errz=0.007)
-    source2.add_z('z_test2', 1.0, errz=-9999)
-    source2.add_z('z_test3', 2.0, errz=(1.5, 2.2))
-    source2.add_z('z_test3', 2.0, errz=(1.8, 2.5))
-
     with pytest.raises(ValueError):
-        source2.add_z('z_error', 2.0, errz=[0.001])
+        source1.add_z('z_error', 2.0, errz=[0.001])
 
-    sel = np.where(source2.z['Z_DESC'] == six.b('z_test2'))[0][0]
-    assert source2.z['Z'][sel] == 1.0
-    assert source2.z['Z_MIN'][sel] is np.ma.masked
-    assert source2.z['Z_MAX'][sel] is np.ma.masked
+    sel = np.where(source1.z['Z_DESC'] == six.b('z_test2'))[0][0]
+    assert source1.z['Z'][sel] == 1.0
+    assert source1.z['Z_MIN'][sel] is np.ma.masked
+    assert source1.z['Z_MAX'][sel] is np.ma.masked
 
-    source2.add_z('z_test2', -9999)
-    assert six.b('z_test2') not in source2.z['Z_DESC']
+    source1.add_z('z_test2', -9999)
+    assert six.b('z_test2') not in source1.z['Z_DESC']
 
-    source2.write(filename)
-    source2.info()
-    source2 = None
+    source1.write(filename)
+    source1.info()
+    source1 = None
 
     for method in (Source.from_file, Source._light_from_file):
         src = method(filename)

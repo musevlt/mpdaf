@@ -79,9 +79,17 @@ def source1():
     line2 = [5550, 10, 2.3, 0.2, 5600.0, 11.0, 2.5, 0.4, 28.0879, 3.1,
              six.b('[OIII]2')]
     lines = Table(names=col_lines, rows=[line1, line2])
-    return Source.from_data(ID=1, ra=-65.1349958, dec=140.3057987,
-                            origin=('test', 'v0', 'cube.fits', 'v0'),
-                            lines=lines)
+    s = Source.from_data(ID=1, ra=-65.1349958, dec=140.3057987,
+                         origin=('test', 'v0', 'cube.fits', 'v0'), lines=lines)
+    s.add_mag('TEST', 2380, 46)
+    s.add_mag('TEST2', 23.5, 0.1)
+    s.add_mag('TEST2', 24.5, 0.01)
+
+    s.add_z('z_test', 0.07, errz=0.007)
+    s.add_z('z_test2', 1.0, errz=-9999)
+    s.add_z('z_test3', 2.0, errz=(1.5, 2.2))
+    s.add_z('z_test3', 2.0, errz=(1.8, 2.5))
+    return s
 
 
 @pytest.fixture

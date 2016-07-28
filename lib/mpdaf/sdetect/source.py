@@ -96,7 +96,8 @@ TABLES_SCHEMA = {
         'BAND': {
             'description': 'Filter name',
             'unit': 'unitless',
-            'dtype': 'S20'
+            'dtype': 'S20',
+            'primary_index': True
         },
         'MAG': {
             'format': '.3f',
@@ -116,29 +117,26 @@ TABLES_SCHEMA = {
             'description': 'Estimated redshift',
             'format': '.4f',
             'unit': 'unitless',
-            'dtype': 'f8',
-            'masked_value': -9999
+            'dtype': 'f8'
         },
         'Z_MIN': {
             'description': 'Lower bound of estimated redshift',
             'format': '.4f',
             'unit': 'unitless',
-            'dtype': 'f8',
-            'masked_value': -9999
+            'dtype': 'f8'
         },
         'Z_MAX': {
             'description': 'Upper bound of estimated redshift',
             'format': '.4f',
             'unit': 'unitless',
-            'dtype': 'f8',
-            'masked_value': -9999
+            'dtype': 'f8'
         },
         'Z_DESC': {
             'description': 'Type of redshift',
             'unit': 'unitless',
             'dtype': 'S20',
-        },
-        # ZERR ?
+            'primary_index': True
+        }
     }
 }
 
@@ -146,8 +144,10 @@ TABLES_SCHEMA = {
 def _set_table_attributes(name, table):
     for colname, attributes in TABLES_SCHEMA[name].items():
         for attr, value in attributes.items():
-            if attr not in ('dtype', 'masked_value'):
+            if attr not in ('dtype', 'primary_index'):
                 setattr(table[colname], attr, value)
+            elif attr == 'primary_index':
+                table.add_index(colname, unique=True)
 
 
 def vacuum2air(vac):
@@ -493,6 +493,10 @@ class Source(object):
         if 'Z' in extnames:
             z = _read_table(hdulist, 'Z', masked=True)
             _set_table_attributes('Z', z)
+            if 'Z_ERR' in z.colnames:
+                # Compatibility with old versions
+                z['Z_ERR'].format = '.4f'
+                z['Z_ERR'].description = 'Error of estimated redshift'
 
         for i, hdu in enumerate(hdulist[1:]):
             try:
