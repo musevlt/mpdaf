@@ -583,8 +583,8 @@ class Source(object):
         prihdu = pyfits.PrimaryHDU(header=self.header)
         prihdu.header['DATE'] = (str(datetime.datetime.now()), 'Creation date')
         prihdu.header['AUTHOR'] = ('MPDAF', 'Origin of the file')
-        prihdu.header['SRCVERS'] = (TABLES_SCHEMA['version'],
-                                    'Version of the Source format')
+        prihdu.header['SOURCE_V'] = (TABLES_SCHEMA['version'],
+                                     'Version of the Source format')
         hdulist = pyfits.HDUList([prihdu])
 
         # lines
