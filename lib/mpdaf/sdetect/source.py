@@ -50,6 +50,7 @@ import warnings
 
 from astropy.io import fits as pyfits
 from astropy.table import Table, MaskedColumn, vstack
+from astropy.utils import minversion
 from functools import partial
 from matplotlib import cm
 from matplotlib.patches import Ellipse
@@ -64,6 +65,8 @@ from ..MUSE import FieldsMap, FSF
 from ..MUSE.PSF import MOFFAT1
 from ..sdetect.sea import segmentation, mask_creation, findCentralDetection
 from ..sdetect.sea import union, intersection, compute_spectrum
+
+ASTROPY_LT_1_1 = not minversion('astropy', '1.1')
 
 emlines = {1215.67: 'LYALPHA1216',
            1550.0: 'CIV1550',
@@ -146,7 +149,7 @@ def _set_table_attributes(name, table):
         for attr, value in attributes.items():
             if attr not in ('dtype', 'primary_index'):
                 setattr(table[colname], attr, value)
-            elif attr == 'primary_index':
+            elif not ASTROPY_LT_1_1 and attr == 'primary_index':
                 table.add_index(colname, unique=True)
 
 
