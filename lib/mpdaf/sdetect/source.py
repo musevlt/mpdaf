@@ -90,6 +90,8 @@ emlines = {1215.67: 'LYALPHA1216',
 
 
 TABLES_SCHEMA = {
+    # Version of the source format, see SourceICD.pdf
+    'version': '0.5',
     'MAG': {
         'BAND': {
             'description': 'Filter name',
@@ -572,16 +574,16 @@ class Source(object):
         warnings.simplefilter("ignore")
         # create primary header
         prihdu = pyfits.PrimaryHDU(header=self.header)
-        prihdu.header['date'] = (str(datetime.datetime.now()), 'creation date')
-        prihdu.header['author'] = ('MPDAF', 'origin of the file')
-
-        hdulist = [prihdu]
+        prihdu.header['DATE'] = (str(datetime.datetime.now()), 'Creation date')
+        prihdu.header['AUTHOR'] = ('MPDAF', 'Origin of the file')
+        prihdu.header['SRCVERS'] = (TABLES_SCHEMA['version'],
+                                    'Version of the Source format')
+        hdulist = pyfits.HDUList([prihdu])
 
         # lines
         if self.lines is not None:
             cols = []
-            for colname in self.lines.colnames:
-                col = self.lines[colname]
+            for colname, col in self.lines.columns.items():
                 if col.unit is not None:
                     unit = col.unit.to_string('fits')
                 else:
@@ -596,10 +598,8 @@ class Source(object):
                         unit=unit,
                         array=np.array(col)))
 
-            coldefs = pyfits.ColDefs(cols)
-            tbhdu = pyfits.BinTableHDU.from_columns(name='LINES',
-                                                    columns=coldefs)
-            hdulist.append(tbhdu)
+            hdulist.append(pyfits.BinTableHDU.from_columns(name='LINES',
+                                                           columns=cols))
 
         # magnitudes
         if self.mag is not None:
@@ -648,8 +648,7 @@ class Source(object):
             hdulist.append(tbhdu)
 
         # save to disk
-        hdu = pyfits.HDUList(hdulist)
-        hdu.writeto(filename, clobber=True, output_verify='fix')
+        hdulist.writeto(filename, clobber=True, output_verify='fix')
         warnings.simplefilter("default")
 
     def info(self):
