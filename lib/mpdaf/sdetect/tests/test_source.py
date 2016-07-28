@@ -66,8 +66,8 @@ def test_loc(source1):
     assert source1.z.primary_key == ('Z_DESC', )
     assert source1.mag.primary_key == ('BAND', )
 
-    assert source1.z.loc['z_test']['Z'] == 0.07
-    assert source1.mag.loc['TEST2']['MAG'] == 24.5
+    assert source1.z.loc[six.b('z_test')]['Z'] == 0.07
+    assert source1.mag.loc[six.b('TEST2')]['MAG'] == 24.5
 
 
 def test_write(tmpdir, source1):
