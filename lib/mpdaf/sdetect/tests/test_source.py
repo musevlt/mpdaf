@@ -9,11 +9,14 @@ import pytest
 import six
 
 from astropy.table import Table
+from astropy.utils import minversion
 from mpdaf.obj import Cube
 from mpdaf.sdetect import Source
 from numpy.testing import assert_array_equal, assert_almost_equal
 
 from ...tests.utils import get_data_file
+
+ASTROPY_LT_1_1 = not minversion('astropy', '1.1')
 
 
 def test_light():
@@ -62,54 +65,51 @@ def test_from_file(tmpdir, source2):
     assert 'NB7317' not in src.images
 
 
-def test_write(tmpdir, source2):
+@pytest.mark.skipif(ASTROPY_LT_1_1, reason="requires Astropy 1.1+")
+def test_loc(source1):
+    assert source1.z.primary_key == ('Z_DESC', )
+    assert source1.mag.primary_key == ('BAND', )
+
+    assert source1.z.loc[six.b('z_test')]['Z'] == 0.07
+    assert source1.mag.loc[six.b('TEST2')]['MAG'] == 24.5
+
+
+def test_write(tmpdir, source1):
     filename = str(tmpdir.join('source.fits'))
 
-    source2.add_mag('TEST', 2380, 46)
-    source2.add_mag('TEST2', 23.5, 0.1)
-    source2.add_mag('TEST2', 24.5, 0.01)
-
-    source2.add_z('z_test', 0.07, errz=0.007)
-    source2.add_z('z_test2', 1.0, errz=-9999)
-    source2.add_z('z_test3', 2.0, errz=(1.5, 2.2))
-    source2.add_z('z_test3', 2.0, errz=(1.8, 2.5))
-
     with pytest.raises(ValueError):
-        source2.add_z('z_error', 2.0, errz=[0.001])
+        source1.add_z('z_error', 2.0, errz=[0.001])
 
-    sel = np.where(source2.z['Z_DESC'] == six.b('z_test2'))[0][0]
-    assert source2.z['Z'][sel] == 1.0
-    assert source2.z['Z_MIN'][sel] is np.ma.masked
-    assert source2.z['Z_MAX'][sel] is np.ma.masked
+    sel = np.where(source1.z['Z_DESC'] == six.b('z_test2'))[0][0]
+    assert source1.z['Z'][sel] == 1.0
+    assert source1.z['Z_MIN'][sel] is np.ma.masked
+    assert source1.z['Z_MAX'][sel] is np.ma.masked
 
-    source2.add_z('z_test2', -9999)
-    assert six.b('z_test2') not in source2.z['Z_DESC']
+    source1.add_z('z_test2', -9999)
+    assert six.b('z_test2') not in source1.z['Z_DESC']
 
-    # cube = Cube(data=np.zeros((2, 2, 2)))
-    # source2.add_cube(cube, 'MUSE_WHITE', size=2, unit_size=None)
-    # source2.add_white_image(cube)
-    # source2.extract_spectra(cube)
-    source2.write(filename)
-    source2.info()
-    source2 = None
+    source1.write(filename)
+    source1.info()
+    source1 = None
 
-    src = Source.from_file(filename)
+    for method in (Source.from_file, Source._light_from_file):
+        src = method(filename)
 
-    sel = np.where(src.mag['BAND'] == 'TEST2')[0][0]
-    assert src.mag['MAG'][sel] == 24.5
-    assert src.mag['MAG_ERR'][sel] == 0.01
+        sel = np.where(src.mag['BAND'] == 'TEST2')[0][0]
+        assert src.mag['MAG'][sel] == 24.5
+        assert src.mag['MAG_ERR'][sel] == 0.01
 
-    assert 'z_test2' not in src.z['Z_DESC']
+        assert 'z_test2' not in src.z['Z_DESC']
 
-    sel = np.where(src.z['Z_DESC'] == 'z_test')[0][0]
-    assert src.z['Z'][sel] == 0.07
-    assert src.z['Z_MIN'][sel] == 0.07 - 0.007 / 2
-    assert src.z['Z_MAX'][sel] == 0.07 + 0.007 / 2
+        sel = np.where(src.z['Z_DESC'] == 'z_test')[0][0]
+        assert src.z['Z'][sel] == 0.07
+        assert src.z['Z_MIN'][sel] == 0.07 - 0.007 / 2
+        assert src.z['Z_MAX'][sel] == 0.07 + 0.007 / 2
 
-    sel = np.where(src.z['Z_DESC'] == 'z_test3')[0][0]
-    assert src.z['Z'][sel] == 2.0
-    assert src.z['Z_MIN'][sel] == 1.8
-    assert src.z['Z_MAX'][sel] == 2.5
+        sel = np.where(src.z['Z_DESC'] == 'z_test3')[0][0]
+        assert src.z['Z'][sel] == 2.0
+        assert src.z['Z_MIN'][sel] == 1.8
+        assert src.z['Z_MAX'][sel] == 2.5
 
 
 def test_comments(source1):
@@ -159,6 +159,25 @@ def test_line():
     assert lines['LBDA_OBS'][lines['LINE'] == six.b('TEST')][0] == 4807.
 
 
+def test_add_cube(source2, minicube, tmpdir):
+    """Source class: testing add_cube method"""
+    with pytest.raises(ValueError):
+        source2.add_cube(minicube, 'TEST')
+
+    lbda = (5000, 5500)
+    source2.add_white_image(minicube, size=minicube.shape[1:], unit_size=None)
+    source2.add_cube(minicube, 'TEST1', lbda=lbda)
+    lmin, lmax = minicube.wave.pixel(lbda, unit=u.angstrom, nearest=True)
+    assert (source2.cubes['TEST1'].shape ==
+            (lmax - lmin + 1,) + source2.images['MUSE_WHITE'].shape)
+
+    filename = str(tmpdir.join('source.fits'))
+    source2.write(filename)
+    src = Source.from_file(filename)
+    assert 'MUSE_WHITE' in src.images
+    assert 'TEST1' in src.cubes
+
+
 def test_add_image(source2, a478hst):
     """Source class: testing add_image method"""
     minicube = Cube(get_data_file('sdetect', 'minicube.fits'), dtype=float)
@@ -203,7 +222,7 @@ def test_add_image(source2, a478hst):
                         source2.images['MUSE_WHITE'].get_rot(), 3)
 
 
-def test_add_narrow_band_image(minicube):
+def test_add_narrow_band_image(minicube, tmpdir):
     """Source class: testing methods on narrow bands images"""
     src = Source.from_data(ID=1, ra=63.35592651367188, dec=10.46536922454834,
                            origin=('test', 'v0', 'minicube.fits', 'v0'),
@@ -232,20 +251,21 @@ def test_add_narrow_band_image(minicube):
                        ~(src.images['MASK_SKY'].data.data.astype(bool)))
     assert_array_equal(src.images['MASK_INTER'].data.data,
                        np.zeros(src.images['MASK_INTER'].shape))
-    assert 'MASK_OBJ' in src.images
-    assert 'MASK_INTER' in src.images
-    assert 'MASK_SKY' in src.images
     src.extract_spectra(minicube, obj_mask='MASK_OBJ', skysub=True, psf=None)
-    assert 'MUSE_SKY' in src.spectra
-    assert 'MUSE_TOT_SKYSUB' in src.spectra
-    assert 'MUSE_WHITE_SKYSUB' in src.spectra
-    assert 'NB_HALPHA_SKYSUB' in src.spectra
     src.extract_spectra(minicube, obj_mask='MASK_OBJ', skysub=False,
                         psf=0.2 * np.ones(minicube.shape[0]))
-    assert 'MUSE_PSF' in src.spectra
-    assert 'MUSE_TOT' in src.spectra
-    assert 'MUSE_WHITE' in src.spectra
-    assert 'NB_HALPHA' in src.spectra
+
+    filename = str(tmpdir.join('source.fits'))
+    src.write(filename)
+    src = Source.from_file(filename)
+
+    for name in ('MASK_OBJ', 'MASK_INTER', 'MASK_SKY'):
+        assert name in src.images
+
+    for name in ('MUSE_SKY', 'MUSE_TOT_SKYSUB', 'MUSE_WHITE_SKYSUB',
+                 'NB_HALPHA_SKYSUB', 'MUSE_PSF', 'MUSE_TOT', 'MUSE_WHITE',
+                 'NB_HALPHA'):
+        assert name in src.spectra
 
     Ny = np.array([ima.shape[0] for ima in src.images.values()])
     assert len(np.unique(Ny)) == 1

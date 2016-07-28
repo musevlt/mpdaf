@@ -50,6 +50,7 @@ import warnings
 
 from astropy.io import fits as pyfits
 from astropy.table import Table, MaskedColumn, vstack
+from astropy.utils import minversion
 from functools import partial
 from matplotlib import cm
 from matplotlib.patches import Ellipse
@@ -64,6 +65,8 @@ from ..MUSE import FieldsMap, FSF
 from ..MUSE.PSF import MOFFAT1
 from ..sdetect.sea import segmentation, mask_creation, findCentralDetection
 from ..sdetect.sea import union, intersection, compute_spectrum
+
+ASTROPY_LT_1_1 = not minversion('astropy', '1.1')
 
 emlines = {1215.67: 'LYALPHA1216',
            1550.0: 'CIV1550',
@@ -87,6 +90,67 @@ emlines = {1215.67: 'LYALPHA1216',
            6583.0: '[NII]6583',
            6716.0: '[SII]6716',
            6731.0: '[SII]6731'}
+
+
+TABLES_SCHEMA = {
+    # Version of the source format, see SourceICD.pdf
+    'version': '0.5',
+    'MAG': {
+        'BAND': {
+            'description': 'Filter name',
+            'unit': 'unitless',
+            'dtype': 'S20',
+            'primary_index': True
+        },
+        'MAG': {
+            'format': '.3f',
+            'description': 'AB Magnitude',
+            'unit': 'unitless',
+            'dtype': 'f8'
+        },
+        'MAG_ERR': {
+            'format': '.3f',
+            'description': 'Error in AB Magnitude',
+            'unit': 'unitless',
+            'dtype': 'f8'
+        }
+    },
+    'Z': {
+        'Z': {
+            'description': 'Estimated redshift',
+            'format': '.4f',
+            'unit': 'unitless',
+            'dtype': 'f8'
+        },
+        'Z_MIN': {
+            'description': 'Lower bound of estimated redshift',
+            'format': '.4f',
+            'unit': 'unitless',
+            'dtype': 'f8'
+        },
+        'Z_MAX': {
+            'description': 'Upper bound of estimated redshift',
+            'format': '.4f',
+            'unit': 'unitless',
+            'dtype': 'f8'
+        },
+        'Z_DESC': {
+            'description': 'Type of redshift',
+            'unit': 'unitless',
+            'dtype': 'S20',
+            'primary_index': True
+        }
+    }
+}
+
+
+def _set_table_attributes(name, table):
+    for colname, attributes in TABLES_SCHEMA[name].items():
+        for attr, value in attributes.items():
+            if attr not in ('dtype', 'primary_index'):
+                setattr(table[colname], attr, value)
+            elif not ASTROPY_LT_1_1 and attr == 'primary_index':
+                table.add_index(colname, unique=True)
 
 
 def vacuum2air(vac):
@@ -237,6 +301,7 @@ def _read_mpdaf_obj(cls, hdulist, ext, **kwargs):
             os.path.basename(filename), ext, cls.__name__, e))
     return obj
 
+
 def _read_table(hdulist, extname, **kwargs):
     """Read a masked Table from a FITS HDUList."""
     t = _read_ext(Table, hdulist, extname, **kwargs)
@@ -249,18 +314,6 @@ def _read_table(hdulist, extname, **kwargs):
     return t
 
 
-# def _read_masked_table(hdulist, extname, **kwargs):
-#     """Read a masked Table from a FITS HDUList."""
-#     t = _read_ext(Table, hdulist, extname, masked=True)
-#     h = hdulist[extname].header
-#     for i in range(h['TFIELDS']):
-#         try:
-#             t.columns[i].unit = h['TUNIT%d' % (i + 1)]
-#         except:
-#             pass
-#     return t
-
-# _read_masked_table = partial(_read_ext, Table, masked=True)
 _read_spectrum = partial(_read_mpdaf_obj, Spectrum)
 _read_image = partial(_read_mpdaf_obj, Image)
 _read_cube = partial(_read_mpdaf_obj, Cube)
@@ -318,9 +371,8 @@ class Source(object):
         self.cubes = cubes or {}
         # Dictionary TABLES
         self.tables = tables or {}
-        # logger
+
         self._logger = logging.getLogger(__name__)
-        # mask invalid
         if mask_invalid:
             self.masked_invalid()
 
@@ -418,6 +470,8 @@ class Source(object):
         images = {}
         cubes = {}
         tables = {}
+        lines = mag = z = None
+        logger = logging.getLogger(__name__)
 
         if ext is None:
             extnames = [h.name for h in hdulist[1:]]
@@ -427,46 +481,25 @@ class Source(object):
             extnames = [h.name for e in ext
                         for h in hdulist[1:] if re.findall(e, h.name)]
 
-        lines = (_read_table(hdulist, 'LINES', masked=True) if 'LINES' in extnames
-                 else None)
-        if lines is not None:
+        if 'LINES' in extnames:
+            lines = _read_table(hdulist, 'LINES', masked=True)
             for name in lines.colnames:
                 if 'LBDA' in name or 'EQW' in name:
                     lines[name].format = '.2f'
                 if 'FLUX' in name or 'FWHM' in name:
                     lines[name].format = '.1f'
 
-        mag = _read_table(hdulist, 'MAG', masked=True) if 'MAG' in extnames else None
-        if mag is not None:
-            for name in mag.colnames:
-                mag[name].unit = 'unitless'
-                if name == 'BAND':
-                    mag[name].description = 'Filter name'
-                elif name == 'MAG_ERR':
-                    mag[name].format = '.3f'
-                    mag[name].description = 'Error in AB Magnitude'
-                elif name == 'MAG':
-                    mag[name].format = '.3f'
-                    mag[name].description = 'AB Magnitude'
+        if 'MAG' in extnames:
+            mag = _read_table(hdulist, 'MAG', masked=True)
+            _set_table_attributes('MAG', mag)
 
-        z = _read_table(hdulist, 'Z', masked=True) if 'Z' in extnames else None
-        if z is not None:
-            for name in z.colnames:
-                z[name].unit = 'unitless'
-                if name == 'Z_DESC':
-                    z[name].description = 'Redshift description'
-                elif name == 'Z_MIN':
-                    z[name].format = '.4f'
-                    z[name].description = 'Lower bound of estimated redshift'
-                elif name == 'Z_MAX':
-                    z[name].format = '.4f'
-                    z[name].description = 'Upper bound of estimated redshift'
-                elif name == 'Z_ERR':
-                    z[name].format = '.4f'
-                    z[name].description = 'Error of estimated redshift'
-                elif name == 'Z':
-                    z[name].format = '.4f'
-                    z[name].description = 'Estimated redshift'
+        if 'Z' in extnames:
+            z = _read_table(hdulist, 'Z', masked=True)
+            _set_table_attributes('Z', z)
+            if 'Z_ERR' in z.colnames:
+                # Compatibility with old versions
+                z['Z_ERR'].format = '.4f'
+                z['Z_ERR'].description = 'Error of estimated redshift'
 
         for i, hdu in enumerate(hdulist[1:]):
             try:
@@ -495,16 +528,14 @@ class Source(object):
                         elif start == 'CUB':
                             cubes[name] = _read_cube(hdulist, ext, ima=False)
                     elif start == 'TAB':
-                        tables[extname[4:]] = _read_table(hdulist,
-                                                                 extname,
-                                                                 masked=True)
+                        tables[extname[4:]] = _read_table(hdulist, extname,
+                                                          masked=True)
             except Exception as e:
-                logger = logging.getLogger(__name__)
                 logger.warning(e)
         hdulist.close()
         if 'CUBE_V' not in hdr:
-            logger = logging.getLogger(__name__)
-            logger.warning('CUBE_V keyword in missing. It will be soon mandatory and its absence will return an error')
+            logger.warning('CUBE_V keyword in missing. It will be soon '
+                           'mandatory and its absence will return an error')
             hdr['CUBE_V'] = ('', 'datacube version')
         return cls(hdr, lines, mag, z, spectra, images, cubes, tables,
                    mask_invalid=mask_invalid)
@@ -520,22 +551,24 @@ class Source(object):
         filename : str
             FITS filename
         """
-        hdulist = pyfits.open(filename)
-        hdr = hdulist[0].header
+        lines = mag = z = None
+        with pyfits.open(filename) as hdulist:
+            hdr = hdulist[0].header
+            if 'LINES' in hdulist:
+                lines = _read_table(hdulist, 'LINES', masked=False)
+            if 'MAG' in hdulist:
+                mag = _read_table(hdulist, 'MAG', masked=False)
+            if 'Z' in hdulist:
+                z = _read_table(hdulist, 'Z', masked=False)
 
-        lines = (_read_table(hdulist, 'LINES', masked=False) if 'LINES' in hdulist
-                 else None)
-        mag = _read_table(hdulist, 'MAG', masked=False) if 'MAG' in hdulist else None
-        z = _read_table(hdulist, 'Z', masked=False) if 'Z' in hdulist else None
-
-        hdulist.close()
-        
         if 'CUBE_V' not in hdr:
             logger = logging.getLogger(__name__)
-            logger.warning('CUBE_V keyword in missing. It will be soon mandatory and its absence will return an error')
+            logger.warning('CUBE_V keyword in missing. It will be soon '
+                           'mandatory and its absence will return an error')
             hdr['CUBE_V'] = ('', 'datacube version')
-        
-        return cls(hdr, lines, mag, z, None, None, None, None, mask_invalid=False)
+
+        return cls(hdr, lines, mag, z, None, None, None, None,
+                   mask_invalid=False)
 
     def write(self, filename):
         """Write the source object in a FITS file.
@@ -548,16 +581,16 @@ class Source(object):
         warnings.simplefilter("ignore")
         # create primary header
         prihdu = pyfits.PrimaryHDU(header=self.header)
-        prihdu.header['date'] = (str(datetime.datetime.now()), 'creation date')
-        prihdu.header['author'] = ('MPDAF', 'origin of the file')
-
-        hdulist = [prihdu]
+        prihdu.header['DATE'] = (str(datetime.datetime.now()), 'Creation date')
+        prihdu.header['AUTHOR'] = ('MPDAF', 'Origin of the file')
+        prihdu.header['SRCVERS'] = (TABLES_SCHEMA['version'],
+                                    'Version of the Source format')
+        hdulist = pyfits.HDUList([prihdu])
 
         # lines
         if self.lines is not None:
             cols = []
-            for colname in self.lines.colnames:
-                col = self.lines[colname]
+            for colname, col in self.lines.columns.items():
                 if col.unit is not None:
                     unit = col.unit.to_string('fits')
                 else:
@@ -572,10 +605,8 @@ class Source(object):
                         unit=unit,
                         array=np.array(col)))
 
-            coldefs = pyfits.ColDefs(cols)
-            tbhdu = pyfits.BinTableHDU.from_columns(name='LINES',
-                                                    columns=coldefs)
-            hdulist.append(tbhdu)
+            hdulist.append(pyfits.BinTableHDU.from_columns(name='LINES',
+                                                           columns=cols))
 
         # magnitudes
         if self.mag is not None:
@@ -624,8 +655,7 @@ class Source(object):
             hdulist.append(tbhdu)
 
         # save to disk
-        hdu = pyfits.HDUList(hdulist)
-        hdu.writeto(filename, clobber=True, output_verify='fix')
+        hdulist.writeto(filename, clobber=True, output_verify='fix')
         warnings.simplefilter("default")
 
     def info(self):
@@ -641,9 +671,9 @@ class Source(object):
         for key in keys:
             info(self.header.cards[key])
         for key in itertools.chain(sorted(coms), sorted(hist)):
-            info("%s = %s / %s"%(self.header.cards[key][0],
-                                 self.header.cards[key][1],
-                                 self.header.cards[key][2]))
+            info("%s = %s / %s" % (self.header.cards[key][0],
+                                   self.header.cards[key][1],
+                                   self.header.cards[key][2]))
 
         if any([self.spectra, self.images, self.cubes, self.tables]):
             print('')
@@ -819,21 +849,11 @@ class Source(object):
 
         if self.z is None:
             if z != -9999:
-                self.z = Table(names=['Z_DESC', 'Z', 'Z_MIN', 'Z_MAX'],
-                               rows=[[desc, z, zmin, zmax]],
-                               dtype=('S20', 'f8', 'f8', 'f8'),
-                               masked=True)
-                self.z['Z'].format = '.4f'
-                self.z['Z'].description = 'Estimated redshift'
-                self.z['Z'].unit = 'unitless'
-                self.z['Z_MIN'].format = '.4f'
-                self.z['Z_MIN'].description = 'Lower bound of estimated redshift'
-                self.z['Z_MIN'].unit = 'unitless'
-                self.z['Z_MAX'].format = '.4f'
-                self.z['Z_MAX'].description = 'Upper bound of estimated redshift'
-                self.z['Z_MAX'].unit = 'unitless'
-                self.z['Z_DESC'].description = 'Type of redshift'
-                self.z['Z_DESC'].unit = 'unitless'
+                names = ('Z_DESC', 'Z', 'Z_MIN', 'Z_MAX')
+                dtypes = [TABLES_SCHEMA['Z'][name]['dtype'] for name in names]
+                self.z = Table(names=names, rows=[[desc, z, zmin, zmax]],
+                               dtype=dtypes, masked=True)
+                _set_table_attributes('Z', self.z)
         else:
             if desc in self.z['Z_DESC']:
                 sel = self.z['Z_DESC'] == desc
@@ -869,16 +889,11 @@ class Source(object):
             band = band.encode('utf8')
 
         if self.mag is None:
-            self.mag = Table(names=['BAND', 'MAG', 'MAG_ERR'],
-                             rows=[[band, m, errm]],
-                             dtype=('S20', 'f8', 'f8'),
-                             masked=True)
-            self.mag['MAG'].format = '.3f'
-            self.mag['MAG'].description = 'AB Magnitude'
-            self.mag['MAG'].unit = 'unitless'
-            self.mag['MAG_ERR'].format = '.3f'
-            self.mag['MAG_ERR'].description = 'Error in AB Magnitude'
-            self.mag['MAG_ERR'].unit = 'unitless'
+            names = ['BAND', 'MAG', 'MAG_ERR']
+            dtypes = [TABLES_SCHEMA['MAG'][name]['dtype'] for name in names]
+            self.mag = Table(names=names, rows=[[band, m, errm]],
+                             dtype=dtypes, masked=True)
+            _set_table_attributes('MAG', self.mag)
         else:
             if band in self.mag['BAND']:
                 self.mag['MAG'][self.mag['BAND'] == band] = m
@@ -987,10 +1002,10 @@ class Source(object):
 
     def add_image(self, image, name, size=None, minsize=2.0,
                   unit_size=u.arcsec, rotate=False):
-        """Extract an small image centered on the source center from the input
+        """Extract an image centered on the source center from the input
         image and append it to the images dictionary.
 
-        Extracted image saved in self.images['name'].
+        Extracted image saved in ``self.images[name]``.
 
         Parameters
         ----------
@@ -1003,8 +1018,8 @@ class Source(object):
             axis and the image is square. If None, the size of the white image
             extension is taken if it exists.
         unit_size : `astropy.units.Unit`
-            Size and minsize unit.
-            Arcseconds by default (use None for size in pixels)
+            Unit of ``size`` and ``minsize``. Arcseconds by default
+            (use None for size in pixels).
         minsize : float
             The minimum size of the output image.
         rotate : bool
@@ -1015,8 +1030,8 @@ class Source(object):
         if size is None:
             try:
                 white_ima = self.images['MUSE_WHITE']
-            except:
-                raise IOError('Size of the image is required')
+            except KeyError:
+                raise ValueError('Size of the image is required')
             if white_ima.wcs.sameStep(image.wcs):
                 size = white_ima.shape[0]
                 if unit_size is not None:
@@ -1030,29 +1045,27 @@ class Source(object):
                     if unit_size != u.arcsec:
                         minsize = (minsize * unit_size).to(u.arcsec).value
                 unit_size = u.arcsec
+
+        center = (self.dec, self.ra)
+        kwargs = dict(minsize=minsize, unit_center=u.deg, unit_size=unit_size)
         if rotate:
             try:
                 white_ima = self.images['MUSE_WHITE']
-            except:
-                raise IOError('MUSE_WHITE image is required to get the PA')
+            except KeyError:
+                raise ValueError('MUSE_WHITE image is required to get the '
+                                 'rotation angle')
             pa_white = white_ima.get_rot()
             pa = image.get_rot()
             if np.abs(pa_white - pa) > 1.e-3:
-                subima = image.subimage((self.dec, self.ra), size * 1.5, minsize=minsize,
-                                        unit_center=u.deg, unit_size=unit_size)
-                uniq = np.unique(subima.data.data)
+                image = image.subimage(center, size * 1.5, **kwargs)
+                uniq = np.unique(image.data.data)
                 if ((uniq == 0) | (uniq == 1)).all():
-                    subima = subima.rotate(pa_white - pa, order=0)
+                    image = image.rotate(pa_white - pa, order=0)
                 else:
-                    subima = subima.rotate(pa_white - pa)
-                subima = subima.subimage((self.dec, self.ra), size, minsize=minsize,
-                                         unit_center=u.deg, unit_size=unit_size)
-            else:
-                subima = image.subimage((self.dec, self.ra), size, minsize=minsize,
-                                        unit_center=u.deg, unit_size=unit_size)
-        else:
-            subima = image.subimage((self.dec, self.ra), size, minsize=minsize,
-                                    unit_center=u.deg, unit_size=unit_size)
+                    image = image.rotate(pa_white - pa)
+
+        subima = image.subimage(center, size, **kwargs)
+
         if subima is None:
             self._logger.warning('Image %s not added. Source outside or at the'
                                  ' edges', name)
@@ -1064,7 +1077,7 @@ class Source(object):
         """Extract a cube centered on the source center and append it to the
         cubes dictionary.
 
-        Extracted cube saved in self.cubes['name'].
+        Extracted cube saved in ``self.cubes[name]``.
 
         Parameters
         ----------
@@ -1079,18 +1092,19 @@ class Source(object):
         lbda : (float, float) or None
             If not None, tuple giving the wavelength range.
         unit_size : `astropy.units.Unit`
-            unit of the size value (arcseconds by default)
-            If None, size is in pixels
+            Unit of the size value (arcseconds by default). If None, size is
+            in pixels.
         unit_wave : `astropy.units.Unit`
-            Wavelengths unit (angstrom by default)
-            If None, inputs are in pixels
+            Wavelengths unit (angstrom by default). If None, inputs are in
+            pixels.
 
         """
         if size is None:
             try:
                 white_ima = self.images['MUSE_WHITE']
-            except:
-                raise IOError('Size of the image is required')
+            except KeyError:
+                raise ValueError('Size of the image is required')
+
             if white_ima.wcs.sameStep(cube.wcs):
                 size = white_ima.shape[0]
                 unit_size = None
@@ -1098,10 +1112,9 @@ class Source(object):
                 size = white_ima.wcs.get_step(unit=u.arcsec)[0] * white_ima.shape[0]
                 unit_size = u.arcsec
 
-        subcub = cube.subcube(center=(self.dec, self.ra), size=size, lbda=lbda,
-                              unit_center=u.deg, unit_size=unit_size,
-                              unit_wave=unit_wave)
-        self.cubes[name] = subcub
+        self.cubes[name] = cube.subcube(
+            center=(self.dec, self.ra), size=size, lbda=lbda,
+            unit_center=u.deg, unit_size=unit_size, unit_wave=unit_wave)
 
     def add_white_image(self, cube, size=5, unit_size=u.arcsec):
         """Compute the white images from the MUSE data cube and appends it to
