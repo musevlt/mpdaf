@@ -237,10 +237,9 @@ def _read_mpdaf_obj(cls, hdulist, ext, **kwargs):
             os.path.basename(filename), ext, cls.__name__, e))
     return obj
 
-
-def _read_masked_table(hdulist, extname, **kwargs):
+def _read_table(hdulist, extname, **kwargs):
     """Read a masked Table from a FITS HDUList."""
-    t = _read_ext(Table, hdulist, extname, masked=True)
+    t = _read_ext(Table, hdulist, extname, **kwargs)
     h = hdulist[extname].header
     for i in range(h['TFIELDS']):
         try:
@@ -248,6 +247,18 @@ def _read_masked_table(hdulist, extname, **kwargs):
         except:
             pass
     return t
+
+
+# def _read_masked_table(hdulist, extname, **kwargs):
+#     """Read a masked Table from a FITS HDUList."""
+#     t = _read_ext(Table, hdulist, extname, masked=True)
+#     h = hdulist[extname].header
+#     for i in range(h['TFIELDS']):
+#         try:
+#             t.columns[i].unit = h['TUNIT%d' % (i + 1)]
+#         except:
+#             pass
+#     return t
 
 # _read_masked_table = partial(_read_ext, Table, masked=True)
 _read_spectrum = partial(_read_mpdaf_obj, Spectrum)
@@ -416,7 +427,7 @@ class Source(object):
             extnames = [h.name for e in ext
                         for h in hdulist[1:] if re.findall(e, h.name)]
 
-        lines = (_read_masked_table(hdulist, 'LINES') if 'LINES' in extnames
+        lines = (_read_table(hdulist, 'LINES', masked=True) if 'LINES' in extnames
                  else None)
         if lines is not None:
             for name in lines.colnames:
@@ -425,7 +436,7 @@ class Source(object):
                 if 'FLUX' in name or 'FWHM' in name:
                     lines[name].format = '.1f'
 
-        mag = _read_masked_table(hdulist, 'MAG') if 'MAG' in extnames else None
+        mag = _read_table(hdulist, 'MAG', masked=True) if 'MAG' in extnames else None
         if mag is not None:
             for name in mag.colnames:
                 mag[name].unit = 'unitless'
@@ -438,7 +449,7 @@ class Source(object):
                     mag[name].format = '.3f'
                     mag[name].description = 'AB Magnitude'
 
-        z = _read_masked_table(hdulist, 'Z') if 'Z' in extnames else None
+        z = _read_table(hdulist, 'Z', masked=True) if 'Z' in extnames else None
         if z is not None:
             for name in z.colnames:
                 z[name].unit = 'unitless'
@@ -484,8 +495,9 @@ class Source(object):
                         elif start == 'CUB':
                             cubes[name] = _read_cube(hdulist, ext, ima=False)
                     elif start == 'TAB':
-                        tables[extname[4:]] = _read_masked_table(hdulist,
-                                                                 extname)
+                        tables[extname[4:]] = _read_table(hdulist,
+                                                                 extname,
+                                                                 masked=True)
             except Exception as e:
                 logger = logging.getLogger(__name__)
                 logger.warning(e)
@@ -511,10 +523,10 @@ class Source(object):
         hdulist = pyfits.open(filename)
         hdr = hdulist[0].header
 
-        lines = (_read_masked_table(hdulist, 'LINES') if 'LINES' in hdulist
+        lines = (_read_table(hdulist, 'LINES', masked=False) if 'LINES' in hdulist
                  else None)
-        mag = _read_masked_table(hdulist, 'MAG') if 'MAG' in hdulist else None
-        z = _read_masked_table(hdulist, 'Z') if 'Z' in hdulist else None
+        mag = _read_table(hdulist, 'MAG', masked=False) if 'MAG' in hdulist else None
+        z = _read_table(hdulist, 'Z', masked=False) if 'Z' in hdulist else None
 
         hdulist.close()
         
@@ -523,7 +535,7 @@ class Source(object):
             logger.warning('CUBE_V keyword in missing. It will be soon mandatory and its absence will return an error')
             hdr['CUBE_V'] = ('', 'datacube version')
         
-        return cls(hdr, lines, mag, z, None, None, None, None)
+        return cls(hdr, lines, mag, z, None, None, None, None, mask_invalid=False)
 
     def write(self, filename):
         """Write the source object in a FITS file.
