@@ -46,11 +46,9 @@ import os.path
 import re
 import six
 import shutil
-import warnings
 
 from astropy.io import fits as pyfits
 from astropy.table import Table, MaskedColumn, vstack
-from astropy.utils import minversion
 from functools import partial
 from matplotlib import cm
 from matplotlib.patches import Ellipse
@@ -65,8 +63,7 @@ from ..MUSE import FieldsMap, FSF
 from ..MUSE.PSF import MOFFAT1
 from ..sdetect.sea import segmentation, mask_creation, findCentralDetection
 from ..sdetect.sea import union, intersection, compute_spectrum
-
-ASTROPY_LT_1_1 = not minversion('astropy', '1.1')
+from ..tools.astropycompat import ASTROPY_LT_1_1, table_to_hdu
 
 emlines = {1215.67: 'LYALPHA1216',
            1550.0: 'CIV1550',
@@ -92,6 +89,8 @@ emlines = {1215.67: 'LYALPHA1216',
            6731.0: '[SII]6731'}
 
 
+STR_DTYPE = 'S20' if six.PY2 else 'U20'
+
 TABLES_SCHEMA = {
     # Version of the source format, see SourceICD.pdf
     'version': '0.5',
@@ -99,7 +98,7 @@ TABLES_SCHEMA = {
         'BAND': {
             'description': 'Filter name',
             'unit': 'unitless',
-            'dtype': 'S20',
+            'dtype': STR_DTYPE,
             'primary_index': True
         },
         'MAG': {
@@ -137,7 +136,7 @@ TABLES_SCHEMA = {
         'Z_DESC': {
             'description': 'Type of redshift',
             'unit': 'unitless',
-            'dtype': 'S20',
+            'dtype': STR_DTYPE,
             'primary_index': True
         }
     }
@@ -578,7 +577,6 @@ class Source(object):
         filename : str
             FITS filename
         """
-        warnings.simplefilter("ignore")
         # create primary header
         prihdu = pyfits.PrimaryHDU(header=self.header)
         prihdu.header['DATE'] = (str(datetime.datetime.now()), 'Creation date')
@@ -589,33 +587,20 @@ class Source(object):
 
         # lines
         if self.lines is not None:
-            cols = []
-            for colname, col in self.lines.columns.items():
-                if col.unit is not None:
-                    unit = col.unit.to_string('fits')
-                else:
-                    unit = None
-                try:
-                    cols.append(pyfits.Column(
-                        name=col.name, format=col.dtype.char,
-                        unit=unit, array=np.array(col)))
-                except:
-                    cols.append(pyfits.Column(
-                        name=col.name, format='A20',
-                        unit=unit,
-                        array=np.array(col)))
-
-            hdulist.append(pyfits.BinTableHDU.from_columns(name='LINES',
-                                                           columns=cols))
+            tbhdu = table_to_hdu(self.lines)
+            tbhdu.name = 'LINES'
+            hdulist.append(tbhdu)
 
         # magnitudes
         if self.mag is not None:
-            tbhdu = pyfits.BinTableHDU(name='MAG', data=np.array(self.mag))
+            tbhdu = table_to_hdu(self.mag)
+            tbhdu.name = 'MAG'
             hdulist.append(tbhdu)
 
         # redshifts
         if self.z is not None:
-            tbhdu = pyfits.BinTableHDU(name='Z', data=np.array(self.z))
+            tbhdu = table_to_hdu(self.z)
+            tbhdu.name = 'Z'
             hdulist.append(tbhdu)
 
         # spectra
@@ -651,12 +636,12 @@ class Source(object):
 
         # tables
         for key, tab in six.iteritems(self.tables):
-            tbhdu = pyfits.BinTableHDU(name='TAB_%s' % key, data=np.array(tab))
+            tbhdu = table_to_hdu(tab)
+            tbhdu.name = 'TAB_%s'
             hdulist.append(tbhdu)
 
         # save to disk
         hdulist.writeto(filename, clobber=True, output_verify='fix')
-        warnings.simplefilter("default")
 
     def info(self):
         """Print information."""
@@ -844,9 +829,6 @@ class Source(object):
             except:
                 raise ValueError('Wrong type for errz in add_z')
 
-        if isinstance(desc, six.text_type):
-            desc = desc.encode('utf8')
-
         if self.z is None:
             if z != -9999:
                 names = ('Z_DESC', 'Z', 'Z_MIN', 'Z_MAX')
@@ -885,9 +867,6 @@ class Source(object):
         errm : float
             Magnitude error.
         """
-        if isinstance(band, six.text_type):
-            band = band.encode('utf8')
-
         if self.mag is None:
             names = ['BAND', 'MAG', 'MAG_ERR']
             dtypes = [TABLES_SCHEMA['MAG'][name]['dtype'] for name in names]
@@ -932,7 +911,7 @@ class Source(object):
                 elif is_float(val):
                     types.append('<f8')
                 else:
-                    types.append('S20')
+                    types.append(STR_DTYPE)
             self.lines = Table(rows=[values], names=cols, dtype=types,
                                masked=True)
             if units is not None:
@@ -960,7 +939,7 @@ class Source(object):
                     elif is_float(val):
                         typ = '<f8'
                     else:
-                        typ = 'S20'
+                        typ = STR_DTYPE
                     col = MaskedColumn(ma.masked_array(np.empty(nlines),
                                                        mask=np.ones(nlines)),
                                        name=col, dtype=typ, unit=unit,
@@ -975,7 +954,7 @@ class Source(object):
                     matchkey, matchval, add_if_not_matched = match
 
             if match is not None and matchkey in self.lines.colnames:
-                l = np.argwhere(self.lines[matchkey] == six.b(matchval))
+                l = np.argwhere(self.lines[matchkey] == matchval)
                 if len(l) > 0:
                     for col, val, unit in zip(cols, values, units):
                         if unit is None or unit == self.lines[col].unit:
@@ -1827,7 +1806,7 @@ class Source(object):
                     nlines = len(self.lines)
                     col = MaskedColumn(ma.masked_array(np.array([''] * nlines),
                                                        mask=np.ones(nlines)),
-                                       name='LINE', dtype='S20',
+                                       name='LINE', dtype=STR_DTYPE,
                                        unit='unitless',
                                        description='line name')
                     self.lines.add_column(col)
@@ -1857,11 +1836,11 @@ class Source(object):
             if isinstance(self.lines['LINE'], MaskedColumn):
                 self.lines['LINE'] = self.lines['LINE'].filled('')
 
-            subtab1 = self.lines[self.lines['LINE'] != b'']
+            subtab1 = self.lines[self.lines['LINE'] != '']
             subtab1.sort('FLUX')
             subtab1.reverse()
             n1 = len(subtab1)
-            subtab2 = self.lines[self.lines['LINE'] == b'']
+            subtab2 = self.lines[self.lines['LINE'] == '']
             subtab2.sort('FLUX')
             subtab2.reverse()
             n2 = len(subtab2)

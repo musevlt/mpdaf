@@ -74,15 +74,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 GIT_CMD = ("git log --date=format:%Y --format='%ad %aN <%aE>' --date-order "
            "--reverse {} | cut -f1 --complement")
 
-EXCLUDES = ('lib/mpdaf/_githash.py', 'lib/mpdaf/tools/numpycompat.py')
+EXCLUDES = ('lib/mpdaf/_githash.py', 'lib/mpdaf/tools/numpycompat.py',
+            'lib/mpdaf/tools/astropycompat.py')
 
 ADDITIONAL_COPYRIGHTS = {
     'lib/mpdaf/sdetect/sea.py': [
         'Copyright (c) 2015-2016 Jarle Brinchman <jarle@strw.leidenuniv.nl>\n'
     ],
-    'lib/mpdaf/obj/plt_zscale.py': [
-        'Copyright (C)      2005 Association of Universities for Research in Astronomy (AURA)\n'
-    ]
 }
 
 
