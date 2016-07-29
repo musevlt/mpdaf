@@ -46,7 +46,6 @@ import os.path
 import re
 import six
 import shutil
-import warnings
 
 from astropy.io import fits as pyfits
 from astropy.table import Table, MaskedColumn, vstack
@@ -578,7 +577,6 @@ class Source(object):
         filename : str
             FITS filename
         """
-        # warnings.simplefilter("ignore")
         # create primary header
         prihdu = pyfits.PrimaryHDU(header=self.header)
         prihdu.header['DATE'] = (str(datetime.datetime.now()), 'Creation date')
@@ -592,24 +590,6 @@ class Source(object):
             tbhdu = table_to_hdu(self.lines)
             tbhdu.name = 'LINES'
             hdulist.append(tbhdu)
-            # cols = []
-            # for colname, col in self.lines.columns.items():
-            #     if col.unit is not None:
-            #         unit = col.unit.to_string('fits')
-            #     else:
-            #         unit = None
-            #     try:
-            #         cols.append(pyfits.Column(
-            #             name=col.name, format=col.dtype.char,
-            #             unit=unit, array=np.array(col)))
-            #     except:
-            #         cols.append(pyfits.Column(
-            #             name=col.name, format='A20',
-            #             unit=unit,
-            #             array=np.array(col)))
-
-            # hdulist.append(pyfits.BinTableHDU.from_columns(name='LINES',
-            #                                                columns=cols))
 
         # magnitudes
         if self.mag is not None:
@@ -662,7 +642,6 @@ class Source(object):
 
         # save to disk
         hdulist.writeto(filename, clobber=True, output_verify='fix')
-        # warnings.simplefilter("default")
 
     def info(self):
         """Print information."""
