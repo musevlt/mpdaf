@@ -38,19 +38,18 @@ import glob
 import logging
 import numpy as np
 import os
+import re
 import six
+import string
 import sys
 
 from astropy.coordinates import SkyCoord
 from astropy.table import Table, Column, hstack, vstack
 from astropy import units as u
-from astropy.utils import minversion
 from matplotlib.patches import Ellipse
-import re
 from six.moves import range, zip
-import string
 
-ASTROPY_LT_1_1 = not minversion('astropy', '1.1')
+from ..tools.astropycompat import ASTROPY_LT_1_1
 
 INVALID = {
     type(1): -9999, np.int_: -9999,
@@ -73,7 +72,7 @@ class Catalog(Table):
             if name in self.colnames:
                 self.rename_column(name, name.upper())
         self.masked_invalid()
-        
+
     @classmethod
     def read(cls, *args, **kwargs):
         t = Table.read(*args, **kwargs)
@@ -113,11 +112,11 @@ class Catalog(Table):
 
         """
         logger = logging.getLogger(__name__)
-        
+
         ###############################################
         # List the columns (name/type) of the catalog #
         ###############################################
-        
+
         # union of all headers keywords without mandatory FITS keywords
         h = sources[0].header
 
@@ -125,21 +124,21 @@ class Catalog(Table):
         for source in sources[1:]:
             h = source.header
             d.update(dict(list(zip(list(h.keys()), [(type(c[1]), c[2]) for c in h.cards]))))
-            
-        
+
+
         keys = set(d.keys())
         coms = set(filter(lambda k: re.match('COM\d\d\d', k), keys))
         hists = set(filter(lambda k: re.match('HIST\d\d\d', k), keys))
         excluded_cards = {'SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
                           'AUTHOR'}
         keys = keys - excluded_cards - coms - hists
-        
+
         #comments
         if len(coms)>0:
             com = ['COM']
         else:
             com = []
-            
+
         #histories
         if len(hists)>0:
             hist = ['HIST']
@@ -252,7 +251,7 @@ class Catalog(Table):
                                     logger.warning('source %d: line labeled \"%s\" not loaded' % (source.ID, line))
                                 except:
                                     names_lines += ['%s_%s' % (line.replace('_', ''), col) for col in colnames]
-                                        
+
                 names_lines = list(set(np.concatenate([names_lines])))
                 names_lines.sort()
                 dtype_lines = [d['_'.join(name.split('_')[1:])] for name in names_lines]
@@ -279,7 +278,7 @@ class Catalog(Table):
                     units_lines = [unit[key] for key in sorted(d)] * lmax
             else:
                 raise IOError('Catalog creation: invalid format. It must be default or working.')
-                
+
         ###############################################
         # Set the data row by row                     #
         ###############################################
@@ -312,7 +311,7 @@ class Catalog(Table):
                             row += [source.mag['MAG_ERR'][source.mag['BAND'] == key[:-4]].data[0]]
                         else:
                             row += [np.nan]
-            
+
             # redshifts
             if len(lz) != 0:
                 if source.z is None:
@@ -331,14 +330,14 @@ class Catalog(Table):
                             row += [source.z['Z_ERR'][source.z['Z_DESC'] == key[:-4]].data[0]]
                         else:
                             row += [np.nan]
-            
+
             # lines
             if len(llines) != 0:
                 if source.lines is None:
                     for typ in dtype_lines:
                         row += [INVALID[typ.type]]
                 else:
-                    if fmt == 'default': 
+                    if fmt == 'default':
                         if 'LINE' not in source.lines.colnames:
                             logger.warning('source %d:LINE column not present in LINE table. LINE information will be not loaded with the default format.'%source.ID)
                             for typ in dtype_lines:
@@ -376,12 +375,12 @@ class Catalog(Table):
                                     row += [INVALID[typ.type]]
                     else:
                         pass
-                    
+
             #comments
             if len(coms)>0:
                 src_coms = string.join(['%s (%s).'%(c[1], c[2]) for c in source.header.cards['COM*']])
                 row += [src_coms]
-                            
+
             #histories
             if len(hists)>0:
                 src_hists = string.join(['%s (%s).'%(c[1], c[2]) for c in source.header.cards['HIST*']])

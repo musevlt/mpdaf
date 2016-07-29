@@ -3,7 +3,6 @@
 import astropy
 import numpy as np
 import pytest
-import six
 
 from astropy.table import Table
 from mpdaf.obj import Image, Cube, Spectrum
@@ -74,10 +73,9 @@ def source1():
                  'LBDA_REST', 'LBDA_REST_ERR',
                  'FWHM_REST', 'FWHM_REST_ERR',
                  'FLUX', 'FLUX_ERR', 'LINE']
-    line1 = [5550, 10, 2.3, 0.2, 5600.0, 11.0, 2.5, 0.4, 28.0, 3.1,
-             six.b('[OIII]')]
+    line1 = [5550, 10, 2.3, 0.2, 5600.0, 11.0, 2.5, 0.4, 28.0, 3.1, '[OIII]']
     line2 = [5550, 10, 2.3, 0.2, 5600.0, 11.0, 2.5, 0.4, 28.0879, 3.1,
-             six.b('[OIII]2')]
+             '[OIII]2']
     lines = Table(names=col_lines, rows=[line1, line2])
     s = Source.from_data(ID=1, ra=-65.1349958, dec=140.3057987,
                          origin=('test', 'v0', 'cube.fits', 'v0'), lines=lines)

@@ -6,17 +6,14 @@ import astropy.units as u
 import numpy as np
 import os
 import pytest
-import six
 
 from astropy.table import Table
-from astropy.utils import minversion
 from mpdaf.obj import Cube
 from mpdaf.sdetect import Source
+from mpdaf.tools.astropycompat import ASTROPY_LT_1_1
 from numpy.testing import assert_array_equal, assert_almost_equal
 
 from ...tests.utils import get_data_file
-
-ASTROPY_LT_1_1 = not minversion('astropy', '1.1')
 
 
 def test_light():
@@ -70,8 +67,8 @@ def test_loc(source1):
     assert source1.z.primary_key == ('Z_DESC', )
     assert source1.mag.primary_key == ('BAND', )
 
-    assert source1.z.loc[six.b('z_test')]['Z'] == 0.07
-    assert source1.mag.loc[six.b('TEST2')]['MAG'] == 24.5
+    assert source1.z.loc['z_test']['Z'] == 0.07
+    assert source1.mag.loc['TEST2']['MAG'] == 24.5
 
 
 def test_write(tmpdir, source1):
@@ -80,13 +77,16 @@ def test_write(tmpdir, source1):
     with pytest.raises(ValueError):
         source1.add_z('z_error', 2.0, errz=[0.001])
 
-    sel = np.where(source1.z['Z_DESC'] == six.b('z_test2'))[0][0]
+    sel = np.where(source1.z['Z_DESC'] == 'z_test2')[0][0]
     assert source1.z['Z'][sel] == 1.0
     assert source1.z['Z_MIN'][sel] is np.ma.masked
     assert source1.z['Z_MAX'][sel] is np.ma.masked
 
     source1.add_z('z_test2', -9999)
-    assert six.b('z_test2') not in source1.z['Z_DESC']
+    assert 'z_test2' not in source1.z['Z_DESC']
+
+    table = Table(rows=[[1, 2.34, 'Hello']], names=('ID', 'value', 'name'))
+    source1.tables['TEST'] = table
 
     source1.write(filename)
     source1.info()
@@ -110,6 +110,12 @@ def test_write(tmpdir, source1):
         assert src.z['Z'][sel] == 2.0
         assert src.z['Z_MIN'][sel] == 1.8
         assert src.z['Z_MAX'][sel] == 2.5
+
+        if method == Source.from_file:
+            assert src.tables['TEST'].colnames == table.colnames
+            assert src.tables['TEST'][0].data == table[0].data
+        else:
+            assert src.tables == {}
 
 
 def test_comments(source1):
@@ -147,7 +153,7 @@ def test_line():
                  fmt=['.2f', '.3f', None])
     lines = src.lines
     assert lines['LBDA_OBS'].unit == u.angstrom
-    assert lines['LBDA_OBS'][lines['LINE'] == six.b('TEST')][0] == 4810.123
+    assert lines['LBDA_OBS'][lines['LINE'] == 'TEST'][0] == 4810.123
 
     src.add_line(['LBDA_OBS', 'NEWCOL', 'NEWCOL2', 'NEWCOL3', 'LINE'],
                  [4807.0, 2, 5.55, 'my new col', 'TEST2'])
@@ -155,8 +161,8 @@ def test_line():
     src.add_line(['LBDA_OBS'], [6000.0], match=('LINE', 'TESTMISS', False))
 
     assert 'NEWCOL' in lines.colnames
-    assert six.b('TESTMISS') not in lines['LINE']
-    assert lines['LBDA_OBS'][lines['LINE'] == six.b('TEST')][0] == 4807.
+    assert 'TESTMISS' not in lines['LINE']
+    assert lines['LBDA_OBS'][lines['LINE'] == 'TEST'][0] == 4807.
 
 
 def test_add_cube(source2, minicube, tmpdir):
@@ -276,7 +282,7 @@ def test_add_narrow_band_image(minicube, tmpdir):
 def test_sort_lines(source1):
     """Source class: testing sort_lines method"""
     source1.sort_lines()
-    assert source1.lines['LINE'][0] == six.b('[OIII]2')
+    assert source1.lines['LINE'][0] == '[OIII]2'
 
 
 def test_SEA(minicube, a478hst):
