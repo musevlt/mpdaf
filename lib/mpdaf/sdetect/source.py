@@ -286,7 +286,7 @@ def _read_ext(cls, hdulist, extname, **kwargs):
         obj = cls(hdulist[extname].data, **kwargs)
     except Exception as e:
         raise IOError('%s: Impossible to open extension %s as a %s\n%s' % (
-            os.path.basename(hdulist.filename), extname, cls.__name__, e))
+            os.path.basename(hdulist.filename()), extname, cls.__name__, e))
     return obj
 
 
