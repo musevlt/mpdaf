@@ -195,8 +195,11 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
     limit = multiprocessing.cpu_count() - 1
     
     proc = []
-    sp = []
-    p=0
+    p = None
+    
+    fname =  'dosex0'
+    f2 = open("nb/%s"%fname, 'w')
+    nk = 0
 
     for k in range(2, size1 - 3):
         sys.stdout.write("Narrow band:%d/%d\r" % (k, size1 - 3))
@@ -230,45 +233,39 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
         hdulist = pyfits.HDUList([pyfits.PrimaryHDU(),
                                   pyfits.ImageHDU(name='DATA', data=imnb, header=hdr)])
         hdulist.writeto('nb/nb%04d.fits'%k, clobber=True)
+        nk = nk + 1
         
         if nbcube:
             outnbcube[k, :, :] = imnb[:, :]
 
         with chdir('nb'):
             if expmap is None:
-                sp.append([cmd_sex, '-CATALOG_TYPE', 'ASCII_HEAD',
-                                  '-CATALOG_NAME', 'nb%s.cat'%kstr,
-                                  'nb%s.fits'%kstr])
-                #p = subprocess.Popen([cmd_sex, '-CATALOG_TYPE', 'ASCII_HEAD',
-                #                  '-CATALOG_NAME', 'nb%s.cat'%kstr,
-                #                  'nb%s.fits'%kstr])
+                f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' +
+                     kstr + '.cat nb' + kstr + '.fits &\n')
             else:
                 expmap[k, :, :].write('exp' + kstr + '.fits', savemask='nan')
-                sp.append([cmd_sex,'-CATALOG_TYPE', 'ASCII_HEAD',
-                                  '-CATALOG_NAME', 'nb%s.cat'%kstr,
-                                  '-WEIGHT_IMAGE', 'exp%s.fits'%kstr,
-                                  'nb%s.fits'%kstr])
-                         
-                #p = subprocess.Popen([cmd_sex,'-CATALOG_TYPE', 'ASCII_HEAD',
-                #                  '-CATALOG_NAME', 'nb%s.cat'%kstr,
-                #                  '-WEIGHT_IMAGE', 'exp%s.fits'%kstr,
-                #                  'nb%s.fits'%kstr])
+                f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' +
+                     kstr + '.cat -WEIGHT_IMAGE exp' + kstr + '.fits nb &' +
+                     kstr + '.fits\n')
 
-            if (len(sp) == limit) or (k==size1-4):
-              if(proc!=[]):
-                proc.wait()
-              for i in range(len(sp)):
-                proc.append(subprocess.Popen(sp[i]))
-              sp=[]
-              proc=[]
+            if (nk == limit) or (k==size1-4):
+                f2.close()
+                st = os.stat(fname)
+                os.chmod(fname, st.st_mode | stat.S_IEXEC)
+                if p is not None:
+                    p.wait()
+                p = subprocess.Popen(['/bin/sh', fname])
+                if k<size1-4:
+                    fname = "dosex%s"%kstr
+                    f2 = open(fname, 'w')
+                    nk = 0
+                    
     sys.stdout.write("\n")
     sys.stdout.flush()
 
     if nbcube:
         outnbcubename = 'NB_' + os.path.basename(cubename)
         pyfits.writeto(outnbcubename, outnbcube, data_header, clobber=True)
-        
-    
 
 
 def step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta):
