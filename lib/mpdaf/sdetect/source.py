@@ -637,7 +637,7 @@ class Source(object):
         # tables
         for key, tab in six.iteritems(self.tables):
             tbhdu = table_to_hdu(tab)
-            tbhdu.name = 'TAB_%s'
+            tbhdu.name = 'TAB_%s' % key
             hdulist.append(tbhdu)
 
         # save to disk

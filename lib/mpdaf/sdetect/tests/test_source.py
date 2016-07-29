@@ -85,6 +85,9 @@ def test_write(tmpdir, source1):
     source1.add_z('z_test2', -9999)
     assert 'z_test2' not in source1.z['Z_DESC']
 
+    table = Table(rows=[[1, 2.34, 'Hello']], names=('ID', 'value', 'name'))
+    source1.tables['TEST'] = table
+
     source1.write(filename)
     source1.info()
     source1 = None
@@ -107,6 +110,12 @@ def test_write(tmpdir, source1):
         assert src.z['Z'][sel] == 2.0
         assert src.z['Z_MIN'][sel] == 1.8
         assert src.z['Z_MAX'][sel] == 2.5
+
+        if method == Source.from_file:
+            assert src.tables['TEST'].colnames == table.colnames
+            assert src.tables['TEST'][0].data == table[0].data
+        else:
+            assert src.tables == {}
 
 
 def test_comments(source1):
