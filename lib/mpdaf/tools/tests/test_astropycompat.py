@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from mpdaf.tools.astropycompat import zscale
+from astropy.io import fits
+from astropy.table import Table
+from mpdaf.tools.astropycompat import zscale, table_to_hdu
 
 
 def test_zscale():
@@ -20,3 +22,12 @@ def test_zscale():
     vmin, vmax = zscale(data)
     np.testing.assert_allclose(vmin, 0, atol=0.1)
     np.testing.assert_allclose(vmax, 99, atol=0.1)
+
+
+def test_table_to_hdu(tmpdir):
+    table = Table([[1, 2, 3], ['a', 'b', 'c'], [2.3, 4.5, 6.7]],
+                  names=['a', 'b', 'c'], dtype=['i', 'U1', 'f'])
+    hdu = table_to_hdu(table)
+    assert isinstance(hdu, fits.BinTableHDU)
+    filename = str(tmpdir.join('test_table_to_hdu.fits'))
+    hdu.writeto(filename, clobber=True)
