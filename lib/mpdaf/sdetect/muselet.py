@@ -345,7 +345,7 @@ def step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta):
 #             f.write(out.decode('utf-8'))
 
 
-def step3(cubename, ima_size, clean, skyclean, radius, nlines_max):
+def step2(cubename, ima_size, clean, skyclean, radius, nlines_max):
     logger = logging.getLogger(__name__)
     logger.info("muselet - STEP 3: merge SExtractor catalogs and measure "
                 "redshifts")
@@ -712,12 +712,11 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
     ----------
     cubename : str
         Name of the MUSE cube.
-    step : int in {1,2,3}
+    step : int in {1,2}
         Starting step for MUSELET to run:
 
-        - (1) produces the narrow-band images
-        - (2) runs SExtractor
-        - (3) merges catalogs and measure redshifts
+        - (1) produces the narrow-band images and runs SExtractor
+        - (2) merges catalogs and measure redshifts
 
     delta : int
         Size of the two median continuum estimates to be taken
@@ -760,11 +759,10 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
     """
     logger = logging.getLogger(__name__)
 
-    if step not in (1, 2, 3):
-        logger.error("muselet - ERROR: step must be 1, 2 or 3")
-        logger.error("muselet - STEP 1: creates images from cube")
-        logger.error("muselet - STEP 2: runs SExtractor")
-        logger.error("muselet - STEP 3: merge catalogs and measure redshifts")
+    if step not in (1, 2):
+        logger.error("muselet - ERROR: step must be 1, or 2")
+        logger.error("muselet - STEP 1: creates images from cube and runs SExtractor")
+        logger.error("muselet - STEP 2: merge catalogs and measure redshifts")
         return
 
     if len(fw) != 5:
@@ -792,8 +790,8 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
 #         if step <= 2:
 #             step2(cmd_sex)
 
-        if step <= 3:
-            continuum_lines, single_lines, raw_catalog = step3(
+        if step <= 2:
+            continuum_lines, single_lines, raw_catalog = step2(
                 cubename, ima_size, clean, skyclean, radius, nlines_max)
 
         if del_sex:
