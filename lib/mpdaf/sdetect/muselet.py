@@ -195,6 +195,8 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
     limit = multiprocessing.cpu_count() - 1
     
     proc = []
+    sp = []
+    p=0
 
     for k in range(2, size1 - 3):
         sys.stdout.write("Narrow band:%d/%d\r" % (k, size1 - 3))
@@ -234,22 +236,31 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
 
         with chdir('nb'):
             if expmap is None:
-                p = subprocess.Popen([cmd_sex, '-CATALOG_TYPE', 'ASCII_HEAD',
+                sp.append([cmd_sex, '-CATALOG_TYPE', 'ASCII_HEAD',
                                   '-CATALOG_NAME', 'nb%s.cat'%kstr,
                                   'nb%s.fits'%kstr])
+                #p = subprocess.Popen([cmd_sex, '-CATALOG_TYPE', 'ASCII_HEAD',
+                #                  '-CATALOG_NAME', 'nb%s.cat'%kstr,
+                #                  'nb%s.fits'%kstr])
             else:
                 expmap[k, :, :].write('exp' + kstr + '.fits', savemask='nan')
-                p = subprocess.Popen([cmd_sex,'-CATALOG_TYPE', 'ASCII_HEAD',
+                sp.append([cmd_sex,'-CATALOG_TYPE', 'ASCII_HEAD',
                                   '-CATALOG_NAME', 'nb%s.cat'%kstr,
                                   '-WEIGHT_IMAGE', 'exp%s.fits'%kstr,
                                   'nb%s.fits'%kstr])
+                         
+                #p = subprocess.Popen([cmd_sex,'-CATALOG_TYPE', 'ASCII_HEAD',
+                #                  '-CATALOG_NAME', 'nb%s.cat'%kstr,
+                #                  '-WEIGHT_IMAGE', 'exp%s.fits'%kstr,
+                #                  'nb%s.fits'%kstr])
 
-            proc.append(p)
-            
-        if len(proc) == limit:
-            for p in proc:
-                p.wait()
-            proc = []
+            if (len(sp) == limit) or (k==size1-4):
+              if(proc!=[]):
+                proc.wait()
+              for i in range(len(sp)):
+                proc.append(subprocess.Popen(sp[i]))
+              sp=[]
+              proc=[]
     sys.stdout.write("\n")
     sys.stdout.flush()
 
