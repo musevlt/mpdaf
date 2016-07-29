@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from mpdaf.obj.plt_zscale import zscale
+from mpdaf.tools.astropycompat import zscale
 
 
 def test_zscale():
