@@ -9,7 +9,7 @@ from numpy.testing import assert_array_equal
 
 @pytest.mark.parametrize('fmt,ncols', (('default', 44),
                                        ('working', 42)))
-def test_catalog(source1, source2, fmt, ncols):
+def test_from_sources(source1, source2, fmt, ncols):
     source1.CUBE_V = '0.1'
     source2.CUBE_V = '0.2'
     lines1 = source1.lines['LINE'].data.copy()
@@ -22,3 +22,21 @@ def test_catalog(source1, source2, fmt, ncols):
     assert list(cat['CUBE_V']) == ['0.1', '0.2']
     assert_array_equal(source1.lines['LINE'].data, lines1)
     assert_array_equal(source2.lines['LINE'].data, lines2)
+
+
+def test_from_path(source1, source2, tmpdir):
+    source1.write(str(tmpdir.join('source1.fits')))
+    source2.write(str(tmpdir.join('source2.fits')))
+    cat = Catalog.from_path(str(tmpdir))
+    assert len(cat) == 2
+    # 2 additional columns vs from_sources: FILENAME is added by from_path, and
+    # SOURCE_V which was added in the Source.write
+    assert len(cat.colnames) == 46
+
+    filename = str(tmpdir.join('cat.fits'))
+    cat.write(filename)
+
+    c = Catalog.read(filename)
+    assert c.colnames == cat.colnames
+    assert len(cat) == 2
+    assert isinstance(c, Catalog)

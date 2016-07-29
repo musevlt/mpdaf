@@ -75,7 +75,7 @@ class Catalog(Table):
 
     @classmethod
     def read(cls, *args, **kwargs):
-        t = Table.read(*args, **kwargs)
+        t = super(Catalog, cls).read(*args, **kwargs)
         if not ASTROPY_LT_1_1 and 'ID' in t.colnames:
             t.add_index('ID')
         return t
