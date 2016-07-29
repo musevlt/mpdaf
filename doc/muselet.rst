@@ -20,9 +20,9 @@ a single catalog, separating the emission lines linked with continuum sources
 detected in the white light images from the isolated emission lines. It then
 tries to estimate the redshift from multiple emission lines.
 
-MUSELET takes as an input a MUSE DATACUBE (fits format), and works in 3 steps:
+MUSELET takes as an input a MUSE DATACUBE (fits format), and works in 2 steps:
 
-- STEP 1: creation of white light, color and narrow band images.
+- STEP 1: creation of white light, color and narrow band images, then runs SExtractor.
 
   MUSELET will first create a variance-weighted white light image as well as
   R,G,B images based on 1/3 of the wavelength range each.  The code will then
@@ -37,12 +37,12 @@ MUSELET takes as an input a MUSE DATACUBE (fits format), and works in 3 steps:
   These narrow band images are created in the ``nb/`` directory. If not present
   it will be created.
 
-- STEP 2: MUSELET will run SExtractor using the ``default.sex``,
+  MUSELET will simultaneously run SExtractor on the images using the ``default.sex``,
   ``default.param``, ``default.conv`` and ``default.nnw`` parameter files in
   the current and ``nb/`` directory. If not present default parameter files are
   created.
 
-- STEP 3: The code will merge all SExtractor catalogs and will return separate
+- STEP 2: The code will merge all SExtractor catalogs and will return separate
   emission lines linked with continuum objects from the rest.  For each of
   these catalog, MUSELET will estimate a redshift based on multiple emission
   lines. Emission lines are merged spatially to the same source based on the
@@ -69,7 +69,7 @@ MUSELET is run through the following commands in MPDAF::
   >>> from mpdaf.sdetect import muselet
   >>> cont, sing, raw = muselet('DATACUBE.fits')
 
-Optionally, one can provide the starting step (2 or 3) in order to only redo
+Optionally, one can provide the starting step (1 or 2) in order to only redo
 one part of the script::
 
   >>> cont, sing, raw = muselet('DATACUBE.fits',step=2) #will assume the narrow-band images are already created
