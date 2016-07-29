@@ -2,9 +2,22 @@
 
 from __future__ import absolute_import, division, print_function
 
+import numpy as np
 import pytest
 from mpdaf.sdetect import Catalog
 from numpy.testing import assert_array_equal
+
+
+def test_catalog():
+    cat = Catalog(rows=[[1, 50., 10., 2., -9999],
+                        [2, 40., 20., np.nan, 2]],
+                  names=('ID', 'ra', 'dec', 'z', 'flag'), masked=True)
+    print(cat)
+    assert len(cat) == 2
+    assert cat.masked
+    assert cat.colnames == ['ID', 'RA', 'DEC', 'Z', 'flag']
+    assert cat['flag'][0] is np.ma.masked
+    assert cat['Z'][1] is np.ma.masked
 
 
 @pytest.mark.parametrize('fmt,ncols', (('default', 44),

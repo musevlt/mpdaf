@@ -71,7 +71,8 @@ class Catalog(Table):
         for name in ('ra', 'dec', 'z'):
             if name in self.colnames:
                 self.rename_column(name, name.upper())
-        self.masked_invalid()
+        if self.masked:
+            self.masked_invalid()
 
     @classmethod
     def read(cls, *args, **kwargs):
