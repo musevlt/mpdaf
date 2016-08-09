@@ -1165,6 +1165,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         out : 1 or 2
             1: the magnitude is returned,
             2: the magnitude, mean flux and mean wavelength are returned.
+            3: the magnitude and its error is returned
 
         Returns
         -------
@@ -1214,11 +1215,21 @@ class Spectrum(ArithmeticMixin, DataArray):
         w = interpolate.splev(lb, tck, der=0)
         vflux = np.ma.average(self.data[imin:imax], weights=w)
         vflux2 = (vflux * self.unit).to(u.Unit('erg.s-1.cm-2.Angstrom-1')).value
-        mag = flux2mag(vflux2, l0)
+        if self.var is not None:
+            err_vflux = np.sqrt(np.ma.average(self.var[imin:imax], weights=w))
+        else:
+            err_vflux = 0
+        mag = flux2mag(vflux2, l0)        
+        if out == 3:
+            vflux2min = ((vflux-err_vflux) * self.unit).to(u.Unit('erg.s-1.cm-2.Angstrom-1')).value
+            vflux2max = ((vflux+err_vflux) * self.unit).to(u.Unit('erg.s-1.cm-2.Angstrom-1')).value
+            err_mag = 0.5*np.abs(flux2mag(vflux2max, l0) - flux2mag(vflux2min, l0))
         if out == 1:
             return mag
         if out == 2:
             return np.array([mag, vflux, l0])
+        if out == 3:
+            return np.array([mag, err_mag])
 
     def truncate(self, lmin=None, lmax=None, unit=u.angstrom):
         """Truncate the wavelength range of a spectrum in-place.
