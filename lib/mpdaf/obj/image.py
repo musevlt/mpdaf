@@ -711,8 +711,6 @@ class Image(ArithmeticMixin, DataArray):
 
         """
 
-        out = self if inplace else self.copy()
-
         # Get the sky coordinates of the corners of the rectangular
         # region that is bounded by x_min..x_max and y_min..y_max.
 
@@ -724,7 +722,7 @@ class Image(ArithmeticMixin, DataArray):
         # Find the pixel indexes of the corners of the same region.
 
         if unit is not None:
-            pixcrd = out.wcs.sky2pix(skycrd, unit=unit)
+            pixcrd = self.wcs.sky2pix(skycrd, unit=unit)
         else:
             pixcrd = skycrd
 
@@ -733,18 +731,21 @@ class Image(ArithmeticMixin, DataArray):
         # region of the array that contains the requested region.
 
         imin = max(0, int(np.min(pixcrd[:, 0]) + 0.5))
-        imax = min(out.shape[0], int(np.max(pixcrd[:, 0]) + 0.5) + 1)
+        imax = min(self.shape[0], int(np.max(pixcrd[:, 0]) + 0.5) + 1)
         jmin = max(0, int(np.min(pixcrd[:, 1]) + 0.5))
-        jmax = min(out.shape[1], int(np.max(pixcrd[:, 1]) + 0.5) + 1)
+        jmax = min(self.shape[1], int(np.max(pixcrd[:, 1]) + 0.5) + 1)
 
         # Extract the rectangular area that contains the requested region.
-
-        subima = out[imin:imax, jmin:jmax]
-        out._data = subima._data
-        if out._var is not None:
-            out._var = subima._var
-        out._mask = subima._mask
-        out.wcs = subima.wcs
+        subima = self[imin:imax, jmin:jmax]
+        if inplace:
+            self._data = subima._data
+            if self._var is not None:
+                self._var = subima._var
+            self._mask = subima._mask
+            self.wcs = subima.wcs
+            out = self
+        else:
+            out = subima
 
         # If the region is rotated relative to the image array axes
         # then the rectangular sub-image that contains this will has
