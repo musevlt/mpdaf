@@ -4730,6 +4730,7 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
 
     # Obtain the FFT of the image.
     fft = np.fft.rfft2(data)
+    del data
 
     # The new pixel sizes along the X and Y axes can only correctly
     # sample spatial frequencies up to the values in newfmax. Set the
@@ -4770,9 +4771,11 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
     # cutoff frequencies.
 
     fft *= winfn(wr)
+    del wr
 
     # Perform an inverse Fourier transform to get the filtered image
     data = np.fft.irfft2(fft)
+    del fft
 
     # Crop the antialiased image to remove the zero-padded pixels, and
     # return this along with the new spatial-frequency limits.
