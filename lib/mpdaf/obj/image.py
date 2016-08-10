@@ -3378,11 +3378,25 @@ class Image(ArithmeticMixin, DataArray):
 
         """
 
-        out = self if inplace else self.copy()
-
         # Do nothing if the images are already aligned.
-        if out.wcs.isEqual(other.wcs):
-            return out
+        if self.wcs.isEqual(other.wcs):
+            return self if inplace else self.copy()
+
+        # Determine the ranges of right-ascension and declination
+        # covered by the target image grid plus an extra pixel at
+        # each edge.
+        pixsky = other.wcs.pix2sky([[-1, -1],
+                                    [other.shape[0], -1],
+                                    [-1, other.shape[1]],
+                                    [other.shape[0], other.shape[1]]],
+                                   unit=u.deg)
+        dec_min, ra_min = pixsky.min(axis=0)
+        dec_max, ra_max = pixsky.max(axis=0)
+
+        # Truncate the input image to just enclose the above ranges of
+        # right-ascension and declination.
+        out = self.truncate(dec_min, dec_max, ra_min, ra_max, mask=False,
+                            unit=u.deg, inplace=inplace)
 
         # Rotate the image to have the same orientation as the other
         # image. Note that the rotate function has a side effect of
