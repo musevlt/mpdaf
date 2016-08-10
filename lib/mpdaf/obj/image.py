@@ -3054,8 +3054,6 @@ class Image(ArithmeticMixin, DataArray):
 
         """
 
-        image = self if inplace else self.copy()
-
         # Create a shape that has the same dimension for both axes?
         if is_int(newdim):
             newdim = (newdim, newdim)
@@ -3069,7 +3067,7 @@ class Image(ArithmeticMixin, DataArray):
 
             # Use the pixel index of the bottom left corner of the image.
             refpix = np.array([-0.5, -0.5])
-            refpos = image.wcs.pix2sky(refpix)
+            refpos = self.wcs.pix2sky(refpix)
         elif refpos is not None and refpix is not None:
             # Were refpos and refpix both given values?
 
@@ -3077,7 +3075,7 @@ class Image(ArithmeticMixin, DataArray):
             # it's units to the current WCS units.
             if unit_pos is not None:
                 refpos = (np.asarray(refpos, dtype=np.float) *
-                          unit_pos).to(image.wcs.unit).value
+                          unit_pos).to(self.wcs.unit).value
             else:
                 refpos = np.asarray(refpos, dtype=np.float)
 
@@ -3089,7 +3087,7 @@ class Image(ArithmeticMixin, DataArray):
                              'None or both have values.')
 
         # Get the current index increments of the 2 axes.
-        oldinc = image.wcs.get_axis_increments()
+        oldinc = self.wcs.get_axis_increments()
 
         # Use a common increment for both axes? If so, give them
         # the same size, but with signs matching the current
@@ -3102,27 +3100,22 @@ class Image(ArithmeticMixin, DataArray):
         # same units as the WCS object.
         if unit_inc is not None:
             newinc = (np.asarray(newinc, dtype=np.float) *
-                      unit_inc).to(image.wcs.unit).value
+                      unit_inc).to(self.wcs.unit).value
         else:
             newinc = np.asarray(newinc, dtype=np.float)
 
         # Get a copy of the data array with masked values filled.
-        data = image._prepare_data(interp)
+        data = self._prepare_data(interp)
 
         # If the angular pixel increments along either axis are being
         # increased, then low-pass filter the data along that axis to
         # prevent aliasing in the resampled data.
         if antialias:
             data, newfmax = _antialias_filter_image(
-                data, abs(oldinc), abs(newinc), image.get_spatial_fmax(),
+                data, abs(oldinc), abs(newinc), self.get_spatial_fmax(),
                 window)
         else:
             newfmax = 0.5 / abs(newinc)
-
-        # If the spatial frequency band-limits of the image have been
-        # reduced by the changes in the Y and X sampling intervals,
-        # record this.
-        image.update_spatial_fmax(newfmax)
 
         # For each pixel in the output image, the affine_transform
         # function calculates the index of the equivalent pixel in the
@@ -3167,7 +3160,7 @@ class Image(ArithmeticMixin, DataArray):
         # affine_transform() is:
         #
         #   offset = sky2pix(refpos) - new2old * refpix
-        offset = (image.wcs.sky2pix(refpos).T[:, :1] -
+        offset = (self.wcs.sky2pix(refpos).T[:, :1] -
                   np.dot(new2old, refpix[np.newaxis, :].T))
 
         # For each pixel of the output image, map its index to the
@@ -3177,14 +3170,11 @@ class Image(ArithmeticMixin, DataArray):
                                 output_shape=newdim, order=order,
                                 prefilter=order >= 3)
 
-        # Zero the current data array and then fill its masked pixels
-        # with floating point 1.0s, so that we can resample this in
-        # the the same way as the data to see where the masked areas
-        # end up.
-        image._data[:, :] = 0.0
-        mask = np.ma.filled(image.data, 1.0)
+        # Create a floating point version of the mask in which masked
+        # elements are 1.0 and unmasked elements are 0.0.
+        mask = self._mask.astype(np.float)
 
-        # Resample the array of 1s that represent masked pixels.
+        # Resample the floating point version of the mask array.
         mask = affine_transform(mask, new2old, offset.flatten(), cval=1.0,
                                 output_shape=newdim, output=np.float)
 
@@ -3198,8 +3188,8 @@ class Image(ArithmeticMixin, DataArray):
         mask = np.greater(mask, max(cutoff, 1.0e-6))
 
         # Also repeat the procedure for the array of variances, if any.
-        if image._var is not None:
-            var = affine_transform(image._var, new2old, offset.flatten(),
+        if self._var is not None:
+            var = affine_transform(self._var, new2old, offset.flatten(),
                                    output_shape=newdim, order=order,
                                    prefilter=order >= 3)
 
@@ -3266,33 +3256,43 @@ class Image(ArithmeticMixin, DataArray):
                         (1 / ys if ys > 1.0 and antialias else 1.0))
 
         # Install the resampled data, mask and variance arrays.
-        image._data = data
-        image._mask = mask
-        image._var = var
+        if inplace:
+            out = self
+            out._data = data
+            out._mask = mask
+            out._var = var
+        else:
+            out = Image.new_from_obj(self, ma.array(data,mask=mask),
+                                     var = False if var is None else var)
 
         # Get the coordinate reference pixel of the input image,
         # arranged as a column vector in python (Y,X) order. Note that
         # crpix contains FITS pixel indexes which are 1 greater than
         # the corresponding python pixel indexes.
-        oldcrpix = np.array([[image.wcs.get_crpix2() - 1],
-                             [image.wcs.get_crpix1() - 1]])
+        oldcrpix = np.array([[self.wcs.get_crpix2() - 1],
+                             [self.wcs.get_crpix1() - 1]])
 
         # Compute the updated value of the coordinate reference pixel
         # in (Y,X) axis order.
         newcrpix = np.dot(old2new, (oldcrpix - offset))
 
         # Update the world-coordinate description object.
-        image.wcs.set_axis_increments(newinc)
-        image.wcs.naxis1 = newdim[1]
-        image.wcs.naxis2 = newdim[0]
+        out.wcs.set_axis_increments(newinc)
+        out.wcs.naxis1 = newdim[1]
+        out.wcs.naxis2 = newdim[0]
 
         # Record the new value of the coordinate reference pixel,
         # being careful to convert from python 0-relative pixel
         # indexes to FITS 1-relative pixel indexes.
-        image.wcs.set_crpix1(newcrpix[1] + 1)
-        image.wcs.set_crpix2(newcrpix[0] + 1)
+        out.wcs.set_crpix1(newcrpix[1] + 1)
+        out.wcs.set_crpix2(newcrpix[0] + 1)
 
-        return image
+        # If the spatial frequency band-limits of the image have been
+        # reduced by the changes in the Y and X sampling intervals,
+        # record this.
+        out.update_spatial_fmax(newfmax)
+
+        return out
 
     def align_with_image(self, other, flux=False, inplace=False, cutoff=0.25,
                          antialias=True, window="blackman"):
