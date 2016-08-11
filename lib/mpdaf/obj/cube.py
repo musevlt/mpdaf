@@ -37,6 +37,7 @@ from __future__ import absolute_import, division
 
 import astropy.units as u
 import multiprocessing
+import warnings
 import numpy as np
 import os.path
 import sys
@@ -1742,7 +1743,8 @@ class Cube(ArithmeticMixin, DataArray):
 
         return ima
 
-    def bandpass_image(self, wavelengths, sensitivities, unit_wave=u.angstrom):
+    def bandpass_image(self, wavelengths, sensitivities, unit_wave=u.angstrom,
+                       interpolation="linear"):
         """Given a cube of images versus wavelength and the bandpass
         filter-curve of a wide-band monochromatic instrument, extract
         an image from the cube that has the spectral response of the
@@ -1753,9 +1755,6 @@ class Cube(ArithmeticMixin, DataArray):
         image can then be compared to the HST image without having to
         worry about any differences caused by different spectral
         sensitivities.
-
-        Note that the bandpass of the monochromatic instrument must be
-        fully encompassed by the wavelength coverage of the cube.
 
         For each channel n of the cube, the filter-curve is integrated
         over the width of that channel to obtain a weight, w[n]. The
@@ -1768,14 +1767,20 @@ class Cube(ArithmeticMixin, DataArray):
         masked pixels in the cube are zeroed before the above equation
         is applied.
 
+        If the wavelength axis of the cube only partly overlaps the
+        bandpass of the filter-curve, the filter curve is truncated to
+        fit within the bounds of the wavelength axis. A warning is
+        printed to stderr if this occurs, because this results in an
+        image that lacks flux from some of the wavelengths of the
+        requested bandpass.
+
         Parameters
         ----------
         wavelengths : numpy.ndarray
             An array of the wavelengths of the filter curve,
-            listed in ascending order of wavelength. The lowest
-            and highest wavelengths must be within the range of
-            wavelengths of the data cube. Outside the listed
-            wavelengths the filter-curve is assumed to be zero.
+            listed in ascending order of wavelength. Outside
+            the listed wavelengths the filter-curve is assumed
+            to be zero.
         sensitivities : numpy.ndarray
             The relative flux sensitivities at the wavelengths
             in the wavelengths array. These sensititivies will be
@@ -1783,12 +1788,28 @@ class Cube(ArithmeticMixin, DataArray):
         unit_wave : `astropy.units.Unit`
             The units used in the array of wavelengths. The default is
             angstroms. To specify pixel units, pass None.
+        interpolation : str
+            The form of interpolation to use to integrate over the
+            filter curve. This should be one of::
+
+              "linear"     : Linear interpolation
+              "cubic"      : Cubic spline interpolation (very slow)
+
+            The default is linear interpolation. If the filter curve
+            is well sampled and its sampling interval is narrower than
+            the wavelength pixels of the cube, then this should be
+            sufficient. Alternatively, if the sampling interval is
+            significantly wider than the wavelength pixels of the
+            cube, then cubic interpolation should be used instead.
+            Beware that cubic interpolation is much slower than linear
+            interpolation.
 
         Returns
         -------
         out : `~mpdaf.obj.Image`
-            An image formed from the filter-weighted sum or mean
-            of all of the channels in the cube.
+            An image formed from the filter-weighted mean
+            of channels in the cube that overlap the bandpass
+            of the filter curve.
 
         """
 
@@ -1813,32 +1834,64 @@ class Cube(ArithmeticMixin, DataArray):
         else:
             pixels = self.wave.pixel(wavelengths, unit=unit_wave)
 
-        # Obtain the range of indexes along the wavelength axis that
-        # encompass the wavelengths in the cube, remembering that
-        # integer values returned by wave.pixel() correspond to pixel
-        # centers.
+        # Get the integer indexes of the pixels that contain the above
+        # floating point pixel indexes.
 
-        kmin = int(np.floor(0.5 + pixels[0]))
-        kmax = int(np.floor(0.5 + pixels[-1]))
+        indexes = np.rint(pixels).astype(int)
 
-        # The filter-curve must be fully encompassed by the wavelength range
-        # of the cube.
+        # If there is no overlap between the bandpass filter curve
+        # and the wavelength coverage of the cube, complain.
+        if indexes[0] >= self.shape[0] or indexes[-1] < 0:
+            raise ValueError("The filter curve does not overlap the "
+                             "wavelength coverage of the cube.")
 
-        if kmin < 0 or kmax > self.shape[0] - 1:
-            raise ValueError('The bandpass exceeds the wavelength coverage of'
-                             ' the cube.')
+        # To correctly reproduce an image taken through a specified
+        # filter, the bandpass curve should be completely encompassed
+        # by the wavelength axis of the cube. If the overlap is
+        # incomplete, emit a warning, then truncate the bandpass curve
+        # to the edge of the wavelength range of the cube.
 
-        # Obtain a cubic interpolator of the bandpass curve.
+        if indexes[0] < 0 or indexes[-1] >= self.shape[0]:
 
-        spline = interpolate.interp1d(x=pixels, y=sensitivities, kind='cubic')
+            # Work out the start and stop indexes of the slice needed
+            # to truncate the arrays of the bandpass filter curve.
 
-        # Compute weights to give for each channel of the cube between
-        # kmin and kmax by integrating the spline interpolation of the
-        # bandpass curve over the wavelength range of each pixel and
-        # dividing this by the sum of the weights.
+            if indexes[0] < 0:
+                start = np.searchsorted(indexes, 0, 'left')
+            else:
+                start = 0
+            if indexes[-1] >= self.shape[0]:
+                stop = np.searchsorted(indexes, self.shape[0], 'left')
+            else:
+                stop = indexes.shape[0]
 
-        k = np.arange(kmin, kmax + 1, dtype=int)
-        w = np.empty((kmax + 1 - kmin))
+            # Truncate the bandpass filter curve.
+
+            indexes = indexes[start:stop]
+            pixels = pixels[start:stop]
+            sensitivities = sensitivities[start:stop]
+
+            # What fraction of the filter bandpass has been truncated?
+
+            truncated_bw = (self.wave.coord(pixels[-1] + 0.5) -
+                            self.wave.coord(pixels[0] - 0.5))
+            filter_bw = wavelengths[-1] - wavelengths[0]
+            lossage = (filter_bw - truncated_bw) / filter_bw
+
+            self._logger.warning(
+                "Truncating %.2g%% of the filter " % (lossage*100.0) +
+                "curve at the edges of the cube.")
+
+        # Get the range of indexes along the wavelength axis that
+        # encompass the filter bandpass within the cube.
+
+        kmin = indexes[0]
+        kmax = indexes[-1]
+
+        # Obtain an interpolator of the bandpass curve.
+
+        spline = interpolate.interp1d(x=pixels, y=sensitivities,
+                                      kind=interpolation)
 
         # Integrate the bandpass over the range of each spectral pixel
         # to determine the weights of each pixel. For the moment skip
@@ -1847,6 +1900,7 @@ class Cube(ArithmeticMixin, DataArray):
         # so for integer pixel index k, we need to integrate from
         # k-0.5 to k+0.5.
 
+        w = np.empty((kmax + 1 - kmin))
         for k in range(kmin + 1, kmax):
             w[k - kmin], err = integrate.quad(spline, k - 0.5, k + 0.5)
 
@@ -1896,7 +1950,7 @@ class Cube(ArithmeticMixin, DataArray):
         if subcube._var is not None:
             var = np.ma.sum(subcube.var * wcube**2, axis=0) / wsum**2
         else:
-            var = None
+            var = False
 
         return Image.new_from_obj(subcube, data=data, var=var)
 
