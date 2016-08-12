@@ -1865,22 +1865,34 @@ class Cube(ArithmeticMixin, DataArray):
             else:
                 stop = indexes.shape[0]
 
+            # Integrate the overal bandpass filter curve.
+
+            total = integrate.trapz(sensitivities, wavelengths)
+
+            # Also integrate over just the truncated parts of the curve.
+
+            lost = 0.0
+            if start > 0:
+                s = slice(0, start)
+                lost += integrate.trapz(sensitivities[s], wavelengths[s])
+            if stop < indexes.shape[0]:
+                s = slice(stop, indexes.shape[0])
+                lost += integrate.trapz(sensitivities[s], wavelengths[s])
+
+            # Compute the fraction of the integrated bandpass response
+            # that has been truncated.
+
+            lossage = lost / total
+
             # Truncate the bandpass filter curve.
 
             indexes = indexes[start:stop]
             pixels = pixels[start:stop]
             sensitivities = sensitivities[start:stop]
 
-            # What fraction of the filter bandpass has been truncated?
-
-            truncated_bw = (self.wave.coord(pixels[-1] + 0.5) -
-                            self.wave.coord(pixels[0] - 0.5))
-            filter_bw = wavelengths[-1] - wavelengths[0]
-            lossage = (filter_bw - truncated_bw) / filter_bw
-
             self._logger.warning(
-                "Truncating %.2g%% of the filter " % (lossage*100.0) +
-                "curve at the edges of the cube.")
+                "%.2g%% of the integrated " % (lossage*100.0) +
+                "filter curve is beyond the edges of the cube.")
 
         # Get the range of indexes along the wavelength axis that
         # encompass the filter bandpass within the cube.
