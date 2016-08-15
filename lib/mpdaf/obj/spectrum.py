@@ -1222,11 +1222,14 @@ class Spectrum(ArithmeticMixin, DataArray):
         if out == 2:
             return np.array([mag, vflux, l0])
         if out == 3:
-            if self.var is not None:
-                err_vflux = np.sqrt(np.ma.average(self.var[imin:imax], weights=w))
+            if mag >= 99:
+                err_mag = 99
             else:
-                err_vflux = 0 
-            err_mag = np.abs(2.5*err_vflux/(vflux*np.log(10)))
+                if self.var is not None:
+                    err_vflux = np.sqrt(np.ma.average(self.var[imin:imax], weights=w))
+                    err_mag = np.abs(2.5*err_vflux/(vflux*np.log(10)))
+                else:
+                    err_mag = 0                 
             return np.array([mag, err_mag])
 
     def truncate(self, lmin=None, lmax=None, unit=u.angstrom):
