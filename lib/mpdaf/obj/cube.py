@@ -1890,9 +1890,12 @@ class Cube(ArithmeticMixin, DataArray):
             pixels = pixels[start:stop]
             sensitivities = sensitivities[start:stop]
 
-            self._logger.warning(
-                "%.2g%% of the integrated " % (lossage*100.0) +
-                "filter curve is beyond the edges of the cube.")
+            # Report the loss if it is over 0.5%.
+
+            if lossage > 0.005:
+                self._logger.warning(
+                    "%.2g%% of the integrated " % (lossage*100.0) +
+                    "filter curve is beyond the edges of the cube.")
 
         # Get the range of indexes along the wavelength axis that
         # encompass the filter bandpass within the cube.
