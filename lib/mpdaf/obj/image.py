@@ -3311,7 +3311,7 @@ class Image(ArithmeticMixin, DataArray):
 
         The rotation and resampling processes are performed as
         separate steps because the anti-aliasing filter that needs to
-        be applied if the resampling step reduces the resolution, is
+        be applied in the resampling step reduces the resolution, is
         difficult to implement before the axes have been rotated to
         the final orientation.
 
