@@ -16,18 +16,18 @@ sys.setrecursionlimit(1500)
 # -- General configuration ----------------------------------------------------
 
 # read version from lib/mpdaf/version.py
-mpdaf_dir = os.path.join(os.path.dirname(__file__), '..', 'lib', 'mpdaf')
-pkgmeta = {}
+# mpdaf_dir = os.path.join(os.path.dirname(__file__), '..', 'lib', 'mpdaf')
+# pkgmeta = {}
 
-with open(os.path.join(mpdaf_dir, 'version.py')) as f:
-    code = compile(f.read(), 'version.py', 'exec')
-    exec(code, pkgmeta)
+# with open(os.path.join(mpdaf_dir, 'version.py')) as f:
+#     code = compile(f.read(), 'version.py', 'exec')
+#     exec(code, pkgmeta)
 
-if os.path.isfile(os.path.join(mpdaf_dir, '_githash.py')):
-    with open(os.path.join(mpdaf_dir, '_githash.py')) as f:
-        code = compile(f.read(), '_githash.py', 'exec')
-        exec(code, pkgmeta)
-    pkgmeta['__version__'] += pkgmeta['__dev_value__']
+# if os.path.isfile(os.path.join(mpdaf_dir, '_githash.py')):
+#     with open(os.path.join(mpdaf_dir, '_githash.py')) as f:
+#         code = compile(f.read(), '_githash.py', 'exec')
+#         exec(code, pkgmeta)
+#     pkgmeta['__version__'] += pkgmeta['__dev_value__']
 
 # If your documentation needs a minimal Sphinx version, state it here.
 # needs_sphinx = '1.0'
