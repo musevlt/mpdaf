@@ -1,0 +1,37 @@
+[run]
+source = mpdaf
+omit =
+   {packagename}/scripts/update_license.py
+   {packagename}/_astropy_init*
+   {packagename}/conftest*
+   {packagename}/cython_version*
+   {packagename}/setup_package*
+   {packagename}/*/setup_package*
+   {packagename}/*/*/setup_package*
+   {packagename}/tests/*
+   {packagename}/*/tests/*
+   {packagename}/*/*/tests/*
+   {packagename}/version*
+
+[report]
+show_missing = false
+exclude_lines =
+   def __repr__
+   def info
+   if __name__ == .__main__.:
+
+   # Have to re-enable the standard pragma
+   pragma: no cover
+
+   # Don't complain about packages we have installed
+   except ImportError
+
+   # Don't complain if tests don't hit assertions
+   raise AssertionError
+   raise NotImplementedError
+
+   # Don't complain about script hooks
+   def main\(.*\):
+
+   # Ignore branches that don't pertain to this version of Python
+   pragma: py{ignore_python_version}
