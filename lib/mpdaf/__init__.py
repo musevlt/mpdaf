@@ -34,9 +34,28 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 from __future__ import absolute_import
-from . import drs, MUSE, obj, sdetect, tools
-from .log import setup_logging, setup_logfile, clear_loggers
-# from .version import __version__, __date__
+
+# Affiliated packages may add whatever they like to this file, but
+# should keep this content at the top.
+# ----------------------------------------------------------------------------
+from ._astropy_init import *
+# ----------------------------------------------------------------------------
+
+# For egg_info test builds to pass, put package imports here.
+if not _ASTROPY_SETUP_:
+    from . import drs, MUSE, obj, sdetect, tools
+    from .log import setup_logging, setup_logfile, clear_loggers
+
+try:
+    from .version import version as __version__
+except ImportError:
+    # TODO: Issue a warning using the logging framework
+    __version__ = ''
+try:
+    from .version import githash as __githash__
+except ImportError:
+    # TODO: Issue a warning using the logging framework
+    __githash__ = ''
 
 """The maximum number of processes that should be started by
 multiprocessing MPDAF functions. By default this is zero, which
