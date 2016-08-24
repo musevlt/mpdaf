@@ -12,8 +12,8 @@ lib/mpdaf/data/extern
 lib/mpdaf/obj/merging.c
 
 # Sphinx
-doc/api
-doc/_build
+docs/api
+docs/_build
 
 # Packages/installer info
 *.egg
