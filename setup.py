@@ -41,13 +41,7 @@ URL = metadata.get('url', 'http://astropy.org')
 # __import__(PACKAGENAME)
 # package = sys.modules[PACKAGENAME]
 # LONG_DESCRIPTION = package.__doc__
-with open('README.rst') as f:
-    README = f.read()
-
-with open('CHANGELOG') as f:
-    CHANGELOG = f.read()
-
-LONG_DESCRIPTION = README + '\n' + CHANGELOG,
+LONG_DESCRIPTION = open('README.rst').read()
 
 # Store the package name in a built-in variable so it's easy
 # to get from other parts of the setup infrastructure
@@ -79,7 +73,7 @@ scripts = [fname for fname in glob.glob(os.path.join('scripts', '*'))
 # Get configuration information from all of the various subpackages.
 # See the docstring for setup_helpers.update_package_files for more
 # details.
-package_info = get_package_info()
+package_info = get_package_info(srcdir='lib')
 
 # Add the project-global data
 package_info['package_data'].setdefault(PACKAGENAME, [])
@@ -109,19 +103,23 @@ package_info['package_data'][PACKAGENAME].extend(c_files)
 # ``setup``, since these are now deprecated. See this link for more details:
 # https://groups.google.com/forum/#!topic/astropy-dev/urYO8ckB2uM
 
-setup(name=PACKAGENAME,
-      version=VERSION,
-      description=DESCRIPTION,
-      scripts=scripts,
-      install_requires=['astropy'],
-      author=AUTHOR,
-      author_email=AUTHOR_EMAIL,
-      license=LICENSE,
-      url=URL,
-      long_description=LONG_DESCRIPTION,
-      cmdclass=cmdclassd,
-      zip_safe=False,
-      use_2to3=True,
-      entry_points=entry_points,
-      **package_info
+setup(
+    name=PACKAGENAME,
+    version=VERSION,
+    description=DESCRIPTION,
+    scripts=scripts,
+    install_requires=['numpy', 'scipy', 'matplotlib', 'astropy>=1.0', 'six'],
+    extras_require={
+        'all':  ['numexpr', 'fitsio'],
+    },
+    author=AUTHOR,
+    author_email=AUTHOR_EMAIL,
+    license=LICENSE,
+    url=URL,
+    long_description=LONG_DESCRIPTION,
+    cmdclass=cmdclassd,
+    zip_safe=False,
+    use_2to3=False,
+    entry_points=entry_points,
+    **package_info
 )
