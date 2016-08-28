@@ -46,6 +46,14 @@ if not _ASTROPY_SETUP_:
     from . import drs, MUSE, obj, sdetect, tools
     from .log import setup_logging, setup_logfile, clear_loggers
 
+    """The maximum number of processes that should be started by
+    multiprocessing MPDAF functions. By default this is zero, which
+    requests that MPDAF multiprocessing functions use one process per
+    physical CPU core."""
+    CPU = 0
+
+    setup_logging()
+
 try:
     from .version import version as __version__
 except ImportError:
@@ -56,11 +64,3 @@ try:
 except ImportError:
     # TODO: Issue a warning using the logging framework
     __githash__ = ''
-
-"""The maximum number of processes that should be started by
-multiprocessing MPDAF functions. By default this is zero, which
-requests that MPDAF multiprocessing functions use one process per
-physical CPU core."""
-CPU = 0
-
-setup_logging()
