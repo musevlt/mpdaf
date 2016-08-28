@@ -7,8 +7,12 @@ __pycache__
 
 tags
 htmlcov/
-lib/mpdaf/_githash.py
 lib/mpdaf/data/extern
+
+# Generated files
+lib/mpdaf/_compiler.c
+lib/mpdaf/cython_version.py
+lib/mpdaf/version.py
 lib/mpdaf/obj/merging.c
 
 # Sphinx
