@@ -46,7 +46,6 @@ def options(*packages, **kw):
 
 
 def get_extensions():
-    return Extension('tools._ctools', [
-        '../../../src/tools.c', '../../../src/subtract_slice_median.c',
-        '../../../src/merging.c'],
-        **options('cfitsio')),
+    return [Extension('tools._ctools', [
+        'src/tools.c', 'src/subtract_slice_median.c', 'src/merging.c'],
+        **options('cfitsio'))]
