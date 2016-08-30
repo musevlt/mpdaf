@@ -44,7 +44,7 @@ import os
 from astropy.io import fits
 from six.moves import range
 
-from ..version import __version__
+from ..version import version as __version__
 
 __all__ = ('add_mpdaf_method_keywords', 'add_mpdaf_keywords_to_file',
            'fix_unit_read', 'fix_unit_write', 'copy_header', 'copy_keywords',
