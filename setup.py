@@ -78,6 +78,8 @@ package_info = get_package_info(srcdir='lib')
 # Add the project-global data
 package_info['package_data'].setdefault(PACKAGENAME, [])
 package_info['package_data'][PACKAGENAME].append('data/*')
+package_info['package_data'][PACKAGENAME].append('data/obj/*')
+package_info['package_data'][PACKAGENAME].append('data/sdetect/*')
 
 # Define entry points for command-line scripts
 entry_points = {'console_scripts': []}
