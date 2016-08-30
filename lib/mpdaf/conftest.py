@@ -31,11 +31,8 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-import astropy
-import matplotlib
 import numpy as np
 import pytest
-import scipy
 
 from astropy.table import Table
 from mpdaf.obj import Image, Cube, Spectrum
@@ -61,6 +58,7 @@ from astropy.tests.pytest_plugins import *
 try:
     PYTEST_HEADER_MODULES['Astropy'] = 'astropy'
     PYTEST_HEADER_MODULES['Scipy'] = 'scipy'
+    PYTEST_HEADER_MODULES['Matplotlib'] = 'matplotlib'
 except (NameError, KeyError):  # NameError is needed to support Astropy < 1.0
     pass
 
@@ -82,10 +80,10 @@ try:
 except NameError:   # Needed to support Astropy <= 1.0.0
     pass
 
-def pytest_report_header(config):
-    return "Deps: Numpy {}, Scipy {}, Matplotlib {}, Astropy {}".format(
-        np.__version__, scipy.__version__, matplotlib.__version__,
-        astropy.__version__)
+# def pytest_report_header(config):
+#     return "Deps: Numpy {}, Scipy {}, Matplotlib {}, Astropy {}".format(
+#         np.__version__, scipy.__version__, matplotlib.__version__,
+#         astropy.__version__)
 
 
 @pytest.fixture
