@@ -59,6 +59,8 @@ try:
     PYTEST_HEADER_MODULES['Astropy'] = 'astropy'
     PYTEST_HEADER_MODULES['Scipy'] = 'scipy'
     PYTEST_HEADER_MODULES['Matplotlib'] = 'matplotlib'
+    del PYTEST_HEADER_MODULES['h5py']
+    del PYTEST_HEADER_MODULES['Pandas']
 except (NameError, KeyError):  # NameError is needed to support Astropy < 1.0
     pass
 
