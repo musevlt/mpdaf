@@ -18,7 +18,7 @@ def get_extensions():
         else:
             print("Unable to find OPENMP")
 
-        return [Extension('tools._ctools', [
+        return [Extension('mpdaf.tools._ctools', [
             'src/tools.c', 'src/subtract_slice_median.c', 'src/merging.c'], **kw)]
     else:
         print('WARNING: mpdaf.tools.ctools extension was not build.\n'
