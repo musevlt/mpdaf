@@ -32,7 +32,7 @@ conf = ConfigParser()
 conf.read([os.path.join(os.path.dirname(__file__), '..', 'setup.cfg')])
 setup_cfg = dict(conf.items('metadata'))
 
-# sys.path.insert(0, os.path.abspath('./ext'))
+sys.path.insert(0, os.path.abspath('./ext'))
 # sys.setrecursionlimit(1500)
 
 # -- General configuration ----------------------------------------------------
@@ -42,12 +42,12 @@ setup_cfg = dict(conf.items('metadata'))
 # ones.
 extensions += [
     'sphinx.ext.ifconfig',
-    # 'numpydoc',
     'IPython.sphinxext.ipython_console_highlighting',
     'ipython_directive',
     # 'sphinx_automodapi.automodapi',
     # 'sphinx_automodapi.smart_resolver'
 ]
+extensions.remove('astropy_helpers.sphinx.ext.changelog_links')
 
 autodoc_member_order = 'bysource'
 
@@ -82,7 +82,7 @@ exclude_patterns = ['_build', '_templates']
 
 # This is added to the end of RST files - a good place to put substitutions to
 # be used globally.
-rst_epilog += """
+rst_epilog = """
 """
 
 # The reST default role (used for this markup: `text`) to use for all
