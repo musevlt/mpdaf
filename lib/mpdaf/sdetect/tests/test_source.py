@@ -119,27 +119,17 @@ def test_write(tmpdir, source1):
 
 
 def test_comments(source1):
-    source1.add_comment('This is a test', 'mpdaf')
-    assert source1.com001 == 'This is a test'
-    source1.add_comment('an other', 'mpdaf')
-    assert source1.com002 == 'an other'
-    source1.remove_comment(2)
-    source1.add_comment('an other', 'mpdaf')
-    assert source1.com002 == 'an other'
-    source1.remove_comment(1)
-    source1.remove_comment(2)
-
+    source1.add_comment('This is a test', 'mpdaf', '2016-09-02')
+    assert source1.comment[0] == 'This is a test (mpdaf 2016-09-02)'
+    source1.add_comment('an other', 'mpdaf', '2016-09-02')
+    assert source1.comment[1] == 'an other (mpdaf 2016-09-02)'
+    
 
 def test_history(source1):
     source1.add_history('test_arg unitary test', 'mpdaf')
-    assert source1.hist001 == 'test_arg unitary test'
+    assert source1.history[0].find('test_arg unitary test') != -1
     source1.add_history('an other', 'mpdaf')
-    assert source1.hist002 == 'an other'
-    source1.remove_history(2)
-    source1.add_history('an other', 'mpdaf')
-    assert source1.hist002 == 'an other'
-    source1.remove_history(1)
-    source1.remove_history(2)
+    assert source1.history[1].find('an other') != -1
 
 
 def test_line():

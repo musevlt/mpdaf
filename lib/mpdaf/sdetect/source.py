@@ -150,6 +150,22 @@ def _set_table_attributes(name, table):
                 setattr(table[colname], attr, value)
             elif not ASTROPY_LT_1_1 and attr == 'primary_index':
                 table.add_index(colname, unique=True)
+                
+def _headercorrected(hdr):
+    i = 1
+    while 'COM%03d' % i in hdr:
+        value = hdr['COM%03d' % i]
+        comment = hdr.cards['COM%03d' % i].comment
+        hdr['COMMENT'] = '%s (%s)'%(value, comment)
+        del hdr['COM%03d' % i]
+        i += 1
+    i = 1
+    while 'HIST%03d' % i in hdr:
+        value = hdr['HIST%03d' % i]
+        comment = hdr.cards['HIST%03d' % i].comment
+        hdr['HISTORY'] = '%s (%s)'%(value, comment)
+        del hdr['HIST%03d' % i]
+        i += 1
 
 
 def vacuum2air(vac):
@@ -465,6 +481,7 @@ class Source(object):
         """
         hdulist = pyfits.open(filename)
         hdr = hdulist[0].header
+        _headercorrected(hdr)
         spectra = {}
         images = {}
         cubes = {}
@@ -553,6 +570,7 @@ class Source(object):
         lines = mag = z = None
         with pyfits.open(filename) as hdulist:
             hdr = hdulist[0].header
+            _headercorrected(hdr)
             if 'LINES' in hdulist:
                 lines = _read_table(hdulist, 'LINES', masked=False)
             if 'MAG' in hdulist:
@@ -725,22 +743,10 @@ class Source(object):
         """
         if date is None:
             date = datetime.date.today()
-        i = 1
-        while 'COM%03d' % i in self.header:
-            i += 1
-        self.header['COM%03d' % i] = (comment, '%s %s' % (author, str(date)))
+        self.header['COMMENT'] = '%s (%s %s)'%(comment, author, str(date))
 
-    def remove_comment(self, ncomment):
-        """Remove a comment from the FITS header of the Source object.
 
-        Parameters
-        ----------
-        ncomment : int
-                   Comment ID
-        """
-        del self.header['COM%03d' % ncomment]
-
-    def add_history(self, text, author="", date=None):
+    def add_history(self, text, author=""):
         """Add a history to the FITS header of the Source object.
 
         Parameters
@@ -753,22 +759,10 @@ class Source(object):
                  Date
                  By default the current local date is used.
         """
-        if date is None:
-            date = datetime.date.today()
-        i = 1
-        while 'HIST%03d' % i in self.header:
-            i += 1
-        self.header['HIST%03d' % i] = (text, '%s %s' % (author, str(date)))
-
-    def remove_history(self, nhist):
-        """Remove an history from the FITS header of the Source object.
-
-        Parameters
-        ----------
-        nhist : int
-                History ID
-        """
-        del self.header['HIST%03d' % nhist]
+        date = datetime.date.today()
+        version = TABLES_SCHEMA['version']
+        self.header['HISTORY'] = '[%s] %s (%s %s)'%(version, text, author, str(date))
+        
 
     def add_attr(self, key, value, desc=None, unit=None, fmt=None):
         """Add a new attribute for the current Source object. This attribute
