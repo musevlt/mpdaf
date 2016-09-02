@@ -152,13 +152,15 @@ def _set_table_attributes(name, table):
                 table.add_index(colname, unique=True)
                 
 def _headercorrected(hdr):
+    #COM*** -> COMMENT
     i = 1
     while 'COM%03d' % i in hdr:
         value = hdr['COM%03d' % i]
         comment = hdr.cards['COM%03d' % i].comment
-        hdr['COMMENT'] = '%s (%s)'%(value, comment)
+        hdr['COMMENT'] = '[%s] %s'%(comment, value)
         del hdr['COM%03d' % i]
         i += 1
+    #HIST*** -> HISTORY
     i = 1
     while 'HIST%03d' % i in hdr:
         value = hdr['HIST%03d' % i]
@@ -166,6 +168,17 @@ def _headercorrected(hdr):
         hdr['HISTORY'] = '%s (%s)'%(value, comment)
         del hdr['HIST%03d' % i]
         i += 1
+    # ORIGIN -> FROM
+    if 'ORIGIN' in hdr.keys():
+        hdr.rename_keyword('ORIGIN','FROM')
+    if 'ORIGIN_V' in hdr.keys():
+        hdr.rename_keyword('ORIGIN_V','FROM_V')
+    # SOURCE_V -> FORMAT
+    if 'SOURCE_V' in hdr.keys():
+        hdr.rename_keyword('SOURCE_V','FORMAT')
+    # SRC_VERS -> SRC_V
+    if 'SRC_VERS' in hdr.keys():
+        hdr.rename_keyword('SRC_VERS','SRC_V')
 
 
 def vacuum2air(vac):
@@ -366,12 +379,14 @@ class Source(object):
     def __init__(self, header, lines=None, mag=None, z=None, spectra=None,
                  images=None, cubes=None, tables=None, mask_invalid=True):
         # Check required keywords in the FITS header
-        for key in ('RA', 'DEC', 'ID', 'CUBE', 'CUBE_V', 'ORIGIN', 'ORIGIN_V'):
+        for key in ('RA', 'DEC', 'ID', 'CUBE', 'CUBE_V', 'FROM', 'FROM_V'):
             if key not in header:
                 raise ValueError('{} keyword is mandatory to create a Source '
                                  'object'.format(key))
 
         self.header = header
+        if 'SRC_V' not in self.header.keys():
+            self.header['SRC_V'] = ''
         # Table LINES
         self.lines = lines
         # Table MAG
@@ -449,8 +464,8 @@ class Source(object):
         header['ID'] = (ID, 'object ID u.unitless %d')
         header['RA'] = (ra, 'RA u.degree %.7f')
         header['DEC'] = (dec, 'DEC u.degree %.7f')
-        header['ORIGIN'] = (origin[0], 'detection software')
-        header['ORIGIN_V'] = (origin[1], 'version of the detection software')
+        header['FROM'] = (origin[0], 'detection software')
+        header['FROM_V'] = (origin[1], 'version of the detection software')
         header['CUBE'] = (os.path.basename(origin[2]), 'datacube')
         header['CUBE_V'] = (origin[3], 'version of the datacube')
         if proba is not None:
@@ -599,7 +614,7 @@ class Source(object):
         prihdu = pyfits.PrimaryHDU(header=self.header)
         prihdu.header['DATE'] = (str(datetime.datetime.now()), 'Creation date')
         prihdu.header['AUTHOR'] = ('MPDAF', 'Origin of the file')
-        prihdu.header['SOURCE_V'] = (TABLES_SCHEMA['version'],
+        prihdu.header['FORMAT'] = (TABLES_SCHEMA['version'],
                                      'Version of the Source format')
         hdulist = pyfits.HDUList([prihdu])
 
@@ -743,7 +758,7 @@ class Source(object):
         """
         if date is None:
             date = datetime.date.today()
-        self.header['COMMENT'] = '%s (%s %s)'%(comment, author, str(date))
+        self.header['COMMENT'] = '[%s %s] %s'%(author, str(date), comment)
 
 
     def add_history(self, text, author=""):

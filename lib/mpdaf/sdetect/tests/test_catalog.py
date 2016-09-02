@@ -20,15 +20,14 @@ def test_catalog():
     assert cat['Z'][1] is np.ma.masked
 
 
-@pytest.mark.parametrize('fmt,ncols', (('default', 44),
-                                       ('working', 42)))
+@pytest.mark.parametrize('fmt,ncols', (('default', 45),
+                                       ('working', 43)))
 def test_from_sources(source1, source2, fmt, ncols):
     source1.CUBE_V = '0.1'
     source2.CUBE_V = '0.2'
     lines1 = source1.lines['LINE'].data.copy()
     lines2 = source2.lines['LINE'].data.copy()
     cat = Catalog.from_sources([source1, source2], fmt=fmt)
-    print(cat)
     assert len(cat) == 2
     assert len(cat.colnames) == ncols
     assert list(cat['ID']) == [1, 32]
@@ -44,7 +43,7 @@ def test_from_path(source1, source2, tmpdir):
     assert len(cat) == 2
     # 2 additional columns vs from_sources: FILENAME is added by from_path, and
     # SOURCE_V which was added in the Source.write
-    assert len(cat.colnames) == 46
+    assert len(cat.colnames) == 47
 
     filename = str(tmpdir.join('cat.fits'))
     cat.write(filename)

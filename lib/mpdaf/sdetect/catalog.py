@@ -128,24 +128,10 @@ class Catalog(Table):
 
 
         keys = set(d.keys())
-        coms = set(filter(lambda k: re.match('COM\d\d\d', k), keys))
-        hists = set(filter(lambda k: re.match('HIST\d\d\d', k), keys))
         excluded_cards = {'SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
                           'AUTHOR'}
-        keys = keys - excluded_cards - coms - hists
-
-        #comments
-        if len(coms)>0:
-            com = ['COM']
-        else:
-            com = []
-
-        #histories
-        if len(hists)>0:
-            hist = ['HIST']
-        else:
-            hist = []
-
+        keys = keys - excluded_cards
+        
         d = {key: value for key, value in d.items() if key in keys}
         names_hdr = list(d.keys())
         tuple_hdr = list(d.values())
@@ -159,10 +145,10 @@ class Catalog(Table):
         index = names_hdr.index('DEC')
         names_hdr.insert(2, names_hdr.pop(index))
         tuple_hdr.insert(2, tuple_hdr.pop(index))
-        index = names_hdr.index('ORIGIN')
+        index = names_hdr.index('FROM')
         names_hdr.insert(3, names_hdr.pop(index))
         tuple_hdr.insert(3, tuple_hdr.pop(index))
-        index = names_hdr.index('ORIGIN_V')
+        index = names_hdr.index('FROM_V')
         names_hdr.insert(4, names_hdr.pop(index))
         tuple_hdr.insert(4, tuple_hdr.pop(index))
         index = names_hdr.index('CUBE')
@@ -292,7 +278,7 @@ class Catalog(Table):
             row = []
             for key, typ in zip(names_hdr, dtype_hdr):
                 if typ == type('1'):
-                    row += ['%s' % h[key] if key in keys else INVALID[typ]]
+                    row += [string.replace('%s' % h[key],'\n',' ') if key in keys else INVALID[typ]]
                 else:
                     k = [h[key] if key in keys else INVALID[typ]]
                     if type(k[0]) == type('1'):
@@ -377,15 +363,6 @@ class Catalog(Table):
                     else:
                         pass
 
-            #comments
-            if len(coms)>0:
-                src_coms = string.join(['%s (%s).'%(c[1], c[2]) for c in source.header.cards['COM*']])
-                row += [src_coms]
-
-            #histories
-            if len(hists)>0:
-                src_hists = string.join(['%s (%s).'%(c[1], c[2]) for c in source.header.cards['HIST*']])
-                row += [src_hists]
 
             # final row
             data_rows.append(row)
@@ -401,14 +378,9 @@ class Catalog(Table):
         # lines
         if len(llines) != 0:
             dtype += dtype_lines
-        # comments
-        if len(coms)>0:
-            dtype.append(type('1'))
-        if len(hists)>0:
-            dtype.append(type('1'))
 
         # create Table
-        names = names_hdr + names_mag + names_z + names_lines + com + hist
+        names = names_hdr + names_mag + names_z + names_lines
 
         # raise a warning if the type is not the same between each source
         for i in range(len(names_hdr)):

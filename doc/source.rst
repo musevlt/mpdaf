@@ -63,9 +63,9 @@ Informations have been save in the pyfits header instance but we can access and 
 
 .. ipython::
 
-  In [4]: s.ORIGIN
+  In [4]: s.FROM
 
-  In [5]: s.ORIGIN = 'test2'
+  In [5]: s.FROM = 'test2'
   
 It is easy to add a new information that will be save as keyword in the FITS header.
 For example we save the pixel coordinates::
@@ -112,10 +112,10 @@ In the same way:
 At the end our Source looks like that::
 
   In [15]: s.info()
-  [INFO] ORIGIN  = 'test2   '           / detection software                             
+  [INFO] FROM    = 'test2   '           / detection software                             
   [INFO] CUBE    = 'DATACUBE-HDFS.fits' / MUSE data cube                                 
   [INFO] RA      =              338.226 / RA u.degree %.7f                               
-  [INFO] ORIGIN_V= 'v0.0    '           / version of the detection software              
+  [INFO] FROM  _V= 'v0.0    '           / version of the detection software              
   [INFO] Y       =    157.6590537314896                                                  
   [INFO] X       =     209.926327090741                                                  
   [INFO] DEC     =              -60.564 / DEC u.degree %.7f                              

@@ -120,9 +120,9 @@ def test_write(tmpdir, source1):
 
 def test_comments(source1):
     source1.add_comment('This is a test', 'mpdaf', '2016-09-02')
-    assert source1.comment[0] == 'This is a test (mpdaf 2016-09-02)'
+    assert source1.comment[0] == '[mpdaf 2016-09-02] This is a test'
     source1.add_comment('an other', 'mpdaf', '2016-09-02')
-    assert source1.comment[1] == 'an other (mpdaf 2016-09-02)'
+    assert source1.comment[1] == '[mpdaf 2016-09-02] an other'
     
 
 def test_history(source1):
