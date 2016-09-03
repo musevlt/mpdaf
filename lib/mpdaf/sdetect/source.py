@@ -775,7 +775,7 @@ class Source(object):
                  By default the current local date is used.
         """
         date = datetime.date.today()
-        version = TABLES_SCHEMA['version']
+        version = getattr(self, 'SRC_V', '')
         self.header['HISTORY'] = '[%s] %s (%s %s)'%(version, text, author, str(date))
         
 
