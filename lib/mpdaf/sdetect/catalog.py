@@ -38,9 +38,7 @@ import glob
 import logging
 import numpy as np
 import os
-import re
 import six
-import string
 import sys
 
 from astropy.coordinates import SkyCoord
@@ -159,7 +157,7 @@ class Catalog(Table):
             names_hdr.insert(6, names_hdr.pop(index))
             tuple_hdr.insert(6, tuple_hdr.pop(index))
         else:
-            logger.warning('CUBE_V keyword in missing. It will be soon mandatory and its absecne will return an error')
+            logger.warning('CUBE_V keyword in missing. It will be soon mandatory and its absence will return an error')
             names_hdr.insert(6, '')
             tuple_hdr.insert(6, (type('1'), 'datacube version'))
 
