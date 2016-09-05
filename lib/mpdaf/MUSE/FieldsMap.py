@@ -30,15 +30,50 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
+
+import numpy as np
+import os
+import six
 
 from astropy.io import fits
-import numpy as np
 from scipy.interpolate import griddata
 from scipy.signal import fftconvolve
-import six
-from six.moves import range
-from six.moves import zip
+from six.moves import range, zip
+
+from ..obj import Image
+
+__all__ = ['create_fields_map', 'FieldsMap']
+
+
+def create_fields_map(imglist, refimg, outfile):
+    """Create a "Field map" image.
+
+    Parameters
+    ----------
+    imglist : list of str
+        List of image filenames.
+    refimg : `mpdaf.obj.Image`
+        Reference image, used to create the field map image.
+    outfile : str
+        Output filename.
+
+    """
+    maskim = Image(data=np.zeros(refimg.shape, dtype=np.uint),
+                   wcs=refimg.wcs.copy(), dtype=None, copy=False)
+    nimg = len(imglist)
+
+    for i, f in enumerate(imglist, 1):
+        img = Image(f)
+        field = int(img.primary_header['OBJECT'][-2:])
+        img = Image(f)
+        offset = (- img.wcs.wcs.wcs.crpix[::-1]).astype(int)
+        sy, sx = list(zip(offset, offset + np.array(img.shape)))
+        print('{:03d}/{}'.format(i, nimg), os.path.basename(f), field, sy, sx)
+        maskim.data[slice(*sy), slice(*sx)] |= (2**field *
+                                                (~img.mask).astype(np.uint))
+
+    maskim.write(outfile, savemask='none')
 
 
 class FieldsMap(object):
@@ -48,12 +83,13 @@ class FieldsMap(object):
 
         Parameters
         ----------
-        filename : FITS file name
-                   Name of the file containing the field map.
-                   Use extname='FIELDMAP' to read the field map from an
-                   extension the MUSE data cube.
-        nfields : integer
-                  Number of fields.
+        filename : str
+            Name of the FITS file containing the field map. Use
+            ``extname='FIELDMAP'`` to read the field map from an
+            extension the MUSE data cube.
+        nfields : int
+            Number of fields.
+
         """
         if filename is None:
             self.nfields = 0
@@ -76,8 +112,8 @@ class FieldsMap(object):
     def get_field_mask(self, field_name):
         """Return an array with non-zeros values for pixels matching a field.
 
-        ``field_name`` can be an integer (between 1 and nfields+1) or a string (e.g.
-        UDF-03).
+        ``field_name`` can be an integer (between 1 and nfields+1) or a string
+        (e.g. UDF-03).
 
         """
         if isinstance(field_name, six.string_types):
@@ -91,7 +127,7 @@ class FieldsMap(object):
         return [field for field, i in zip(fields, ind) if i == '1']
 
     def get_pixel_fields_indexes(self, y, x):
-        """Return a list of fields indexes (between 0 and nfields) 
+        """Return a list of fields indexes (between 0 and nfields)
         that cover a given pixel (y, x)."""
         ind = reversed("{0:010b}".format(self.data[y, x])[:-1])
         indexes = (i for i in range(self.nfields))
@@ -170,7 +206,7 @@ class FieldsMap(object):
 
         We use shift-variant blur techniques to model the variation of the PSF.
 
-        Reference: Denis, L. Thiebaut E., Soulez F., Becker J.-M. and Mourya R. 
+        Reference: Denis, L. Thiebaut E., Soulez F., Becker J.-M. and Mourya R.
                'Fast approximations of shift-variant blur',
                International Journal of Computer Vision,
                Springer Verlag, 115(3), 253-278 (2015)
