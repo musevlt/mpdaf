@@ -18,3 +18,4 @@ Reference/API
 =============
 
 .. automodapi:: mpdaf.sdetect
+   :no-inherited-members:
