@@ -367,8 +367,12 @@ class EmbeddedSphinxShell(object):
             if not more:
                 source_raw = splitter.raw_reset()
                 self.IP.run_cell(source_raw, store_history=store_history)
-                if not self.IP.last_execution_succeeded:
-                    self.app.warn('Failed to execute line: {}'.format(line))
+                try:
+                    if not self.IP.last_execution_succeeded:
+                        self.app.warn('Failed to execute line: {}'.format(line))
+                except AttributeError:
+                    # Not available for IPython < 5
+                    pass
         finally:
             sys.stdout = stdout
 
