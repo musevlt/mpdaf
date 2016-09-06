@@ -13,6 +13,7 @@
 #endif
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX_FILES_PER_THREAD 300
 
 int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
 {
@@ -66,7 +67,7 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
         int nthreads = omp_get_num_threads(); //number of threads
 
         char filename[500];
-        fitsfile *fdata[100];
+        fitsfile *fdata[MAX_FILES_PER_THREAD];
         int naxis;
         int status = 0;  // CFITSIO status value MUST be initialized to zero!
         long naxes[3] = {1,1,1}, bnaxes[3] = {1,1,1};
@@ -148,7 +149,7 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
 
        //initialization
        int *indx;
-       double *pix[100], *wdata;
+       double *pix[MAX_FILES_PER_THREAD], *wdata;
        long npixels = naxes[0];
        for (i=0; i<nfiles; i++)
        {
@@ -313,7 +314,7 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
         int nthreads = omp_get_num_threads(); // number of threads
 
         char filename[500];
-	fitsfile *fdata[100], *fvar[100];
+	fitsfile *fdata[MAX_FILES_PER_THREAD], *fvar[MAX_FILES_PER_THREAD];
 	int naxis;
 	int status = 0;  // CFITSIO status value MUST be initialized to zero!
 	long naxes[3] = {1,1,1}, bnaxes[3] = {1,1,1};
@@ -424,7 +425,7 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
 	firstpix[0] = 1;
 
 	//initialization
-	double *pix[100], *pixvar[100], *wdata, *wvar=NULL, *wmad=NULL;
+	double *pix[MAX_FILES_PER_THREAD], *pixvar[MAX_FILES_PER_THREAD], *wdata, *wvar=NULL, *wmad=NULL;
 	int *indx, *files_id;
 	double x[3];
 	long npixels = naxes[0];
