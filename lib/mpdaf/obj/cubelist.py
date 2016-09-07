@@ -597,6 +597,18 @@ class CubeMosaic(CubeList):
         assert len(np.unique(shapes[:, 0])) == 1, (
             'Cubes must have the same spectral range.')
 
+    def combine(self):
+        """This method is not implemented for CubeMosaic."""
+        raise NotImplementedError
+
+    def median(self):
+        """This method is not implemented for CubeMosaic."""
+        raise NotImplementedError
+
+    def pymedian(self):
+        """This method is not implemented for CubeMosaic."""
+        raise NotImplementedError
+
     def pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
                   header=None):
         try:
