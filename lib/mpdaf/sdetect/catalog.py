@@ -470,6 +470,7 @@ class Catalog(Table):
         slist = []
         filenames = []
         files = glob.glob(os.path.join(path, pattern))
+        files.sort()
         n = len(files)
         logger.info('Building catalog from path %s', path)
 
