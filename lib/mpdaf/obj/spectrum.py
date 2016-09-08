@@ -40,7 +40,7 @@ import numpy as np
 import types
 
 import astropy.units as u
-from scipy import integrate, interpolate, signal
+from scipy import interpolate, signal
 from scipy.optimize import leastsq
 from six.moves import range
 
@@ -425,21 +425,10 @@ class Spectrum(ArithmeticMixin, DataArray):
             True: spline interpolation (`scipy.interpolate.splrep/splev` used).
         """
         lbda = self.wave.coord()
-        if self.mask is np.ma.nomask:
-            d = np.empty(self.shape + 2, dtype=float)
-            d[1:-1] = self._data
-            w = np.empty(self.shape + 2, dtype=float)
-            w[1:-1] = lbda
-        else:
-            ksel = np.where(self.mask == False)
-            d = np.empty(np.shape(ksel)[1] + 2, dtype=float)
-            d[1:-1] = self._data[ksel]
-            w = np.empty(np.shape(ksel)[1] + 2)
-            w[1:-1] = lbda[ksel]
-        d[0] = d[1]
-        d[-1] = d[-2]
-        w[0] = self.get_start() - 0.5 * self.get_step()
-        w[-1] = self.get_end() + 0.5 * self.get_step()
+        d = np.pad(self.data.compressed(), 1, 'edge')
+        w = np.concatenate(([self.get_start() - 0.5 * self.get_step()],
+                            np.compress(~self._mask, lbda),
+                            [self.get_end() + 0.5 * self.get_step()]))
 
         if spline:
             if self._var is not None:
@@ -448,6 +437,7 @@ class Spectrum(ArithmeticMixin, DataArray):
                     weight = np.empty(self.shape + 2, dtype=float)
                     weight[1:-1] = _weight
                 else:
+                    ksel = np.where(self.mask == False)
                     weight = np.empty(np.shape(ksel)[1] + 2)
                     weight[1:-1] = _weight[ksel]
                 weight[0] = weight[1]
@@ -469,8 +459,8 @@ class Spectrum(ArithmeticMixin, DataArray):
             False: linear interpolation (`scipy.interpolate.interp1d` used),
             True: spline interpolation (`scipy.interpolate.splrep/splev` used).
         """
-        if np.ma.count_masked(self.data) == 0:
-            return self.data.data
+        if np.count_nonzero(self._mask) == 0:
+            return self._data
         else:
             lbda = self.wave.coord()
             ksel = np.where(self._mask == True)
@@ -1216,7 +1206,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         w = interpolate.splev(lb, tck, der=0)
         vflux = np.ma.average(self.data[imin:imax], weights=w)
         vflux2 = (vflux * self.unit).to(u.Unit('erg.s-1.cm-2.Angstrom-1')).value
-        mag = flux2mag(vflux2, l0)        
+        mag = flux2mag(vflux2, l0)
         if out == 1:
             return mag
         if out == 2:
@@ -1229,7 +1219,7 @@ class Spectrum(ArithmeticMixin, DataArray):
                     err_vflux = np.sqrt(np.ma.average(self.var[imin:imax], weights=w))
                     err_mag = np.abs(2.5*err_vflux/(vflux*np.log(10)))
                 else:
-                    err_mag = 0                 
+                    err_mag = 0
             return np.array([mag, err_mag])
 
     def truncate(self, lmin=None, lmax=None, unit=u.angstrom):
@@ -2107,6 +2097,41 @@ class Spectrum(ArithmeticMixin, DataArray):
         return Gauss1D(lpeak, peak, flux, fwhm, cont0, err_lpeak,
                        err_peak, err_flux, err_fwhm, chisq, dof)
 
+    def median_filter(self, kernel_size=1., spline=False, unit=u.angstrom,
+                      inplace=False):
+        """Perform a median filter on the spectrum.
+
+        Uses `scipy.signal.medfilt`.
+
+        Parameters
+        ----------
+        kernel_size : float
+            Size of the median filter window.
+        unit : `astropy.units.Unit`
+            unit ot the kernel size
+        inplace : bool
+            If False, return a filtered copy of the spectrum (the default).
+            If True, filter the original spectrum in-place, and return that.
+
+        Returns
+        -------
+        out : Spectrum
+        """
+        res = self if inplace else self.copy()
+
+        if unit is not None:
+            kernel_size = kernel_size / res.get_step(unit=unit)
+        ks = int(kernel_size / 2) * 2 + 1
+
+        data = np.empty(res.shape[0] + 2 * ks)
+        data[ks:-ks] = res._interp_data(spline)
+        data[:ks] = data[ks:2 * ks][::-1]
+        data[-ks:] = data[-2 * ks:-ks][::-1]
+        data = signal.medfilt(data, ks)
+        res._data = data[ks:-ks]
+        res._var = None
+        return res
+
     def convolve(self, other, inplace=False):
         """Convolve a Spectrum with a 1D array or another Spectrum, using
         the discrete convolution equation.
@@ -2222,7 +2247,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         # Delegate the task to DataArray._convolve()
         return self._convolve(signal.fftconvolve, other=other, inplace=inplace)
 
-    def _correlate(self, other):
+    def correlate(self, other, inplace=False):
         """Cross-correlate the spectrum with a other spectrum or an array.
 
         Uses `scipy.signal.correlate`. self and other must have the same
@@ -2232,89 +2257,42 @@ class Spectrum(ArithmeticMixin, DataArray):
         ----------
         other : 1d-array or Spectrum
             Second spectrum or 1d-array.
-        """
-        try:
-            if isinstance(other, Spectrum):
-                if self.shape != other.shape:
-                    raise IOError('Operation forbidden for spectra '
-                                  'with different sizes')
-                else:
-                    data = other._data
-                    if self.unit != other.unit:
-                        data = (data * other.unit).to(self.unit).value
-                    self._data = signal.correlate(self._data, data, mode='same')
-                    if self._var is not None:
-                        self._var = signal.correlate(self._var, data, mode='same')
-        except IOError as e:
-            raise e
-        except:
-            try:
-                self._data = signal.correlate(self._data, other, mode='same')
-                if self._var is not None:
-                    self._var = signal.correlate(self._var, other, mode='same')
-            except:
-                raise IOError('Operation forbidden')
-
-    def correlate(self, other, inplace=False):
-        """Return the cross-correlation of the spectrum with a other spectrum
-        or an array.
-
-        Uses `scipy.signal.correlate`. self and other must have the same
-        size.
-
-        Parameters
-        ----------
-        other : 1d-array or Spectrum
-            Second spectrum or 1d-array.
         inplace : bool
-            If False, return the correlation in a new spectrum object (default).
             If True, replace the input spectrum with the correlation.
 
         Returns
         -------
         out : Spectrum
-        """
-        # Should we perform the correlation in-place, or to a copy of the spectrum?
 
+        """
         res = self if inplace else self.copy()
 
-        # Perform the correlation in-place.
-
-        res._correlate(other)
+        try:
+            if isinstance(other, Spectrum):
+                if res.shape != other.shape:
+                    raise IOError('Operation forbidden for spectra '
+                                  'with different sizes')
+                else:
+                    data = other._data
+                    if res.unit != other.unit:
+                        data = (data * other.unit).to(res.unit).value
+                    res._data = signal.correlate(res._data, data, mode='same')
+                    if res._var is not None:
+                        res._var = signal.correlate(res._var, data,
+                                                    mode='same')
+        except IOError as e:
+            raise e
+        except:
+            try:
+                res._data = signal.correlate(res._data, other, mode='same')
+                if res._var is not None:
+                    res._var = signal.correlate(res._var, other, mode='same')
+            except:
+                raise IOError('Operation forbidden')
         return res
 
-    def _fftconvolve_gauss(self, fwhm, nsig=5, unit=u.angstrom):
-        """Convolve the spectrum with a Gaussian using fft.
-
-        Parameters
-        ----------
-        fwhm : float
-            Gaussian fwhm in angstrom
-        nsig : int
-            Number of standard deviations.
-        unit : `astropy.units.Unit`
-            Type of the wavelength coordinates. If None, inputs are in pixels.
-        """
-        from scipy import special
-
-        sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
-        if unit is None:
-            s = sigma
-        else:
-            s = sigma / self.get_step(unit=unit)
-        n = nsig * int(s + 0.5)
-        n = int(n / 2) * 2
-        d = np.arange(-n, n + 1)
-        kernel = special.erf((1 + 2 * d) / (2 * np.sqrt(2) * s)) \
-            + special.erf((1 - 2 * d) / (2 * np.sqrt(2) * s))
-        kernel /= kernel.sum()
-
-        self._data = signal.correlate(self._data, kernel, mode='same')
-        if self._var is not None:
-            self._var = signal.correlate(self._var, kernel, mode='same')
-
     def fftconvolve_gauss(self, fwhm, nsig=5, unit=u.angstrom, inplace=False):
-        """Return the convolution of the spectrum with a Gaussian using fft.
+        """Convolve the spectrum with a Gaussian using fft.
 
         Parameters
         ----------
@@ -2325,20 +2303,33 @@ class Spectrum(ArithmeticMixin, DataArray):
         unit : `astropy.units.Unit`
             type of the wavelength coordinates
         inplace : bool
-            If False, return a convolved copy of the spectrum (the default).
             If True, convolve the original spectrum in-place, and return that.
 
         Returns
         -------
         out : Spectrum
+
         """
-        # Should we convolve the spectrum in-place, or convolve a copy?
+        from scipy import special
 
         res = self if inplace else self.copy()
 
-        # Convolve the result object in-place.
+        sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
+        if unit is None:
+            s = sigma
+        else:
+            s = sigma / res.get_step(unit=unit)
+        n = nsig * int(s + 0.5)
+        n = int(n / 2) * 2
+        d = np.arange(-n, n + 1)
+        kernel = special.erf((1 + 2 * d) / (2 * np.sqrt(2) * s)) \
+            + special.erf((1 - 2 * d) / (2 * np.sqrt(2) * s))
+        kernel /= kernel.sum()
 
-        res._fftconvolve_gauss(fwhm, nsig, unit)
+        res._data = signal.correlate(res._data, kernel, mode='same')
+        if res._var is not None:
+            res._var = signal.correlate(res._var, kernel, mode='same')
+
         return res
 
     def LSF_convolve(self, lsf, size, **kwargs):
