@@ -808,7 +808,8 @@ class Source(object):
                             f.append(stat_hdu)
             # tables
             for key in self.tables.keys():
-                if dict.__getitem__(self.tables, key) is not None:
+                tab = dict.__getitem__(self.tables, key)
+                if tab is not None:
                     ext_name = 'TAB_%s' % key
                     tbhdu = table_to_hdu(tab)
                     tbhdu.name = ext_name
