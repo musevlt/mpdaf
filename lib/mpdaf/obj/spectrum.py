@@ -40,7 +40,7 @@ import numpy as np
 import types
 
 import astropy.units as u
-from scipy import integrate, interpolate, signal
+from scipy import interpolate, signal
 from scipy.optimize import leastsq
 from six.moves import range
 
@@ -425,21 +425,10 @@ class Spectrum(ArithmeticMixin, DataArray):
             True: spline interpolation (`scipy.interpolate.splrep/splev` used).
         """
         lbda = self.wave.coord()
-        if self.mask is np.ma.nomask:
-            d = np.empty(self.shape + 2, dtype=float)
-            d[1:-1] = self._data
-            w = np.empty(self.shape + 2, dtype=float)
-            w[1:-1] = lbda
-        else:
-            ksel = np.where(self.mask == False)
-            d = np.empty(np.shape(ksel)[1] + 2, dtype=float)
-            d[1:-1] = self._data[ksel]
-            w = np.empty(np.shape(ksel)[1] + 2)
-            w[1:-1] = lbda[ksel]
-        d[0] = d[1]
-        d[-1] = d[-2]
-        w[0] = self.get_start() - 0.5 * self.get_step()
-        w[-1] = self.get_end() + 0.5 * self.get_step()
+        d = np.pad(self.data.compressed(), 1, 'edge')
+        w = np.concatenate(([self.get_start() - 0.5 * self.get_step()],
+                            np.compress(~self._mask, lbda),
+                            [self.get_end() + 0.5 * self.get_step()]))
 
         if spline:
             if self._var is not None:
@@ -448,6 +437,7 @@ class Spectrum(ArithmeticMixin, DataArray):
                     weight = np.empty(self.shape + 2, dtype=float)
                     weight[1:-1] = _weight
                 else:
+                    ksel = np.where(self.mask == False)
                     weight = np.empty(np.shape(ksel)[1] + 2)
                     weight[1:-1] = _weight[ksel]
                 weight[0] = weight[1]
@@ -469,8 +459,8 @@ class Spectrum(ArithmeticMixin, DataArray):
             False: linear interpolation (`scipy.interpolate.interp1d` used),
             True: spline interpolation (`scipy.interpolate.splrep/splev` used).
         """
-        if np.ma.count_masked(self.data) == 0:
-            return self.data.data
+        if np.count_nonzero(self._mask) == 0:
+            return self._data
         else:
             lbda = self.wave.coord()
             ksel = np.where(self._mask == True)
