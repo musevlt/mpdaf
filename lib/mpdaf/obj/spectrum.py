@@ -1216,7 +1216,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         w = interpolate.splev(lb, tck, der=0)
         vflux = np.ma.average(self.data[imin:imax], weights=w)
         vflux2 = (vflux * self.unit).to(u.Unit('erg.s-1.cm-2.Angstrom-1')).value
-        mag = flux2mag(vflux2, l0)        
+        mag = flux2mag(vflux2, l0)
         if out == 1:
             return mag
         if out == 2:
@@ -1229,7 +1229,7 @@ class Spectrum(ArithmeticMixin, DataArray):
                     err_vflux = np.sqrt(np.ma.average(self.var[imin:imax], weights=w))
                     err_mag = np.abs(2.5*err_vflux/(vflux*np.log(10)))
                 else:
-                    err_mag = 0                 
+                    err_mag = 0
             return np.array([mag, err_mag])
 
     def truncate(self, lmin=None, lmax=None, unit=u.angstrom):
@@ -2106,6 +2106,59 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         return Gauss1D(lpeak, peak, flux, fwhm, cont0, err_lpeak,
                        err_peak, err_flux, err_fwhm, chisq, dof)
+
+    def _median_filter(self, kernel_size=1., spline=False, unit=u.angstrom):
+        """Perform a median filter on the spectrum.
+
+        Uses `scipy.signal.medfilt`.
+
+        Parameters
+        ----------
+        kernel_size : float
+            Size of the median filter window.
+        unit : `astropy.units.Unit`
+            unit ot the kernekl size. If None, inputs are in pixels.
+        """
+        if unit is not None:
+            kernel_size = kernel_size / self.get_step(unit=unit)
+        ks = int(kernel_size / 2) * 2 + 1
+
+        data = np.empty(self.shape[0] + 2 * ks)
+        data[ks:-ks] = self._interp_data(spline)
+        data[:ks] = data[ks:2 * ks][::-1]
+        data[-ks:] = data[-2 * ks:-ks][::-1]
+        data = signal.medfilt(data, ks)
+        self._data = data[ks:-ks]
+
+    def median_filter(self, kernel_size=1., spline=False, unit=u.angstrom,
+                      inplace=False):
+        """Return a spectrum resulted on a median filter on the current
+        spectrum.
+
+        Uses `scipy.signal.medfilt`.
+
+        Parameters
+        ----------
+        kernel_size : float
+            Size of the median filter window.
+        unit : `astropy.units.Unit`
+            unit ot the kernel size
+        inplace : bool
+            If False, return a filtered copy of the spectrum (the default).
+            If True, filter the original spectrum in-place, and return that.
+
+        Returns
+        -------
+        out : Spectrum
+        """
+        # Should we filter the spectrum in-place, or filter a copy?
+
+        res = self if inplace else self.copy()
+
+        # Filter the result object in-place.
+
+        res._median_filter(kernel_size, spline, unit)
+        return res
 
     def convolve(self, other, inplace=False):
         """Convolve a Spectrum with a 1D array or another Spectrum, using
