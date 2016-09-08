@@ -39,7 +39,6 @@ from __future__ import absolute_import, division, print_function
 import astropy.units as u
 import datetime
 import glob
-import itertools
 import logging
 import numpy as np
 import os.path
@@ -150,35 +149,36 @@ def _set_table_attributes(name, table):
                 setattr(table[colname], attr, value)
             elif not ASTROPY_LT_1_1 and attr == 'primary_index':
                 table.add_index(colname, unique=True)
-                
+
+
 def _headercorrected(hdr):
-    #COM*** -> COMMENT
+    # COM*** -> COMMENT
     i = 1
     while 'COM%03d' % i in hdr:
         value = hdr['COM%03d' % i]
         comment = hdr.cards['COM%03d' % i].comment
-        hdr['COMMENT'] = '[%s] %s'%(comment, value)
+        hdr['COMMENT'] = '[%s] %s' % (comment, value)
         del hdr['COM%03d' % i]
         i += 1
-    #HIST*** -> HISTORY
+    # HIST*** -> HISTORY
     i = 1
     while 'HIST%03d' % i in hdr:
         value = hdr['HIST%03d' % i]
         comment = hdr.cards['HIST%03d' % i].comment
-        hdr['HISTORY'] = '%s (%s)'%(value, comment)
+        hdr['HISTORY'] = '%s (%s)' % (value, comment)
         del hdr['HIST%03d' % i]
         i += 1
     # ORIGIN -> FROM
     if 'ORIGIN' in hdr.keys():
-        hdr.rename_keyword('ORIGIN','FROM')
+        hdr.rename_keyword('ORIGIN', 'FROM')
     if 'ORIGIN_V' in hdr.keys():
-        hdr.rename_keyword('ORIGIN_V','FROM_V')
+        hdr.rename_keyword('ORIGIN_V', 'FROM_V')
     # SOURCE_V -> FORMAT
     if 'SOURCE_V' in hdr.keys():
-        hdr.rename_keyword('SOURCE_V','FORMAT')
+        hdr.rename_keyword('SOURCE_V', 'FORMAT')
     # SRC_VERS -> SRC_V
     if 'SRC_VERS' in hdr.keys():
-        hdr.rename_keyword('SRC_VERS','SRC_V')
+        hdr.rename_keyword('SRC_VERS', 'SRC_V')
 
 
 def vacuum2air(vac):
@@ -348,31 +348,31 @@ _read_cube = partial(_read_mpdaf_obj, Cube)
 
 
 class dict_src(dict):
-    
+
     def __init__(self, filename, ndim):
         dict.__init__(self)
         self.filename = filename
         self.ndim = ndim
-        if self.ndim==0:
-            self.start='TAB'
-        elif self.ndim==1:
-            self.start='SPE'
-        elif self.ndim==2:
-            self.start='IMA'
-        elif self.ndim==3:
-            self.start='CUB'
+        if self.ndim == 0:
+            self.start = 'TAB'
+        elif self.ndim == 1:
+            self.start = 'SPE'
+        elif self.ndim == 2:
+            self.start = 'IMA'
+        elif self.ndim == 3:
+            self.start = 'CUB'
         else:
             raise IOError()
-        
+
     def __getitem__(self, key):
         val = dict.__getitem__(self, key)
         if val is None:
             with pyfits.open(self.filename) as hdu:
-                if self.ndim==0:
-                    extname = '%s_%s'% (self.start, key)
+                if self.ndim == 0:
+                    extname = '%s_%s' % (self.start, key)
                     val = _read_table(hdu, extname, masked=True)
                 else:
-                    extname = '%s_%s_DATA'% (self.start, key)
+                    extname = '%s_%s_DATA' % (self.start, key)
                     stat_ext = '%s_%s_STAT' % (self.start, key)
                     if stat_ext in hdu:
                         ext = (extname, stat_ext)
@@ -386,8 +386,7 @@ class dict_src(dict):
                         val = _read_cube(hdu, ext, ima=False)
             dict.__setitem__(self, key, val)
         return dict.__getitem__(self, key)
-    
-    
+
     def items(self):
         return [(key, self[key]) for key in self]
 
@@ -624,7 +623,8 @@ class Source(object):
                            'mandatory and its absence will return an error')
             hdr['CUBE_V'] = ('', 'datacube version')
         return cls(hdr, lines, mag, z, spectra, images, cubes, tables,
-                   mask_invalid=mask_invalid, filename=os.path.abspath(filename))
+                   mask_invalid=mask_invalid,
+                   filename=os.path.abspath(filename))
 
     @classmethod
     def _light_from_file(cls, filename):
@@ -665,13 +665,14 @@ class Source(object):
         filename : str
             FITS filename
         """
-        if self._filename is None: # create and write the FITS file
+        if self._filename is None:  # create and write the FITS file
             # create primary header
             prihdu = pyfits.PrimaryHDU(header=self.header)
-            prihdu.header['DATE'] = (str(datetime.datetime.now()), 'Creation date')
+            prihdu.header['DATE'] = (str(datetime.datetime.now()),
+                                     'Creation date')
             prihdu.header['AUTHOR'] = ('MPDAF', 'Origin of the file')
             prihdu.header['FORMAT'] = (TABLES_SCHEMA['version'],
-                                         'Version of the Source format')
+                                       'Version of the Source format')
             hdulist = pyfits.HDUList([prihdu])
             # lines
             if self.lines is not None:
@@ -723,14 +724,14 @@ class Source(object):
                 hdulist.append(tbhdu)
             # save to disk
             hdulist.writeto(filename, clobber=True, output_verify='fix')
-        else: #update the existing FITS file
+        else:  # update the existing FITS file
             if filename != self._filename:
                 shutil.copy(self._filename, filename)
             f = pyfits.open(filename, mode='update')
             extnames = [h.name for h in f[1:]]
-            #header
+            # header
             f[0].header = self.header
-            #lines
+            # lines
             if self.lines is not None:
                 tbhdu = table_to_hdu(self.lines)
                 tbhdu.name = 'LINES'
@@ -777,7 +778,8 @@ class Source(object):
                 if ima is not None:
                     ext_name = 'IMA_%s_DATA' % key
                     savemask = 'none' if key.startswith(('MASK_', 'SEG_')) else 'nan'
-                    data_hdu = ima.get_data_hdu(name=ext_name, savemask=savemask)
+                    data_hdu = ima.get_data_hdu(name=ext_name,
+                                                savemask=savemask)
                     if ext_name in extnames:
                         f[ext_name] = data_hdu
                     else:
@@ -830,24 +832,24 @@ class Source(object):
 
         for key in keys:
             info(self.header.cards[key])
-            
+
         if self.spectra is not None:
             keys = self.spectra.keys()
-            info("%d spectra: %s"%(len(keys), " ".join(keys)))
+            info("%d spectra: %s" % (len(keys), " ".join(keys)))
         if self.images is not None:
             keys = self.images.keys()
-            info("%d images: %s"%(len(keys), " ".join(keys)))
+            info("%d images: %s" % (len(keys), " ".join(keys)))
         if self.cubes is not None:
             keys = self.cubes.keys()
-            info("%d cubes: %s"%(len(keys), " ".join(keys)))
+            info("%d cubes: %s" % (len(keys), " ".join(keys)))
         if self.tables is not None:
             keys = self.tables.keys()
-            info("%d tables: %s"%(len(keys), " ".join(keys)))
+            info("%d tables: %s" % (len(keys), " ".join(keys)))
 
         for name, tab in (('lines', self.lines), ('magnitudes', self.mag),
-                            ('redshifts', self.z)):
+                          ('redshifts', self.z)):
             if tab is not None:
-                info("%d %s"%(len(tab), name))
+                info("%d %s" % (len(tab), name))
 
     def __getattr__(self, item):
         """Map values to attributes."""
@@ -859,7 +861,7 @@ class Source(object):
     def __setattr__(self, item, value):
         """Map attributes to values."""
         if item in ('header', 'lines', 'mag', 'z', 'cubes', 'images',
-                    'spectra', 'tables', '_logger','_filename'):
+                    'spectra', 'tables', '_logger', '_filename'):
             # return dict.__setattr__(self, item, value)
             super(Source, self).__setattr__(item, value)
         else:
@@ -880,8 +882,7 @@ class Source(object):
         """
         if date is None:
             date = datetime.date.today()
-        self.header['COMMENT'] = '[%s %s] %s'%(author, str(date), comment)
-
+        self.header['COMMENT'] = '[%s %s] %s' % (author, str(date), comment)
 
     def add_history(self, text, author=""):
         """Add a history to the FITS header of the Source object.
@@ -898,8 +899,8 @@ class Source(object):
         """
         date = datetime.date.today()
         version = self.header['SRC_V']
-        self.header['HISTORY'] = '[%s] %s (%s %s)'%(version, text, author, str(date))
-        
+        self.header['HISTORY'] = '[%s] %s (%s %s)' % (version, text, author,
+                                                      str(date))
 
     def add_attr(self, key, value, desc=None, unit=None, fmt=None):
         """Add a new attribute for the current Source object. This attribute
