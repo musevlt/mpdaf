@@ -2247,7 +2247,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         # Delegate the task to DataArray._convolve()
         return self._convolve(signal.fftconvolve, other=other, inplace=inplace)
 
-    def _correlate(self, other):
+    def correlate(self, other, inplace=False):
         """Cross-correlate the spectrum with a other spectrum or an array.
 
         Uses `scipy.signal.correlate`. self and other must have the same
@@ -2257,89 +2257,42 @@ class Spectrum(ArithmeticMixin, DataArray):
         ----------
         other : 1d-array or Spectrum
             Second spectrum or 1d-array.
-        """
-        try:
-            if isinstance(other, Spectrum):
-                if self.shape != other.shape:
-                    raise IOError('Operation forbidden for spectra '
-                                  'with different sizes')
-                else:
-                    data = other._data
-                    if self.unit != other.unit:
-                        data = (data * other.unit).to(self.unit).value
-                    self._data = signal.correlate(self._data, data, mode='same')
-                    if self._var is not None:
-                        self._var = signal.correlate(self._var, data, mode='same')
-        except IOError as e:
-            raise e
-        except:
-            try:
-                self._data = signal.correlate(self._data, other, mode='same')
-                if self._var is not None:
-                    self._var = signal.correlate(self._var, other, mode='same')
-            except:
-                raise IOError('Operation forbidden')
-
-    def correlate(self, other, inplace=False):
-        """Return the cross-correlation of the spectrum with a other spectrum
-        or an array.
-
-        Uses `scipy.signal.correlate`. self and other must have the same
-        size.
-
-        Parameters
-        ----------
-        other : 1d-array or Spectrum
-            Second spectrum or 1d-array.
         inplace : bool
-            If False, return the correlation in a new spectrum object (default).
             If True, replace the input spectrum with the correlation.
 
         Returns
         -------
         out : Spectrum
-        """
-        # Should we perform the correlation in-place, or to a copy of the spectrum?
 
+        """
         res = self if inplace else self.copy()
 
-        # Perform the correlation in-place.
-
-        res._correlate(other)
+        try:
+            if isinstance(other, Spectrum):
+                if res.shape != other.shape:
+                    raise IOError('Operation forbidden for spectra '
+                                  'with different sizes')
+                else:
+                    data = other._data
+                    if res.unit != other.unit:
+                        data = (data * other.unit).to(res.unit).value
+                    res._data = signal.correlate(res._data, data, mode='same')
+                    if res._var is not None:
+                        res._var = signal.correlate(res._var, data,
+                                                    mode='same')
+        except IOError as e:
+            raise e
+        except:
+            try:
+                res._data = signal.correlate(res._data, other, mode='same')
+                if res._var is not None:
+                    res._var = signal.correlate(res._var, other, mode='same')
+            except:
+                raise IOError('Operation forbidden')
         return res
 
-    def _fftconvolve_gauss(self, fwhm, nsig=5, unit=u.angstrom):
-        """Convolve the spectrum with a Gaussian using fft.
-
-        Parameters
-        ----------
-        fwhm : float
-            Gaussian fwhm in angstrom
-        nsig : int
-            Number of standard deviations.
-        unit : `astropy.units.Unit`
-            Type of the wavelength coordinates. If None, inputs are in pixels.
-        """
-        from scipy import special
-
-        sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
-        if unit is None:
-            s = sigma
-        else:
-            s = sigma / self.get_step(unit=unit)
-        n = nsig * int(s + 0.5)
-        n = int(n / 2) * 2
-        d = np.arange(-n, n + 1)
-        kernel = special.erf((1 + 2 * d) / (2 * np.sqrt(2) * s)) \
-            + special.erf((1 - 2 * d) / (2 * np.sqrt(2) * s))
-        kernel /= kernel.sum()
-
-        self._data = signal.correlate(self._data, kernel, mode='same')
-        if self._var is not None:
-            self._var = signal.correlate(self._var, kernel, mode='same')
-
     def fftconvolve_gauss(self, fwhm, nsig=5, unit=u.angstrom, inplace=False):
-        """Return the convolution of the spectrum with a Gaussian using fft.
+        """Convolve the spectrum with a Gaussian using fft.
 
         Parameters
         ----------
@@ -2350,20 +2303,33 @@ class Spectrum(ArithmeticMixin, DataArray):
         unit : `astropy.units.Unit`
             type of the wavelength coordinates
         inplace : bool
-            If False, return a convolved copy of the spectrum (the default).
             If True, convolve the original spectrum in-place, and return that.
 
         Returns
         -------
         out : Spectrum
+
         """
-        # Should we convolve the spectrum in-place, or convolve a copy?
+        from scipy import special
 
         res = self if inplace else self.copy()
 
-        # Convolve the result object in-place.
+        sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
+        if unit is None:
+            s = sigma
+        else:
+            s = sigma / res.get_step(unit=unit)
+        n = nsig * int(s + 0.5)
+        n = int(n / 2) * 2
+        d = np.arange(-n, n + 1)
+        kernel = special.erf((1 + 2 * d) / (2 * np.sqrt(2) * s)) \
+            + special.erf((1 - 2 * d) / (2 * np.sqrt(2) * s))
+        kernel /= kernel.sum()
 
-        res._fftconvolve_gauss(fwhm, nsig, unit)
+        res._data = signal.correlate(res._data, kernel, mode='same')
+        if res._var is not None:
+            res._var = signal.correlate(res._var, kernel, mode='same')
+
         return res
 
     def LSF_convolve(self, lsf, size, **kwargs):
