@@ -2107,33 +2107,9 @@ class Spectrum(ArithmeticMixin, DataArray):
         return Gauss1D(lpeak, peak, flux, fwhm, cont0, err_lpeak,
                        err_peak, err_flux, err_fwhm, chisq, dof)
 
-    def _median_filter(self, kernel_size=1., spline=False, unit=u.angstrom):
-        """Perform a median filter on the spectrum.
-
-        Uses `scipy.signal.medfilt`.
-
-        Parameters
-        ----------
-        kernel_size : float
-            Size of the median filter window.
-        unit : `astropy.units.Unit`
-            unit ot the kernekl size. If None, inputs are in pixels.
-        """
-        if unit is not None:
-            kernel_size = kernel_size / self.get_step(unit=unit)
-        ks = int(kernel_size / 2) * 2 + 1
-
-        data = np.empty(self.shape[0] + 2 * ks)
-        data[ks:-ks] = self._interp_data(spline)
-        data[:ks] = data[ks:2 * ks][::-1]
-        data[-ks:] = data[-2 * ks:-ks][::-1]
-        data = signal.medfilt(data, ks)
-        self._data = data[ks:-ks]
-
     def median_filter(self, kernel_size=1., spline=False, unit=u.angstrom,
                       inplace=False):
-        """Return a spectrum resulted on a median filter on the current
-        spectrum.
+        """Perform a median filter on the spectrum.
 
         Uses `scipy.signal.medfilt`.
 
@@ -2151,13 +2127,19 @@ class Spectrum(ArithmeticMixin, DataArray):
         -------
         out : Spectrum
         """
-        # Should we filter the spectrum in-place, or filter a copy?
-
         res = self if inplace else self.copy()
 
-        # Filter the result object in-place.
+        if unit is not None:
+            kernel_size = kernel_size / res.get_step(unit=unit)
+        ks = int(kernel_size / 2) * 2 + 1
 
-        res._median_filter(kernel_size, spline, unit)
+        data = np.empty(res.shape[0] + 2 * ks)
+        data[ks:-ks] = res._interp_data(spline)
+        data[:ks] = data[ks:2 * ks][::-1]
+        data[-ks:] = data[-2 * ks:-ks][::-1]
+        data = signal.medfilt(data, ks)
+        res._data = data[ks:-ks]
+        res._var = None
         return res
 
     def convolve(self, other, inplace=False):
