@@ -25,14 +25,14 @@ def test_copy(spec_var):
 def test_selection(spectrum):
     """Spectrum class: testing operators > and < """
     spectrum2 = spectrum > 6
-    assert_almost_equal(spectrum2.sum(), 24)
+    assert_almost_equal(spectrum2.sum()[0], 24)
     spectrum2 = spectrum >= 6
-    assert_almost_equal(spectrum2.sum(), 30)
+    assert_almost_equal(spectrum2.sum()[0], 30)
     spectrum2 = spectrum < 6
-    assert_almost_equal(spectrum2.sum(), 15.5)
+    assert_almost_equal(spectrum2.sum()[0], 15.5)
     spectrum2 = spectrum <= 6
     spectrum[:] = spectrum2
-    assert_almost_equal(spectrum.sum(), 21.5)
+    assert_almost_equal(spectrum.sum()[0], 21.5)
 
 
 def test_arithmetric():
@@ -114,7 +114,7 @@ def test_spectrum_methods(spec_var, spec_novar):
     spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
                          wave=wave)
     sum1 = spectrum1.sum()
-    assert_almost_equal(sum1, spectrum1.data.sum())
+    assert_almost_equal(sum1[0], spectrum1.data.sum())
     spectrum2 = spectrum1[1:-2]
     sum1 = spectrum1.sum(lmin=spectrum1.wave.coord(1),
                          lmax=spectrum1.wave.coord(10 - 3),
@@ -131,8 +131,8 @@ def test_spectrum_methods(spec_var, spec_novar):
     assert spvar2[23] == np.abs(spec_var[23])
     spvar2 = spec_var.abs().sqrt()
     assert spvar2[8] == np.sqrt(np.abs(spec_var[8]))
-    assert_almost_equal(spec_var.mean(), 11.526, 2)
-    assert_almost_equal(spec_novar.mean(), 11.101, 2)
+    assert_almost_equal(spec_var.mean()[0], 11.526, 2)
+    assert_almost_equal(spec_novar.mean()[0], 11.101, 2)
     spvarsum = spvar2 + 4 * spvar2 - 56 / spvar2
 
     assert_almost_equal(spvarsum[10],
@@ -241,13 +241,13 @@ def test_resample():
 
     # Check that the integral flux in the resampled spectrum matches that of
     # the original spectrum.
-    expected_flux = oldsp.sum(weight=False) * oldsp.wave.get_step(unit=oldunit)
-    actual_flux = newsp.sum(weight=False) * newsp.wave.get_step(unit=oldunit)
+    expected_flux = oldsp.sum(weight=False)[0] * oldsp.wave.get_step(unit=oldunit)
+    actual_flux = newsp.sum(weight=False)[0] * newsp.wave.get_step(unit=oldunit)
     assert_allclose(actual_flux, expected_flux, 1e-2)
 
     # Do the same test, but with fluxes weighted by the inverse of the variances.
-    expected_flux = oldsp.sum(weight=True) * oldsp.wave.get_step(unit=oldunit)
-    actual_flux = newsp.sum(weight=True) * newsp.wave.get_step(unit=oldunit)
+    expected_flux = oldsp.sum(weight=True)[0] * oldsp.wave.get_step(unit=oldunit)
+    actual_flux = newsp.sum(weight=True)[0] * newsp.wave.get_step(unit=oldunit)
     assert_allclose(actual_flux, expected_flux, 1e-2)
 
     # Check that the peak of the resampled spectrum is at the wavelength
@@ -264,8 +264,8 @@ def test_resample():
 
     # Check that the doubly resampled spectrum has the same integrated flux
     # as the original.
-    expected_flux = oldsp.sum(weight=False) * oldsp.wave.get_step(unit=oldunit)
-    actual_flux = newsp2.sum(weight=False) * newsp2.wave.get_step(unit=oldunit)
+    expected_flux = oldsp.sum(weight=False)[0] * oldsp.wave.get_step(unit=oldunit)
+    actual_flux = newsp2.sum(weight=False)[0] * newsp2.wave.get_step(unit=oldunit)
     assert_allclose(actual_flux, expected_flux, 1e-2)
 
     # Check that the peak of the up-sampled spectrum is at the wavelength
@@ -288,26 +288,26 @@ def test_rebin(spec_var, spec_novar):
     unit = spectrum1.wave.unit
     factor = 3
     s = slice(0, factor * (spectrum1.shape[0] // factor))  # The rebinned slice
-    flux1 = spectrum1[s].sum() * spectrum1[s].wave.get_step(unit=unit)
+    flux1 = spectrum1[s].sum()[0] * spectrum1[s].wave.get_step(unit=unit)
     spectrum2 = spectrum1.rebin(factor, margin='left')
-    flux2 = spectrum2.sum() * spectrum2.wave.get_step(unit=unit)
+    flux2 = spectrum2.sum()[0] * spectrum2.wave.get_step(unit=unit)
     assert_almost_equal(flux1, flux2, 2)
 
     unit = spec_novar.wave.unit
     factor = 4
     s = slice(0, factor * (spec_novar.shape[0] // factor))
-    flux1 = spec_novar[s].sum() * spec_novar[s].wave.get_step(unit=unit)
+    flux1 = spec_novar[s].sum()[0] * spec_novar[s].wave.get_step(unit=unit)
     spnovar2 = spec_novar.rebin(factor, margin='left')
-    flux2 = spnovar2.sum() * spnovar2.wave.get_step(unit=unit)
+    flux2 = spnovar2.sum()[0] * spnovar2.wave.get_step(unit=unit)
     assert_almost_equal(flux1, flux2, 2)
 
     unit = spec_var.wave.unit
     factor = 4
     s = slice(0, factor * (spec_var.shape[0] // factor))
-    flux1 = spec_var[s].sum(weight=False) * \
+    flux1 = spec_var[s].sum(weight=False)[0] * \
         spec_var[s].wave.get_step(unit=unit)
     spvar2 = spec_var.rebin(factor, margin='left')
-    flux2 = spvar2.sum(weight=False) * spvar2.wave.get_step(unit=unit)
+    flux2 = spvar2.sum(weight=False)[0] * spvar2.wave.get_step(unit=unit)
     assert_almost_equal(flux1, flux2, 2)
 
 
@@ -337,8 +337,8 @@ def test_interpolation(spec_var, spec_novar):
     spvarcut4 = spm2.subspec(5550, 5590, unit=uspvar)
     assert_almost_equal(spec_var.mean(5550, 5590, unit=uspvar),
                         spvarcut1.mean())
-    assert_almost_equal(spec_novar.mean(5550, 5590, unit=uspnovar),
-                        spvarcut2.mean())
+    assert_almost_equal(spec_novar.mean(5550, 5590, unit=uspnovar)[0],
+                        spvarcut2.mean()[0])
     assert_almost_equal(spm1.mean(5550, 5590, unit=uspvar), spvarcut3.mean())
     assert_almost_equal(spm2.mean(5550, 5590, unit=uspvar), spvarcut4.mean())
 
@@ -350,21 +350,21 @@ def test_poly_fit(spec_var):
     spfit1.poly_val(polyfit1)
     spfit2 = spec_var.poly_spec(10)
     spfit3 = spec_var.poly_spec(10, weight=False)
-    assert_almost_equal(spfit1.mean(), 11.1, 1)
-    assert_almost_equal(spfit2.mean(), 11.1, 1)
-    assert_almost_equal(spfit3.mean(), 11.1, 1)
+    assert_almost_equal(spfit1.mean()[0], 11.1, 1)
+    assert_almost_equal(spfit2.mean()[0], 11.1, 1)
+    assert_almost_equal(spfit3.mean()[0], 11.1, 1)
 
 
 def test_filter(spec_var):
     """Spectrum class: testing filters"""
     spec_var.unit = u.Unit('erg/cm2/s/Angstrom')
     spec_var.wave.unit = u.angstrom
-    assert_almost_equal(spec_var.abmag_band(5000.0, 1000.0), -22.837, 2)
+    assert_almost_equal(spec_var.abmag_band(5000.0, 1000.0)[0], -22.837, 2)
     assert_almost_equal(spec_var.abmag_filter([4000, 5000, 6000],
-                                              [0.1, 1.0, 0.3]),
+                                              [0.1, 1.0, 0.3])[0],
                         -23.077, 2)
-    assert_almost_equal(spec_var.abmag_filter_name('U'), 99)
-    assert_almost_equal(spec_var.abmag_filter_name('B'), -22.278, 2)
+    assert_almost_equal(spec_var.abmag_filter_name('U')[0], 99)
+    assert_almost_equal(spec_var.abmag_filter_name('B')[0], -22.278, 2)
 
 
 def test_mag():
@@ -372,10 +372,10 @@ def test_mag():
     Vega = Spectrum(get_data_file('obj', 'Vega.fits'))
     Vega.unit = u.Unit('2E-17 erg / (Angstrom cm2 s)')
     Vega.wave.wcs.wcs.cunit[0] = u.angstrom
-    assert_almost_equal(Vega.abmag_filter_name('V'), 0, 1)
-    mag = Vega.abmag_filter_name('Ic')
+    assert_almost_equal(Vega.abmag_filter_name('V')[0], 0, 1)
+    mag = Vega.abmag_filter_name('Ic')[0]
     assert mag > 0.4 and mag < 0.5
-    mag = Vega.abmag_band(22500, 2500)
+    mag = Vega.abmag_band(22500, 2500)[0]
     assert mag > 1.9 and mag < 2.0
 
 
@@ -388,15 +388,15 @@ def test_integrate():
     # Integrate the whole spectrum, by not specifying starting or ending
     # wavelengths. This should be the sum of the pixel values multiplied
     # by cdelt in angstroms (because the flux units are per angstrom).
-    result = spectrum1.integrate()
-    expected = spectrum1.get_step(unit=u.angstrom) * spectrum1.sum()
+    result = spectrum1.integrate()[0]
+    expected = spectrum1.get_step(unit=u.angstrom) * spectrum1.sum()[0]
     assert_almost_equal(result.value, expected)
     assert result.unit == u.ct
 
     # The result should not change if we change the wavelength units of
     # the wavelength limits to nanometers.
-    result = spectrum1.integrate(unit=u.nm)
-    expected = spectrum1.get_step(unit=u.angstrom) * spectrum1.sum()
+    result = spectrum1.integrate(unit=u.nm)[0]
+    expected = spectrum1.get_step(unit=u.angstrom) * spectrum1.sum()[0]
     assert_almost_equal(result.value, expected)
     assert result.unit == u.ct
 
@@ -412,13 +412,13 @@ def test_integrate():
     # half of cdelt, plus the value of pixel 3 times half of cdelt.
     # This comes to 2*3.0/2 + 3*3.0/2 = 7.5 ct/Angstrom*nm, which
     # should be rescaled to 75 ct, since nm/Angstrom is 10.0.
-    result = spectrum1.integrate(lmin=3.5, lmax=6.5, unit=u.nm)
+    result = spectrum1.integrate(lmin=3.5, lmax=6.5, unit=u.nm)[0]
     assert_almost_equal(result.value, 75)
     assert result.unit == u.ct
 
     # Do the same test, but specify the wavelength limits in angstroms.
     # The result should be the same as before.
-    result = spectrum1.integrate(lmin=35.0, lmax=65.0, unit=u.angstrom)
+    result = spectrum1.integrate(lmin=35.0, lmax=65.0, unit=u.angstrom)[0]
     assert_almost_equal(result.value, 75)
     assert result.unit == u.ct
 
@@ -429,7 +429,7 @@ def test_integrate():
     # value of 7.5, and because we specified a wavelength range in
     # angstroms, the resulting units should be counts * nm.
     spectrum1.unit = u.ct
-    result = spectrum1.integrate(lmin=3.5, lmax=6.5, unit=u.nm)
+    result = spectrum1.integrate(lmin=3.5, lmax=6.5, unit=u.nm)[0]
     assert_almost_equal(result.value, 7.5)
     assert result.unit == u.ct * u.nm
 
@@ -462,9 +462,9 @@ def test_resample2():
     wave = WaveCoord(crpix=2.0, cdelt=3.0, crval=0.5, cunit=u.nm)
     spectrum1 = Spectrum(data=np.array([0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0]),
                          wave=wave)
-    flux1 = spectrum1.sum() * spectrum1.wave.get_step()
+    flux1 = spectrum1.sum()[0] * spectrum1.wave.get_step()
     spectrum2 = spectrum1.resample(0.3)
-    flux2 = spectrum2.sum() * spectrum2.wave.get_step()
+    flux2 = spectrum2.sum()[0] * spectrum2.wave.get_step()
     assert_almost_equal(flux1, flux2, 2)
 
 def test_get_item():

@@ -59,7 +59,7 @@ def is_number(x):
     return isinstance(x, numbers.Number)
 
 
-def flux2mag(flux, wave):
+def flux2mag(flux, err_flux, wave):
     """Convert flux from erg.s-1.cm-2.A-1 to AB mag.
 
     wave is the wavelength in A
@@ -67,9 +67,11 @@ def flux2mag(flux, wave):
     """
     if flux > 0:
         cs = c.to('Angstrom/s').value  # speed of light in A/s
-        return -48.60 - 2.5 * np.log10(wave ** 2 * flux / cs)
+        mag = -48.60 - 2.5 * np.log10(wave ** 2 * flux / cs)
+        err_mag = np.abs(2.5 * err_flux / (flux*np.log(10)))
+        return (mag, err_mag)
     else:
-        return 99
+        return (99, np.inf)
 
 
 def mag2flux(mag, wave):

@@ -20,7 +20,7 @@ def test_is_int():
 
 
 def test_mag_flux():
-    assert_almost_equal(flux2mag(mag2flux(20, 7000), 7000), 20)
+    assert_almost_equal(flux2mag(mag2flux(20, 7000), 0, 7000)[0], 20)
 
 
 def test_unit_array():

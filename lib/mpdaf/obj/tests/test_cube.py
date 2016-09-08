@@ -152,7 +152,7 @@ def test_multiprocess():
 
     # Test spectrum processing using a Spectrum method.
     im = cube1.loop_spe_multiprocessing(Spectrum.mean, cpu=2, verbose=False)
-    assert_allclose(im.data[2, 3], cube1[:, 2, 3].mean())
+    assert_allclose(im[2, 3], cube1[:, 2, 3].mean())
 
     # Test spectrum processing using a normal function.
     im = cube1.loop_spe_multiprocessing(_multiproc_func, cpu=2, verbose=False)
@@ -550,14 +550,14 @@ def test_get_image():
     # 2.0 everywhere except where the gaussian was added to 2.0. Hence
     # pixel 2,2 of the mean image should be the mean of the gaussian
     # minus the average 2.0 background.
-    assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].mean() - 2, 3)
+    assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].mean()[0] - 2, 3)
 
     # Get another mean image, but this time without subtracting off a
     # background.  Image pixel 0,0 should have a mean of 2.0, and
     # pixel 2,2 should equal the mean of the gaussian added to 2.0
     ima = cube1.get_image(wave=lrange, is_sum=False, subtract_off=False)
     assert ima[0, 0] == 2
-    assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].mean(), 3)
+    assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].mean()[0], 3)
 
     # For this test, perform a sum over the chosen wavelength range,
     # and subtract off a background image taken from wavelength
@@ -570,15 +570,15 @@ def test_get_image():
     # by the addition of the gaussian.
     ima = cube1.get_image(wave=lrange, is_sum=True, subtract_off=True)
     assert ima[0, 0] == 0
-    assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].sum() -
-                        cube1[lslice, 0, 0].sum(), 3)
+    assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].sum()[0] -
+                        cube1[lslice, 0, 0].sum()[0], 3)
 
     # Finally, perform a sum of the chosen wavelength range without
     # subtracting a background image. This is easy to test by doing
     # equivalent sums through the cube over the chosen wavelength range.
     ima = cube1.get_image(wave=lrange, is_sum=True, subtract_off=False)
-    assert ima[0, 0] == cube1[lslice, 0, 0].sum()
-    assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].sum())
+    assert ima[0, 0] == cube1[lslice, 0, 0].sum()[0]
+    assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].sum()[0])
 
 
 def test_subcube():

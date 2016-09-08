@@ -394,19 +394,32 @@ class Spectrum(ArithmeticMixin, DataArray):
             i1 = 0
         else:
             if unit is None:
+                if lmin > self.shape[0]:
+                    raise ValueError('Minimum and maximum wavelengths '
+                             'are outside the spectrum range')
                 i1 = max(0, int(lmin + 0.5))
             else:
-                i1 = max(0, self.wave.pixel(lmin, nearest=True, unit=unit))
+                i1 = self.wave.pixel(lmin, nearest=False, unit=unit)
+                if i1 > self.shape[0]:
+                    raise ValueError('Minimum and maximum wavelengths '
+                             'are outside the spectrum range')
+                i1 = self.wave.pixel(lmin, nearest=True, unit=unit)
 
         # Get the pixel index that corresponds to the maximum wavelength.
         if lmax is None:
             i2 = self.shape[0]
         else:
             if unit is None:
+                if lmax < 0:
+                    raise ValueError('Minimum and maximum wavelengths '
+                             'are outside the spectrum range')
                 i2 = min(self.shape[0], int(lmax + 0.5))
             else:
-                i2 = min(self.shape[0],
-                         self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
+                i2 = self.wave.pixel(lmax, nearest=False, unit=unit)
+                if i2 < 0:
+                    raise ValueError('Minimum and maximum wavelengths '
+                             'are outside the spectrum range')
+                i2 = self.wave.pixel(lmax, nearest=True, unit=unit) + 1
 
         return slice(i1, i2)
 
@@ -739,8 +752,8 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         Returns
         -------
-        out : float
-            The mean flux of the specified wavelength range.
+        out : (float, float)
+            The mean flux and its error.
 
         """
 
@@ -749,18 +762,28 @@ class Spectrum(ArithmeticMixin, DataArray):
             weight = False
 
         # Get the slice that selects the specified wavelength range.
-        lambda_slice = self._wavelengths_to_slice(lmin, lmax, unit)
+        try:
+            lambda_slice = self._wavelengths_to_slice(lmin, lmax, unit)
+        except ValueError:
+            return (0.0, np.inf)
 
-        # Get the sub-spectrum of the specified wavelength range.
-        subspe = self[lambda_slice]
 
         # Obtain the mean flux of the sub-spectrum.
         if weight:
-            weights = 1.0 / subspe.var.filled(np.inf)
-            flux = np.ma.average(subspe.data, weights=weights)
+            weights = 1.0 / self.var[lambda_slice].filled(np.inf)
+            flux, wsum = np.ma.average(self.data[lambda_slice],
+                                       weights=weights, returned=True)
+            if self.var is not None:
+                err_flux = np.sqrt(np.ma.sum(self.var[lambda_slice] * weights**2) / wsum**2)
+            else:
+                err_flux = np.inf
         else:
-            flux = np.ma.average(subspe.data)
-        return flux
+            flux, wsum = np.ma.average(self.data[lambda_slice], returned=True)
+            if self.var is not None:
+                err_flux = np.sqrt(np.ma.sum(self.var[lambda_slice])) / wsum**2
+            else:
+                err_flux = np.inf
+        return (flux, err_flux)
 
     def sum(self, lmin=None, lmax=None, weight=True, unit=u.angstrom):
         """Obtain the sum of the fluxes within a specified wavelength range.
@@ -782,28 +805,40 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         Returns
         -------
-        out : float
-            The total flux of the specified wavelength range.
+        out : float, float
+            The total flux and its error.
         """
 
         # Get the slice that selects the specified wavelength range.
-        lambda_slice = self._wavelengths_to_slice(lmin, lmax, unit)
-
-        # Get the sub-spectrum of the wavelength range.
-        subspe = self[lambda_slice]
+        try:
+            lambda_slice = self._wavelengths_to_slice(lmin, lmax, unit)
+        except ValueError:
+            return (0.0, np.inf)
 
         # Perform a weighted sum?
         if weight and self._var is not None:
-            weights = 1.0 / subspe.var.filled(np.inf)
-
+            weights = 1.0 / self.var[lambda_slice].filled(np.inf)
+            
             # How many unmasked pixels will be averaged?
-            nsum = np.ma.count(subspe.data)
-
+            nsum = np.ma.count(self.data[lambda_slice])
+            
+            fmean, wsum = np.ma.average(self.data[lambda_slice],
+                                       weights=weights, returned=True)
+            
             # The weighted average multiplied by the number of unmasked pixels.
-            flux = nsum * np.ma.average(subspe.data, weights=weights)
+            flux = fmean * nsum
+            
+            if self.var is not None:
+                err_flux = np.sqrt(np.ma.sum(self.var[lambda_slice] * weights**2) / wsum**2 * nsum**2)
+            else:
+                err_flux = np.inf
         else:
-            flux = subspe.data.sum()
-        return flux
+            flux = self.data[lambda_slice].sum()
+            if self.var is not None:
+                err_flux = np.sqrt(np.ma.sum(self.var[lambda_slice]))
+            else:
+                err_flux = np.inf
+        return (flux, err_flux)
 
     def integrate(self, lmin=None, lmax=None, unit=u.angstrom):
         """Integrate the flux over a specified wavelength range.
@@ -864,8 +899,9 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         Returns
         -------
-        out : `astropy.units.quantity.Quantity`
-            The result of the integration, expressed as a floating
+        out : `astropy.units.quantity.Quantity`, `astropy.units.quantity.Quantity`
+            The result of the integration and its error.
+            Thez are expressed as a floating
             point number with accompanying units. The integrated value
             and its physical units can be extracted using the .value
             and .unit attributes of the returned quantity. The value
@@ -945,7 +981,12 @@ class Spectrum(ArithmeticMixin, DataArray):
         # Integrate the spectrum by multiplying the value of each pixel
         # by the difference in wavelength from the start of that pixel to
         # the start of the next pixel.
-        return (data * np.diff(d)).sum() * out_unit
+        flux = (data * np.diff(d)).sum() * out_unit
+        if self.var is None:
+            err_flux = np.inf * out_unit
+        else:
+            err_flux = (self.var[i1:i2] * np.diff(d**2)).sum() * out_unit
+        return (flux, err_flux)
 
     def poly_fit(self, deg, weight=True, maxiter=0,
                  nsig=(-3.0, 3.0), verbose=False):
@@ -1072,7 +1113,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         res.poly_val(z)
         return res
 
-    def abmag_band(self, lbda, dlbda, out=1):
+    def abmag_band(self, lbda, dlbda):
         """Compute AB magnitude corresponding to the wavelength band.
 
         Parameters
@@ -1081,69 +1122,57 @@ class Spectrum(ArithmeticMixin, DataArray):
             Mean wavelength in Angstrom.
         dlbda : float
             Width of the wavelength band in Angstrom.
-        out : 1 or 2
-            1: the magnitude is returned,
-            2: the magnitude, mean flux and mean wavelength are returned.
 
         Returns
         -------
-        out : magnitude value (out=1)
-            or float array containing magnitude,
-            mean flux and mean wavelength (out=2).
+        out : float, float
+              Magnitude value and its error 
         """
-        i1 = max(0, self.wave.pixel(lbda - dlbda / 2.0, nearest=True,
-                                    unit=u.angstrom))
-        i2 = min(self.shape[0], self.wave.pixel(lbda + dlbda / 2.0,
-                                                nearest=True, unit=u.angstrom))
-        if i1 == i2:
-            return 99
+        vflux, err_flux = self.mean(lmin=lbda - dlbda / 2.0,
+                                    lmax=lbda + dlbda / 2.0,
+                                    weight=None, unit=u.angstrom)
+        if vflux == 0:
+            return (99, 0)
         else:
-            vflux = self.data[i1:i2 + 1].mean()
             vflux2 = (vflux * self.unit).to(u.Unit('erg.s-1.cm-2.Angstrom-1'))
-            mag = flux2mag(vflux2.value, lbda)
-            if out == 1:
-                return mag
-            if out == 2:
-                return np.array([mag, vflux, lbda])
+            err_flux2 = (err_flux * self.unit).to(u.Unit('erg.s-1.cm-2.Angstrom-1'))
+            return flux2mag(vflux2.value, err_flux2.value, lbda)
 
-    def abmag_filter_name(self, name, out=1):
+    def abmag_filter_name(self, name):
         """Compute AB magnitude using the filter name.
 
         Parameters
         ----------
         name : string
             'U', 'B', 'V', 'Rc', 'Ic', 'z', 'R-Johnson','F606W'
-        out : 1 or 2
-            1: the magnitude is returned,
-            2: the magnitude, mean flux and mean wavelength are returned.
 
         Returns
         -------
-        out : magnitude value (out=1) or magnitude,
-            mean flux and mean wavelength in angstrom (out=2).
+        out : float, float
+              Magnitude value and its error
         """
         if name == 'U':
-            return self.abmag_band(3663, 650, out)
+            return self.abmag_band(3663., 650.)
         elif name == 'B':
-            return self.abmag_band(4361, 890, out)
+            return self.abmag_band(4361., 890.)
         elif name == 'V':
-            return self.abmag_band(5448, 840, out)
+            return self.abmag_band(5448., 840.)
         elif name == 'Rc':
-            return self.abmag_band(6410, 1600., out)
+            return self.abmag_band(6410., 1600.)
         elif name == 'Ic':
-            return self.abmag_band(7980, 1500., out)
+            return self.abmag_band(7980., 1500.)
         elif name == 'z':
-            return self.abmag_band(8930, 1470., out)
+            return self.abmag_band(8930., 1470.)
         elif name == 'R-Johnson':
             (l0, lmin, lmax, tck) = ABmag_filters.mag_RJohnson()
-            return self._filter(l0, lmin, lmax, tck, out)
+            return self._filter(l0, lmin, lmax, tck)
         elif name == 'F606W':
             (l0, lmin, lmax, tck) = ABmag_filters.mag_F606W()
-            return self._filter(l0, lmin, lmax, tck, out)
+            return self._filter(l0, lmin, lmax, tck)
         else:
             pass
 
-    def abmag_filter(self, lbda, eff, out=1):  ## BUG in errors
+    def abmag_filter(self, lbda, eff):
         """Compute AB magnitude using array filter.
 
         Parameters
@@ -1152,15 +1181,11 @@ class Spectrum(ArithmeticMixin, DataArray):
             Wavelength values in Angstrom.
         eff : float array
             Efficiency values.
-        out : 1 or 2
-            1: the magnitude is returned,
-            2: the magnitude, mean flux and mean wavelength are returned.
-            3: the magnitude and its error is returned
 
         Returns
         -------
-        out : magnitude value (out=1) or magnitude,
-            mean flux and mean wavelength (out=2).
+        out : float, float
+              Magnitude value and its error
         """
         lbda = np.array(lbda)
         eff = np.array(eff)
@@ -1173,9 +1198,9 @@ class Spectrum(ArithmeticMixin, DataArray):
             tck = interpolate.splrep(lbda, eff, k=min(np.shape(lbda)[0], 3))
         else:
             tck = interpolate.splrep(lbda, eff, k=1)
-        return self._filter(l0, lmin, lmax, tck, out)
+        return self._filter(l0, lmin, lmax, tck)
 
-    def _filter(self, l0, lmin, lmax, tck, out=1):
+    def _filter(self, l0, lmin, lmax, tck):
         """Compute AB magnitude.
 
         Parameters
@@ -1189,38 +1214,29 @@ class Spectrum(ArithmeticMixin, DataArray):
         tck : 3-tuple
             (t,c,k) contains the spline representation.
             t = the knot-points, c = coefficients and k = the order of the spline.
-        out : 1, 2 or 3
-            1: the magnitude is returned
-            2: the magnitude, mean flux and mean lbda are returned
-            3: the magnitude and its error is returned
         """
-        imin = self.wave.pixel(lmin, True, u.Angstrom)
-        imax = self.wave.pixel(lmax, True, u.Angstrom)
-        if imin == imax:
-            if imin == 0 or imin == self.shape[0]:
-                raise ValueError('Spectrum outside Filter band')
-            else:
-                raise ValueError('filter band smaller than spectrum step')
-        lb = (np.arange(imin, imax) - self.wave.get_crpix() + 1) \
-            * self.wave.get_step(u.angstrom) + self.wave.get_crval(u.angstrom)
+        try:
+            lambda_slice = self._wavelengths_to_slice(lmin, lmax, u.Angstrom)
+        except ValueError:
+            raise ValueError('Spectrum outside Filter band')
+
+        if lambda_slice.start == (lambda_slice.stop - 1):
+            raise ValueError('Filter band smaller than spectrum step')
+        
+        
+        lb = self.wave.coord(np.arange(lambda_slice.start, lambda_slice.stop),
+                              unit=u.Angstrom)
         w = interpolate.splev(lb, tck, der=0)
-        vflux = np.ma.average(self.data[imin:imax], weights=w)
-        vflux2 = (vflux * self.unit).to(u.Unit('erg.s-1.cm-2.Angstrom-1')).value
-        mag = flux2mag(vflux2, l0)
-        if out == 1:
-            return mag
-        if out == 2:
-            return np.array([mag, vflux, l0])
-        if out == 3:
-            if mag >= 99:
-                err_mag = 99
-            else:
-                if self.var is not None:
-                    err_vflux = np.sqrt(np.ma.average(self.var[imin:imax], weights=w))
-                    err_mag = np.abs(2.5*err_vflux/(vflux*np.log(10)))
-                else:
-                    err_mag = 0
-            return np.array([mag, err_mag])
+
+        vflux, wsum = np.ma.average(self.data[lambda_slice], weights=w, returned=True)
+        if self.var is not None:
+            err_flux = np.sqrt(np.ma.sum(self.var[lambda_slice] * w**2) / wsum**2)
+        else:
+            err_flux = np.inf
+        
+        vflux2 = (vflux * self.unit).to(u.Unit('erg.s-1.cm-2.Angstrom-1'))
+        err_flux2 = (err_flux * self.unit).to(u.Unit('erg.s-1.cm-2.Angstrom-1'))
+        return flux2mag(vflux2.value, err_flux2.value, l0)
 
     def truncate(self, lmin=None, lmax=None, unit=u.angstrom):
         """Truncate the wavelength range of a spectrum in-place.
@@ -1242,12 +1258,8 @@ class Spectrum(ArithmeticMixin, DataArray):
         # Get the slice that selects the specified wavelength range.
         lambda_slice = self._wavelengths_to_slice(lmin, lmax, unit)
 
-        if lambda_slice.start == lambda_slice.stop:
+        if lambda_slice.start == (lambda_slice.stop - 1):
             raise ValueError('Minimum and maximum wavelengths are equal')
-
-        if lambda_slice.start > lambda_slice.stop:
-            raise ValueError('Minimum and maximum wavelengths '
-                             'are outside the spectrum range')
 
         res = self[lambda_slice]
         self._data = res._data
@@ -1348,14 +1360,14 @@ class Spectrum(ArithmeticMixin, DataArray):
             fmin = None
         else:
             lmin = np.array(lmin, dtype=float)
-            fmin = self.mean(lmin[0], lmin[1], unit=unit)
+            fmin = self.mean(lmin[0], lmin[1], unit=unit)[0]
             lmin = (lmin[0] + lmin[1]) / 2.
 
         if np.isscalar(lmax):
             fmax = None
         else:
             lmax = np.array(lmax, dtype=float)
-            fmax = self.mean(lmax[0], lmax[1], unit=unit)
+            fmax = self.mean(lmax[0], lmax[1], unit=unit)[0]
             lmax = (lmax[0] + lmax[1]) / 2.
 
         # spec = self.truncate(lmin, lmax)
@@ -1578,14 +1590,14 @@ class Spectrum(ArithmeticMixin, DataArray):
             fmin = None
         else:
             lmin = np.array(lmin, dtype=float)
-            fmin = self.mean(lmin[0], lmin[1], weight=False, unit=unit)
+            fmin = self.mean(lmin[0], lmin[1], weight=False, unit=unit)[0]
             lmin = lmin[1]
 
         if np.isscalar(lmax):
             fmax = None
         else:
             lmax = np.array(lmax, dtype=float)
-            fmax = self.mean(lmax[0], lmax[1], weight=False, unit=unit)
+            fmax = self.mean(lmax[0], lmax[1], weight=False, unit=unit)[0]
             lmax = lmax[0]
 
         # spec = self.truncate(lmin, lmax)
@@ -1761,14 +1773,14 @@ class Spectrum(ArithmeticMixin, DataArray):
             fmin = None
         else:
             lmin = np.array(lmin, dtype=float)
-            fmin = self.mean(lmin[0], lmin[1], weight=False, unit=unit)
+            fmin = self.mean(lmin[0], lmin[1], weight=False, unit=unit)[0]
             lmin = lmin[1]
 
         if np.isscalar(lmax):
             fmax = None
         else:
             lmax = np.array(lmax, dtype=float)
-            fmax = self.mean(lmax[0], lmax[1], weight=False, unit=unit)
+            fmax = self.mean(lmax[0], lmax[1], weight=False, unit=unit)[0]
             lmax = lmax[0]
 
         spec = self.subspec(lmin, lmax, unit=unit)
@@ -1982,14 +1994,14 @@ class Spectrum(ArithmeticMixin, DataArray):
             fmin = None
         else:
             lmin = np.array(lmin, dtype=float)
-            fmin = self.mean(lmin[0], lmin[1])
+            fmin = self.mean(lmin[0], lmin[1])[0]
             lmin = (lmin[0] + lmin[1]) / 2.
 
         if np.isscalar(lmax):
             fmax = None
         else:
             lmax = np.array(lmax, dtype=float)
-            fmax = self.mean(lmax[0], lmax[1])
+            fmax = self.mean(lmax[0], lmax[1])[0]
             lmax = (lmax[0] + lmax[1]) / 2.
 
         # spec = self.truncate(lmin, lmax)
