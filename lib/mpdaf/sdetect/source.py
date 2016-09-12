@@ -311,6 +311,18 @@ def crackz(nlines, wl, flux, eml, zguess=None):
                 return crackz(1, [wl[ksel]], [flux[ksel]], eml)
 
 
+def _mask_invalid(tables):
+    tables = [tables] if isinstance(tables, Table) else tables
+    for tab in tables:
+        if tab is not None:
+            for name, col in tab.columns.items():
+                try:
+                    tab[name] = ma.masked_invalid(col)
+                    tab[name] = ma.masked_equal(col, -9999)
+                except:
+                    pass
+
+
 def _read_ext(cls, hdulist, extname, **kwargs):
     """Read an extension from a FITS HDUList."""
     try:
@@ -389,6 +401,8 @@ _ATTRIBUTES_TO_EXTNAME = {
 
 class ExtLoader(collections.MutableMapping):
 
+    delayed_types = six.string_types + (tuple, )
+
     def __init__(self, type_, filename=None, data=None):
         self.data = {}
         self.loaded_ext = set()
@@ -402,16 +416,18 @@ class ExtLoader(collections.MutableMapping):
 
     def __getitem__(self, key):
         value = self.data[key]
-        if isinstance(value, (six.text_type, tuple)):
+        if isinstance(value, self.delayed_types):
             with pyfits.open(self.filename) as hdulist:
                 value = _INIT_FUNCS[self.type](hdulist, value)
             self.data[key] = value
             self.loaded_ext.add(key)
+            if isinstance(value, Table):
+                _mask_invalid(value)
         return value
 
     def __setitem__(self, key, value):
         self.data[key] = value
-        if not isinstance(value, (six.text_type, tuple)):
+        if not isinstance(value, self.delayed_types):
             self.loaded_ext.add(key)
 
     def __delitem__(self, key):
@@ -2004,20 +2020,10 @@ class Source(object):
 
     def masked_invalid(self, tables=None):
         """Mask where invalid values occur (NaNs or infs or -9999 or '')."""
-        if tables is not None:
-            tables = [tables] if isinstance(tables, Table) else tables
-        else:
+        if tables is None:
             tables = ([self.lines, self.mag, self.z] +
-                      list(self.tables.values()))
-
-        for tab in tables:
-            if tab is not None:
-                for name, col in tab.columns.items():
-                    try:
-                        tab[name] = ma.masked_invalid(col)
-                        tab[name] = ma.masked_equal(col, -9999)
-                    except:
-                        pass
+                      [self.tables[key] for key in self.tables.loaded_ext])
+        _mask_invalid(tables)
 
 
 class SourceList(list):
