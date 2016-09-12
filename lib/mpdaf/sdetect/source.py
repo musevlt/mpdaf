@@ -37,6 +37,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import absolute_import, division, print_function
 
 import astropy.units as u
+import collections
 import datetime
 import glob
 import logging
@@ -152,6 +153,7 @@ def _set_table_attributes(name, table):
 
 
 def _headercorrected(hdr):
+    """Handle keywords that have been renamed."""
     # COM*** -> COMMENT
     i = 1
     while 'COM%03d' % i in hdr:
@@ -342,66 +344,86 @@ def _read_table(hdulist, extname, **kwargs):
     return t
 
 
-_read_spectrum = partial(_read_mpdaf_obj, Spectrum)
-_read_image = partial(_read_mpdaf_obj, Image)
-_read_cube = partial(_read_mpdaf_obj, Cube)
+def _insert_or_update_hdu(hdulist, name, hdu):
+    try:
+        idx = hdulist.index_of(name)
+        hdulist[idx] = hdu
+    except KeyError:
+        hdulist.append(hdu)
 
 
-class dict_src(dict):
+def _write_mpdaf_obj(obj, type_, name, hdulist):
+    ext_name = '{}_{}_DATA'.format(type_, name)
+    hdu = obj.get_data_hdu(name=ext_name, savemask='nan')
+    _insert_or_update_hdu(hdulist, name, hdu)
 
-    def __init__(self, filename, ndim):
-        dict.__init__(self)
+    ext_name = '{}_{}_STAT'.format(type_, name)
+    hdu = obj.get_stat_hdu(name=ext_name)
+    if hdu is not None:
+        _insert_or_update_hdu(hdulist, name, hdu)
+
+
+def _write_table(table, name, hdulist):
+    if table is None:
+        return
+
+    hdu = table_to_hdu(table)
+    hdu.name = name
+    _insert_or_update_hdu(hdulist, name, hdu)
+
+
+_INIT_FUNCS = {
+    'TAB': partial(_read_table, masked=True),
+    'SPE': partial(_read_mpdaf_obj, Spectrum),
+    'IMA': partial(_read_mpdaf_obj, Image),
+    'CUB': partial(_read_mpdaf_obj, Cube)
+}
+
+_ATTRIBUTES_TO_EXTNAME = {
+    'tables': 'TAB',
+    'spectra': 'SPE',
+    'images': 'IMA',
+    'cubes': 'CUB'
+}
+
+
+class ExtLoader(collections.MutableMapping):
+
+    def __init__(self, type_, filename=None, data=None):
+        self.data = {}
+        self.loaded_ext = set()
         self.filename = filename
-        self.ndim = ndim
-        if self.ndim == 0:
-            self.start = 'TAB'
-        elif self.ndim == 1:
-            self.start = 'SPE'
-        elif self.ndim == 2:
-            self.start = 'IMA'
-        elif self.ndim == 3:
-            self.start = 'CUB'
-        else:
-            raise IOError()
+        self.type = type_
+        if data is not None:
+            self.data.update(data)
+
+    def isloaded(self, key):
+        return key in self.loaded_ext
 
     def __getitem__(self, key):
-        val = dict.__getitem__(self, key)
-        if val is None:
-            with pyfits.open(self.filename) as hdu:
-                if self.ndim == 0:
-                    extname = '%s_%s' % (self.start, key)
-                    val = _read_table(hdu, extname, masked=True)
-                else:
-                    extname = '%s_%s_DATA' % (self.start, key)
-                    stat_ext = '%s_%s_STAT' % (self.start, key)
-                    if stat_ext in hdu:
-                        ext = (extname, stat_ext)
-                    else:
-                        ext = extname
-                    if self.ndim == 1:
-                        val = _read_spectrum(hdu, ext)
-                    elif self.ndim == 2:
-                        val = _read_image(hdu, ext)
-                    elif self.ndim == 3:
-                        val = _read_cube(hdu, ext, ima=False)
-            dict.__setitem__(self, key, val)
-        return dict.__getitem__(self, key)
+        value = self.data[key]
+        if isinstance(value, (six.text_type, tuple)):
+            with pyfits.open(self.filename) as hdulist:
+                value = _INIT_FUNCS[self.type](hdulist, value)
+            self.data[key] = value
+            self.loaded_ext.add(key)
+        return value
 
-    def items(self):
-        return [(key, self[key]) for key in self]
+    def __setitem__(self, key, value):
+        self.data[key] = value
+        if not isinstance(value, (six.text_type, tuple)):
+            self.loaded_ext.add(key)
 
-    def iteritems(self):
-        return ((key, self[key]) for key in self)
+    def __delitem__(self, key):
+        del self.data[key]
+        if key in self.loaded_ext:
+            self.loaded_ext.remove(key)
 
-    def itervalues(self):
-        return (self[key] for key in self)
+    def __iter__(self):
+        return iter(self.data)
 
-    def values(self):
-        return [self[key] for key in self]
-
-
-#    def __setitem__(self, key, val):
-#        dict.__setitem__(self, key, val)
+    def __len__(self):
+        return len(self.data)
 
 
 class Source(object):
@@ -430,39 +452,47 @@ class Source(object):
     tables : dict
         Tables dictionary, keys give a description of each table.
         Values are `astropy.table.Table` objects.
+    mask_invalid : bool
+        Mask invalid values in tables, defaults to True. This can also be done
+        later with the ``masked_invalid`` method.
+    filename : str
+        File name of the source.
 
     """
 
     def __init__(self, header, lines=None, mag=None, z=None, spectra=None,
                  images=None, cubes=None, tables=None, mask_invalid=True,
                  filename=None):
+
+        kwargs = locals()
+
         # Check required keywords in the FITS header
         for key in ('RA', 'DEC', 'ID', 'CUBE', 'CUBE_V', 'FROM', 'FROM_V'):
             if key not in header:
                 raise ValueError('{} keyword is mandatory to create a Source '
                                  'object'.format(key))
 
+        self._logger = logging.getLogger(__name__)
+        self._filename = filename
         self.header = header
         if 'SRC_V' not in self.header.keys():
             self.header['SRC_V'] = ''
-        # Table LINES
-        self.lines = lines
-        # Table MAG
-        self.mag = mag
-        # Table Z
-        self.z = z
-        # Dictionary SPECTRA
-        self.spectra = spectra or {}
-        # Dictionary IMAGES
-        self.images = images or {}
-        # Dictionary CUBES
-        self.cubes = cubes or {}
-        # Dictionary TABLES
-        self.tables = tables or {}
-        # filename
-        self._filename = filename
 
-        self._logger = logging.getLogger(__name__)
+        # Default tables: LINES, MAG, Z
+        self.lines = lines
+        self.mag = mag
+        self.z = z
+
+        for key in ('spectra', 'images', 'cubes', 'tables'):
+            attr = kwargs[key]
+            type_ = _ATTRIBUTES_TO_EXTNAME[key]
+            if attr is None:
+                setattr(self, key, ExtLoader(type_, filename=filename))
+            elif isinstance(attr, ExtLoader):
+                setattr(self, key, attr)
+            else:
+                setattr(self, key, ExtLoader(type_, data=attr))
+
         if mask_invalid:
             self.masked_invalid()
 
@@ -480,7 +510,7 @@ class Source(object):
             Right ascension in degrees
         dec : double
             Declination in degrees
-        origin : tuple (str, str, str)
+        origin : tuple (str, str, str, str)
             1- Name of the detector software which creates this object
             2- Version of the detector software which creates this object
             3- Name of the FITS data cube from which this object has been
@@ -494,27 +524,23 @@ class Source(object):
             Extra keywords
         lines : `astropy.table.Table`
             List of lines
-        mag : astropy.Lines
+        mag : `astropy.table.Table`
             List of magnitudes.
         z : `astropy.table.Table`
             List of redshifts
         spectra : dict
-            Dictionary containing spectra.
-            Keys gives the origin of the spectrum ('tot' for total spectrum,
-            TBC).
-            Values are `~mpdaf.obj.Spectrum` object
+            Dictionary containing spectra. Keys gives the origin of the
+            spectrum ('tot' for total spectrum, TBC). Values are
+            `~mpdaf.obj.Spectrum` objects.
         images : dict
-            Dictionary containing small images.
-            Keys gives the filter ('MUSE_WHITE' for white image, TBC)
-            Values are `~mpdaf.obj.Image` object
+            Dictionary containing images.  Keys gives the filter ('MUSE_WHITE'
+            for white image, TBC). Values are `~mpdaf.obj.Image` object.
         cubes : dict
-            Dictionary containing small data cubes
-            Keys gives a description of the cube
-            Values are `~mpdaf.obj.Cube` objects
+            Dictionary containing small data cubes.  Keys gives a description
+            of the cube.  Values are `~mpdaf.obj.Cube` objects.
         tables : dict
-            Dictionary containing tables
-            Keys give a description of each table
-            Values are `astropy.table.Table` objects
+            Dictionary containing tables.  Keys give a description of each
+            table.  Values are `astropy.table.Table` objects.
         mask_invalid: bool
             If True (default), iterate on all columns of all tables to mask
             invalid values (Inf, NaN, and -9999).
@@ -557,10 +583,10 @@ class Source(object):
         hdulist = pyfits.open(filename)
         hdr = hdulist[0].header
         _headercorrected(hdr)
-        spectra = dict_src(filename=filename, ndim=1)
-        images = dict_src(filename=filename, ndim=2)
-        cubes = dict_src(filename=filename, ndim=3)
-        tables = dict_src(filename=filename, ndim=0)
+        spectra = ExtLoader('SPE', filename=filename)
+        images = ExtLoader('IMA', filename=filename)
+        cubes = ExtLoader('CUB', filename=filename)
+        tables = ExtLoader('TAB', filename=filename)
         lines = mag = z = None
         logger = logging.getLogger(__name__)
 
@@ -607,14 +633,17 @@ class Source(object):
                         continue
                     elif end == 'DATA':
                         name = extname[4:-5]
+                        stat_ext = '%s_%s_STAT' % (start, name)
+                        ext = ((extname, stat_ext) if stat_ext in hdulist
+                               else extname)
                         if start == 'SPE':
-                            spectra[name] = None
+                            spectra[name] = ext
                         elif start == 'IMA':
-                            images[name] = None
+                            images[name] = ext
                         elif start == 'CUB':
-                            cubes[name] = None
+                            cubes[name] = ext
                     elif start == 'TAB':
-                        tables[extname[4:]] = None
+                        tables[extname[4:]] = extname
             except Exception as e:
                 logger.warning(e)
         hdulist.close()
@@ -664,9 +693,10 @@ class Source(object):
         ----------
         filename : str
             FITS filename
+
         """
-        if self._filename is None:  # create and write the FITS file
-            # create primary header
+        if self._filename is None:
+            # create and write the FITS file from scratch
             prihdu = pyfits.PrimaryHDU(header=self.header)
             prihdu.header['DATE'] = (str(datetime.datetime.now()),
                                      'Creation date')
@@ -674,153 +704,58 @@ class Source(object):
             prihdu.header['FORMAT'] = (TABLES_SCHEMA['version'],
                                        'Version of the Source format')
             hdulist = pyfits.HDUList([prihdu])
-            # lines
-            if self.lines is not None:
-                tbhdu = table_to_hdu(self.lines)
-                tbhdu.name = 'LINES'
-                hdulist.append(tbhdu)
-            # magnitudes
-            if self.mag is not None:
-                tbhdu = table_to_hdu(self.mag)
-                tbhdu.name = 'MAG'
-                hdulist.append(tbhdu)
-            # redshifts
-            if self.z is not None:
-                tbhdu = table_to_hdu(self.z)
-                tbhdu.name = 'Z'
-                hdulist.append(tbhdu)
+
+            _write_table(self.lines, 'LINES', hdulist)
+            _write_table(self.mag, 'MAG', hdulist)
+            _write_table(self.z, 'Z', hdulist)
+
             # spectra
             for key, spe in six.iteritems(self.spectra):
-                ext_name = 'SPE_%s_DATA' % key
-                data_hdu = spe.get_data_hdu(name=ext_name, savemask='nan')
-                hdulist.append(data_hdu)
-                ext_name = 'SPE_%s_STAT' % key
-                stat_hdu = spe.get_stat_hdu(name=ext_name)
-                if stat_hdu is not None:
-                    hdulist.append(stat_hdu)
+                _write_mpdaf_obj(spe, 'SPE', key, hdulist)
+
             # images
             for key, ima in six.iteritems(self.images):
-                ext_name = 'IMA_%s_DATA' % key
-                savemask = 'none' if key.startswith(('MASK_', 'SEG_')) else 'nan'
-                data_hdu = ima.get_data_hdu(name=ext_name, savemask=savemask)
-                hdulist.append(data_hdu)
-                ext_name = 'IMA_%s_STAT' % key
-                stat_hdu = ima.get_stat_hdu(name=ext_name)
-                if stat_hdu is not None:
-                    hdulist.append(stat_hdu)
+                _write_mpdaf_obj(ima, 'IMA', key, hdulist)
+
             # cubes
             for key, cub in six.iteritems(self.cubes):
-                ext_name = 'CUB_%s_DATA' % key
-                data_hdu = cub.get_data_hdu(name=ext_name, savemask='nan')
-                hdulist.append(data_hdu)
-                ext_name = 'CUB_%s_STAT' % key
-                stat_hdu = cub.get_stat_hdu(name=ext_name)
-                if stat_hdu is not None:
-                    hdulist.append(stat_hdu)
+                _write_mpdaf_obj(cub, 'CUB', key, hdulist)
+
             # tables
             for key, tab in six.iteritems(self.tables):
-                tbhdu = table_to_hdu(tab)
-                tbhdu.name = 'TAB_%s' % key
-                hdulist.append(tbhdu)
+                _write_table(tab, 'TAB_%s' % key, hdulist)
+
             # save to disk
             hdulist.writeto(filename, clobber=True, output_verify='fix')
-        else:  # update the existing FITS file
+        else:
+            # update the existing FITS file
             if filename != self._filename:
                 shutil.copy(self._filename, filename)
-            f = pyfits.open(filename, mode='update')
-            extnames = [h.name for h in f[1:]]
-            # header
-            f[0].header = self.header
-            # lines
-            if self.lines is not None:
-                tbhdu = table_to_hdu(self.lines)
-                tbhdu.name = 'LINES'
-                if 'LINES' in extnames:
-                    f['LINES'] = tbhdu
-                else:
-                    f.append(tbhdu)
-            # magnitudes
-            if self.mag is not None:
-                tbhdu = table_to_hdu(self.mag)
-                tbhdu.name = 'MAG'
-                if 'MAG' in extnames:
-                    f['MAG'] = tbhdu
-                else:
-                    f.append(tbhdu)
-            # redshifts
-            if self.z is not None:
-                tbhdu = table_to_hdu(self.z)
-                tbhdu.name = 'Z'
-                if 'Z' in extnames:
-                    f['Z'] = tbhdu
-                else:
-                    f.append(tbhdu)
-            # spectra
-            for key in self.spectra.keys():
-                spe = dict.__getitem__(self.spectra, key)
-                if spe is not None:
-                    ext_name = 'SPE_%s_DATA' % key
-                    data_hdu = spe.get_data_hdu(name=ext_name, savemask='nan')
-                    if ext_name in extnames:
-                        f[ext_name] = data_hdu
-                    else:
-                        f.append(data_hdu)
-                    ext_name = 'SPE_%s_STAT' % key
-                    stat_hdu = spe.get_stat_hdu(name=ext_name)
-                    if stat_hdu is not None:
-                        if ext_name in extnames:
-                            f[ext_name] = stat_hdu
-                        else:
-                            f.append(stat_hdu)
-            # images
-            for key in self.images.keys():
-                ima = dict.__getitem__(self.images, key)
-                if ima is not None:
-                    ext_name = 'IMA_%s_DATA' % key
-                    savemask = 'none' if key.startswith(('MASK_', 'SEG_')) else 'nan'
-                    data_hdu = ima.get_data_hdu(name=ext_name,
-                                                savemask=savemask)
-                    if ext_name in extnames:
-                        f[ext_name] = data_hdu
-                    else:
-                        f.append(data_hdu)
-                    ext_name = 'IMA_%s_STAT' % key
-                    stat_hdu = ima.get_stat_hdu(name=ext_name)
-                    if stat_hdu is not None:
-                        if ext_name in extnames:
-                            f[ext_name] = stat_hdu
-                        else:
-                            f.append(stat_hdu)
-            # cubes
-            for key in self.cubes.keys():
-                cub = dict.__getitem__(self.cubes, key)
-                if cub is not None:
-                    ext_name = 'CUB_%s_DATA' % key
-                    data_hdu = cub.get_data_hdu(name=ext_name, savemask='nan')
-                    if ext_name in extnames:
-                        f[ext_name] = data_hdu
-                    else:
-                        f.append(data_hdu)
-                    ext_name = 'CUB_%s_STAT' % key
-                    stat_hdu = cub.get_stat_hdu(name=ext_name)
-                    if stat_hdu is not None:
-                        if ext_name in extnames:
-                            f[ext_name] = stat_hdu
-                        else:
-                            f.append(stat_hdu)
-            # tables
-            for key in self.tables.keys():
-                tab = dict.__getitem__(self.tables, key)
-                if tab is not None:
-                    ext_name = 'TAB_%s' % key
-                    tbhdu = table_to_hdu(tab)
-                    tbhdu.name = ext_name
-                    if ext_name in extnames:
-                        f[ext_name] = tbhdu
-                    else:
-                        f.append(tbhdu)
-            f.flush()
-            f.close()
+
+            with pyfits.open(filename, mode='update') as hdulist:
+                hdulist[0].header = self.header
+
+                _write_table(self.lines, 'LINES', hdulist)
+                _write_table(self.mag, 'MAG', hdulist)
+                _write_table(self.z, 'Z', hdulist)
+
+                # spectra
+                for key in self.spectra.loaded_ext:
+                    _write_mpdaf_obj(self.spectra[key], 'SPE', key, hdulist)
+
+                # images
+                for key in self.images.loaded_ext:
+                    _write_mpdaf_obj(self.images[key], 'IMA', key, hdulist)
+
+                # cubes
+                for key in self.cubes.loaded_ext:
+                    _write_mpdaf_obj(self.cubes[key], 'CUB', key, hdulist)
+
+                # tables
+                for key in self.tables.loaded_ext:
+                    _write_table(self.tables[key], 'TAB_%s' % key, hdulist)
+
+                hdulist.flush()
 
     def info(self):
         """Print information."""
