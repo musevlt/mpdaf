@@ -397,9 +397,16 @@ _ATTRIBUTES_TO_EXTNAME = {
     'images': 'IMA',
     'cubes': 'CUB'
 }
+_EXTNAME_TO_ATTRIBUTES = {v: k for k, v in _ATTRIBUTES_TO_EXTNAME.items()}
 
 
 class ExtLoader(collections.MutableMapping):
+    """Handles loading of FITS extensions.
+
+    To avoid loading all the extensions of a source FITS file, this class
+    allows to load an extension only when the corresponding object is used.
+
+    """
 
     delayed_types = six.string_types + (tuple, )
 
@@ -413,6 +420,11 @@ class ExtLoader(collections.MutableMapping):
 
     def isloaded(self, key):
         return key in self.loaded_ext
+
+    def __repr__(self):
+        keys = self.data.keys()
+        return "{} {}: {}".format(len(keys), _EXTNAME_TO_ATTRIBUTES[self.type],
+                                  " ".join(keys))
 
     def __getitem__(self, key):
         value = self.data[key]
@@ -784,18 +796,8 @@ class Source(object):
         for key in keys:
             info(self.header.cards[key])
 
-        if self.spectra is not None:
-            keys = self.spectra.keys()
-            info("%d spectra: %s" % (len(keys), " ".join(keys)))
-        if self.images is not None:
-            keys = self.images.keys()
-            info("%d images: %s" % (len(keys), " ".join(keys)))
-        if self.cubes is not None:
-            keys = self.cubes.keys()
-            info("%d cubes: %s" % (len(keys), " ".join(keys)))
-        if self.tables is not None:
-            keys = self.tables.keys()
-            info("%d tables: %s" % (len(keys), " ".join(keys)))
+        for attr in (self.spectra, self.images, self.cubes, self.tables):
+            info(repr(attr))
 
         for name, tab in (('lines', self.lines), ('magnitudes', self.mag),
                           ('redshifts', self.z)):
