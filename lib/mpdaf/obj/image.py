@@ -44,6 +44,7 @@ from numpy import ma
 
 import astropy.units as u
 from astropy.io import fits
+from astropy.stats import gaussian_sigma_to_fwhm, gaussian_fwhm_to_sigma
 from matplotlib.path import Path
 from scipy import interpolate, signal
 from scipy import ndimage as ndi
@@ -1332,9 +1333,9 @@ class Image(ArithmeticMixin, DataArray):
         nstruct : int
             Size of the structuring element used for the erosion.
         niter : int
-            number of iterations used for the erosion and the dilatation.
+            Number of iterations used for the erosion and the dilatation.
         threshold : float
-            threshold value. If None, it is initialized with background value
+            Threshold value. If None, it is initialized with background value.
 
         Returns
         -------
@@ -1379,7 +1380,7 @@ class Image(ArithmeticMixin, DataArray):
         radius : float or (float,float)
             Radius defined the explored region.
         unit_center : `astropy.units.Unit`
-            type of the center coordinates.
+            Type of the center coordinates.
             Degrees by default (use None for coordinates in pixels).
         unit_radius : `astropy.units.Unit`
             Radius unit.
@@ -1388,14 +1389,14 @@ class Image(ArithmeticMixin, DataArray):
             Half size of the window (in pixels) to compute the center of
             gravity.
         background : float
-            background value. If None, it is computed.
+            Background value. If None, it is computed.
         plot : bool
             If True, the peak center is overplotted on the image.
 
         Returns
         -------
-        out : dictionary {'y', 'x', 'p', 'q', 'data'}
-            containing the peak position and the peak intensity.
+        out : dict {'y', 'x', 'p', 'q', 'data'}
+            Containing the peak position and the peak intensity.
 
         """
         if center is None or radius == 0:
@@ -1469,29 +1470,19 @@ class Image(ArithmeticMixin, DataArray):
         Returns
         -------
         out : array of float
-              [fwhm_y,fwhm_x].
-              fwhm is returned in unit_radius (arcseconds by default).
+            [fwhm_y,fwhm_x], returned in unit_radius (arcseconds by default).
 
         """
         if center is None or radius == 0:
-            sigma = self.moments(unit=unit_radius)
+            img = self
         else:
-            if is_number(radius):
-                radius = (radius, radius)
+            size = ((radius*2, radius*2) if is_number(radius)
+                    else (radius[0]*2, radius[1]*2))
+            img = self.subimage(center, size, unit_center=unit_center,
+                                unit_size=unit_radius)
 
-            if unit_center is not None:
-                center = self.wcs.sky2pix(center, unit=unit_center)[0]
-            if unit_radius is not None:
-                radius = radius / self.wcs.get_step(unit=unit_radius)
-
-            imin = max(0, center[0] - radius[0])
-            imax = min(center[0] + radius[0] + 1, self.shape[0])
-            jmin = max(0, center[1] - radius[1])
-            jmax = min(center[1] + radius[1] + 1, self.shape[1])
-
-            sigma = self[imin:imax, jmin:jmax].moments(unit=unit_radius)
-
-        return sigma * 2. * np.sqrt(2. * np.log(2.0))
+        width = img.moments(unit=unit_radius)
+        return width / 2 * gaussian_sigma_to_fwhm
 
     def ee(self, center=None, radius=0, unit_center=u.deg,
            unit_radius=u.arcsec, frac=False, cont=0):
@@ -1823,6 +1814,9 @@ class Image(ArithmeticMixin, DataArray):
         # python convention: reverse x,y numpy.indices
         p = np.argmax((Q * np.abs(self.data)).sum(axis=1) / total)
         q = np.argmax((P * np.abs(self.data)).sum(axis=0) / total)
+
+        # FIXME: check from where does this formula comes. Should be equivalent
+        # to scipy.stats.moment(..., moment=2) ??
         col = self.data[int(p), :]
         width_q = np.sqrt(np.abs((np.arange(col.size) - p) * col).sum() /
                           np.abs(col).sum())
@@ -1831,9 +1825,7 @@ class Image(ArithmeticMixin, DataArray):
                           np.abs(row).sum())
         mom = np.array([width_p, width_q])
         if unit is not None:
-            dy, dx = self.wcs.get_step(unit=unit)
-            mom[0] = mom[0] * dy
-            mom[1] = mom[1] * dx
+            mom *= self.wcs.get_step(unit=unit)
         return mom
 
     def gauss_fit(self, pos_min=None, pos_max=None, center=None, flux=None,
@@ -1955,12 +1947,12 @@ class Image(ArithmeticMixin, DataArray):
         # initial moment value
         if fwhm is None:
             width = ima.moments(unit=None)
-            fwhm = width * 2. * np.sqrt(2. * np.log(2.0))
+            fwhm = width * gaussian_sigma_to_fwhm
         else:
             if unit_fwhm is not None:
                 fwhm = np.array(fwhm)
                 fwhm = fwhm / self.wcs.get_step(unit=unit_fwhm)
-            width = np.array(fwhm) / (2. * np.sqrt(2. * np.log(2.0)))
+            width = np.array(fwhm) * gaussian_fwhm_to_sigma
 
         # initial gaussian integrated flux
         if flux is None:
@@ -2125,8 +2117,8 @@ class Image(ArithmeticMixin, DataArray):
                     p_width = np.abs(v[4])
                     q_width = np.abs(v[2])
                     rot = (v[5] * 180.0 / np.pi + 90) % 180
-        p_fwhm = p_width * 2 * np.sqrt(2 * np.log(2))
-        q_fwhm = q_width * 2 * np.sqrt(2 * np.log(2))
+        p_fwhm = p_width * gaussian_sigma_to_fwhm
+        q_fwhm = q_width * gaussian_sigma_to_fwhm
         peak = flux / np.sqrt(2 * np.pi * (p_width ** 2)) \
             / np.sqrt(2 * np.pi * (q_width ** 2))
         # error
@@ -2162,8 +2154,8 @@ class Image(ArithmeticMixin, DataArray):
                     err_rot = err[4] * 180.0 / np.pi
                 except:
                     err_rot = 0
-            err_p_fwhm = err_p_width * 2 * np.sqrt(2 * np.log(2))
-            err_q_fwhm = err_q_width * 2 * np.sqrt(2 * np.log(2))
+            err_p_fwhm = err_p_width * gaussian_sigma_to_fwhm
+            err_q_fwhm = err_q_width * gaussian_sigma_to_fwhm
             err_peak = (err_flux * p_width * q_width - flux
                         * (err_p_width * q_width + err_q_width * p_width)) \
                 / (2 * np.pi * p_width * p_width * q_width * q_width)
@@ -2350,7 +2342,7 @@ class Image(ArithmeticMixin, DataArray):
         # initial width value
         if fwhm is None:
             width = ima.moments(unit=None)
-            fwhm = width * 2. * np.sqrt(2. * np.log(2.0))
+            fwhm = width * gaussian_sigma_to_fwhm
         else:
             if unit_fwhm is not None:
                 fwhm = np.array(fwhm) / self.wcs.get_step(unit=unit_fwhm)
@@ -3621,8 +3613,7 @@ class Image(ArithmeticMixin, DataArray):
 
         Returns a list of images. Uses
         `scipy.ndimage.generate_binary_structure`,
-        `scipy.ndimage.grey_dilation`,
-        `scipy.ndimage.measurements.label`, and
+        `scipy.ndimage.grey_dilation`, `scipy.ndimage.measurements.label`, and
         `scipy.ndimage.measurements.find_objects`.
 
         Parameters
@@ -3640,52 +3631,27 @@ class Image(ArithmeticMixin, DataArray):
             if 'linear', linear interpolation of the masked values.
             if 'spline', spline interpolation of the masked values.
         median : (int,int) or None
-            Size of the median filter
+            If not None (default), size of the window to apply a median filter
+            on the image.
 
         Returns
         -------
-        out : List of Image objects.
+        out : list of `Image`
 
         """
-
-        # Get a copy of the data array with masked values filled.
         data = self._prepare_data(interp)
-
-        structure = ndi.generate_binary_structure(shape[0], shape[1])
         if median is not None:
             data = np.ma.array(ndi.median_filter(data, median),
                                mask=self._mask)
         expanded = ndi.grey_dilation(data, (minsize, minsize))
-        ksel = np.where(expanded < background)
-        expanded[ksel] = 0
+        expanded[expanded < background] = 0
 
-        lab = ndi.measurements.label(expanded, structure)
-        slices = ndi.measurements.find_objects(lab[0])
+        structure = ndi.generate_binary_structure(shape[0], shape[1])
+        labels, nlabels = ndi.measurements.label(expanded, structure)
+        slices = ndi.measurements.find_objects(labels)
 
-        imalist = []
-        for i in range(lab[1]):
-            if minpts is not None:
-                if (data[slices[i]].ravel() > background)\
-                        .sum() < minpts:
-                    continue
-            [[starty, startx]] = \
-                self.wcs.pix2sky(self.wcs.pix2sky([[slices[i][0].start,
-                                                    slices[i][1].start]]))
-            wcs = self.wcs.copy()
-            wcs.set_crpix1(1.0)
-            wcs.set_crpix2(1.0)
-            wcs.set_crval1(startx)
-            wcs.set_crval2(starty)
-            wcs.naxis1 = self.data[slices[i]].shape[1]
-            wcs.naxis2 = self.data[slices[i]].shape[0]
-            if self.var is not None:
-                res = Image(data=self.data[slices[i]], wcs=wcs,
-                            unit=self.unit, var=self.var[slices[i]])
-            else:
-                res = Image(data=self.data[slices[i]], wcs=wcs,
-                            unit=self.unit)
-            imalist.append(res)
-        return imalist
+        return [self[slices[i]] for i in range(nlabels)
+                if minpts is None or len(data[labels == i + 1]) >= minpts]
 
     def add_gaussian_noise(self, sigma, interp='no'):
         """Add Gaussian noise to image in place.
@@ -3997,43 +3963,43 @@ class Image(ArithmeticMixin, DataArray):
     def plot(self, title=None, scale='linear', vmin=None, vmax=None,
              zscale=False, colorbar=None, var=False, show_xlabel=True,
              show_ylabel=True, ax=None, unit=u.deg, **kwargs):
-        """Plot the image with axes labeled in pixels. If either axis
-        has just one pixel, plot a line instead of an image.
+        """Plot the image with axes labeled in pixels.
+
+        If either axis has just one pixel, plot a line instead of an image.
 
         Colors are assigned to each pixel value as follows. First each
-        pixel value, pv, is normalized over the range vmin to vmax,
-        to have a value nv, that goes from 0 to 1, as follows:
+        pixel value, ``pv``, is normalized over the range ``vmin`` to ``vmax``,
+        to have a value ``nv``, that goes from 0 to 1, as follows::
 
-        nv = (pv - vmin) / (vmax - vmin)
+            nv = (pv - vmin) / (vmax - vmin)
 
-        This value is then mapped to another number between 0 and 1
-        which determines a position along the colorbar, and thus the
-        color to give the displayed pixel. The mapping from normalized
-        values to colorbar position, color, can be chosen using the
-        scale argument, from the following options:
+        This value is then mapped to another number between 0 and 1 which
+        determines a position along the colorbar, and thus the color to give
+        the displayed pixel. The mapping from normalized values to colorbar
+        position, color, can be chosen using the scale argument, from the
+        following options:
 
         'linear'   =>  color = nv
         'log'      =>  color = log(1000 * nv + 1) / log(1000 + 1)
         'sqrt'     =>  color = sqrt(nv)
         'arcsinh'  =>  color = arcsinh(10*nv) / arcsinh(10.0)
 
-        A colorbar can optionally be drawn. If the colorbar
-        argument is given the value 'h', then a colorbar is drawn
-        horizontally, above the plot. If it is 'v', the colorbar
-        is drawn vertically, to the right of the plot.
+        A colorbar can optionally be drawn. If the colorbar argument is given
+        the value 'h', then a colorbar is drawn horizontally, above the plot.
+        If it is 'v', the colorbar is drawn vertically, to the right of the
+        plot.
 
-        By default the image image is displayed in its own
-        plot. Alternatively to make it a subplot of a larger figure, a
-        suitable matplotlib.axes.Axes object can be passed via the ax
-        argument. Note that unless matplotlib interative mode has
-        previously been enabled by calling matplotlib.pyplot.ion(),
-        the plot window will not appear until the next time that
-        matplotlib.pyplot.show() is called. So to arrange that a new
-        window appears as soon as Image.plot() is called, do the
-        following before the first call to Image.plot().
+        By default the image image is displayed in its own plot. Alternatively
+        to make it a subplot of a larger figure, a suitable
+        ``matplotlib.axes.Axes object`` can be passed via the ``ax`` argument.
+        Note that unless matplotlib interative mode has previously been enabled
+        by calling ``matplotlib.pyplot.ion()``, the plot window will not appear
+        until the next time that ``matplotlib.pyplot.show()`` is called. So to
+        arrange that a new window appears as soon as ``Image.plot()`` is
+        called, do the following before the first call to ``Image.plot()``::
 
-        import matplotlib.pyplot as plt
-        plt.ion()
+            import matplotlib.pyplot as plt
+            plt.ion()
 
         Parameters
         ----------
@@ -4066,9 +4032,9 @@ class Image(ArithmeticMixin, DataArray):
             If 'h', a horizontal colorbar is drawn above the image.
             If 'v', a vertical colorbar is drawn to the right of the image.
             If None (the default), no colorbar is drawn.
-        ax : matplotlib.Axes
+        ax : matplotlib.axes.Axes
             An optional Axes instance in which to draw the image,
-            or None to have one created using matplotlib.pyplot.gca().
+            or None to have one created using ``matplotlib.pyplot.gca()``.
         unit : `astropy.units.Unit`
             The units to use for displaying world coordinates
             (degrees by default). In the interactive plot, when
@@ -4077,7 +4043,7 @@ class Image(ArithmeticMixin, DataArray):
             along with the pixel value.
         kwargs : matplotlib.artist.Artist
             Optional extra keyword/value arguments to be passed to
-            the ax.imshow() function.
+            the ``ax.imshow()`` function.
 
         Returns
         -------
@@ -4161,49 +4127,44 @@ class Image(ArithmeticMixin, DataArray):
         if title is not None:
             ax.set_title(title)
 
-        # Change the way that plt.show() displays coordinates
-        # when the pointer is over the image, such that
-        # world coordinates are displayed with the specified unit,
-        # and pixel values are displayed with their native units.
-        ax.format_coord = self._format_coord
+        def _format_coord(x, y):
+            """Tell the interactive plotting window how to display the sky
+            coordinates and pixel values of an image.
+
+            Parameters
+            ----------
+            x : float
+                The X-axis pixel index of the mouse pointer.
+            y : float
+                The Y-axis pixel index of the mouse pointer.
+
+            Returns
+            -------
+            out : str
+                The string to be displayed when the mouse pointer is
+                over pixel x,y.
+
+            """
+            # Find the pixel indexes closest to the specified position.
+            col = int(x + 0.5)
+            row = int(y + 0.5)
+
+            # Is the mouse pointer within the image?
+            if (self.wcs is not None and row >= 0 and row < self.shape[0] and
+                    col >= 0 and col < self.shape[1]):
+                yc, xc = self.wcs.pix2sky([row, col], unit=self._unit)[0]
+                val = self.data.data[row, col]
+                return 'y= %g x=%g p=%i q=%i data=%g' % (yc, xc, row, col, val)
+            else:
+                return 'x=%1.4f, y=%1.4f' % (x, y)
+
+        # Change the way that plt.show() displays coordinates when the pointer
+        # is over the image, such that world coordinates are displayed with the
+        # specified unit, and pixel values are displayed with their native
+        # units.
+        ax.format_coord = _format_coord
         self._unit = unit
         return cax
-
-    def _format_coord(self, x, y):
-        """A function that can be assigned to
-        matplotlib.axes.Axes.format_coord to tell the interactive
-        plotting window how to display the sky coordinates and
-        pixel values of an image.
-
-        Parameters
-        ----------
-        x   : float
-           The X-axis pixel index of the mouse pointer.
-        y   : float
-           The Y-axis pixel index of the mouse pointer.
-
-        Returns
-        -------
-        out : str
-           The string to be displayed when the mouse pointer is
-           over pixel x,y.
-
-        """
-
-        # Find the pixel indexes closest to the specified position.
-        col = int(x + 0.5)
-        row = int(y + 0.5)
-
-        # Is the mouse pointer within the image?
-        if row >= 0 and row < self.shape[0] and \
-                col >= 0 and col < self.shape[1]:
-            pixsky = self.wcs.pix2sky([row, col], unit=self._unit)
-            yc = pixsky[0][0]
-            xc = pixsky[0][1]
-            val = self.data.data[row, col]
-            return 'y= %g x=%g p=%i q=%i data=%g' % (yc, xc, row, col, val)
-        else:
-            return 'x=%1.4f, y=%1.4f' % (x, y)
 
     def get_spatial_fmax(self, rot=None):
         """Return the spatial-frequency band-limits of the image along
@@ -4423,7 +4384,7 @@ def gauss_image(shape=(101, 101), wcs=None, factor=1, gauss=None,
         cont = gauss.cont
 
     if center is None:
-        center = np.array([(shape[0] - 1) / 2.0, (shape[1] - 1) / 2.0])
+        center = (np.array(shape) - 1) / 2.0
     else:
         if unit_center is not None:
             center = wcs.sky2pix(center, unit=unit_center)[0]
@@ -4435,8 +4396,8 @@ def gauss_image(shape=(101, 101), wcs=None, factor=1, gauss=None,
 
     if fwhm[1] == 0 or fwhm[0] == 0:
         raise ValueError('fwhm equal to 0')
-    p_width = fwhm[0] / 2.0 / np.sqrt(2 * np.log(2))
-    q_width = fwhm[1] / 2.0 / np.sqrt(2 * np.log(2))
+    p_width = fwhm[0] * gaussian_fwhm_to_sigma
+    q_width = fwhm[1] * gaussian_fwhm_to_sigma
 
     # rotation angle in rad
     theta = np.pi * rot / 180.0
@@ -4719,7 +4680,8 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
     # is to copy the image into a new array whose dimensions
     # are powers of 2, and fill the extra pixels with zeros.
 
-    shape = 2**(np.ceil(np.log(np.asarray(data.shape)) / np.log(2.0))).astype(int)
+    shape = 2**(np.ceil(np.log(np.asarray(data.shape)) /
+                        np.log(2.0))).astype(int)
     if data.shape[0] != shape[0] or data.shape[1] != shape[1]:
         tmp = np.zeros(shape)
         tmp[image_slice] = data
