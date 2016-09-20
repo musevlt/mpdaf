@@ -549,3 +549,16 @@ def test_segment():
     subimages = ima.segment(minpts=20, background=2.1, median=(5, 5))
     assert len(subimages) == 1
     assert subimages[0].shape == (45, 45)
+
+
+def test_peak_detection_and_fwhm():
+    shape = (101, 101)
+    fwhm = (5, 5)
+    wcs = WCS(cdelt=(1., 1.), crval=(8.5, 12), shape=shape)
+    ima = gauss_image(wcs=wcs, fwhm=fwhm, cont=2.0,
+                      unit_center=u.pix, unit_fwhm=u.pix, flux=10, peak=True)
+
+    peaks = ima.peak_detection(5, 2)
+    assert peaks.shape == (1, 2)
+    assert_allclose(peaks[0], (np.array(shape) - 1) / 2.0)
+    assert_allclose(ima.fwhm(unit_radius=None), fwhm, rtol=0.1)

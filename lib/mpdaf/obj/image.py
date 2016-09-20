@@ -44,6 +44,7 @@ from numpy import ma
 
 import astropy.units as u
 from astropy.io import fits
+from astropy.stats import gaussian_sigma_to_fwhm, gaussian_fwhm_to_sigma
 from matplotlib.path import Path
 from scipy import interpolate, signal
 from scipy import ndimage as ndi
@@ -1332,9 +1333,9 @@ class Image(ArithmeticMixin, DataArray):
         nstruct : int
             Size of the structuring element used for the erosion.
         niter : int
-            number of iterations used for the erosion and the dilatation.
+            Number of iterations used for the erosion and the dilatation.
         threshold : float
-            threshold value. If None, it is initialized with background value
+            Threshold value. If None, it is initialized with background value.
 
         Returns
         -------
@@ -1379,7 +1380,7 @@ class Image(ArithmeticMixin, DataArray):
         radius : float or (float,float)
             Radius defined the explored region.
         unit_center : `astropy.units.Unit`
-            type of the center coordinates.
+            Type of the center coordinates.
             Degrees by default (use None for coordinates in pixels).
         unit_radius : `astropy.units.Unit`
             Radius unit.
@@ -1388,14 +1389,14 @@ class Image(ArithmeticMixin, DataArray):
             Half size of the window (in pixels) to compute the center of
             gravity.
         background : float
-            background value. If None, it is computed.
+            Background value. If None, it is computed.
         plot : bool
             If True, the peak center is overplotted on the image.
 
         Returns
         -------
-        out : dictionary {'y', 'x', 'p', 'q', 'data'}
-            containing the peak position and the peak intensity.
+        out : dict {'y', 'x', 'p', 'q', 'data'}
+            Containing the peak position and the peak intensity.
 
         """
         if center is None or radius == 0:
@@ -1469,29 +1470,19 @@ class Image(ArithmeticMixin, DataArray):
         Returns
         -------
         out : array of float
-              [fwhm_y,fwhm_x].
-              fwhm is returned in unit_radius (arcseconds by default).
+            [fwhm_y,fwhm_x], returned in unit_radius (arcseconds by default).
 
         """
         if center is None or radius == 0:
-            sigma = self.moments(unit=unit_radius)
+            img = self
         else:
-            if is_number(radius):
-                radius = (radius, radius)
+            size = ((radius*2, radius*2) if is_number(radius)
+                    else (radius[0]*2, radius[1]*2))
+            img = self.subimage(center, size, unit_center=unit_center,
+                                unit_size=unit_radius)
 
-            if unit_center is not None:
-                center = self.wcs.sky2pix(center, unit=unit_center)[0]
-            if unit_radius is not None:
-                radius = radius / self.wcs.get_step(unit=unit_radius)
-
-            imin = max(0, center[0] - radius[0])
-            imax = min(center[0] + radius[0] + 1, self.shape[0])
-            jmin = max(0, center[1] - radius[1])
-            jmax = min(center[1] + radius[1] + 1, self.shape[1])
-
-            sigma = self[imin:imax, jmin:jmax].moments(unit=unit_radius)
-
-        return sigma * 2. * np.sqrt(2. * np.log(2.0))
+        width = img.moments(unit=unit_radius)
+        return width / 2 * gaussian_sigma_to_fwhm
 
     def ee(self, center=None, radius=0, unit_center=u.deg,
            unit_radius=u.arcsec, frac=False, cont=0):
@@ -1823,6 +1814,9 @@ class Image(ArithmeticMixin, DataArray):
         # python convention: reverse x,y numpy.indices
         p = np.argmax((Q * np.abs(self.data)).sum(axis=1) / total)
         q = np.argmax((P * np.abs(self.data)).sum(axis=0) / total)
+
+        # FIXME: check from where does this formula comes. Should be equivalent
+        # to scipy.stats.moment(..., moment=2) ??
         col = self.data[int(p), :]
         width_q = np.sqrt(np.abs((np.arange(col.size) - p) * col).sum() /
                           np.abs(col).sum())
@@ -1831,9 +1825,7 @@ class Image(ArithmeticMixin, DataArray):
                           np.abs(row).sum())
         mom = np.array([width_p, width_q])
         if unit is not None:
-            dy, dx = self.wcs.get_step(unit=unit)
-            mom[0] = mom[0] * dy
-            mom[1] = mom[1] * dx
+            mom *= self.wcs.get_step(unit=unit)
         return mom
 
     def gauss_fit(self, pos_min=None, pos_max=None, center=None, flux=None,
@@ -1955,12 +1947,12 @@ class Image(ArithmeticMixin, DataArray):
         # initial moment value
         if fwhm is None:
             width = ima.moments(unit=None)
-            fwhm = width * 2. * np.sqrt(2. * np.log(2.0))
+            fwhm = width * gaussian_sigma_to_fwhm
         else:
             if unit_fwhm is not None:
                 fwhm = np.array(fwhm)
                 fwhm = fwhm / self.wcs.get_step(unit=unit_fwhm)
-            width = np.array(fwhm) / (2. * np.sqrt(2. * np.log(2.0)))
+            width = np.array(fwhm) * gaussian_fwhm_to_sigma
 
         # initial gaussian integrated flux
         if flux is None:
@@ -2125,8 +2117,8 @@ class Image(ArithmeticMixin, DataArray):
                     p_width = np.abs(v[4])
                     q_width = np.abs(v[2])
                     rot = (v[5] * 180.0 / np.pi + 90) % 180
-        p_fwhm = p_width * 2 * np.sqrt(2 * np.log(2))
-        q_fwhm = q_width * 2 * np.sqrt(2 * np.log(2))
+        p_fwhm = p_width * gaussian_sigma_to_fwhm
+        q_fwhm = q_width * gaussian_sigma_to_fwhm
         peak = flux / np.sqrt(2 * np.pi * (p_width ** 2)) \
             / np.sqrt(2 * np.pi * (q_width ** 2))
         # error
@@ -2162,8 +2154,8 @@ class Image(ArithmeticMixin, DataArray):
                     err_rot = err[4] * 180.0 / np.pi
                 except:
                     err_rot = 0
-            err_p_fwhm = err_p_width * 2 * np.sqrt(2 * np.log(2))
-            err_q_fwhm = err_q_width * 2 * np.sqrt(2 * np.log(2))
+            err_p_fwhm = err_p_width * gaussian_sigma_to_fwhm
+            err_q_fwhm = err_q_width * gaussian_sigma_to_fwhm
             err_peak = (err_flux * p_width * q_width - flux
                         * (err_p_width * q_width + err_q_width * p_width)) \
                 / (2 * np.pi * p_width * p_width * q_width * q_width)
@@ -2350,7 +2342,7 @@ class Image(ArithmeticMixin, DataArray):
         # initial width value
         if fwhm is None:
             width = ima.moments(unit=None)
-            fwhm = width * 2. * np.sqrt(2. * np.log(2.0))
+            fwhm = width * gaussian_sigma_to_fwhm
         else:
             if unit_fwhm is not None:
                 fwhm = np.array(fwhm) / self.wcs.get_step(unit=unit_fwhm)
@@ -4392,7 +4384,7 @@ def gauss_image(shape=(101, 101), wcs=None, factor=1, gauss=None,
         cont = gauss.cont
 
     if center is None:
-        center = np.array([(shape[0] - 1) / 2.0, (shape[1] - 1) / 2.0])
+        center = (np.array(shape) - 1) / 2.0
     else:
         if unit_center is not None:
             center = wcs.sky2pix(center, unit=unit_center)[0]
@@ -4404,8 +4396,8 @@ def gauss_image(shape=(101, 101), wcs=None, factor=1, gauss=None,
 
     if fwhm[1] == 0 or fwhm[0] == 0:
         raise ValueError('fwhm equal to 0')
-    p_width = fwhm[0] / 2.0 / np.sqrt(2 * np.log(2))
-    q_width = fwhm[1] / 2.0 / np.sqrt(2 * np.log(2))
+    p_width = fwhm[0] * gaussian_fwhm_to_sigma
+    q_width = fwhm[1] * gaussian_fwhm_to_sigma
 
     # rotation angle in rad
     theta = np.pi * rot / 180.0
@@ -4688,7 +4680,8 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
     # is to copy the image into a new array whose dimensions
     # are powers of 2, and fill the extra pixels with zeros.
 
-    shape = 2**(np.ceil(np.log(np.asarray(data.shape)) / np.log(2.0))).astype(int)
+    shape = 2**(np.ceil(np.log(np.asarray(data.shape)) /
+                        np.log(2.0))).astype(int)
     if data.shape[0] != shape[0] or data.shape[1] != shape[1]:
         tmp = np.zeros(shape)
         tmp[image_slice] = data
