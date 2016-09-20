@@ -3647,7 +3647,6 @@ class Image(ArithmeticMixin, DataArray):
         out : List of Image objects.
 
         """
-
         # Get a copy of the data array with masked values filled.
         data = self._prepare_data(interp)
 
@@ -3997,43 +3996,43 @@ class Image(ArithmeticMixin, DataArray):
     def plot(self, title=None, scale='linear', vmin=None, vmax=None,
              zscale=False, colorbar=None, var=False, show_xlabel=True,
              show_ylabel=True, ax=None, unit=u.deg, **kwargs):
-        """Plot the image with axes labeled in pixels. If either axis
-        has just one pixel, plot a line instead of an image.
+        """Plot the image with axes labeled in pixels.
+
+        If either axis has just one pixel, plot a line instead of an image.
 
         Colors are assigned to each pixel value as follows. First each
-        pixel value, pv, is normalized over the range vmin to vmax,
-        to have a value nv, that goes from 0 to 1, as follows:
+        pixel value, ``pv``, is normalized over the range ``vmin`` to ``vmax``,
+        to have a value ``nv``, that goes from 0 to 1, as follows::
 
-        nv = (pv - vmin) / (vmax - vmin)
+            nv = (pv - vmin) / (vmax - vmin)
 
-        This value is then mapped to another number between 0 and 1
-        which determines a position along the colorbar, and thus the
-        color to give the displayed pixel. The mapping from normalized
-        values to colorbar position, color, can be chosen using the
-        scale argument, from the following options:
+        This value is then mapped to another number between 0 and 1 which
+        determines a position along the colorbar, and thus the color to give
+        the displayed pixel. The mapping from normalized values to colorbar
+        position, color, can be chosen using the scale argument, from the
+        following options:
 
         'linear'   =>  color = nv
         'log'      =>  color = log(1000 * nv + 1) / log(1000 + 1)
         'sqrt'     =>  color = sqrt(nv)
         'arcsinh'  =>  color = arcsinh(10*nv) / arcsinh(10.0)
 
-        A colorbar can optionally be drawn. If the colorbar
-        argument is given the value 'h', then a colorbar is drawn
-        horizontally, above the plot. If it is 'v', the colorbar
-        is drawn vertically, to the right of the plot.
+        A colorbar can optionally be drawn. If the colorbar argument is given
+        the value 'h', then a colorbar is drawn horizontally, above the plot.
+        If it is 'v', the colorbar is drawn vertically, to the right of the
+        plot.
 
-        By default the image image is displayed in its own
-        plot. Alternatively to make it a subplot of a larger figure, a
-        suitable matplotlib.axes.Axes object can be passed via the ax
-        argument. Note that unless matplotlib interative mode has
-        previously been enabled by calling matplotlib.pyplot.ion(),
-        the plot window will not appear until the next time that
-        matplotlib.pyplot.show() is called. So to arrange that a new
-        window appears as soon as Image.plot() is called, do the
-        following before the first call to Image.plot().
+        By default the image image is displayed in its own plot. Alternatively
+        to make it a subplot of a larger figure, a suitable
+        ``matplotlib.axes.Axes object`` can be passed via the ``ax`` argument.
+        Note that unless matplotlib interative mode has previously been enabled
+        by calling ``matplotlib.pyplot.ion()``, the plot window will not appear
+        until the next time that ``matplotlib.pyplot.show()`` is called. So to
+        arrange that a new window appears as soon as ``Image.plot()`` is
+        called, do the following before the first call to ``Image.plot()``::
 
-        import matplotlib.pyplot as plt
-        plt.ion()
+            import matplotlib.pyplot as plt
+            plt.ion()
 
         Parameters
         ----------
@@ -4066,9 +4065,9 @@ class Image(ArithmeticMixin, DataArray):
             If 'h', a horizontal colorbar is drawn above the image.
             If 'v', a vertical colorbar is drawn to the right of the image.
             If None (the default), no colorbar is drawn.
-        ax : matplotlib.Axes
+        ax : matplotlib.axes.Axes
             An optional Axes instance in which to draw the image,
-            or None to have one created using matplotlib.pyplot.gca().
+            or None to have one created using ``matplotlib.pyplot.gca()``.
         unit : `astropy.units.Unit`
             The units to use for displaying world coordinates
             (degrees by default). In the interactive plot, when
@@ -4077,7 +4076,7 @@ class Image(ArithmeticMixin, DataArray):
             along with the pixel value.
         kwargs : matplotlib.artist.Artist
             Optional extra keyword/value arguments to be passed to
-            the ax.imshow() function.
+            the ``ax.imshow()`` function.
 
         Returns
         -------
@@ -4161,49 +4160,44 @@ class Image(ArithmeticMixin, DataArray):
         if title is not None:
             ax.set_title(title)
 
-        # Change the way that plt.show() displays coordinates
-        # when the pointer is over the image, such that
-        # world coordinates are displayed with the specified unit,
-        # and pixel values are displayed with their native units.
-        ax.format_coord = self._format_coord
+        def _format_coord(x, y):
+            """Tell the interactive plotting window how to display the sky
+            coordinates and pixel values of an image.
+
+            Parameters
+            ----------
+            x : float
+                The X-axis pixel index of the mouse pointer.
+            y : float
+                The Y-axis pixel index of the mouse pointer.
+
+            Returns
+            -------
+            out : str
+                The string to be displayed when the mouse pointer is
+                over pixel x,y.
+
+            """
+            # Find the pixel indexes closest to the specified position.
+            col = int(x + 0.5)
+            row = int(y + 0.5)
+
+            # Is the mouse pointer within the image?
+            if (self.wcs is not None and row >= 0 and row < self.shape[0] and
+                    col >= 0 and col < self.shape[1]):
+                yc, xc = self.wcs.pix2sky([row, col], unit=self._unit)[0]
+                val = self.data.data[row, col]
+                return 'y= %g x=%g p=%i q=%i data=%g' % (yc, xc, row, col, val)
+            else:
+                return 'x=%1.4f, y=%1.4f' % (x, y)
+
+        # Change the way that plt.show() displays coordinates when the pointer
+        # is over the image, such that world coordinates are displayed with the
+        # specified unit, and pixel values are displayed with their native
+        # units.
+        ax.format_coord = _format_coord
         self._unit = unit
         return cax
-
-    def _format_coord(self, x, y):
-        """A function that can be assigned to
-        matplotlib.axes.Axes.format_coord to tell the interactive
-        plotting window how to display the sky coordinates and
-        pixel values of an image.
-
-        Parameters
-        ----------
-        x   : float
-           The X-axis pixel index of the mouse pointer.
-        y   : float
-           The Y-axis pixel index of the mouse pointer.
-
-        Returns
-        -------
-        out : str
-           The string to be displayed when the mouse pointer is
-           over pixel x,y.
-
-        """
-
-        # Find the pixel indexes closest to the specified position.
-        col = int(x + 0.5)
-        row = int(y + 0.5)
-
-        # Is the mouse pointer within the image?
-        if row >= 0 and row < self.shape[0] and \
-                col >= 0 and col < self.shape[1]:
-            pixsky = self.wcs.pix2sky([row, col], unit=self._unit)
-            yc = pixsky[0][0]
-            xc = pixsky[0][1]
-            val = self.data.data[row, col]
-            return 'y= %g x=%g p=%i q=%i data=%g' % (yc, xc, row, col, val)
-        else:
-            return 'x=%1.4f, y=%1.4f' % (x, y)
 
     def get_spatial_fmax(self, rot=None):
         """Return the spatial-frequency band-limits of the image along
