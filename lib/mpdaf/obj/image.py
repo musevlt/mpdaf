@@ -3621,8 +3621,7 @@ class Image(ArithmeticMixin, DataArray):
 
         Returns a list of images. Uses
         `scipy.ndimage.generate_binary_structure`,
-        `scipy.ndimage.grey_dilation`,
-        `scipy.ndimage.measurements.label`, and
+        `scipy.ndimage.grey_dilation`, `scipy.ndimage.measurements.label`, and
         `scipy.ndimage.measurements.find_objects`.
 
         Parameters
@@ -3640,51 +3639,27 @@ class Image(ArithmeticMixin, DataArray):
             if 'linear', linear interpolation of the masked values.
             if 'spline', spline interpolation of the masked values.
         median : (int,int) or None
-            Size of the median filter
+            If not None (default), size of the window to apply a median filter
+            on the image.
 
         Returns
         -------
-        out : List of Image objects.
+        out : list of `Image`
 
         """
-        # Get a copy of the data array with masked values filled.
         data = self._prepare_data(interp)
-
-        structure = ndi.generate_binary_structure(shape[0], shape[1])
         if median is not None:
             data = np.ma.array(ndi.median_filter(data, median),
                                mask=self._mask)
         expanded = ndi.grey_dilation(data, (minsize, minsize))
-        ksel = np.where(expanded < background)
-        expanded[ksel] = 0
+        expanded[expanded < background] = 0
 
-        lab = ndi.measurements.label(expanded, structure)
-        slices = ndi.measurements.find_objects(lab[0])
+        structure = ndi.generate_binary_structure(shape[0], shape[1])
+        labels, nlabels = ndi.measurements.label(expanded, structure)
+        slices = ndi.measurements.find_objects(labels)
 
-        imalist = []
-        for i in range(lab[1]):
-            if minpts is not None:
-                if (data[slices[i]].ravel() > background)\
-                        .sum() < minpts:
-                    continue
-            [[starty, startx]] = \
-                self.wcs.pix2sky(self.wcs.pix2sky([[slices[i][0].start,
-                                                    slices[i][1].start]]))
-            wcs = self.wcs.copy()
-            wcs.set_crpix1(1.0)
-            wcs.set_crpix2(1.0)
-            wcs.set_crval1(startx)
-            wcs.set_crval2(starty)
-            wcs.naxis1 = self.data[slices[i]].shape[1]
-            wcs.naxis2 = self.data[slices[i]].shape[0]
-            if self.var is not None:
-                res = Image(data=self.data[slices[i]], wcs=wcs,
-                            unit=self.unit, var=self.var[slices[i]])
-            else:
-                res = Image(data=self.data[slices[i]], wcs=wcs,
-                            unit=self.unit)
-            imalist.append(res)
-        return imalist
+        return [self[slices[i]] for i in range(nlabels)
+                if minpts is None or len(data[labels == i + 1]) >= minpts]
 
     def add_gaussian_noise(self, sigma, interp='no'):
         """Add Gaussian noise to image in place.
