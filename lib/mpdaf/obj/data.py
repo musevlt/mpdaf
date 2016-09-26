@@ -755,6 +755,11 @@ class DataArray(object):
         if data.ndim == 0:
             return data
 
+        # If the data, mask and variance arrays need to be reshaped to reintroduce
+        # a single-pixel dimension, the following variable will be assigned the
+        # required shape.
+        reshape = None
+
         # Construct new WCS and wavelength coordinate information for the slice
         wave = None
         wcs = None
@@ -773,6 +778,23 @@ class DataArray(object):
                 except:
                     wave = None
 
+                # If x's slice is selected with an integer, and y's slice
+                # is selected with a slice object (or vice versa), then
+                # numpy will have removed one dimension of the resulting
+                # image or cube. Compute the shape that is needed to
+                # reinstate this dimension as an axis with one element.
+                if isinstance(item[1], int) != isinstance(item[2], int):
+                    if isinstance(item[0], int): # An Image has been selected
+                        if isinstance(item[1], int):
+                            reshape = (1, data.shape[0])
+                        else:
+                            reshape = (data.shape[0], 1)
+                    else:                        # A Cube has been selected
+                        if isinstance(item[1], int):
+                            reshape = (data.shape[0], 1, data.shape[1])
+                        else:
+                            reshape = (data.shape[0], data.shape[1], 1)
+
             # Handle cube[ii,jj], where ii and jj can be int or slice objects.
             if isinstance(item, (list, tuple)) and len(item) == 2:
                 try:
@@ -784,11 +806,35 @@ class DataArray(object):
                 except:
                     wave = None
 
+                # If the Y-axis slice has been specified as an int, then
+                # the Y-axis dimension will have been removed by numpy.
+                # Compute the shape that is needed to reinstante it as
+                # an axis with one pixel.
+                if isinstance(item[1], int):
+                    if isinstance(item[0], int): # An Image has been selected
+                        reshape = (1, data.shape[0])
+                    else:                        # A Cube has been selected
+                        reshape = (data.shape[0],1,data.shape[1])
+
             # Handle cube[ii] where ii can be an int or a slice.
             elif isinstance(item, (int, slice)):
-                wcs = self.wcs.copy()
+                try:
+                    wcs = self.wcs.copy()
+                except:
+                    wcs = None
                 try:
                     wave = self.wave[item]
+                except:
+                    wave = None
+
+            # Handle cube[]
+            elif item is None or item is ():
+                try:
+                    wcs = self.wcs.copy()
+                except:
+                    wcs = None
+                try:
+                    wave = self.wave.copy()
                 except:
                     wave = None
 
@@ -802,6 +848,17 @@ class DataArray(object):
                 except:
                     wcs = None
 
+                # If x's slice is selected with an integer, and y's slice
+                # is selected with a slice object (or vice versa), then
+                # numpy will have removed one dimension of the resulting
+                # image or cube. Compute the shape that is needed to
+                # reinstate this dimension as an axis with one element.
+                if isinstance(item[0], int) != isinstance(item[1], int):
+                    if isinstance(item[0], int):
+                        reshape = (1, data.shape[0])
+                    else:
+                        reshape = (data.shape[0], 1)
+
             # Handle image[ii], where ii be an int or a slice object.
             elif isinstance(item, (int, slice)):
                 try:
@@ -809,12 +866,44 @@ class DataArray(object):
                 except:
                     wcs = None
 
+                # If item is an int, then numpy will have removed
+                # the x-axis dimension from data[]. Compute the
+                # shape that is needed to reinstate it.
+                if isinstance(item, int):
+                    reshape = (1, data.shape[0])
+
+            # Handle image[]
+            elif item is None or item is ():
+                try:
+                    wcs = self.wcs.copy()
+                except:
+                    wcs = None
+
         # Slice a Spectrum?
-        elif self.ndim == 1 and isinstance(item, slice):
-            try:
-                wave = self.wave[item]
-            except:
-                wave = None
+        elif self.ndim == 1:
+
+            # Handle spectrum[item]
+            if isinstance(item, slice):
+                try:
+                    wave = self.wave[item]
+                except:
+                    wave = None
+
+            # Handle spectrum[]
+            elif item is None or item is ():
+                try:
+                    wave = self.wave.copy()
+                except:
+                    wave = None
+
+        # Reshape the data, variance and mask arrays, if necessary.
+
+        if reshape is not None:
+            data = data.reshape(reshape)
+            if mask is not ma.nomask:
+                mask = mask.reshape(reshape)
+            if var is not None:
+                var = var.reshape(reshape)
 
         return self.__class__(
             data=data, unit=self.unit, var=var, mask=mask, wcs=wcs, wave=wave,
