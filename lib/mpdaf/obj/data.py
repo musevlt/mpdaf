@@ -758,22 +758,58 @@ class DataArray(object):
         # Construct new WCS and wavelength coordinate information for the slice
         wave = None
         wcs = None
-        if self.ndim == 3 and isinstance(item, (list, tuple)) and \
-                len(item) == 3:
-            try:
-                wcs = self.wcs[item[1], item[2]]
-            except:
-                wcs = None
-            try:
-                wave = self.wave[item[0]]
-            except:
-                wave = None
-        elif self.ndim == 2 and isinstance(item, (list, tuple)) and \
-                len(item) == 2:
-            try:
-                wcs = self.wcs[item]
-            except:
-                wcs = None
+
+        # Slice a Cube?
+        if self.ndim == 3:
+
+            # Handle cube[ii,jj,kk], where ii, jj, kk can be int or slice objects.
+            if isinstance(item, (list, tuple)) and len(item) == 3:
+                try:
+                    wcs = self.wcs[item[1], item[2]]
+                except:
+                    wcs = None
+                try:
+                    wave = self.wave[item[0]]
+                except:
+                    wave = None
+
+            # Handle cube[ii,jj], where ii and jj can be int or slice objects.
+            if isinstance(item, (list, tuple)) and len(item) == 2:
+                try:
+                    wcs = self.wcs[item[1], slice(None)]
+                except:
+                    wcs = None
+                try:
+                    wave = self.wave[item[0]]
+                except:
+                    wave = None
+
+            # Handle cube[ii] where ii can be an int or a slice.
+            elif isinstance(item, (int, slice)):
+                wcs = self.wcs.copy()
+                try:
+                    wave = self.wave[item]
+                except:
+                    wave = None
+
+        # Slice an Image?
+        elif self.ndim == 2:
+
+            # Handle image[ii,jj], where ii and jj can be int or slice objects.
+            if isinstance(item, (list, tuple)) and len(item) == 2:
+                try:
+                    wcs = self.wcs[item]
+                except:
+                    wcs = None
+
+            # Handle image[ii], where ii be an int or a slice object.
+            elif isinstance(item, (int, slice)):
+                try:
+                    wcs = self.wcs[item, slice(None)]
+                except:
+                    wcs = None
+
+        # Slice a Spectrum?
         elif self.ndim == 1 and isinstance(item, slice):
             try:
                 wave = self.wave[item]
