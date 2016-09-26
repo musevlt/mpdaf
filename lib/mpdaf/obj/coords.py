@@ -789,7 +789,6 @@ class WCS(object):
 
     def __getitem__(self, item):
         """Return a WCS object of a 2D slice"""
-
         if not isinstance(item, (tuple, list)) or len(item) != 2:
             raise ValueError('Invalid index, a 2D slice is expected')
 
@@ -861,7 +860,7 @@ class WCS(object):
             # If an index step was provided and it isn't 1, reject
             # the call, because we can't accomodate gaps between selected
             # pixels.
-            if item[1].step is not None and item[1].step != 1:
+            if item[0].step is not None and item[0].step != 1:
                 raise ValueError('Index steps are not supported')
 
         else:
