@@ -562,3 +562,59 @@ def test_peak_detection_and_fwhm():
     assert peaks.shape == (1, 2)
     assert_allclose(peaks[0], (np.array(shape) - 1) / 2.0)
     assert_allclose(ima.fwhm(unit_radius=None), fwhm, rtol=0.1)
+
+def test_get_item():
+    """Image class: testing __getitem__"""
+    # Set the shape and contents of the image's data array.
+    shape = (4,5)
+    data = np.arange(shape[0]*shape[1]).reshape(shape[0],shape[1])
+
+    # Create a test image with the above data array.
+    im = generate_image(data=data, shape=shape)
+    im.primary_header['KEY'] = 'primary value'
+    im.data_header['KEY'] = 'data value'
+
+    # Select the whole image.
+    for r in [im[:,:], im[:]]:
+        assert_array_equal(r.shape, im.shape)
+        assert_allclose(r.data, im.data)
+        assert r.primary_header['KEY'] == im.primary_header['KEY']
+        assert r.data_header['KEY'] == im.data_header['KEY']
+        assert isinstance(r, Image)
+        assert r.wcs.isEqual(im.wcs)
+        assert r.wave is None
+
+    # Select a subimage that only has one pixel along the y axis.
+    for r in [im[2, :], im[2]]:
+        assert_array_equal(r.shape, (1, im.shape[1]))
+        assert_allclose(r.data.ravel(), im.data[2,:].ravel())
+        assert r.primary_header['KEY'] == im.primary_header['KEY']
+        assert r.data_header['KEY'] == im.data_header['KEY']
+        assert isinstance(r, Image)
+        assert r.wcs.isEqual(im.wcs[2, :])
+        assert r.wave is None
+
+    # Select a subimage that only has one pixel along the x axis.
+    r = im[:, 2]
+    assert_array_equal(r.shape, (im.shape[0], 1))
+    assert_allclose(r.data.ravel(), im.data[:,2].ravel())
+    assert r.primary_header['KEY'] == im.primary_header['KEY']
+    assert r.data_header['KEY'] == im.data_header['KEY']
+    assert isinstance(r, Image)
+    assert r.wcs.isEqual(im.wcs[:, 2])
+    assert r.wave is None
+
+    # Select a sub-image using a non-scalar slice along each axis.
+    r = im[1:2, 2:4]
+    assert_array_equal(r.shape, (1, 2))
+    assert_allclose(r.data.ravel(), im.data[1:2, 2:4].ravel())
+    assert r.primary_header['KEY'] == im.primary_header['KEY']
+    assert r.data_header['KEY'] == im.data_header['KEY']
+    assert isinstance(r, Image)
+    assert r.wcs.isEqual(im.wcs[1:2, 2:4])
+    assert r.wave is None
+
+    # Select a single pixel.
+    r = im[2, 3]
+    assert np.isscalar(r)
+    assert_allclose(r, im.data[2,3])
