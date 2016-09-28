@@ -207,6 +207,7 @@ def findSkyMask(images):
 
 def segmentation(source, tags, DIR, remove):
     """segmentation by running sextractor"""
+    logger = logging.getLogger(__name__)
     # suppose that MUSE_WHITE image exists
     try:
         subprocess.check_call(['sex', '-v'])
@@ -265,8 +266,9 @@ def segmentation(source, tags, DIR, remove):
             hdul = pyfits.open(segFile)
             maps[tag] = hdul[0].data
             hdul.close()
-        except:
-            raise Exception("Something went wrong with sextractor!")
+        except Exception as e:
+            logger.error("Something went wrong with sextractor!")
+            raise e
         # remove seg file
         os.remove(segFile)
         # remove catalog file
