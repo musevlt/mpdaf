@@ -29,6 +29,7 @@ class TestBasicPixTable(unittest.TestCase):
         self.stat = np.linspace(0, 1, self.nrows)
 
         # generate origin column
+        np.random.seed(42)
         self.aifu = np.random.randint(1, 25, self.nrows)
         self.aslice = np.random.randint(1, 49, self.nrows)
         self.ax = np.random.randint(1, 8192, self.nrows)
