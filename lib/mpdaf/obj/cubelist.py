@@ -72,17 +72,19 @@ class CubeList(object):
     Parameters
     ----------
     files : list of str
-        List of cubes fits filenames
+        List of cubes FITS filenames.
+    scalelist: list of float, optional
+        List of scales to be applied to each cube.
 
     Attributes
     ----------
     files : list of str
-        List of cubes fits filenames
-    nfiles : integer
+        List of cubes FITS filenames.
+    nfiles : int
         Number of files.
     scales : list of doubles
         List of scales
-    shape : array of 3 integers)
+    shape : tuple
         Lengths of data in Z and Y and X (python notation (nz,ny,nx)).
     wcs : `mpdaf.obj.WCS`
         World coordinates.
@@ -95,15 +97,6 @@ class CubeList(object):
     checkers = ('check_dim', 'check_wcs')
 
     def __init__(self, files, scalelist=None):
-        """Create a CubeList object.
-
-        Parameters
-        ----------
-        files : list of str
-            List of cubes fits filenames
-        scalelist: list of float
-            (optional) list of scales to be applied to each cube
-        """
         self._logger = logging.getLogger(__name__)
         self.files = files
         self.nfiles = len(files)
@@ -273,12 +266,12 @@ class CubeList(object):
 
         Parameters
         ----------
-        nmax  : integer
+        nmax  : int
             maximum number of clipping iterations
         nclip : float or (float,float)
             Number of sigma at which to clip.
             Single clipping parameter or lower / upper clipping parameters.
-        nstop : integer
+        nstop : int
             If the number of not rejected pixels is less
             than this number, the clipping iterations stop.
         var   : str
@@ -292,8 +285,7 @@ class CubeList(object):
             - ``stat_one``: the variance of each combined pixel is
               computed as the variance derived from the comparison
               of the N individual exposures.
-
-        mad : boolean
+        mad : bool
             Use MAD (median absolute deviation) statistics for sigma-clipping
 
         Returns
@@ -497,23 +489,31 @@ class CubeMosaic(CubeList):
     """Manages a list of cubes and handles the combination to make a mosaic.
 
     To run the combination, all the cubes must be on the same WCS grid. The
-    values from the ``CRPIX`` keywords will be used as offsets to put a cube
-    inside the combined cube.
+    values from the ``CRPIX`` keywords will be used as offsets to put each cube
+    inside the combined cube. The shape and WCS grid of the output cube is
+    determined using from a FITS file specified with the ``output_wcs``
+    argument (same principle as the MUSE pipeline).
 
-    This class inherits from `mpdaf.obj.CubeList`.
+    This class inherits from `mpdaf.obj.CubeList`, but not all the combination
+    commands are available: currently only `CubeMosaic.pycombine` is
+    implemented.
 
     Parameters
     ----------
     files : list of str
-        List of cubes fits filenames
+        List of cubes FITS filenames.
+    output_wcs : str
+        Path to a cube FITS file, this cube is used to define the output
+        cube: shape, WCS and unit are needed, it must have the same WCS
+        grid as the input cubes.
 
     Attributes
     ----------
     files : list of str
-        List of cubes fits filenames
-    nfiles : integer
+        List of cubes FITS filenames.
+    nfiles : int
         Number of files.
-    shape : array of 3 integers)
+    shape : array of 3 integers
         Lengths of data in Z and Y and X (python notation (nz,ny,nx)).
     wcs : `mpdaf.obj.WCS`
         World coordinates.
@@ -527,17 +527,6 @@ class CubeMosaic(CubeList):
     checkers = ('check_dim', 'check_wcs')
 
     def __init__(self, files, output_wcs):
-        """Create a CubeMosaic object.
-
-        Parameters
-        ----------
-        files : list of str
-            List of cubes fits filenames.
-        output_wcs : str
-            Path to a cube FITS file, this cube is used to define the output
-            cube: shape, WCS and unit are needed, it must have the same WCS
-            grid as the input cubes.
-        """
         self.out = Cube(output_wcs)
         super(CubeMosaic, self).__init__(files)
 
