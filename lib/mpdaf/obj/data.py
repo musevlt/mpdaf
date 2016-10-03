@@ -41,7 +41,6 @@ import warnings
 
 from astropy import units as u
 from astropy.io import fits
-from scipy import signal
 from datetime import datetime
 from numpy import ma
 
@@ -356,7 +355,7 @@ class DataArray(object):
             # Use a specified numpy data array?
             if data is not None:
                 # Force data to be in double instead of float
-                if self._dtype is None and data.dtype==np.float32: 
+                if self._dtype is None and data.dtype == np.float32:
                     self._dtype = np.float64
                 if isinstance(data, ma.MaskedArray):
                     self._data = np.array(data.data, dtype=self.dtype,
@@ -445,7 +444,7 @@ class DataArray(object):
                          for i in range(self.ndim, 0, -1))
         except (KeyError, TypeError):
             return None
-        
+
     @property
     def dtype(self):
         """The type of the data."""
@@ -453,7 +452,6 @@ class DataArray(object):
             return self._data.dtype
         else:
             return self._dtype
-        
 
     @property
     def data(self):
