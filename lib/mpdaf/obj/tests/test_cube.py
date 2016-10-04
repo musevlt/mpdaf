@@ -649,34 +649,99 @@ def test_write(tmpdir):
 
 def test_get_item():
     """Cube class: testing __getitem__"""
-    c = generate_cube(data=1, wave=WaveCoord(crval=1, cunit=u.angstrom))
+    # Set the shape and contents of the cube's data array.
+    shape = (3,4,5)
+    data = np.arange(shape[0]*shape[1]*shape[2]).reshape(shape[0],shape[1],shape[2])
+
+    # Create a test cube with the above data array.
+    c = generate_cube(data=data, shape=shape, wave=WaveCoord(crval=1, cunit=u.angstrom))
     c.primary_header['KEY'] = 'primary value'
     c.data_header['KEY'] = 'data value'
 
+    # Select the whole cube.
+    for r in [c[:,:,:], c[:,:], c[:]]:
+        assert_array_equal(r.shape, c.shape)
+        assert_allclose(r.data, c.data)
+        assert r.primary_header['KEY'] == c.primary_header['KEY']
+        assert r.data_header['KEY'] == c.data_header['KEY']
+        assert isinstance(r, Cube)
+        assert r.wcs.isEqual(c.wcs)
+        assert r.wave.isEqual(c.wave)
+
+    # Select a subimage that only has one pixel along the y axis.
+    for r in [c[1, 2, :], c[1, 2]]:
+        assert_array_equal(r.shape, (1, c.shape[2]))
+        assert_allclose(r.data.ravel(), c.data[1,2,:].ravel())
+        assert r.primary_header['KEY'] == c.primary_header['KEY']
+        assert r.data_header['KEY'] == c.data_header['KEY']
+        assert isinstance(r, Image)
+        assert r.wcs.isEqual(c.wcs[2, :])
+        assert r.wave is None
+
+    # Select a subcube that only has one pixel along the y axis.
+    for r in [c[:, 2, :], c[:, 2]]:
+        assert_array_equal(r.shape, (c.shape[0], 1, c.shape[2]))
+        assert_allclose(r.data.ravel(), c.data[:,2,:].ravel())
+        assert r.primary_header['KEY'] == c.primary_header['KEY']
+        assert r.data_header['KEY'] == c.data_header['KEY']
+        assert isinstance(r, Cube)
+        assert r.wcs.isEqual(c.wcs[2, :])
+        assert r.wave.isEqual(c.wave)
+
+    # Select a subimage that only has one pixel along the x axis.
+    r = c[1, :, 2]
+    assert_array_equal(r.shape, (c.shape[1], 1))
+    assert_allclose(r.data.ravel(), c.data[1,:,2].ravel())
+    assert r.primary_header['KEY'] == c.primary_header['KEY']
+    assert r.data_header['KEY'] == c.data_header['KEY']
+    assert isinstance(r, Image)
+    assert r.wcs.isEqual(c.wcs[:, 2])
+    assert r.wave is None
+
+    # Select a subcube that only has one pixel along the x axis.
+    r = c[:, :, 2]
+    assert_array_equal(r.shape, (c.shape[0], c.shape[1], 1))
+    assert_allclose(r.data.ravel(), c.data[:,:,2].ravel())
+    assert r.primary_header['KEY'] == c.primary_header['KEY']
+    assert r.data_header['KEY'] == c.data_header['KEY']
+    assert isinstance(r, Cube)
+    assert r.wcs.isEqual(c.wcs[:, 2])
+    assert r.wave.isEqual(c.wave)
+
+    # Select a sub-cube using a non-scalar slice along each axis.
     r = c[:, :2, :2]
-    assert_array_equal(r.shape, (10, 2, 2))
+    assert_array_equal(r.shape, (c.shape[0], 2, 2))
+    assert_allclose(r.data.ravel(), c.data[:,:2,:2].ravel())
     assert r.primary_header['KEY'] == c.primary_header['KEY']
     assert r.data_header['KEY'] == c.data_header['KEY']
     assert isinstance(r, Cube)
     assert r.wcs.isEqual(c.wcs[:2, :2])
     assert r.wave.isEqual(c.wave)
 
-    r = c[0, :, :]
-    assert_array_equal(r.shape, (6, 5))
-    assert r.primary_header['KEY'] == c.primary_header['KEY']
-    assert r.data_header['KEY'] == c.data_header['KEY']
-    assert isinstance(r, Image)
-    assert r.wcs.isEqual(c.wcs)
-    assert r.wave is None
+    # Select the image of a single spectral pixel.
+    for r in [c[1, :, :], c[1, :], c[1]]:
+        assert_array_equal(r.shape, (c.shape[1], c.shape[2]))
+        assert_allclose(r.data.ravel(), c.data[1,:,:].ravel())
+        assert r.primary_header['KEY'] == c.primary_header['KEY']
+        assert r.data_header['KEY'] == c.data_header['KEY']
+        assert isinstance(r, Image)
+        assert r.wcs.isEqual(c.wcs)
+        assert r.wave is None
 
+    # Select the spectrum of a single spatial pixel.
     r = c[:, 2, 2]
-    assert_array_equal(r.shape, (10, ))
+    assert_array_equal(r.shape, (c.shape[0], ))
+    assert_allclose(r.data.ravel(), c.data[:,2,2].ravel())
     assert r.primary_header['KEY'] == c.primary_header['KEY']
     assert r.data_header['KEY'] == c.data_header['KEY']
     assert isinstance(r, Spectrum)
     assert r.wave.isEqual(c.wave)
     assert r.wcs is None
 
+    # Select a single pixel.
+    r = c[2, 2, 2]
+    assert np.isscalar(r)
+    assert_allclose(r, c.data[2,2,2])
 
 def test_bandpass_image():
     """Cube class: testing bandpass_image"""

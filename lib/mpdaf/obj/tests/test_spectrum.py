@@ -11,7 +11,7 @@ from mpdaf.obj import Spectrum, Image, Cube, WCS, WaveCoord
 from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_almost_equal, assert_allclose)
 
-from ...tests.utils import get_data_file
+from ...tests.utils import (get_data_file, generate_spectrum)
 
 
 def test_copy(spec_var):
@@ -466,3 +466,39 @@ def test_resample2():
     spectrum2 = spectrum1.resample(0.3)
     flux2 = spectrum2.sum() * spectrum2.wave.get_step()
     assert_almost_equal(flux1, flux2, 2)
+
+def test_get_item():
+    """Spectrum class: testing __getitem__"""
+    # Set the shape and contents of the spectrum's data array.
+    shape = (5,)
+    data = np.arange(shape[0])
+
+    # Create a test spectrum with the above data array.
+    s = generate_spectrum(data=data, shape=shape, wave=WaveCoord(crval=1, cunit=u.angstrom))
+    s.primary_header['KEY'] = 'primary value'
+    s.data_header['KEY'] = 'data value'
+
+    # Select the whole spectrum.
+    r = s[:]
+    assert_array_equal(r.shape, s.shape)
+    assert_allclose(r.data, s.data)
+    assert r.primary_header['KEY'] == s.primary_header['KEY']
+    assert r.data_header['KEY'] == s.data_header['KEY']
+    assert isinstance(r, Spectrum)
+    assert r.wcs is None
+    assert r.wave.isEqual(s.wave)
+
+    # Select a sub-spectrum.
+    r = s[1:3]
+    assert_array_equal(r.shape, (2))
+    assert_allclose(r.data, s.data[1:3])
+    assert r.primary_header['KEY'] == s.primary_header['KEY']
+    assert r.data_header['KEY'] == s.data_header['KEY']
+    assert isinstance(r, Spectrum)
+    assert r.wave.isEqual(s.wave[1:3])
+    assert r.wcs is None
+
+    # Select a single pixel of the spectrum.
+    r = s[2]
+    assert np.isscalar(r)
+    assert_allclose(r, s.data[2])
