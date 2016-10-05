@@ -367,12 +367,12 @@ def _insert_or_update_hdu(hdulist, name, hdu):
 def _write_mpdaf_obj(obj, type_, name, hdulist):
     ext_name = '{}_{}_DATA'.format(type_, name)
     hdu = obj.get_data_hdu(name=ext_name, savemask='nan')
-    _insert_or_update_hdu(hdulist, name, hdu)
+    _insert_or_update_hdu(hdulist, ext_name, hdu)
 
     ext_name = '{}_{}_STAT'.format(type_, name)
     hdu = obj.get_stat_hdu(name=ext_name)
     if hdu is not None:
-        _insert_or_update_hdu(hdulist, name, hdu)
+        _insert_or_update_hdu(hdulist, ext_name, hdu)
 
 
 def _write_table(table, name, hdulist):
