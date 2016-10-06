@@ -123,7 +123,7 @@ def test_comments(source1):
     assert source1.comment[0] == '[mpdaf 2016-09-02] This is a test'
     source1.add_comment('an other', 'mpdaf', '2016-09-02')
     assert source1.comment[1] == '[mpdaf 2016-09-02] an other'
-    
+
 
 def test_history(source1):
     source1.add_history('test_arg unitary test', 'mpdaf')
@@ -169,9 +169,16 @@ def test_add_cube(source2, minicube, tmpdir):
 
     filename = str(tmpdir.join('source.fits'))
     source2.write(filename)
+
     src = Source.from_file(filename)
     assert 'MUSE_WHITE' in src.images
     assert 'TEST1' in src.cubes
+
+    # Add image again to be sure that the extension is correctly updated
+    src.add_white_image(minicube, size=(20, 20), unit_size=None)
+    src.write(filename)
+    src = Source.from_file(filename)
+    assert src.images['MUSE_WHITE'].shape == (20, 20)
 
 
 def test_add_image(source2, a478hst):
