@@ -751,20 +751,16 @@ class WCS(object):
             True if the two WCS objects have the same attributes.
 
         """
-
         if not isinstance(other, WCS):
             return False
 
-        cdelt1 = self.get_step()
-        cdelt2 = other.get_step(unit=self.unit)
-        x1 = self.pix2sky([0, 0])[0]
-        x2 = other.pix2sky([0, 0], unit=self.unit)[0]
-        return (self.naxis1 == other.naxis1 and
+        return (self.sameStep(other) and
+                self.naxis1 == other.naxis1 and
                 self.naxis2 == other.naxis2 and
-                np.allclose(x1, x2, atol=1E-3, rtol=0) and
-                np.allclose(cdelt1, cdelt2, atol=1E-3, rtol=0) and
-                np.allclose(self.get_rot(), other.get_rot(), atol=1E-3,
-                            rtol=0))
+                np.allclose(self.get_start(), other.get_start(),
+                            atol=1E-3, rtol=0) and
+                np.allclose(self.get_rot(), other.get_rot(),
+                            atol=1E-3, rtol=0))
 
     def sameStep(self, other):
         """Return True if other and self have the same pixel sizes.
@@ -1061,9 +1057,7 @@ class WCS(object):
            self.unit property will be used.
 
         """
-        pixcrd = [[0, 0]]
-        pixsky = self.pix2sky(pixcrd, unit=unit)
-        return np.array([pixsky[0, 0], pixsky[0, 1]])
+        return self.pix2sky([0, 0], unit=unit)[0]
 
     def get_end(self, unit=None):
         """Return the [dec,ra] coordinates of pixel (-1,-1).
@@ -1083,9 +1077,7 @@ class WCS(object):
            self.unit property will be used.
 
         """
-        pixcrd = [[self.naxis2 - 1, self.naxis1 - 1]]
-        pixsky = self.pix2sky(pixcrd, unit=unit)
-        return np.array([pixsky[0, 0], pixsky[0, 1]])
+        return self.pix2sky([self.naxis2 - 1, self.naxis1 - 1], unit=unit)[0]
 
     def get_rot(self, unit=u.deg):
         """Return the rotation angle of the image, defined such that a
