@@ -1426,15 +1426,13 @@ class DataArray(object):
 
         Any variances in self.var are propagated correctly.
 
-        If self.var exists, the variances are propagated using the
-        equation:
+        If self.var exists, the variances are propagated using the equation::
 
-         result.var = self.var (*) other**2
+            result.var = self.var (*) other**2
 
         where (*) indicates convolution. This equation can be derived
         by applying the usual rules of error-propagation to the
         discrete convolution equation.
-
 
         Uses `scipy.signal.convolve`.
 
@@ -1443,30 +1441,26 @@ class DataArray(object):
         fn : function
             The convolution function to use, chosen from:
 
-              - scipy.signal.fftconvolve
-                This exploits the Fourier convolution theorem to
-                perform the convolution via multiplication in the
-                Fourier plane. It's speed scales as O(Nd x log(Nd)),
-                where Nd=self.data.size.
-              - scipy.signal.convolve
-                This uses the discrete convolution equation. It's
-                speed scales as O(Nd x No), where Nd=self.data.size
-                and No=other.data.size.
+            - `scipy.signal.fftconvolve`: This exploits the Fourier convolution
+            theorem to perform the convolution via multiplication in the
+            Fourier plane. It's speed scales as O(Nd x log(Nd)), where
+            Nd=self.data.size.
+            - `scipy.signal.convolve`: This uses the discrete convolution
+            equation. It's speed scales as O(Nd x No), where Nd=self.data.size
+            and No=other.data.size.
 
-            In general fftconvolve() is faster than convolve() except
-            when other.data only contains a few pixels. However
-            fftconvolve uses a lot more memory than convolve(), so
-            convolve() is sometimes the only reasonable choice. In
-            particular, fftconvolve allocates two arrays whose
-            dimensions are the sum of self.shape and other.shape,
-            rounded up to a power of two. These arrays can be
-            impractically large for some input data-sets.
+            In general fftconvolve() is faster than convolve() except when
+            other.data only contains a few pixels. However fftconvolve uses
+            a lot more memory than convolve(), so convolve() is sometimes the
+            only reasonable choice. In particular, fftconvolve allocates two
+            arrays whose dimensions are the sum of self.shape and other.shape,
+            rounded up to a power of two. These arrays can be impractically
+            large for some input data-sets.
         other : DataArray or np.ndarray
-          The array with which to convolve the contents of self.
-          This must have the same number of dimensions as self, but
-          it can have fewer elements. When this array contains a
-          symmetric filtering function, the center of the function
-          should be placed at the center of pixel,
+          The array with which to convolve the contents of self.  This must
+          have the same number of dimensions as self, but it can have fewer
+          elements. When this array contains a symmetric filtering function,
+          the center of the function should be placed at the center of pixel,
           ``(other.shape - 1)//2``.
 
           Note that passing a DataArray object is equivalent to just
