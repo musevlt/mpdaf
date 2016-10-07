@@ -683,37 +683,6 @@ class Source(object):
                    mask_invalid=mask_invalid,
                    filename=os.path.abspath(filename))
 
-    @classmethod
-    def _light_from_file(cls, filename):
-        """Source constructor from a FITS file.
-
-        Light: Only data that are stored in catalog are loaded.
-
-        Parameters
-        ----------
-        filename : str
-            FITS filename
-        """
-        lines = mag = z = None
-        with pyfits.open(filename) as hdulist:
-            hdr = hdulist[0].header
-            _headercorrected(hdr)
-            if 'LINES' in hdulist:
-                lines = _read_table(hdulist, 'LINES', masked=False)
-            if 'MAG' in hdulist:
-                mag = _read_table(hdulist, 'MAG', masked=False)
-            if 'Z' in hdulist:
-                z = _read_table(hdulist, 'Z', masked=False)
-
-        if 'CUBE_V' not in hdr:
-            logger = logging.getLogger(__name__)
-            logger.warning('CUBE_V keyword in missing. It will be soon '
-                           'mandatory and its absence will return an error')
-            hdr['CUBE_V'] = ('', 'datacube version')
-
-        return cls(hdr, lines, mag, z, None, None, None, None,
-                   mask_invalid=False)
-
     def write(self, filename):
         """Write the source object in a FITS file.
 
