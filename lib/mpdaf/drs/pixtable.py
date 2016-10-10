@@ -37,13 +37,14 @@ from __future__ import absolute_import, division
 
 import datetime
 import logging
-import os.path
+import os
 import numpy as np
 import warnings
-
 import astropy.units as u
+
 from astropy.io import fits
 from astropy.io.fits import Column, ImageHDU
+from os.path import basename
 from six.moves import range
 
 from ..obj import Image, Spectrum, WaveCoord, WCS
@@ -113,9 +114,8 @@ class PixTableMask(object):
         add_mpdaf_method_keywords(prihdu.header,
                                   'mpdaf.drs.pixtable.mask_column',
                                   [], [], [])
-        prihdu.header['pixtable'] = (os.path.basename(self.pixtable),
-                                     'pixtable')
-        prihdu.header['mask'] = (os.path.basename(self.maskfile),
+        prihdu.header['pixtable'] = (basename(self.pixtable), 'pixtable')
+        prihdu.header['mask'] = (basename(self.maskfile),
                                  'file to mask out all bright obj')
         hdulist = [prihdu]
         nrows = self.maskcol.shape[0]
@@ -219,11 +219,10 @@ class PixTableAutoCalib(object):
                                   'mpdaf.drs.PixTableAutoCalib.write',
                                   [], [], [])
         prihdu.header['method'] = (self.method, 'auto calib method')
-        prihdu.header['pixtable'] = (os.path.basename(self.pixtable),
-                                     'pixtable')
-        prihdu.header['mask'] = (os.path.basename(self.maskfile),
+        prihdu.header['pixtable'] = (basename(self.pixtable), 'pixtable')
+        prihdu.header['mask'] = (basename(self.maskfile),
                                  'file to mask out all bright obj')
-        prihdu.header['skyref'] = (os.path.basename(self.skyref),
+        prihdu.header['skyref'] = (basename(self.skyref),
                                    'reference sky spectrum')
 
         shape = (self.corr.shape[0], 1)
@@ -1676,7 +1675,7 @@ class PixTable(object):
             maskfile = ''
             mask = np.zeros(self.nrows, dtype=bool)
         else:
-            maskfile = os.path.basename(pixmask.maskfile)
+            maskfile = basename(pixmask.maskfile)
             mask = pixmask.maskcol
 
         # sigma clipped parameters
@@ -1710,7 +1709,7 @@ class PixTable(object):
                                   "drs.pixtable.sky_ref",
                                   ['pixtable', 'mask', 'dlbda', 'nmax',
                                    'nclip_low', 'nclip_up', 'nstop'],
-                                  [os.path.basename(self.filename), maskfile,
+                                  [basename(self.filename), maskfile,
                                    dlbda, nmax, nclip_low, nclip_up, nstop],
                                   ['pixtable',
                                    'file to mask out all bright objects',
@@ -1754,7 +1753,7 @@ class PixTable(object):
             maskfile = ''
             maskcol = np.zeros(self.nrows, dtype=bool)
         else:
-            maskfile = os.path.basename(pixmask.maskfile)
+            maskfile = basename(pixmask.maskfile)
             maskcol = pixmask.maskcol
 
         data = self.get_data()
@@ -1787,7 +1786,7 @@ class PixTable(object):
         if skyref.filename is None:
             skyref_file = ''
         else:
-            skyref_file = os.path.basename(skyref.filename)
+            skyref_file = basename(skyref.filename)
 
         # store parameters of the method in FITS keywords
         add_mpdaf_method_keywords(self.primary_header,
@@ -1801,7 +1800,7 @@ class PixTable(object):
         autocalib = PixTableAutoCalib(
             method='drs.pixtable.subtract_slice_median',
             maskfile=maskfile, skyref=skyref_file,
-            pixtable=os.path.basename(self.filename),
+            pixtable=basename(self.filename),
             ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48 * 4, 24)),
                                      0, 1)),
             sli=np.ravel(np.resize(np.arange(1, 49, 0.25).astype(np.int),
@@ -1809,8 +1808,7 @@ class PixTable(object):
             quad=np.ravel(np.resize(np.arange(1, 5), (24 * 48, 4))),
             npts=npts, corr=corr)
 
-        self._logger.info('pixtable %s updated',
-                          os.path.basename(self.filename))
+        self._logger.info('pixtable %s updated', basename(self.filename))
         return autocalib
 
     def divide_slice_median(self, skyref, pixmask):
@@ -1848,7 +1846,7 @@ class PixTable(object):
             maskfile = ''
             maskcol = np.zeros(self.nrows, dtype=bool)
         else:
-            maskfile = os.path.basename(pixmask.maskfile)
+            maskfile = basename(pixmask.maskfile)
             maskcol = pixmask.maskcol
 
         data = self.get_data()
@@ -1882,7 +1880,7 @@ class PixTable(object):
         if skyref.filename is None:
             skyref_file = ''
         else:
-            skyref_file = os.path.basename(skyref.filename)
+            skyref_file = basename(skyref.filename)
 
         # store parameters of the method in FITS keywords
         add_mpdaf_method_keywords(self.primary_header,
@@ -1896,7 +1894,7 @@ class PixTable(object):
         autocalib = PixTableAutoCalib(
             method='drs.pixtable.divide_slice_median',
             maskfile=maskfile, skyref=skyref_file,
-            pixtable=os.path.basename(self.filename),
+            pixtable=basename(self.filename),
             ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48 * 4, 24)),
                                      0, 1)),
             sli=np.ravel(np.resize(np.arange(1, 49, 0.25).astype(np.int),
@@ -1904,8 +1902,7 @@ class PixTable(object):
             quad=np.ravel(np.resize(np.arange(1, 5), (24 * 48, 4))),
             npts=npts, corr=corr)
 
-        self._logger.info('pixtable %s updated',
-                          os.path.basename(self.filename))
+        self._logger.info('pixtable %s updated', basename(self.filename))
 
         # close libray
         # import _ctypes
