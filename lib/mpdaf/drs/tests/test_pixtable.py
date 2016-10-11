@@ -10,6 +10,7 @@ import tempfile
 import unittest
 
 from astropy.io import fits
+from contextlib import contextmanager
 from mpdaf.drs import PixTable, pixtable, PixTableMask, PixTableAutoCalib
 from numpy.testing import assert_array_equal, assert_allclose
 from os.path import exists, join, basename
@@ -33,6 +34,16 @@ else:
 
 # Fake dat
 NROWS = 100
+
+
+@contextmanager
+def toggle_numexpr(active):
+    if not active:
+        _numexpr = pixtable.numexpr
+        pixtable.numexpr = False
+    yield
+    if not active:
+        pixtable.numexpr = _numexpr
 
 
 class TestBasicPixTable(unittest.TestCase):
@@ -108,7 +119,7 @@ class TestBasicPixTable(unittest.TestCase):
 
         pix2 = self.pix.copy()
         pix2.primary_header['HIERARCH ESO DRS MUSE PIXTABLE FLUXCAL'] = True
-        assert self.pix2.fluxcal is True
+        assert pix2.fluxcal is True
 
     def test_getters(self):
         self.assertEqual(NROWS, self.pix.nrows)
@@ -200,23 +211,19 @@ class TestBasicPixTable(unittest.TestCase):
 
     def test_extract(self):
         for numexpr in (True, False):
-            if not numexpr:
-                _numexpr = pixtable.numexpr
-                pixtable.numexpr = False
-            pix = self.pix.extract(lbda=(5000, 6000))
-            ksel = (self.lbda >= 5000) & (self.lbda < 6000)
-            assert_array_equal(self.data[ksel], pix.get_data())
+            with toggle_numexpr(numexpr):
+                pix = self.pix.extract(lbda=(5000, 6000))
+                ksel = (self.lbda >= 5000) & (self.lbda < 6000)
+                assert_array_equal(self.data[ksel], pix.get_data())
 
-            pix = self.pix.extract(ifu=1)
-            ksel = (self.aifu == 1)
-            assert_array_equal(self.data[ksel], pix.get_data())
+                pix = self.pix.extract(ifu=1)
+                ksel = (self.aifu == 1)
+                assert_array_equal(self.data[ksel], pix.get_data())
 
-            pix = self.pix.extract(sl=(1, 2, 3))
-            ksel = (self.aslice == 1) | (self.aslice == 2) | (self.aslice == 3)
-            assert_array_equal(self.data[ksel], pix.get_data())
-
-            if not numexpr:
-                pixtable.numexpr = _numexpr
+                pix = self.pix.extract(sl=(1, 2, 3))
+                ksel = ((self.aslice == 1) | (self.aslice == 2) |
+                        (self.aslice == 3))
+                assert_array_equal(self.data[ksel], pix.get_data())
 
     def test_write(self):
         tmpdir = tempfile.mkdtemp(suffix='.mpdaf-test-pixtable')
@@ -257,9 +264,44 @@ def test_autocalib(tmpdir):
     # assert_array_equal(sky.get_range(), [4750, 9350])
 
     cor = pix.subtract_slice_median(sky, mask)
+    div = pix.divide_slice_median(sky, mask)
+
+    # TODO: complete this
+    assert_array_equal(cor.npts, div.npts)
+
     outcor = str(tmpdir.join('cor.fits'))
     cor.write(outcor)
     savedcor = PixTableAutoCalib(filename=outcor)
     assert savedcor.method == 'drs.pixtable.subtract_slice_median'
     assert savedcor.maskfile == basename(maskfile)
     assert savedcor.pixtable == basename(pixfile)
+
+
+@pytest.mark.skipif(not SUPP_FILES_PATH, reason='Missing test data')
+@pytest.mark.parametrize('numexpr', (True, False))
+def test_select(numexpr):
+    pixfile = get_data_file('extern', 'testpix-small.fits')
+    pix = PixTable(pixfile)
+    with toggle_numexpr(numexpr):
+        pix2 = pix.extract(xpix=[(1000, 2000)], ypix=[(1000, 2000)])
+        origin = pix2.get_origin()
+        xpix = pix2.origin2xpix(origin)
+        ypix = pix2.origin2ypix(origin)
+        assert xpix.min() >= 1000
+        assert xpix.max() <= 2000
+        assert ypix.min() >= 1000
+        assert ypix.max() <= 2000
+
+
+@pytest.mark.skipif(not SUPP_FILES_PATH, reason='Missing test data')
+@pytest.mark.parametrize('numexpr', (True, False))
+@pytest.mark.parametrize('shape', ('C', 'S'))
+def test_select_sky(numexpr, shape):
+    pixfile = get_data_file('extern', 'testpix-small.fits')
+    pix = PixTable(pixfile)
+    with toggle_numexpr(numexpr):
+        x, y = pix.get_pos_sky()
+        cx = (x.min() + x.max()) / 2
+        cy = (y.min() + y.max()) / 2
+        pix2 = pix.extract(sky=(cy, cx, 12, shape))
+        assert pix2.nrows < pix.nrows
