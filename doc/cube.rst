@@ -369,8 +369,8 @@ spectrum iterator `~mpdaf.obj.iter_spe`:
      ...:     cont = sp.poly_spec(1)
      ...:     sp.unmask()
      ...:     line = sp - cont
-     ...:     fline = line[55-10:55+11].sum() * line.get_step(unit=line.wave.unit)
-     ...:     cline = cont[55-10:55+11].mean()
+     ...:     fline = line[55-10:55+11].sum()[0] * line.get_step(unit=line.wave.unit)
+     ...:     cline = cont[55-10:55+11].mean()[0]
      ...:     ew = fline/cline
      ...:     cont_flux[p,q] = cline
      ...:     ha_flux[p,q] = fline
