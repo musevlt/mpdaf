@@ -23,7 +23,7 @@ MUSE_ORIGIN_SHIFT_YPIX = 11
 MUSE_ORIGIN_SHIFT_IFU = 6
 
 EXTERN_DATADIR = join(DATADIR, 'extern')
-SERVER_DATADIR = '/muse/users/conseil/mpdaf-test-data'
+SERVER_DATADIR = '/home/gitlab-runner/mpdaf-test-data'
 
 if exists(EXTERN_DATADIR):
     SUPP_FILES_PATH = EXTERN_DATADIR
