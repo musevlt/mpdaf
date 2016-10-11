@@ -101,6 +101,15 @@ class TestBasicPixTable(unittest.TestCase):
         self.assertEqual(pix.extract(), None)
         self.assertEqual(pix.get_data(), None)
 
+    def test_header(self):
+        assert self.pix.fluxcal is False
+        assert self.pix.skysub is False
+        assert self.pix.projection == 'projected'
+
+        pix2 = self.pix.copy()
+        pix2.primary_header['HIERARCH ESO DRS MUSE PIXTABLE FLUXCAL'] = True
+        assert self.pix2.fluxcal is True
+
     def test_getters(self):
         self.assertEqual(NROWS, self.pix.nrows)
         for name in ('xpos', 'ypos', 'data', 'dq', 'stat', 'origin'):

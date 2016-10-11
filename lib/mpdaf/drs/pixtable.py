@@ -417,7 +417,7 @@ class PixTable(object):
             try:
                 self.nifu = \
                     self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE MERGED")
-            except:
+            except KeyError:
                 self.nifu = 1
 
             projection = self.projection
@@ -455,7 +455,7 @@ class PixTable(object):
         """If True, this pixel table was flux-calibrated."""
         try:
             return self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE FLUXCAL")
-        except:
+        except KeyError:
             return False
 
     @property
@@ -463,7 +463,7 @@ class PixTable(object):
         """If True, this pixel table was sky-subtracted."""
         try:
             return self.get_keywords("HIERARCH ESO DRS MUSE PIXTABLE SKYSUB")
-        except:
+        except KeyError:
             return False
 
     @property
