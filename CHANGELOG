@@ -1,5 +1,9 @@
 v2.1.dev (xx/xx/2016)
 ---------------------
+* Spectrum object methods that return a value of flux or magnitude, return
+now a tuple (value, error).
+This breaking change concerns: flux2mag, mean, sum, integrate,
+                               abmag_band, abmag_filter_name,  abmag_filter
 
 * Image and Spectrum objects keep now by default the type of the FITS data
   (like Cube). [!50]
