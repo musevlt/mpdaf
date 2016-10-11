@@ -305,3 +305,15 @@ def test_select_sky(numexpr, shape):
         cy = (y.min() + y.max()) / 2
         pix2 = pix.extract(sky=(cy, cx, 12, shape))
         assert pix2.nrows < pix.nrows
+
+
+@pytest.mark.skipif(not SUPP_FILES_PATH, reason='Missing test data')
+def test_reconstruct():
+    pixfile = get_data_file('extern', 'testpix-small.fits')
+    pix = PixTable(pixfile).extract(ifu=1)
+
+    im = pix.reconstruct_det_image()
+    assert im.shape == (1101, 1920)
+
+    im = pix.reconstruct_det_waveimage()
+    assert im.shape == (1101, 1920)
