@@ -16,7 +16,7 @@ from numpy.testing import assert_array_equal, assert_allclose
 from os.path import exists, join, basename
 from six.moves import range
 
-from ...tests.utils import DATADIR, get_data_file
+from ...tests.utils import DATADIR
 
 MUSE_ORIGIN_SHIFT_XSLICE = 24
 MUSE_ORIGIN_SHIFT_YPIX = 11
@@ -244,8 +244,8 @@ class TestBasicPixTable(unittest.TestCase):
 
 @pytest.mark.skipif(not SUPP_FILES_PATH, reason='Missing test data')
 def test_autocalib(tmpdir):
-    pixfile = get_data_file('extern', 'testpix-small.fits')
-    maskfile = get_data_file('extern', 'Mask-HDF.fits')
+    pixfile = join(SUPP_FILES_PATH, 'testpix-small.fits')
+    maskfile = join(SUPP_FILES_PATH, 'Mask-HDF.fits')
     pix = PixTable(pixfile)
     mask = pix.mask_column(maskfile=maskfile)
 
@@ -280,7 +280,7 @@ def test_autocalib(tmpdir):
 @pytest.mark.skipif(not SUPP_FILES_PATH, reason='Missing test data')
 @pytest.mark.parametrize('numexpr', (True, False))
 def test_select(numexpr):
-    pixfile = get_data_file('extern', 'testpix-small.fits')
+    pixfile = join(SUPP_FILES_PATH, 'testpix-small.fits')
     pix = PixTable(pixfile)
     with toggle_numexpr(numexpr):
         pix2 = pix.extract(xpix=[(1000, 2000)], ypix=[(1000, 2000)])
@@ -297,7 +297,7 @@ def test_select(numexpr):
 @pytest.mark.parametrize('numexpr', (True, False))
 @pytest.mark.parametrize('shape', ('C', 'S'))
 def test_select_sky(numexpr, shape):
-    pixfile = get_data_file('extern', 'testpix-small.fits')
+    pixfile = join(SUPP_FILES_PATH, 'testpix-small.fits')
     pix = PixTable(pixfile)
     with toggle_numexpr(numexpr):
         x, y = pix.get_pos_sky()
@@ -309,7 +309,7 @@ def test_select_sky(numexpr, shape):
 
 @pytest.mark.skipif(not SUPP_FILES_PATH, reason='Missing test data')
 def test_reconstruct():
-    pixfile = get_data_file('extern', 'testpix-small.fits')
+    pixfile = join(SUPP_FILES_PATH, 'testpix-small.fits')
     pix = PixTable(pixfile).extract(ifu=1)
 
     im = pix.reconstruct_det_image()

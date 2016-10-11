@@ -1814,7 +1814,6 @@ class PixTable(object):
             quad=np.ravel(np.resize(np.arange(1, 5), (24 * 48, 4))),
             npts=npts, corr=corr)
 
-        self._logger.info('pixtable %s updated', basename(self.filename))
         return autocalib
 
     def divide_slice_median(self, skyref, pixmask):
@@ -1906,13 +1905,4 @@ class PixTable(object):
             quad=np.ravel(np.resize(np.arange(1, 5), (24 * 48, 4))),
             npts=npts, corr=corr)
 
-        self._logger.info('pixtable %s updated', basename(self.filename))
-
-        # close libray
-        # import _ctypes
-        # _ctypes.dlclose(libCmethods._handle)
-        # libCmethods._handle = None
-        # libCmethods._name = None
-        # libCmethods._FuncPtr = None
-        # del libCmethods
         return autocalib
