@@ -16,12 +16,6 @@ from numpy.testing import assert_array_equal, assert_almost_equal
 from ...tests.utils import get_data_file
 
 
-def test_light():
-    """Source class; testing initialisation"""
-    src = Source._light_from_file(get_data_file('sdetect', 'sing-0032.fits'))
-    assert len(src.lines) == 1
-
-
 def test_init():
     with pytest.raises(ValueError):
         Source({})
@@ -92,30 +86,26 @@ def test_write(tmpdir, source1):
     source1.info()
     source1 = None
 
-    for method in (Source.from_file, Source._light_from_file):
-        src = method(filename)
+    src = Source.from_file(filename)
 
-        sel = np.where(src.mag['BAND'] == 'TEST2')[0][0]
-        assert src.mag['MAG'][sel] == 24.5
-        assert src.mag['MAG_ERR'][sel] == 0.01
+    sel = np.where(src.mag['BAND'] == 'TEST2')[0][0]
+    assert src.mag['MAG'][sel] == 24.5
+    assert src.mag['MAG_ERR'][sel] == 0.01
 
-        assert 'z_test2' not in src.z['Z_DESC']
+    assert 'z_test2' not in src.z['Z_DESC']
 
-        sel = np.where(src.z['Z_DESC'] == 'z_test')[0][0]
-        assert src.z['Z'][sel] == 0.07
-        assert src.z['Z_MIN'][sel] == 0.07 - 0.007 / 2
-        assert src.z['Z_MAX'][sel] == 0.07 + 0.007 / 2
+    sel = np.where(src.z['Z_DESC'] == 'z_test')[0][0]
+    assert src.z['Z'][sel] == 0.07
+    assert src.z['Z_MIN'][sel] == 0.07 - 0.007 / 2
+    assert src.z['Z_MAX'][sel] == 0.07 + 0.007 / 2
 
-        sel = np.where(src.z['Z_DESC'] == 'z_test3')[0][0]
-        assert src.z['Z'][sel] == 2.0
-        assert src.z['Z_MIN'][sel] == 1.8
-        assert src.z['Z_MAX'][sel] == 2.5
+    sel = np.where(src.z['Z_DESC'] == 'z_test3')[0][0]
+    assert src.z['Z'][sel] == 2.0
+    assert src.z['Z_MIN'][sel] == 1.8
+    assert src.z['Z_MAX'][sel] == 2.5
 
-        if method == Source.from_file:
-            assert src.tables['TEST'].colnames == table.colnames
-            assert src.tables['TEST'][0].data == table[0].data
-        else:
-            assert src.tables == {}
+    assert src.tables['TEST'].colnames == table.colnames
+    assert src.tables['TEST'][0].data == table[0].data
 
 
 def test_comments(source1):

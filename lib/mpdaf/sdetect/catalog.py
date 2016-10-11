@@ -129,7 +129,7 @@ class Catalog(Table):
         excluded_cards = {'SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
                           'AUTHOR'}
         keys = keys - excluded_cards
-        
+
         d = {key: value for key, value in d.items() if key in keys}
         names_hdr = list(d.keys())
         tuple_hdr = list(d.values())
@@ -476,7 +476,7 @@ class Catalog(Table):
 
         for f in files:
             try:
-                slist.append(Source._light_from_file(f))
+                slist.append(Source.from_file(f))
                 filenames.append(os.path.basename(f))
             except KeyboardInterrupt:
                 return
