@@ -37,7 +37,6 @@ from __future__ import absolute_import, division
 
 import datetime
 import logging
-import os
 import numpy as np
 import warnings
 import astropy.units as u
@@ -376,7 +375,7 @@ class PixTable(object):
             self.hdulist = fits.open(self.filename, memmap=1)
             self.primary_header = self.hdulist[0].header
             self.nrows = self.hdulist[1].header["NAXIS2"]
-            self.ima = (self.hdulist[1].header['XTENSION'] == 'IMAGE')
+            self.ima = self.hdulist[1].header['XTENSION'] == 'IMAGE'
 
             if self.ima:
                 self.wcs = u.Unit(self.hdulist['xpos'].header['BUNIT'])
@@ -441,6 +440,15 @@ class PixTable(object):
                     self.yc = self.primary_header[keyy]
                 except:
                     pass
+
+    def __repr__(self):
+        msg = "<{}({} rows, {} ifus, {})>".format(
+            self.__class__.__name__, self.nrows, self.nifu, self.projection)
+        if self.skysub:
+            msg = msg[:-2] + ", sky-subtracted)>"
+        if self.fluxcal:
+            msg = msg[:-2] + ", flux-calibrated)>"
+        return msg
 
     @property
     def fluxcal(self):
@@ -1614,7 +1622,7 @@ class PixTable(object):
 
         return Image(data=image, wcs=wcs, unit=self.wave, copy=False)
 
-    def mask_column(self, maskfile=None, verbose=True):
+    def mask_column(self, maskfile=None):
         """Compute the mask column corresponding to a mask file.
 
         Parameters
@@ -1623,14 +1631,12 @@ class PixTable(object):
             Path to a FITS image file with WCS information, used to mask
             out bright continuum objects present in the FoV. Values must
             be 0 for the background and >0 for objects.
-        verbose : bool
-            If True, progression is printed.
 
         Returns
         -------
         out : `mpdaf.drs.PixTableMask`
-        """
 
+        """
         if maskfile is None:
             return np.zeros(self.nrows, dtype=bool)
 
