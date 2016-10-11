@@ -1530,3 +1530,40 @@ class DataArray(object):
             out._var = convolution_function(out._var, kernel**2, mode="same")
 
         return out
+
+    def to_ds9(self, ds9id=None, newframe=False, zscale=False, cmap='grey'):
+        """Send the data to ds9 (this will create a copy in memory)
+
+        Parameters
+        ----------
+        ds9id: None or str
+            The DS9 session ID.  If 'None', a new one will be created.
+            To find your ds9 session ID, open the ds9 menu option
+            File:XPA:Information and look for the XPA_METHOD string, e.g.
+            ``XPA_METHOD:  86ab2314:60063``.  You would then calll this
+            function as ``cube.to_ds9('86ab2314:60063')``
+        newframe: bool
+            Send the cube to a new frame or to the current frame?
+
+        """
+        try:
+            import pyds9 as ds9
+        except ImportError:
+            self._logger.error('pyds9 was not found, please install it')
+            return
+
+        if ds9id is None:
+            dd = ds9.DS9(start=True)
+        else:
+            dd = ds9.DS9(target=ds9id, start=False)
+
+        if newframe:
+            dd.set('frame new')
+
+        dd.set_pyfits(fits.HDUList(
+            fits.PrimaryHDU(data=self.data.filled(np.nan),
+                            header=self.get_wcs_header())))
+        dd.set('cmap %s' % cmap)
+        if zscale:
+            dd.set('zscale true')
+        return dd
