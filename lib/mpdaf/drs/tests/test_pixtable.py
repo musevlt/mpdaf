@@ -5,36 +5,42 @@ from __future__ import absolute_import
 import astropy.units as u
 import io
 import numpy as np
+import tempfile
 import unittest
+
 from astropy.io import fits
-from mpdaf.drs import PixTable, pixtable
-from numpy.testing import assert_array_equal
+from mpdaf.drs import PixTable, pixtable, PixTableMask, PixTableAutoCalib
+from numpy.testing import assert_array_equal, assert_allclose
+from os.path import exists, join, basename
 from six.moves import range
+
+from ...tests.utils import DATADIR, get_data_file
 
 MUSE_ORIGIN_SHIFT_XSLICE = 24
 MUSE_ORIGIN_SHIFT_YPIX = 11
 MUSE_ORIGIN_SHIFT_IFU = 6
+
+NROWS = 100
 
 
 class TestBasicPixTable(unittest.TestCase):
 
     @classmethod
     def setUp(self):
-        self.nrows = 100
-        self.xpos = np.linspace(1, 10, self.nrows)
-        self.ypos = np.linspace(2, 6, self.nrows)
-        self.lbda = np.linspace(5000, 8000, self.nrows)
-        self.data = np.linspace(0, 100, self.nrows)
-        self.dq = np.linspace(0, 1, self.nrows)
-        self.stat = np.linspace(0, 1, self.nrows)
+        self.xpos = np.linspace(1, 10, NROWS)
+        self.ypos = np.linspace(2, 6, NROWS)
+        self.lbda = np.linspace(5000, 8000, NROWS)
+        self.data = np.linspace(0, 100, NROWS)
+        self.dq = np.random.randint(0, 2, NROWS)
+        self.stat = np.linspace(0, 1, NROWS)
 
         # generate origin column
         np.random.seed(42)
-        self.aifu = np.random.randint(1, 25, self.nrows)
-        self.aslice = np.random.randint(1, 49, self.nrows)
-        self.ax = np.random.randint(1, 8192, self.nrows)
-        self.ay = np.random.randint(1, 8192, self.nrows)
-        self.aoffset = np.random.randint(1, 8192, self.nrows)
+        self.aifu = np.random.randint(1, 25, NROWS)
+        self.aslice = np.random.randint(1, 49, NROWS)
+        self.ax = np.random.randint(1, 4112, NROWS)
+        self.ay = np.random.randint(1, 4112, NROWS)
+        self.aoffset = self.ax // 90 * 90
 
         # Make sure we have at least one ifu=1 value to avoid random failures
         self.aifu[0] = 1
@@ -56,7 +62,7 @@ class TestBasicPixTable(unittest.TestCase):
             primary_header=prihdu.header)
 
         self.file = io.BytesIO()
-        shape = (self.nrows, 1)
+        shape = (NROWS, 1)
         hdu = fits.HDUList([
             prihdu,
             fits.ImageHDU(name='xpos', data=self.xpos.reshape(shape)),
@@ -84,7 +90,7 @@ class TestBasicPixTable(unittest.TestCase):
         self.assertEqual(pix.get_data(), None)
 
     def test_getters(self):
-        self.assertEqual(self.nrows, self.pix.nrows)
+        self.assertEqual(NROWS, self.pix.nrows)
         for name in ('xpos', 'ypos', 'data', 'dq', 'stat', 'origin'):
             assert_array_equal(getattr(self.pix, 'get_' + name)(),
                                getattr(self, name))
@@ -125,15 +131,15 @@ class TestBasicPixTable(unittest.TestCase):
                 pix.set_xpos(list(range(5)))
 
         for pix in (self.pix, self.pix2):
-            new_xpos = np.linspace(2, 3, self.nrows)
+            new_xpos = np.linspace(2, 3, pix.nrows)
             pix.set_xpos(new_xpos)
             assert_array_equal(new_xpos, pix.get_xpos())
 
-            new_ypos = np.linspace(2, 3, self.nrows)
+            new_ypos = np.linspace(2, 3, pix.nrows)
             pix.set_ypos(new_ypos)
             assert_array_equal(new_ypos, pix.get_ypos())
 
-            new_lambda = np.linspace(4000, 5000, self.nrows)
+            new_lambda = np.linspace(4000, 5000, pix.nrows)
             pix.set_lambda(new_lambda)
             assert_array_equal(new_lambda, pix.get_lambda())
 
@@ -190,3 +196,19 @@ class TestBasicPixTable(unittest.TestCase):
 
             if not numexpr:
                 pixtable.numexpr = _numexpr
+
+    def test_write(self):
+        tmpdir = tempfile.mkdtemp(suffix='.mpdaf-test-pixtable')
+        out = join(tmpdir, 'PIX.fits')
+        self.pix.write(out)
+        pix1 = PixTable(out)
+
+        out = join(tmpdir, 'PIX2.fits')
+        self.pix.write(out, save_as_ima=False)
+        pix2 = PixTable(out)
+
+        for p in (pix1, pix2):
+            self.assertEqual(self.pix.nrows, p.nrows)
+            for name in ('xpos', 'ypos', 'data', 'dq', 'stat', 'origin'):
+                assert_allclose(getattr(p, 'get_' + name)(),
+                                getattr(self, name))
