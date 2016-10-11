@@ -5,6 +5,7 @@ from __future__ import absolute_import
 import astropy.units as u
 import io
 import numpy as np
+import pytest
 import tempfile
 import unittest
 
@@ -20,6 +21,17 @@ MUSE_ORIGIN_SHIFT_XSLICE = 24
 MUSE_ORIGIN_SHIFT_YPIX = 11
 MUSE_ORIGIN_SHIFT_IFU = 6
 
+EXTERN_DATADIR = join(DATADIR, 'extern')
+SERVER_DATADIR = '/muse/users/conseil/mpdaf-test-data'
+
+if exists(EXTERN_DATADIR):
+    SUPP_FILES_PATH = EXTERN_DATADIR
+elif exists(SERVER_DATADIR):
+    SUPP_FILES_PATH = SERVER_DATADIR
+else:
+    SUPP_FILES_PATH = None
+
+# Fake dat
 NROWS = 100
 
 
@@ -212,3 +224,33 @@ class TestBasicPixTable(unittest.TestCase):
             for name in ('xpos', 'ypos', 'data', 'dq', 'stat', 'origin'):
                 assert_allclose(getattr(p, 'get_' + name)(),
                                 getattr(self, name))
+
+
+@pytest.mark.skipif(not SUPP_FILES_PATH, reason='Missing test data')
+def test_autocalib(tmpdir):
+    pixfile = get_data_file('extern', 'testpix-small.fits')
+    maskfile = get_data_file('extern', 'Mask-HDF.fits')
+    pix = PixTable(pixfile)
+    mask = pix.mask_column(maskfile=maskfile)
+
+    outmask = str(tmpdir.join('MASK.fits'))
+    mask.write(outmask)
+    savedmask = PixTableMask(filename=outmask)
+    assert savedmask.maskfile == basename(maskfile)
+    assert savedmask.pixtable == basename(pixfile)
+    assert_array_equal(savedmask.maskcol, mask.maskcol)
+    savedmask = None
+
+    sky = pix.sky_ref(pixmask=mask)
+    assert sky.shape == (1000,)
+    assert_array_equal(sky.get_range(), [6500, 7499])
+    # assert sky.shape == (4601,)
+    # assert_array_equal(sky.get_range(), [4750, 9350])
+
+    cor = pix.subtract_slice_median(sky, mask)
+    outcor = str(tmpdir.join('cor.fits'))
+    cor.write(outcor)
+    savedcor = PixTableAutoCalib(filename=outcor)
+    assert savedcor.method == 'drs.pixtable.subtract_slice_median'
+    assert savedcor.maskfile == basename(maskfile)
+    assert savedcor.pixtable == basename(pixfile)
