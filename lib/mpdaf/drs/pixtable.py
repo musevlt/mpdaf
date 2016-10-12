@@ -55,6 +55,11 @@ except ImportError:
     numexpr = False
 
 
+def _get_file_basename(f):
+    """Return a string with the basename of f if f is not None"""
+    return '' if f is None else basename(f)
+
+
 class PixTableMask(object):
 
     """PixTableMask class.
@@ -1681,7 +1686,7 @@ class PixTable(object):
             maskfile = ''
             mask = np.zeros(self.nrows, dtype=bool)
         else:
-            maskfile = basename(pixmask.maskfile)
+            maskfile = _get_file_basename(pixmask.maskfile)
             mask = pixmask.maskcol
 
         # sigma clipped parameters
@@ -1715,7 +1720,7 @@ class PixTable(object):
                                   "drs.pixtable.sky_ref",
                                   ['pixtable', 'mask', 'dlbda', 'nmax',
                                    'nclip_low', 'nclip_up', 'nstop'],
-                                  [basename(self.filename), maskfile,
+                                  [_get_file_basename(self.filename), maskfile,
                                    dlbda, nmax, nclip_low, nclip_up, nstop],
                                   ['pixtable',
                                    'file to mask out all bright objects',
@@ -1759,7 +1764,7 @@ class PixTable(object):
             maskfile = ''
             maskcol = np.zeros(self.nrows, dtype=bool)
         else:
-            maskfile = basename(pixmask.maskfile)
+            maskfile = _get_file_basename(pixmask.maskfile)
             maskcol = pixmask.maskcol
 
         data = self.get_data()
@@ -1789,12 +1794,8 @@ class PixTable(object):
         # set pixtable data
         self.set_data(result)
 
-        if skyref.filename is None:
-            skyref_file = ''
-        else:
-            skyref_file = basename(skyref.filename)
-
         # store parameters of the method in FITS keywords
+        skyref_file = _get_file_basename(skyref.filename)
         add_mpdaf_method_keywords(self.primary_header,
                                   "drs.pixtable.subtract_slice_median",
                                   ['mask', 'skyref'],
@@ -1806,7 +1807,7 @@ class PixTable(object):
         autocalib = PixTableAutoCalib(
             method='drs.pixtable.subtract_slice_median',
             maskfile=maskfile, skyref=skyref_file,
-            pixtable=basename(self.filename),
+            pixtable=_get_file_basename(self.filename),
             ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48 * 4, 24)),
                                      0, 1)),
             sli=np.ravel(np.resize(np.arange(1, 49, 0.25).astype(np.int),
@@ -1849,7 +1850,7 @@ class PixTable(object):
             maskfile = ''
             maskcol = np.zeros(self.nrows, dtype=bool)
         else:
-            maskfile = basename(pixmask.maskfile)
+            maskfile = _get_file_basename(pixmask.maskfile)
             maskcol = pixmask.maskcol
 
         data = self.get_data()
@@ -1880,12 +1881,8 @@ class PixTable(object):
         self.set_data(result)
         self.set_stat(result_stat)
 
-        if skyref.filename is None:
-            skyref_file = ''
-        else:
-            skyref_file = basename(skyref.filename)
-
         # store parameters of the method in FITS keywords
+        skyref_file = _get_file_basename(skyref.filename)
         add_mpdaf_method_keywords(self.primary_header,
                                   "drs.pixtable.divide_slice_median",
                                   ['mask', 'skyref'],
@@ -1897,7 +1894,7 @@ class PixTable(object):
         autocalib = PixTableAutoCalib(
             method='drs.pixtable.divide_slice_median',
             maskfile=maskfile, skyref=skyref_file,
-            pixtable=basename(self.filename),
+            pixtable=_get_file_basename(self.filename),
             ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48 * 4, 24)),
                                      0, 1)),
             sli=np.ravel(np.resize(np.arange(1, 49, 0.25).astype(np.int),
