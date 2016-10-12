@@ -8,7 +8,6 @@
 #include <omp.h>
 #endif
 
-
 typedef struct Pix {
     int ifu;
     int sli;
@@ -18,7 +17,7 @@ typedef struct Pix {
 
 // typ=0 -> mpdaf_divide_slice_median
 // typ=1 -> mpdaf_subtract_slice_median
-int initPix(Pix * array, int npix, int* ifu, int* sli, double* data, double* lbda, int* mask, double* skyref_flux, double* skyref_lbda, int skyref_n, int* xpix, int*ypix, int* quad, int typ) {
+int initPix(Pix * array, int npix, int* ifu, int* sli, double* data, double* lbda, int* mask, double* skyref_flux, double* skyref_lbda, int skyref_n, int* quad, int typ) {
     int i, count=0;
     if (typ==0)
     {
@@ -28,51 +27,9 @@ int initPix(Pix * array, int npix, int* ifu, int* sli, double* data, double* lbd
             {
                 array[count].ifu = ifu[i];
                 array[count].sli = sli[i];
+                array[count].quad = quad[i];
                 array[count].data = data[i] / mpdaf_linear_interpolation(skyref_lbda, skyref_flux, skyref_n , lbda[i]);
-                if (xpix[i] < 2048)
-                {
-                    if (ypix[i]<2056)
-                    {
-                        array[count].quad = 1;
-                        quad[i] = 1;
-                    }
-                    else
-                    {
-                        array[count].quad = 2;
-                        quad[i] = 2;
-                    }
-                }
-                else
-                {
-                    if (ypix[i]<2056)
-                    {
-                        array[count].quad = 4;
-                        quad[i] = 4;
-                    }
-                    else
-                    {
-                        array[count].quad = 3;
-                        quad[i] = 3;
-                    }
-                }
                 count = count + 1;
-            }
-            else
-            {
-                if (xpix[i] < 2048)
-                {
-                    if (ypix[i]<2056)
-                        quad[i] = 1;
-                    else
-                        quad[i] = 2;
-                }
-                else
-                {
-                    if (ypix[i]<2056)
-                        quad[i] = 4;
-                    else
-                        quad[i] = 3;
-                }
             }
         }
     }
@@ -84,51 +41,9 @@ int initPix(Pix * array, int npix, int* ifu, int* sli, double* data, double* lbd
             {
                 array[count].ifu = ifu[i];
                 array[count].sli = sli[i];
+                array[count].quad = quad[i];
                 array[count].data = mpdaf_linear_interpolation(skyref_lbda, skyref_flux, skyref_n , lbda[i]) - data[i];
-                if (xpix[i] < 2048)
-                {
-                    if (ypix[i]<2056)
-                    {
-                        array[count].quad = 1;
-                        quad[i] = 1;
-                    }
-                    else
-                    {
-                        array[count].quad = 2;
-                        quad[i] = 2;
-                    }
-                }
-                else
-                {
-                    if (ypix[i]<2056)
-                    {
-                        array[count].quad = 4;
-                        quad[i] = 4;
-                    }
-                    else
-                    {
-                        array[count].quad = 3;
-                        quad[i] = 3;
-                    }
-                }
                 count = count + 1;
-            }
-            else
-            {
-                if (xpix[i] < 2048)
-                {
-                    if (ypix[i]<2056)
-                        quad[i] = 1;
-                    else
-                        quad[i] = 2;
-                }
-                else
-                {
-                    if (ypix[i]<2056)
-                        quad[i] = 4;
-                    else
-                        quad[i] = 3;
-                }
             }
         }
     }
@@ -203,14 +118,32 @@ void mpdaf_sky_ref(double* data, double* lbda, int* mask, int npix, double lmin,
     }
 }
 
+void compute_quad(int* xpix, int* ypix, int* quad, int npix) {
+    int i = 0;
+    for (i = 0; i < npix; i++) {
+        if (xpix[i] < 2048) {
+            if (ypix[i] < 2056)
+                quad[i] = 1;
+            else
+                quad[i] = 2;
+        } else {
+            if (ypix[i] < 2056)
+                quad[i] = 4;
+            else
+                quad[i] = 3;
+        }
+    }
+}
+
 // typ=0 -> mpdaf_divide_slice_median
 // typ=1 -> mpdaf_subtract_slice_median
-void mpdaf_slice_median(double* result, double* result_stat ,double* corr, int* npts, int* ifu, int* sli, double* data,  double* lbda, int npix, int* mask, double* skyref_flux, double* skyref_lbda, int skyref_n, int* xpix, int* ypix, int typ)
+void mpdaf_slice_median(double* result, double* result_stat, double* corr, int* npts, int* ifu, int* sli, double* data,  double* lbda, int npix, int* mask, double* skyref_flux, double* skyref_lbda, int skyref_n, int* xpix, int* ypix, int typ)
 {
     Pix* pixels = (Pix*) malloc(npix * sizeof(Pix));
     int npix2;
     int* quad = (int*) malloc(npix*sizeof(int));
-    npix2 = initPix(pixels, npix, ifu, sli, data, lbda, mask, skyref_flux, skyref_lbda, skyref_n, xpix, ypix, quad, typ);
+    compute_quad(xpix, ypix, quad, npix);
+    npix2 = initPix(pixels, npix, ifu, sli, data, lbda, mask, skyref_flux, skyref_lbda, skyref_n, quad, typ);
     sortPix(pixels, npix2);
 
     int i=0, n, index;
