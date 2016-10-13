@@ -5,36 +5,65 @@ from __future__ import absolute_import
 import astropy.units as u
 import io
 import numpy as np
+import pytest
+import tempfile
 import unittest
+
 from astropy.io import fits
-from mpdaf.drs import PixTable, pixtable
-from numpy.testing import assert_array_equal
+from contextlib import contextmanager
+from mpdaf.drs import PixTable, pixtable, PixTableMask, PixTableAutoCalib
+from numpy.testing import assert_array_equal, assert_allclose
+from os.path import exists, join, basename
 from six.moves import range
+
+from ...tests.utils import DATADIR
 
 MUSE_ORIGIN_SHIFT_XSLICE = 24
 MUSE_ORIGIN_SHIFT_YPIX = 11
 MUSE_ORIGIN_SHIFT_IFU = 6
+
+EXTERN_DATADIR = join(DATADIR, 'extern')
+SERVER_DATADIR = '/home/gitlab-runner/mpdaf-test-data'
+
+if exists(EXTERN_DATADIR):
+    SUPP_FILES_PATH = EXTERN_DATADIR
+elif exists(SERVER_DATADIR):
+    SUPP_FILES_PATH = SERVER_DATADIR
+else:
+    SUPP_FILES_PATH = None
+
+# Fake dat
+NROWS = 100
+
+
+@contextmanager
+def toggle_numexpr(active):
+    if not active:
+        _numexpr = pixtable.numexpr
+        pixtable.numexpr = False
+    yield
+    if not active:
+        pixtable.numexpr = _numexpr
 
 
 class TestBasicPixTable(unittest.TestCase):
 
     @classmethod
     def setUp(self):
-        self.nrows = 100
-        self.xpos = np.linspace(1, 10, self.nrows)
-        self.ypos = np.linspace(2, 6, self.nrows)
-        self.lbda = np.linspace(5000, 8000, self.nrows)
-        self.data = np.linspace(0, 100, self.nrows)
-        self.dq = np.linspace(0, 1, self.nrows)
-        self.stat = np.linspace(0, 1, self.nrows)
+        self.xpos = np.linspace(1, 10, NROWS)
+        self.ypos = np.linspace(2, 6, NROWS)
+        self.lbda = np.linspace(5000, 8000, NROWS)
+        self.data = np.linspace(0, 100, NROWS)
+        self.dq = np.random.randint(0, 2, NROWS)
+        self.stat = np.linspace(0, 1, NROWS)
 
         # generate origin column
         np.random.seed(42)
-        self.aifu = np.random.randint(1, 25, self.nrows)
-        self.aslice = np.random.randint(1, 49, self.nrows)
-        self.ax = np.random.randint(1, 8192, self.nrows)
-        self.ay = np.random.randint(1, 8192, self.nrows)
-        self.aoffset = np.random.randint(1, 8192, self.nrows)
+        self.aifu = np.random.randint(1, 25, NROWS)
+        self.aslice = np.random.randint(1, 49, NROWS)
+        self.ax = np.random.randint(1, 4112, NROWS)
+        self.ay = np.random.randint(1, 4112, NROWS)
+        self.aoffset = self.ax // 90 * 90
 
         # Make sure we have at least one ifu=1 value to avoid random failures
         self.aifu[0] = 1
@@ -56,7 +85,7 @@ class TestBasicPixTable(unittest.TestCase):
             primary_header=prihdu.header)
 
         self.file = io.BytesIO()
-        shape = (self.nrows, 1)
+        shape = (NROWS, 1)
         hdu = fits.HDUList([
             prihdu,
             fits.ImageHDU(name='xpos', data=self.xpos.reshape(shape)),
@@ -83,8 +112,17 @@ class TestBasicPixTable(unittest.TestCase):
         self.assertEqual(pix.extract(), None)
         self.assertEqual(pix.get_data(), None)
 
+    def test_header(self):
+        assert self.pix.fluxcal is False
+        assert self.pix.skysub is False
+        assert self.pix.projection == 'projected'
+
+        pix2 = self.pix.copy()
+        pix2.primary_header['HIERARCH ESO DRS MUSE PIXTABLE FLUXCAL'] = True
+        assert pix2.fluxcal is True
+
     def test_getters(self):
-        self.assertEqual(self.nrows, self.pix.nrows)
+        self.assertEqual(NROWS, self.pix.nrows)
         for name in ('xpos', 'ypos', 'data', 'dq', 'stat', 'origin'):
             assert_array_equal(getattr(self.pix, 'get_' + name)(),
                                getattr(self, name))
@@ -125,15 +163,15 @@ class TestBasicPixTable(unittest.TestCase):
                 pix.set_xpos(list(range(5)))
 
         for pix in (self.pix, self.pix2):
-            new_xpos = np.linspace(2, 3, self.nrows)
+            new_xpos = np.linspace(2, 3, pix.nrows)
             pix.set_xpos(new_xpos)
             assert_array_equal(new_xpos, pix.get_xpos())
 
-            new_ypos = np.linspace(2, 3, self.nrows)
+            new_ypos = np.linspace(2, 3, pix.nrows)
             pix.set_ypos(new_ypos)
             assert_array_equal(new_ypos, pix.get_ypos())
 
-            new_lambda = np.linspace(4000, 5000, self.nrows)
+            new_lambda = np.linspace(4000, 5000, pix.nrows)
             pix.set_lambda(new_lambda)
             assert_array_equal(new_lambda, pix.get_lambda())
 
@@ -173,20 +211,109 @@ class TestBasicPixTable(unittest.TestCase):
 
     def test_extract(self):
         for numexpr in (True, False):
-            if not numexpr:
-                _numexpr = pixtable.numexpr
-                pixtable.numexpr = False
-            pix = self.pix.extract(lbda=(5000, 6000))
-            ksel = (self.lbda >= 5000) & (self.lbda < 6000)
-            assert_array_equal(self.data[ksel], pix.get_data())
+            with toggle_numexpr(numexpr):
+                pix = self.pix.extract(lbda=(5000, 6000))
+                ksel = (self.lbda >= 5000) & (self.lbda < 6000)
+                assert_array_equal(self.data[ksel], pix.get_data())
 
-            pix = self.pix.extract(ifu=1)
-            ksel = (self.aifu == 1)
-            assert_array_equal(self.data[ksel], pix.get_data())
+                pix = self.pix.extract(ifu=1)
+                ksel = (self.aifu == 1)
+                assert_array_equal(self.data[ksel], pix.get_data())
 
-            pix = self.pix.extract(sl=(1, 2, 3))
-            ksel = (self.aslice == 1) | (self.aslice == 2) | (self.aslice == 3)
-            assert_array_equal(self.data[ksel], pix.get_data())
+                pix = self.pix.extract(sl=(1, 2, 3))
+                ksel = ((self.aslice == 1) | (self.aslice == 2) |
+                        (self.aslice == 3))
+                assert_array_equal(self.data[ksel], pix.get_data())
 
-            if not numexpr:
-                pixtable.numexpr = _numexpr
+    def test_write(self):
+        tmpdir = tempfile.mkdtemp(suffix='.mpdaf-test-pixtable')
+        out = join(tmpdir, 'PIX.fits')
+        self.pix.write(out)
+        pix1 = PixTable(out)
+
+        out = join(tmpdir, 'PIX2.fits')
+        self.pix.write(out, save_as_ima=False)
+        pix2 = PixTable(out)
+
+        for p in (pix1, pix2):
+            self.assertEqual(self.pix.nrows, p.nrows)
+            for name in ('xpos', 'ypos', 'data', 'dq', 'stat', 'origin'):
+                assert_allclose(getattr(p, 'get_' + name)(),
+                                getattr(self, name))
+
+
+@pytest.mark.skipif(not SUPP_FILES_PATH, reason='Missing test data')
+def test_autocalib(tmpdir):
+    pixfile = join(SUPP_FILES_PATH, 'testpix-small.fits')
+    maskfile = join(SUPP_FILES_PATH, 'Mask-HDF.fits')
+    pix = PixTable(pixfile)
+    mask = pix.mask_column(maskfile=maskfile)
+
+    outmask = str(tmpdir.join('MASK.fits'))
+    mask.write(outmask)
+    savedmask = PixTableMask(filename=outmask)
+    assert savedmask.maskfile == basename(maskfile)
+    assert savedmask.pixtable == basename(pixfile)
+    assert_array_equal(savedmask.maskcol, mask.maskcol)
+    savedmask = None
+
+    sky = pix.sky_ref(pixmask=mask)
+    assert sky.shape == (1000,)
+    assert_array_equal(sky.get_range(), [6500, 7499])
+    # assert sky.shape == (4601,)
+    # assert_array_equal(sky.get_range(), [4750, 9350])
+
+    cor = pix.subtract_slice_median(sky, mask)
+    div = pix.divide_slice_median(sky, mask)
+
+    # TODO: complete this
+    assert_array_equal(cor.npts, div.npts)
+
+    outcor = str(tmpdir.join('cor.fits'))
+    cor.write(outcor)
+    savedcor = PixTableAutoCalib(filename=outcor)
+    assert savedcor.method == 'drs.pixtable.subtract_slice_median'
+    assert savedcor.maskfile == basename(maskfile)
+    assert savedcor.pixtable == basename(pixfile)
+
+
+@pytest.mark.skipif(not SUPP_FILES_PATH, reason='Missing test data')
+@pytest.mark.parametrize('numexpr', (True, False))
+def test_select(numexpr):
+    pixfile = join(SUPP_FILES_PATH, 'testpix-small.fits')
+    pix = PixTable(pixfile)
+    with toggle_numexpr(numexpr):
+        pix2 = pix.extract(xpix=[(1000, 2000)], ypix=[(1000, 2000)])
+        origin = pix2.get_origin()
+        xpix = pix2.origin2xpix(origin)
+        ypix = pix2.origin2ypix(origin)
+        assert xpix.min() >= 1000
+        assert xpix.max() <= 2000
+        assert ypix.min() >= 1000
+        assert ypix.max() <= 2000
+
+
+@pytest.mark.skipif(not SUPP_FILES_PATH, reason='Missing test data')
+@pytest.mark.parametrize('numexpr', (True, False))
+@pytest.mark.parametrize('shape', ('C', 'S'))
+def test_select_sky(numexpr, shape):
+    pixfile = join(SUPP_FILES_PATH, 'testpix-small.fits')
+    pix = PixTable(pixfile)
+    with toggle_numexpr(numexpr):
+        x, y = pix.get_pos_sky()
+        cx = (x.min() + x.max()) / 2
+        cy = (y.min() + y.max()) / 2
+        pix2 = pix.extract(sky=(cy, cx, 12, shape))
+        assert pix2.nrows < pix.nrows
+
+
+@pytest.mark.skipif(not SUPP_FILES_PATH, reason='Missing test data')
+def test_reconstruct():
+    pixfile = join(SUPP_FILES_PATH, 'testpix-small.fits')
+    pix = PixTable(pixfile).extract(ifu=1)
+
+    im = pix.reconstruct_det_image()
+    assert im.shape == (1101, 1920)
+
+    im = pix.reconstruct_det_waveimage()
+    assert im.shape == (1101, 1920)

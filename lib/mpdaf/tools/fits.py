@@ -49,6 +49,8 @@ __all__ = ('add_mpdaf_method_keywords', 'add_mpdaf_keywords_to_file',
            'fix_unit_read', 'fix_unit_write', 'copy_header', 'copy_keywords',
            'is_valid_fits_file', 'read_slice_from_fits')
 
+FITS_EXTENSIONS = ("fits", "fits.gz")
+
 
 def add_mpdaf_method_keywords(header, method, params, values, comments):
     """Add keywords in a FITS header to describe the method and the
@@ -106,11 +108,10 @@ def add_mpdaf_keywords_to_file(path, method, params, values, comments, ext=0):
         parameters description
 
     """
-    hdu = fits.open(path, mode='update')
-    add_mpdaf_method_keywords(hdu[ext].header, method,
-                              params, values, comments)
-    hdu.flush()
-    hdu.close()
+    with fits.open(path, mode='update') as hdul:
+        add_mpdaf_method_keywords(hdul[ext].header, method,
+                                  params, values, comments)
+        hdul.flush()
 
 
 def fix_unit_read(x):
@@ -196,7 +197,7 @@ def copy_keywords(srchdr, dsthdr, keys):
 def is_valid_fits_file(filename):
     """Return True is a file exist and is a valid FITS file (based on its
     extension)."""
-    return os.path.isfile(filename) and filename.endswith(("fits", "fits.gz"))
+    return os.path.isfile(filename) and filename.endswith(FITS_EXTENSIONS)
 
 
 def read_slice_from_fits(filename_or_hdu, item=None, ext='DATA', mask_ext=None,
