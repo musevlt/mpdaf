@@ -258,8 +258,8 @@ def test_autocalib(tmpdir):
     savedmask = None
 
     sky = pix.sky_ref(pixmask=mask)
-    assert sky.shape == (1000,)
-    assert_array_equal(sky.get_range(), [6500, 7499])
+    assert sky.shape == (1001,)
+    assert_array_equal(sky.get_range(), [6500, 7500])
     # assert sky.shape == (4601,)
     # assert_array_equal(sky.get_range(), [4750, 9350])
 
