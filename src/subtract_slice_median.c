@@ -135,6 +135,51 @@ void mpdaf_sky_ref(double* data, double* lbda, int* mask, int npix, double lmin,
     free(indx);
 }
 
+
+void mpdaf_sky_ref_indx(double* data, double* lbda, int* mask, int npix, double lmin, double dl, int n, int nmax, double nclip_low, double nclip_up, int nstop, double* result, int* indx)
+{
+    double x[3];
+    int i, ii, l, count=0;
+    double l0, l1;
+    int* work = (int *) malloc(npix * sizeof(int));
+
+    indexx(npix, lbda, indx);
+
+    l = 0;
+    l0 = lmin;
+    l1 = lmin + dl;
+
+    for (i=0; i<npix; i++)
+    {
+        ii = indx[i];
+        if ((lbda[ii] >= l0) && (lbda[ii] < l1)) {
+            if (mask[ii]==0) {
+                work[count++] = ii;
+            }
+        } else {
+            // Compute median for the current bin
+            mpdaf_median_sigma_clip(data, count, x, nmax, nclip_low, nclip_up, nstop,work);
+            // printf("Median bin %04d : %f, %f, %f\n", l, x[0], x[1], x[2]);
+            result[l] = x[0];
+
+            // New bin
+            count = 0;
+            if (++l >= n) {
+                printf("Not enough wavelength bins for the lbda array");
+                printf("Stopping at %f, bin %d/%d", lbda[ii], l, n);
+                break;
+            }
+            l0 += dl;
+            l1 += dl;
+            if (mask[ii]==0) {
+                work[count++] = ii;
+            }
+        }
+    }
+
+    free(work);
+}
+
 void compute_quad(int* xpix, int* ypix, int* quad, int npix) {
     int i = 0;
     for (i = 0; i < npix; i++) {
@@ -152,9 +197,69 @@ void compute_quad(int* xpix, int* ypix, int* quad, int npix) {
     }
 }
 
+#define NIFUS 24
+#define NSLICES 48
+#define MAPIDX(i, s) (int)(i*NSLICES + s)
+
+void mpdaf_slice_median(double* result, double* result_stat, double* corr, int* npts, int* ifu, int* sli, double* data,  double* lbda, int npix, int* mask, double* skyref_flux, double* skyref_lbda, int skyref_n, int* xpix, int* ypix, int typ)
+{
+    int i, n, s, k, index;
+    int *indmap[NIFUS * NSLICES];
+
+    double *slice_sky = (double*) malloc(skyref_n*sizeof(double));
+    int *indx = (int*) malloc(skyref_n*sizeof(int));
+
+    double lmin = skyref_lbda[0];
+    double dl = skyref_lbda[1] - skyref_lbda[0];
+
+    int nmax=2, nstop=2;
+    double nclip_low=5.0, nclip_up=5.0;
+
+    for (k=0; k<NIFUS*NSLICES; k++) {
+        npts[k] = 0;
+        indmap[k] = (int*) malloc(npix/NIFUS * sizeof(int));
+    }
+
+    for (n=0; n<npix; n++) {
+        index = MAPIDX(ifu[n], sli[n]);
+        indmap[index][npts[index]++] = n;
+    }
+
+    for (i=0; i<NIFUS; i++) {
+        for (s=0; s<NSLICES; s++) {
+            index = MAPIDX(i, s);
+            if (npts[index] > 1) {
+                mpdaf_sky_ref_indx(data, lbda, mask, npts[index], lmin, dl, skyref_n,
+                        nmax, nclip_low, nclip_up, nstop, slice_sky, indmap[index]);
+
+                for (k=0; k<skyref_n; k++) {
+                    indx[k] = k;
+                    slice_sky[k] /= skyref_flux[k];
+                }
+                corr[index] = mpdaf_median(slice_sky, skyref_n, indx);
+            } else {
+                corr[index] = 0;
+            }
+        }
+    }
+
+    for (k=0; k<NIFUS*NSLICES; k++)
+        free(indmap[k]);
+
+    #pragma omp parallel shared(result, data, corr, ifu, sli, result_stat, npix) private(index)
+    {
+        #pragma omp for
+        for(n=0; n<npix; n++)
+        {
+            index = MAPIDX(ifu[n], sli[n]);
+            result[n] =  data[n] / corr[index];
+        }
+    }
+}
+
 // typ=0 -> mpdaf_divide_slice_median
 // typ=1 -> mpdaf_subtract_slice_median
-void mpdaf_slice_median(double* result, double* result_stat, double* corr, int* npts, int* ifu, int* sli, double* data,  double* lbda, int npix, int* mask, double* skyref_flux, double* skyref_lbda, int skyref_n, int* xpix, int* ypix, int typ)
+void mpdaf_slice_median2(double* result, double* result_stat, double* corr, int* npts, int* ifu, int* sli, double* data,  double* lbda, int npix, int* mask, double* skyref_flux, double* skyref_lbda, int skyref_n, int* xpix, int* ypix, int typ)
 {
     Pix* pixels = (Pix*) malloc(npix * sizeof(Pix));
     int npix2;
