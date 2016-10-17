@@ -266,7 +266,7 @@ class FSF(object):
         size  : integer
                 Number of pixels.
         kargs : dict
-                kargs can be used to set LSF parameters.
+                kargs can be used to set FSF parameters.
 
         Returns
         -------
@@ -291,12 +291,11 @@ class FSF(object):
         Parameters
         ----------
         cube  : `mpdaf.obj.Cube`
-                The wavelength coordinates of the MUSE spectral pixels.
-                Wavelength value in A.
+                MUSE data cube
         size  : integer
                 FSF size in pixels.
         kargs : dict
-                kargs can be used to set LSF parameters.
+                kargs can be used to set FSF parameters.
 
         Returns
         -------
@@ -315,3 +314,61 @@ class FSF(object):
             return MOFFAT1(lbda, step, size, **kargs)
         else:
             raise IOError('Invalid FSF type')
+        
+
+def get_FSF_from_cube_keywords(cube, size):
+    """Return a cube of FSFs corresponding to the keywords presents in the
+    MUSE data cube primary header ('FSF***')
+    
+    The step of the FSF pixel is equal to the spatial step of the MUSE data cube.
+    
+    If the cube corresponds to mosaic of several fields ('NFIELDS'>1),
+    a list of FSF cubes is returned.
+
+    Parameters
+    ----------
+    cube  : `mpdaf.obj.Cube`
+             MUSE data cube
+    size  : integer
+            FSF size in pixels.
+        
+    Returns
+    -------
+    FSF         : array (cube.shape[0], size, size) or list of arrays
+                  Cube containing MUSE FSF (one per wavelength). One cube per field.
+    fwhm_pix    : array(cube.shape[0]) or list of arrays
+                  fwhm of the FSF in pixels
+    fwhm_arcsec : array(cube.shape[0]) or list of arrays
+                  fwhm of the FSF in arcsec
+    
+    
+    """
+    if 'FSFMODE' in cube.primary_header:
+        FSF_mode = cube.primary_header['FSFMODE']
+        if FSF_mode != 'MOFFAT1':
+            raise IOError('This method is coded only for FSFMODE=MOFFAT1')
+        #self.param['PSF'] = FSF_mode
+        nfields = cube.primary_header['NFIELDS']
+        FSF_model = FSF(FSF_mode)
+        if nfields == 1: # just one FSF
+            nf = 0
+            beta = cube.primary_header['FSF%02dBET'%nf]
+            a = cube.primary_header['FSF%02dFWA'%nf]
+            b = cube.primary_header['FSF%02dFWB'%nf]
+            return FSF_model.get_FSF_cube(cube, size, beta=beta, a=a, b=b)
+        else:
+            l_PSF = []
+            l_fwhm_pix = []
+            l_fwhm_arcsec = []
+            for i in range(1, nfields+1):
+                beta = cube.primary_header['FSF%02dBET'%i]
+                a = cube.primary_header['FSF%02dFWA'%i]
+                b = cube.primary_header['FSF%02dFWB'%i]
+                PSF, fwhm_pix, fwhm_arcsec = \
+                    FSF_model.get_FSF_cube(cube, size, beta=beta, a=a, b=b)
+                l_PSF.append(PSF)
+                l_fwhm_pix.append(fwhm_pix)
+                l_fwhm_arcsec.append(fwhm_arcsec)
+            return l_PSF, l_fwhm_pix, l_fwhm_arcsec
+    else:
+        raise IOError('No FSF keywords in the cube primary header')
