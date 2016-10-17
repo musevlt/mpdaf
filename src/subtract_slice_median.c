@@ -203,7 +203,7 @@ void compute_quad(int* xpix, int* ypix, int* quad, int npix) {
 
 void mpdaf_slice_median(double* result, double* result_stat, double* corr, int* npts, int* ifu, int* sli, double* data,  double* lbda, int npix, int* mask, double* skyref_flux, double* skyref_lbda, int skyref_n, int* xpix, int* ypix, int typ)
 {
-    int i, n, s, k, index;
+    int index;
     int *indmap[NIFUS * NSLICES];
 
     double *slice_sky = (double*) malloc(skyref_n*sizeof(double));
@@ -215,24 +215,24 @@ void mpdaf_slice_median(double* result, double* result_stat, double* corr, int* 
     int nmax=2, nstop=2;
     double nclip_low=5.0, nclip_up=5.0;
 
-    for (k=0; k<NIFUS*NSLICES; k++) {
+    for (size_t k=0; k<NIFUS*NSLICES; k++) {
         npts[k] = 0;
         indmap[k] = (int*) malloc(npix/NIFUS * sizeof(int));
     }
 
-    for (n=0; n<npix; n++) {
+    for (size_t n=0; n < (size_t)npix; n++) {
         index = MAPIDX(ifu[n], sli[n]);
         indmap[index][npts[index]++] = n;
     }
 
-    for (i=0; i<NIFUS; i++) {
-        for (s=0; s<NSLICES; s++) {
+    for (size_t i=0; i<NIFUS; i++) {
+        for (size_t s=0; s<NSLICES; s++) {
             index = MAPIDX(i, s);
             if (npts[index] > 1) {
                 mpdaf_sky_ref_indx(data, lbda, mask, npts[index], lmin, dl, skyref_n,
                         nmax, nclip_low, nclip_up, nstop, slice_sky, indmap[index]);
 
-                for (k=0; k<skyref_n; k++) {
+                for (size_t k=0; k < (size_t)skyref_n; k++) {
                     indx[k] = k;
                     slice_sky[k] /= skyref_flux[k];
                 }
@@ -243,13 +243,13 @@ void mpdaf_slice_median(double* result, double* result_stat, double* corr, int* 
         }
     }
 
-    for (k=0; k<NIFUS*NSLICES; k++)
+    for (size_t k=0; k<NIFUS*NSLICES; k++)
         free(indmap[k]);
 
     #pragma omp parallel shared(result, data, corr, ifu, sli, result_stat, npix) private(index)
     {
         #pragma omp for
-        for(n=0; n<npix; n++)
+        for (size_t n=0; n < (size_t)npix; n++)
         {
             index = MAPIDX(ifu[n], sli[n]);
             result[n] =  data[n] / corr[index];
