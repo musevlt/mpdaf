@@ -41,6 +41,16 @@ def test_fits_img():
     data = DataArray(filename=testimg)
     assert data.shape == (1797, 1909)
     assert data.ndim == 2
+    assert data.dtype is None
+    assert not data._loaded_data
+    # Load data by accessing the .data attribute
+    assert data.data.ndim == 2
+    assert data.dtype.type == np.int16
+
+    # Force dtype to float
+    data = DataArray(filename=testimg, dtype=float)
+    assert data.dtype == np.float
+    assert data.data.dtype == np.float
 
 
 def test_fits_spectrum():
@@ -48,11 +58,16 @@ def test_fits_spectrum():
     testspe = get_data_file('obj', 'Spectrum_Variance.fits')
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        data = DataArray(filename=testspe, ext=0,
+        data = DataArray(filename=testspe, ext=(0, 1),
                          fits_kwargs={'checksum': True})
     assert len([ww for ww in w if ww.category is AstropyUserWarning]) == 4
     assert data.shape == (4096,)
     assert data.ndim == 1
+
+    # Load data by accessing the .data attribute
+    assert data.data.ndim == 1
+    assert data.dtype.type == np.float64
+    assert data.var.dtype == np.float64
 
 
 def test_invalid_file():
@@ -91,6 +106,21 @@ def test_from_ndarray():
     assert_array_equal(d.data.mask, mask)
     assert_array_equal(d.var.mask, mask)
     assert d.data.mask is d.mask and d.var.mask is d.mask
+
+    # Test data with different dtypes
+    d = DataArray(data=data.astype(np.float32), var=var.astype(np.float32),
+                  mask=mask)
+    assert d.dtype.type == np.float64
+    assert d.var.dtype == np.float64
+
+    d = DataArray(data=data.astype('>f4'), var=var.astype('>f4'), mask=mask)
+    assert d.dtype.type == np.float64
+    assert d.var.dtype == np.float64
+
+    d = DataArray(data=data.astype(np.int32), var=var.astype(np.int32),
+                  mask=mask)
+    assert d.dtype.type == np.int32
+    assert d.var.dtype == np.float64
 
 
 def test_from_obj():
@@ -879,10 +909,10 @@ def test_shared_masks():
     # except where the new variance array contains extra Inf or Nan
     # values.
     expected_mask = old_mask.copy()
-#    expected_mask[30:32] = True
-# In the end, we decided to create the mask only from the data.
-# But the user can set the var attribute with a masked array,
-# In this case, the given mask will be taken into account.
+    #    expected_mask[30:32] = True
+    # In the end, we decided to create the mask only from the data.
+    # But the user can set the var attribute with a masked array,
+    # In this case, the given mask will be taken into account.
 
     # Assign the new array to the var property of the spectrum, then
     # check the resulting data, var and masked properties.
@@ -1374,7 +1404,8 @@ def test_non_masked_data():
                            ma.array(new_var.data, mask=expected_mask))
     assert spec.data.mask is spec.mask
     assert spec.var.mask is spec.mask
-    
+
+
 def test_float32_ndarray():
 
     nz = 2

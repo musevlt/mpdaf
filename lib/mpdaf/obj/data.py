@@ -355,8 +355,9 @@ class DataArray(object):
             # Use a specified numpy data array?
             if data is not None:
                 # Force data to be in double instead of float
-                if self._dtype is None and data.dtype.kind=="f" and data.dtype.itemsize==4:
+                if self._dtype is None and data.dtype.type == np.float32:
                     self._dtype = np.float64
+
                 if isinstance(data, ma.MaskedArray):
                     self._data = np.array(data.data, dtype=self.dtype,
                                           copy=copy)
@@ -782,7 +783,7 @@ class DataArray(object):
                 # image or cube. Compute the shape that is needed to
                 # reinstate this dimension as an axis with one element.
                 if isinstance(item[1], int) != isinstance(item[2], int):
-                    if isinstance(item[0], int): # An Image has been selected
+                    if isinstance(item[0], int):  # An Image has been selected
                         if isinstance(item[1], int):
                             reshape = (1, data.shape[0])
                         else:
@@ -809,10 +810,10 @@ class DataArray(object):
                 # Compute the shape that is needed to reinstante it as
                 # an axis with one pixel.
                 if isinstance(item[1], int):
-                    if isinstance(item[0], int): # An Image has been selected
+                    if isinstance(item[0], int):  # An Image has been selected
                         reshape = (1, data.shape[0])
                     else:                        # A Cube has been selected
-                        reshape = (data.shape[0],1,data.shape[1])
+                        reshape = (data.shape[0], 1, data.shape[1])
 
             # Handle cube[ii] where ii can be an int or a slice.
             elif isinstance(item, (int, slice)):

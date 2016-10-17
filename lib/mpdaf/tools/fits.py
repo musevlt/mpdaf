@@ -217,7 +217,7 @@ def read_slice_from_fits(filename_or_hdu, item=None, ext='DATA', mask_ext=None,
             data = data[item]
         data = np.asarray(data, dtype=dtype)
         # Force data to be in double instead of float
-        if data.dtype.kind=="f" and data.dtype.itemsize==4:
+        if data.dtype.type == np.float32:
             data = data.astype(np.float64)
 
         # mask extension
