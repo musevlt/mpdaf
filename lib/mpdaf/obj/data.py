@@ -271,9 +271,9 @@ class DataArray(object):
         self.data_header = data_header or fits.Header()
         self.primary_header = primary_header or fits.Header()
 
-        if filename is not None and data is None:
+        if (filename is not None or hdulist is not None) and data is None:
             # Read the data from a FITS file
-            if not is_valid_fits_file(filename):
+            if not hdulist and not is_valid_fits_file(filename):
                 raise IOError('Invalid file: %s' % filename)
 
             if hdulist is None:
@@ -281,6 +281,8 @@ class DataArray(object):
                 hdulist = fits.open(filename, **fits_kwargs)
                 close_hdu = True
             else:
+                if filename is None:
+                    self.filename = hdulist.filename()
                 close_hdu = False
 
             # Find the hdu of the data. This is either the primary HDU (if the

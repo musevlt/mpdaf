@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 import warnings
 
+from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning
 from numpy import ma
 from mpdaf.obj import DataArray, WaveCoord, WCS, Cube
@@ -75,6 +76,16 @@ def test_invalid_file():
     with pytest.raises(IOError) as e:
         DataArray(filename='missing/file.test')
         assert e.exception.message == 'Invalid file: missing/file.test'
+
+
+def test_from_hdulist():
+    testimg = get_data_file('obj', 'a370II.fits')
+    with fits.open(testimg) as hdul:
+        data = DataArray(hdulist=hdul)
+        assert data.shape == (1797, 1909)
+        assert data.ndim == 2
+        assert data.filename == testimg
+        assert_allclose(data.data, hdul[0].data)
 
 
 def test_from_ndarray():
