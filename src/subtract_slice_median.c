@@ -107,7 +107,7 @@ void mpdaf_sky_ref(double* data, double* lbda, int* mask, int npix, double lmin,
             }
         } else {
             // Compute median for the current bin
-            mpdaf_median_sigma_clip(data, count, x, nmax, nclip_low, nclip_up, nstop,work);
+            mpdaf_median_sigma_clip(data, count, x, nmax, nclip_low, nclip_up, nstop, work);
             // printf("Median bin %04d : %f, %f, %f\n", l, x[0], x[1], x[2]);
             result[l] = x[0];
 
@@ -176,6 +176,11 @@ void mpdaf_sky_ref_indx(double* data, double* lbda, int* mask, int npix, double 
             }
         }
     }
+    // Last bin
+    if (count > 0) {
+        mpdaf_median_sigma_clip(data, count, x, nmax, nclip_low, nclip_up, nstop, work);
+        result[l] = x[0];
+    }
 
     free(work);
 }
@@ -199,7 +204,9 @@ void compute_quad(int* xpix, int* ypix, int* quad, int npix) {
 
 #define NIFUS 24
 #define NSLICES 48
-#define MAPIDX(i, s) (int)(i*NSLICES + s)
+#define MIN_PTS_PER_SLICE 100
+#define MAPIDX(i, s) (int)(4*((i-1)*NSLICES + (s-1)))
+/* index = 4*48*(chan-1)+4*(sl-1)+q-1; */
 
 void mpdaf_slice_median(double* result, double* result_stat, double* corr, int* npts, int* ifu, int* sli, double* data,  double* lbda, int npix, int* mask, double* skyref_flux, double* skyref_lbda, int skyref_n, int* xpix, int* ypix, int typ)
 {
@@ -226,23 +233,21 @@ void mpdaf_slice_median(double* result, double* result_stat, double* corr, int* 
         indmap[index][npts[index]++] = n;
     }
 
-    for (size_t i=0; i<NIFUS; i++) {
-        for (size_t s=0; s<NSLICES; s++) {
-            index = MAPIDX(i, s);
-            if (npts[index] > 1) {
-                mpdaf_sky_ref_indx(data, lbda, mask, npts[index], lmin, dl, skyref_n,
-                        nmax, nclip_low, nclip_up, nstop, slice_sky, indmap[index]);
+    for (size_t k=0; k<NIFUS*NSLICES; k++) {
+        if (npts[k] > MIN_PTS_PER_SLICE) {
+            mpdaf_sky_ref_indx(data, lbda, mask, npts[k], lmin, dl, skyref_n,
+                    nmax, nclip_low, nclip_up, nstop, slice_sky, indmap[k]);
 
-                for (size_t k=0; k < (size_t)skyref_n; k++) {
-                    indx[k] = k;
-                    slice_sky[k] /= skyref_flux[k];
-                }
-                /* corr[index] = mpdaf_median(slice_sky, skyref_n, indx); */
-                mpdaf_median_sigma_clip(slice_sky, skyref_n, x, nmax, nclip_low, nclip_up, nstop, indx);
-                corr[index] = x[0];
-            } else {
-                corr[index] = 0;
+            for (size_t j=0; j < (size_t)skyref_n; j++) {
+                indx[j] = j;
+                slice_sky[j] -= skyref_flux[j];
             }
+            /* corr[k] = 1.0 / mpdaf_median(slice_sky, skyref_n, indx); */
+            mpdaf_median_sigma_clip(slice_sky, skyref_n, x, nmax,
+                                    nclip_low, nclip_up, nstop, indx);
+            corr[k] = x[0];
+        } else {
+            corr[k] = 0.0;
         }
     }
 
@@ -255,7 +260,7 @@ void mpdaf_slice_median(double* result, double* result_stat, double* corr, int* 
         for (size_t n=0; n < (size_t)npix; n++)
         {
             index = MAPIDX(ifu[n], sli[n]);
-            result[n] =  data[n] / corr[index];
+            result[n] =  data[n] - corr[index];
         }
     }
 }
