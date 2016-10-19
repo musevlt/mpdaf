@@ -205,7 +205,7 @@ void compute_quad(int* xpix, int* ypix, int* quad, int npix) {
 #define NIFUS 24
 #define NSLICES 48
 #define MIN_PTS_PER_SLICE 100
-#define MAPIDX(i, s) (int)(4*((i-1)*NSLICES + (s-1)))
+#define MAPIDX(i, s) (int)((i-1)*NSLICES + (s-1))
 /* index = 4*48*(chan-1)+4*(sl-1)+q-1; */
 
 void mpdaf_slice_median(double* result, double* result_stat, double* corr, int* npts, int* ifu, int* sli, double* data,  double* lbda, int npix, int* mask, double* skyref_flux, double* skyref_lbda, int skyref_n, int* xpix, int* ypix, int typ)
@@ -245,9 +245,9 @@ void mpdaf_slice_median(double* result, double* result_stat, double* corr, int* 
             /* corr[k] = 1.0 / mpdaf_median(slice_sky, skyref_n, indx); */
             mpdaf_median_sigma_clip(slice_sky, skyref_n, x, nmax,
                                     nclip_low, nclip_up, nstop, indx);
-            corr[k] = x[0];
+            corr[4*k] = x[0];
         } else {
-            corr[k] = 0.0;
+            corr[4*k] = 0.0;
         }
     }
 
@@ -260,7 +260,7 @@ void mpdaf_slice_median(double* result, double* result_stat, double* corr, int* 
         for (size_t n=0; n < (size_t)npix; n++)
         {
             index = MAPIDX(ifu[n], sli[n]);
-            result[n] =  data[n] - corr[index];
+            result[n] =  data[n] - corr[4*index];
         }
     }
 }
