@@ -4,6 +4,7 @@
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stddef.h>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -208,8 +209,21 @@ void compute_quad(int* xpix, int* ypix, int* quad, int npix) {
 #define MAPIDX(i, s) (int)((i-1)*NSLICES + (s-1))
 /* index = 4*48*(chan-1)+4*(sl-1)+q-1; */
 
-void mpdaf_slice_median(double* result, double* result_stat, double* corr, int* npts, int* ifu, int* sli, double* data,  double* lbda, int npix, int* mask, double* skyref_flux, double* skyref_lbda, int skyref_n, int* xpix, int* ypix, int typ)
-{
+void mpdaf_slice_median(
+        double* corr,
+        int* npts,
+        int* ifu,
+        int* sli,
+        double* data,
+        double* lbda,
+        int npix,
+        int* mask,
+        double* skyref_flux,
+        double* skyref_lbda,
+        int skyref_n,
+        int* xpix,
+        int* ypix
+) {
     int index;
     int *indmap[NIFUS * NSLICES];
     /* double x[3]; */
@@ -254,13 +268,13 @@ void mpdaf_slice_median(double* result, double* result_stat, double* corr, int* 
     for (size_t k=0; k<NIFUS*NSLICES; k++)
         free(indmap[k]);
 
-    #pragma omp parallel shared(result, data, corr, ifu, sli, result_stat, npix) private(index)
+    #pragma omp parallel shared(data, corr, ifu, sli, npix) private(index)
     {
         #pragma omp for
         for (size_t n=0; n < (size_t)npix; n++)
         {
             index = MAPIDX(ifu[n], sli[n]);
-            result[n] =  data[n] - corr[4*index];
+            data[n] -= corr[4*index];
         }
     }
 }
