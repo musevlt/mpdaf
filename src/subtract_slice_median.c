@@ -212,7 +212,7 @@ void mpdaf_slice_median(double* result, double* result_stat, double* corr, int* 
 {
     int index;
     int *indmap[NIFUS * NSLICES];
-    double x[3];
+    /* double x[3]; */
 
     double *slice_sky = (double*) malloc(skyref_n*sizeof(double));
     int *indx = (int*) malloc(skyref_n*sizeof(int));
@@ -242,10 +242,10 @@ void mpdaf_slice_median(double* result, double* result_stat, double* corr, int* 
                 indx[j] = j;
                 slice_sky[j] -= skyref_flux[j];
             }
-            /* corr[k] = 1.0 / mpdaf_median(slice_sky, skyref_n, indx); */
-            mpdaf_median_sigma_clip(slice_sky, skyref_n, x, nmax,
-                                    nclip_low, nclip_up, nstop, indx);
-            corr[4*k] = x[0];
+            corr[4*k] = mpdaf_median(slice_sky, skyref_n, indx);
+            /* mpdaf_median_sigma_clip(slice_sky, skyref_n, x, nmax, */
+            /*                         nclip_low, nclip_up, nstop, indx); */
+            /* corr[4*k] = x[0]; */
         } else {
             corr[4*k] = 0.0;
         }
