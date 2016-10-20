@@ -56,7 +56,7 @@ from numpy import ma
 from six.moves import range, zip
 from scipy.optimize import leastsq
 
-from ..obj import Cube, Image, Spectrum, gauss_image
+from ..obj import Cube, Image, Spectrum, gauss_image, moffat_image
 from ..obj.objs import is_int, is_float, bounding_box
 from ..tools import deprecated
 from ..MUSE import FieldsMap, FSF
@@ -1602,7 +1602,7 @@ class Source(object):
     def extract_spectra(self, cube, obj_mask='MASK_UNION', sky_mask='MASK_SKY',
                         tags_to_try=('MUSE_WHITE', 'NB_LYALPHA',
                                      'NB_HALPHA', 'NB_SUMOII3726'),
-                        skysub=True, psf=None, lbda=None,
+                        skysub=True, psf=None, beta=None, lbda=None,
                         unit_wave=u.angstrom):
         """Extract spectra from the MUSE data cube and from a list of
         narrow-band images (to define spectrum extraction apertures).
@@ -1653,9 +1653,12 @@ class Source(object):
         psf : numpy.ndarray
             The PSF to use for PSF-weighted extraction.
             This can be a vector of length equal to the wavelength
-            axis to give the FWHM of the Gaussian PSF at each
+            axis to give the FWHM of the Gaussian or Moffat PSF at each
             wavelength (in arcsec) or a cube with the PSF to use.
             psf=None by default (no PSF-weighted extraction).
+        beta : float or none
+            if not none, the PSF is a Moffat function with beta value, 
+            else it is a Gaussian
         lbda : (float, float) or none
             if not none, tuple giving the wavelength range.
         unit_wave : `astropy.units.Unit`
@@ -1755,14 +1758,23 @@ class Source(object):
                 else:
                     white_cube = psf
             elif len(psf.shape) == 1 and psf.shape[0] == subcub.shape[0]:
-                # a Gaussian expected.
-                white_cube = np.zeros_like(subcub.data.data)
-                for l in range(subcub.shape[0]):
-                    gauss_ima = gauss_image(
-                        shape=(subcub.shape[1], subcub.shape[2]),
-                        wcs=subcub.wcs, fwhm=(psf[l], psf[l]), peak=False,
-                        unit_fwhm=u.arcsec)
-                    white_cube[l, :, :] = gauss_ima.data.data
+                if beta is None:
+                    # a Gaussian expected.
+                    white_cube = np.zeros_like(subcub.data.data)
+                    for l in range(subcub.shape[0]):
+                        gauss_ima = gauss_image(
+                            shape=(subcub.shape[1], subcub.shape[2]),
+                            wcs=subcub.wcs, fwhm=(psf[l], psf[l]), peak=False,
+                            unit_fwhm=u.arcsec)
+                        white_cube[l, :, :] = gauss_ima.data.data
+                else:
+                    white_cube = np.zeros_like(subcub.data.data)
+                    for l in range(subcub.shape[0]):
+                        moffat_ima = moffat_image(
+                            shape=(subcub.shape[1], subcub.shape[2]),
+                            wcs=subcub.wcs, fwhm=(psf[l], psf[l]), n=beta, peak=False,
+                            unit_fwhm=u.arcsec)
+                        white_cube[l, :, :] = moffat_ima.data.data                                       
             else:
                 self._logger.warning('Incorrect dimensions for the PSF vector '
                                      '(%i) (it must be (%i)) ', psf.shape[0],
