@@ -3247,16 +3247,6 @@ class Image(ArithmeticMixin, DataArray):
                 var *= ((1 / xs if xs > 1.0 and antialias else 1.0) *
                         (1 / ys if ys > 1.0 and antialias else 1.0))
 
-        # Install the resampled data, mask and variance arrays.
-        if inplace:
-            out = self
-            out._data = data
-            out._mask = mask
-            out._var = var
-        else:
-            out = Image.new_from_obj(self, ma.array(data,mask=mask),
-                                     var = False if var is None else var)
-
         # Get the coordinate reference pixel of the input image,
         # arranged as a column vector in python (Y,X) order. Note that
         # crpix contains FITS pixel indexes which are 1 greater than
@@ -3268,16 +3258,37 @@ class Image(ArithmeticMixin, DataArray):
         # in (Y,X) axis order.
         newcrpix = np.dot(old2new, (oldcrpix - offset))
 
-        # Update the world-coordinate description object.
-        out.wcs.set_axis_increments(newinc)
-        out.wcs.naxis1 = newdim[1]
-        out.wcs.naxis2 = newdim[0]
+        # Make a copy of the WCS object of the image to use as a template
+        # for the WCS object of the resampled image.
+        wcs = self.wcs.copy()
+
+        # Install the new increments and image dimensions.
+        wcs.set_axis_increments(newinc)
+        wcs.naxis1 = newdim[1]
+        wcs.naxis2 = newdim[0]
 
         # Record the new value of the coordinate reference pixel,
         # being careful to convert from python 0-relative pixel
         # indexes to FITS 1-relative pixel indexes.
-        out.wcs.set_crpix1(newcrpix[1] + 1)
-        out.wcs.set_crpix2(newcrpix[0] + 1)
+        wcs.set_crpix1(newcrpix[1] + 1)
+        wcs.set_crpix2(newcrpix[0] + 1)
+
+        # Install the resampled data, mask and variance arrays, either
+        # within self, or in a new Image object.
+        if inplace:
+            out = self
+            out._data = data
+            out._mask = mask
+            out._var = var
+            out.wcs = wcs
+        else:
+            out = Image(filename=self.filename, data=data,
+                        unit=self.unit, var=var, mask=mask,
+                        dtype=self.dtype, copy=True,
+                        ext=(self._data_ext, self._var_ext),
+                        data_header=self.data_header.copy(),
+                        primary_header=self.primary_header.copy(),
+                        wcs=wcs)
 
         # If the spatial frequency band-limits of the image have been
         # reduced by the changes in the Y and X sampling intervals,
