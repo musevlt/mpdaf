@@ -125,6 +125,11 @@ void mpdaf_sky_ref(double* data, double* lbda, int* mask, int npix, double lmin,
             }
         }
     }
+    // Last bin
+    if (count > 0) {
+        mpdaf_median_sigma_clip(data, count, x, nmax, nclip_low, nclip_up, nstop, work);
+        result[l] = x[0];
+    }
 
     free(work);
     free(indx);
