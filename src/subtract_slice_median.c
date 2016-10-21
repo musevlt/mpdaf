@@ -84,38 +84,55 @@ void sortPix(Pix * array, int npix) {
 
 void mpdaf_sky_ref(double* data, double* lbda, int* mask, int npix, double lmin, double dl, int n, int nmax, double nclip_low, double nclip_up, int nstop, double* result)
 {
-    #pragma omp parallel shared(npix, mask, data, lbda, dl, lmin, nmax, nclip_low, nclip_up, nstop, result)
+    double x[3];
+    int i, ii, l, count=0;
+    double l0, l1;
+    int* indx = (int*) malloc(npix * sizeof(int));
+    int* work = (int *) malloc(npix * sizeof(int));
+
+    for (i=0; i<npix; i++)
+        indx[i] = i;
+    indexx(npix, lbda, indx);
+
+    l = 0;
+    l0 = lmin;
+    l1 = lmin + dl;
+
+    for (i=0; i<npix; i++)
     {
-        int l;
-        #pragma omp for
-        for (l=0; l<n; l++)
-        {
-            double x[3];
-            //double med;
-            int i, count;
-
-            int* work;
-            double l0, l1;
-            l0 = lmin + l*dl;
-            l1 = l0 + dl;
-
-            work = (int *) malloc(npix * sizeof(int));
-            count = 0;
-            for (i=0; i<npix; i++)
-            {
-                if ((mask[i]==0) && (lbda[i] >= l0) && (lbda[i] < l1))
-                {
-                    work[count] = i;
-                    count += 1;
-                }
+        ii = indx[i];
+        if ((lbda[ii] >= l0) && (lbda[ii] < l1)) {
+            if (mask[ii]==0) {
+                work[count++] = ii;
             }
-
+        } else {
+            // Compute median for the current bin
             mpdaf_median_sigma_clip(data, count, x, nmax, nclip_low, nclip_up, nstop,work);
-            free(work);
-
+            // printf("Median bin %04d : %f, %f, %f\n", l, x[0], x[1], x[2]);
             result[l] = x[0];
+
+            // New bin
+            count = 0;
+            if (++l >= n) {
+                printf("Not enough wavelength bins for the lbda array");
+                printf("Stopping at %f, bin %d/%d", lbda[ii], l, n);
+                break;
+            }
+            l0 += dl;
+            l1 += dl;
+            if (mask[ii]==0) {
+                work[count++] = ii;
+            }
         }
     }
+    // Last bin
+    if (count > 0) {
+        mpdaf_median_sigma_clip(data, count, x, nmax, nclip_low, nclip_up, nstop, work);
+        result[l] = x[0];
+    }
+
+    free(work);
+    free(indx);
 }
 
 void compute_quad(int* xpix, int* ypix, int* quad, int npix) {
@@ -143,7 +160,8 @@ void mpdaf_slice_median(double* result, double* result_stat, double* corr, int* 
     int npix2;
     int* quad = (int*) malloc(npix*sizeof(int));
     compute_quad(xpix, ypix, quad, npix);
-    npix2 = initPix(pixels, npix, ifu, sli, data, lbda, mask, skyref_flux, skyref_lbda, skyref_n, quad, typ);
+    npix2 = initPix(pixels, npix, ifu, sli, data, lbda, mask, skyref_flux,
+                    skyref_lbda, skyref_n, quad, typ);
     sortPix(pixels, npix2);
 
     int i=0, n, index;
@@ -151,6 +169,8 @@ void mpdaf_slice_median(double* result, double* result_stat, double* corr, int* 
     int chan=pixels[0].ifu;
     int sl=pixels[0].sli;
     int imin=0, imax=-1;
+    int num, imed;
+
     for(i=0;i<npix2;i++)
     {
         if ((pixels[i].quad == q) && (pixels[i].sli == sl) && (pixels[i].ifu==chan))
@@ -160,11 +180,12 @@ void mpdaf_slice_median(double* result, double* result_stat, double* corr, int* 
             if(imin!=imax)
             {
                 index = 4*48*(chan-1)+4*(sl-1)+q-1;
-                int num=imax-imin+1;
+                num = imax-imin+1;
+                imed = imin + (int)(num/2);
                 if (num%2 == 0)
-                    corr[index] = (pixels[imin+(int)(num/2)].data + pixels[imin+(int)(num/2)-1].data)/2;
+                    corr[index] = (pixels[imed].data + pixels[imed-1].data)/2;
                 else
-                    corr[index] = pixels[imin+(int)(num/2)].data;
+                    corr[index] = pixels[imed].data;
                 npts[index] = num;
                 //printf("chan=%d sl=%d q=%d n=%d d=%0.2f\n",chan, sl, q, npts[index], corr[index]);
             }
@@ -178,11 +199,12 @@ void mpdaf_slice_median(double* result, double* result_stat, double* corr, int* 
     if(imin!=imax)
     {
         index = 4*48*(chan-1)+4*(sl-1)+q-1;
-        int num=imax-imin+1;
+        num = imax-imin+1;
+        imed = imin + (int)(num/2);
         if (num%2 == 0)
-            corr[index] = (pixels[imin+(int)(num/2)].data + pixels[imin+(int)(num/2)-1].data)/2;
+            corr[index] = (pixels[imed].data + pixels[imed-1].data)/2;
         else
-            corr[index] = pixels[imin+(int)(num/2)].data;
+            corr[index] = pixels[imed].data;
         npts[index] = num;  // a reprendre avec quad et a initialiser a 0
         //printf("chan=%d sl=%d q=%d n=%d d=%0.2f\n",chan, sl, q, npts[index], corr[index]);
     }

@@ -1699,7 +1699,7 @@ class PixTable(object):
         lbda = self.get_lambda(unit=u.angstrom)
         lmin = np.min(lbda) - dlbda / 2.0
         lmax = np.max(lbda) + dlbda / 2.0
-        n = (int)((lmax - lmin) / dlbda)
+        n = int((lmax - lmin) / dlbda) + 1
 
         data = self.get_data()
         data = data.astype(np.float64)
