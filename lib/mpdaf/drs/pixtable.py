@@ -1781,12 +1781,16 @@ class PixTable(object):
         xpix = xpix.astype(np.int32)
         ypix = ypix.astype(np.int32)
 
+        result = np.empty_like(data, dtype=np.float64)
         corr = np.full(24 * 48 * 4, np.nan, dtype=np.float64)
         npts = np.zeros(24 * 48 * 4, dtype=np.int32) - 1
 
         ctools.mpdaf_slice_median(
-            corr, npts, ifu, sli, data, lbda, data.shape[0], mask,
+            result, corr, npts, ifu, sli, data, lbda, data.shape[0], mask,
             skyref_flux, skyref_lbda, skyref_n, xpix, ypix)
+
+        # set pixtable data
+        self.set_data(result)
 
         # store parameters of the method in FITS keywords
         skyref_file = _get_file_basename(skyref.filename)
