@@ -1754,12 +1754,9 @@ class PixTable(object):
         from ..tools.ctools import ctools
 
         origin = self.get_origin()
-        ifu = self.origin2ifu(origin)
-        sli = self.origin2slice(origin)
-        xpix = self.origin2xpix(origin)
-        ypix = self.origin2ypix(origin)
+        ifu, sli, ypix, xpix = self.origin2coords(origin)
+        origin = None
 
-        # mask
         if pixmask is None:
             maskfile = ''
             maskcol = np.zeros(self.nrows, dtype=bool)
@@ -1838,10 +1835,8 @@ class PixTable(object):
         from ..tools.ctools import ctools
 
         origin = self.get_origin()
-        ifu = self.origin2ifu(origin)
-        sli = self.origin2slice(origin)
-        xpix = self.origin2xpix(origin)
-        ypix = self.origin2ypix(origin)
+        ifu, sli, ypix, xpix = self.origin2coords(origin)
+        origin = None
 
         # mask
         if pixmask is None:
