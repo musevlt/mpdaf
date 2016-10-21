@@ -2518,6 +2518,8 @@ class Spectrum(ArithmeticMixin, DataArray):
         if res.unit is not None:
             ax.set_ylabel(res.unit)
 
+        ax.set_xlim(*self.wave.get_range())
+
         # Arrange for cursor motion events to display corresponding
         # coordinates and values below the plot.
         self._fig = plt.get_current_fig_manager()
