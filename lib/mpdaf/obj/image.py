@@ -3275,20 +3275,11 @@ class Image(ArithmeticMixin, DataArray):
 
         # Install the resampled data, mask and variance arrays, either
         # within self, or in a new Image object.
-        if inplace:
-            out = self
-            out._data = data
-            out._mask = mask
-            out._var = var
-            out.wcs = wcs
-        else:
-            out = Image(filename=self.filename, data=data,
-                        unit=self.unit, var=var, mask=mask,
-                        dtype=self.dtype, copy=True,
-                        ext=(self._data_ext, self._var_ext),
-                        data_header=self.data_header.copy(),
-                        primary_header=self.primary_header.copy(),
-                        wcs=wcs)
+        out = self if inplace else self.clone()
+        out._data = data
+        out._mask = mask
+        out._var = var
+        out.wcs = wcs
 
         # If the spatial frequency band-limits of the image have been
         # reduced by the changes in the Y and X sampling intervals,
