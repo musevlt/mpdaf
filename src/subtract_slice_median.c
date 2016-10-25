@@ -205,12 +205,16 @@ void compute_quad(int* xpix, int* ypix, int* quad, int npix) {
     }
 }
 
-#define NQUAD 4
+#define SKYSEG_MODE
+#define NQUAD 8
+
 #define NIFUS 24
 #define NSLICES 48
 #define MIN_PTS_PER_SLICE 100
-//#define MAPIDX(i, s) (int)((i-1)*NSLICES + (s-1))
-#define MAPIDX(i, s, q) (int)(4*(i-1)*NSLICES + 4*(s-1) + q - 1)
+#define MAPIDX(i, s, q) (int)(NQUAD*(i-1)*NSLICES + NQUAD*(s-1) + q - 1)
+#define IFUIDX(k) (k / (NQUAD*NSLICES) + 1)
+#define SLIIDX(k) ((k % (NQUAD*NSLICES)) / NQUAD + 1)
+#define QUADIDX(k) ((k % (NQUAD*NSLICES)) % NQUAD + 1)
 
 void mpdaf_slice_median(
         double* result,
@@ -229,23 +233,41 @@ void mpdaf_slice_median(
         int* ypix
 ) {
     int index;
-    int *indmap[NQUAD * NIFUS * NSLICES];
     double x[3];
 
     double *slice_sky = (double*) malloc(skyref_n*sizeof(double));
+    double *slice_diff = (double*) malloc(skyref_n*sizeof(double));
     int *indx = (int*) malloc(skyref_n*sizeof(int));
     int *bincount = (int*) malloc(skyref_n*sizeof(int));
+    int* quad = (int*) malloc(npix*sizeof(int));
+    int *indmap[NQUAD * NIFUS * NSLICES];
 
     double lmin = skyref_lbda[0];
     double dl = skyref_lbda[1] - skyref_lbda[0];
 
-    int sky_count = 0, k;
+    int sky_count = 0;
     int nmax=2, nstop=2;
     double nclip_low=5.0, nclip_up=5.0;
 
-    int* quad = (int*) malloc(npix*sizeof(int));
     printf("Compute quadrants ...\n");
+#ifndef SKYSEG_MODE
+    printf("- 4 quadrants mode ...\n");
     compute_quad(xpix, ypix, quad, npix);
+#else
+    printf("- %d lambda slices mode ...\n", NQUAD);
+    /* int skyseg[] = {0, 5400, 5850, 6440, 6750, 7200, 7700, 8265, 8731, 9275, 10000}; */
+    int skyseg[] = {0, 5400, 5850, 6440, 6750, 7200, 8200, 9275, 10000};
+    #pragma omp parallel for
+    for (size_t i = 0; i < (size_t)npix; i++) {
+        for (size_t q = 1; q < NQUAD+1; q++) {
+            if ((lbda[i] >= skyseg[q-1]) && (lbda[i] < skyseg[q])) {
+                quad[i] = q;
+                break;
+            }
+        }
+    }
+#endif
+    printf("\n");
 
     for (size_t k=0; k<NIFUS*NSLICES*NQUAD; k++) {
         npts[k] = 0;
@@ -258,39 +280,53 @@ void mpdaf_slice_median(
         indmap[index][npts[index]++] = n;
     }
 
-    for (size_t i=1; i<NIFUS+1; i++) {
-        for (size_t s=1; s<NSLICES+1; s++) {
-            for (size_t q=1; q<NQUAD+1; q++) {
-                k = MAPIDX(i, s, q);
-                if (npts[k] > MIN_PTS_PER_SLICE) {
-                    for (size_t j=0; j < (size_t)skyref_n; j++)
-                        bincount[j] = 0;
+    size_t i=0, s=0, q=0;
+    //#pragma omp parallel for private(bincount,indx,slice_sky,x)
+    for (size_t k=0; k<NIFUS*NSLICES*NQUAD; k++) {
+        /* k = MAPIDX(i, s, q); */
+        i = IFUIDX(k);
+        s = SLIIDX(k);
+        q = QUADIDX(k);
+        if (s == 1) {
+            printf("\n");
+        }
+        /* printf("\n- IFU %02zu SLICE %02zu QUAD %02zu\n", i, s, q); */
+        if (q == NQUAD) {
+            corr[k] = corr[k-1];
+            continue;
+        }
+        if (npts[k] > MIN_PTS_PER_SLICE) {
+            for (size_t j=0; j < (size_t)skyref_n; j++) {
+                bincount[j] = 0;
+                slice_sky[j] = 0.0;
+                slice_diff[j] = 0.0;
+            }
 
-                    mpdaf_sky_ref_indx(data, lbda, mask, npts[k], lmin, dl,
-                            skyref_n, nmax, nclip_low, nclip_up, nstop,
-                            slice_sky, indmap[k], bincount);
+            mpdaf_sky_ref_indx(data, lbda, mask, npts[k], lmin, dl,
+                               skyref_n, nmax, nclip_low, nclip_up, nstop,
+                               slice_sky, indmap[k], bincount);
 
-                    sky_count = 0;
-                    for (size_t j=0; j < (size_t)skyref_n; j++) {
-                        if (bincount[j] > 10) {
-                            indx[sky_count++] = j;
-                            slice_sky[j] -= skyref_flux[j];
-                        }
-                    }
-
-                    if (sky_count > 0) {
-                        corr[k] = mpdaf_median(slice_sky, sky_count, indx);
-                        mpdaf_median_sigma_clip(slice_sky, sky_count, x, nmax,
-                                nclip_low, nclip_up, nstop, indx);
-                        /* corr[4*k] = x[0]; */
-                        printf("IFU %02zu SLICE %02zu QUAD %02zu : %f (%f, %.2f, %d)\n",
-                                i, s, q, corr[k], x[0], x[1], (int)x[2]);
-                    }
+            sky_count = 0;
+            for (size_t j=0; j < (size_t)skyref_n; j++) {
+                if (bincount[j] > 10) {
+                    indx[sky_count++] = j;
+                    slice_diff[j] = slice_sky[j] - skyref_flux[j];
                 }
             }
+
+            if (sky_count > 0) {
+                corr[k] = mpdaf_median(slice_diff, sky_count, indx);
+                mpdaf_mean_sigma_clip(slice_diff, sky_count, x, 5, 3.0, 3.0, nstop, indx);
+                printf("IFU %02zu SLICE %02zu QUAD %02zu : %f (%f, %.2f, %d)\n",
+                       i, s, q, corr[k], x[0], x[1], (int)x[2]);
+                /* corr[k] = x[0]; */
+            }
         }
-        printf("\n");
     }
+            /* corr[MAPIDX(i, s, 10)] = corr[MAPIDX(i, s, 9)]; */
+        /* } */
+        /* printf("\n"); */
+    /* } */
 
     for (size_t k=0; k<NIFUS*NSLICES*NQUAD; k++)
         free(indmap[k]);
@@ -301,6 +337,12 @@ void mpdaf_slice_median(
         index = MAPIDX(ifu[n], sli[n], quad[n]);
         result[n] =  data[n] - corr[index];
     }
+
+    free(bincount);
+    free(indx);
+    free(quad);
+    free(slice_sky);
+    free(slice_diff);
 }
 
 // typ=0 -> mpdaf_divide_slice_median

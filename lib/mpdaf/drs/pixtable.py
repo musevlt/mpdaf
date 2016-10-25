@@ -1653,7 +1653,8 @@ class PixTable(object):
         return PixTableMask(maskfile=maskfile, maskcol=mask,
                             pixtable=self.filename)
 
-    def sky_ref(self, pixmask=None, dlbda=1.0, nmax=2, nclip=5.0, nstop=2):
+    def sky_ref(self, pixmask=None, dlbda=1.0, nmax=2, nclip=5.0, nstop=2,
+                lmin=None, lmax=None):
         """Compute the reference sky spectrum using sigma clipped median.
 
         Algorithm from Kurt Soto (kurt.soto@phys.ethz.ch)
@@ -1697,8 +1698,8 @@ class PixTable(object):
 
         # wavelength step
         lbda = self.get_lambda(unit=u.angstrom)
-        lmin = np.min(lbda) - dlbda / 2.0
-        lmax = np.max(lbda) + dlbda / 2.0
+        lmin = lmin or np.min(lbda) - dlbda / 2.0
+        lmax = lmax or np.max(lbda) + dlbda / 2.0
         n = int((lmax - lmin) / dlbda) + 1
 
         data = self.get_data()
@@ -1778,9 +1779,11 @@ class PixTable(object):
         xpix = xpix.astype(np.int32)
         ypix = ypix.astype(np.int32)
 
+        # nquad = 4
+        nquad = 8
         result = np.empty_like(data, dtype=np.float64)
-        corr = np.full(24 * 48 * 4, np.nan, dtype=np.float64)
-        npts = np.zeros(24 * 48 * 4, dtype=np.int32) - 1
+        corr = np.full(24 * 48 * nquad, np.nan, dtype=np.float64)
+        npts = np.zeros(24 * 48 * nquad, dtype=np.int32) - 1
 
         ctools.mpdaf_slice_median(
             result, corr, npts, ifu, sli, data, lbda, data.shape[0], mask,
@@ -1803,11 +1806,11 @@ class PixTable(object):
             method='drs.pixtable.subtract_slice_median',
             maskfile=maskfile, skyref=skyref_file,
             pixtable=_get_file_basename(self.filename),
-            ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48 * 4, 24)),
+            ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48 * nquad, 24)),
                                      0, 1)),
             sli=np.ravel(np.resize(np.arange(1, 49, 0.25).astype(np.int),
-                                   (4, 24, 48))),
-            quad=np.ravel(np.resize(np.arange(1, 5), (24 * 48, 4))),
+                                   (nquad, 24, 48))),
+            quad=np.ravel(np.resize(np.arange(1, 5), (24 * 48, nquad))),
             npts=npts, corr=corr)
 
         return autocalib
