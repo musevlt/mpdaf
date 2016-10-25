@@ -154,7 +154,6 @@ def options(*packages, **kw):
             kw.setdefault('extra_link_args', []).append(token)
 
     kw.setdefault('libraries', []).append('m')
-    kw.setdefault('extra_compile_args', []).append('-std=c99')
 
     # Use OpenMP if directed or not on a Mac
     if os.environ.get('USEOPENMP') or not sys.platform.startswith('darwin'):

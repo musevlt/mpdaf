@@ -232,6 +232,7 @@ void mpdaf_slice_median(
         int* xpix,
         int* ypix
 ) {
+    size_t i, j, k, n, s, q;
     int index;
     double x[3];
 
@@ -258,8 +259,8 @@ void mpdaf_slice_median(
     /* int skyseg[] = {0, 5400, 5850, 6440, 6750, 7200, 7700, 8265, 8731, 9275, 10000}; */
     int skyseg[] = {0, 5400, 5850, 6440, 6750, 7200, 8200, 9275, 10000};
     #pragma omp parallel for
-    for (size_t i = 0; i < (size_t)npix; i++) {
-        for (size_t q = 1; q < NQUAD+1; q++) {
+    for (i = 0; i < (size_t)npix; i++) {
+        for (q = 1; q < NQUAD+1; q++) {
             if ((lbda[i] >= skyseg[q-1]) && (lbda[i] < skyseg[q])) {
                 quad[i] = q;
                 break;
@@ -269,20 +270,19 @@ void mpdaf_slice_median(
 #endif
     printf("\n");
 
-    for (size_t k=0; k<NIFUS*NSLICES*NQUAD; k++) {
+    for (k=0; k<NIFUS*NSLICES*NQUAD; k++) {
         npts[k] = 0;
         corr[k] = 0.0;
         indmap[k] = (int*) malloc(npix/(NIFUS*NSLICES) * sizeof(int));
     }
 
-    for (size_t n=0; n < (size_t)npix; n++) {
+    for (n=0; n < (size_t)npix; n++) {
         index = MAPIDX(ifu[n], sli[n], quad[n]);
         indmap[index][npts[index]++] = n;
     }
 
-    size_t i=0, s=0, q=0;
     //#pragma omp parallel for private(bincount,indx,slice_sky,x)
-    for (size_t k=0; k<NIFUS*NSLICES*NQUAD; k++) {
+    for (k=0; k<NIFUS*NSLICES*NQUAD; k++) {
         /* k = MAPIDX(i, s, q); */
         i = IFUIDX(k);
         s = SLIIDX(k);
@@ -296,7 +296,7 @@ void mpdaf_slice_median(
             continue;
         }
         if (npts[k] > MIN_PTS_PER_SLICE) {
-            for (size_t j=0; j < (size_t)skyref_n; j++) {
+            for (j=0; j < (size_t)skyref_n; j++) {
                 bincount[j] = 0;
                 slice_sky[j] = 0.0;
                 slice_diff[j] = 0.0;
@@ -307,7 +307,7 @@ void mpdaf_slice_median(
                                slice_sky, indmap[k], bincount);
 
             sky_count = 0;
-            for (size_t j=0; j < (size_t)skyref_n; j++) {
+            for (j=0; j < (size_t)skyref_n; j++) {
                 if (bincount[j] > 10) {
                     indx[sky_count++] = j;
                     slice_diff[j] = slice_sky[j] - skyref_flux[j];
@@ -328,12 +328,12 @@ void mpdaf_slice_median(
         /* printf("\n"); */
     /* } */
 
-    for (size_t k=0; k<NIFUS*NSLICES*NQUAD; k++)
+    for (k=0; k<NIFUS*NSLICES*NQUAD; k++)
         free(indmap[k]);
 
     printf("Apply corrections ...\n");
     #pragma omp parallel for private(index)
-    for (size_t n=0; n < (size_t)npix; n++) {
+    for (n=0; n < (size_t)npix; n++) {
         index = MAPIDX(ifu[n], sli[n], quad[n]);
         result[n] =  data[n] - corr[index];
     }
