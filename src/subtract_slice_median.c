@@ -226,9 +226,7 @@ void mpdaf_slice_median(
         int* mask,
         double* skyref_flux,
         double* skyref_lbda,
-        int skyref_n,
-        int* xpix,
-        int* ypix
+        int skyref_n
 ) {
     size_t i, j, k, n, s, q;
     int index, sky_count;
