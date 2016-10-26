@@ -1786,7 +1786,7 @@ class PixTable(object):
         ypix = ypix.astype(np.int32)
 
         # nquad = 4
-        nquad = 8
+        nquad = 10
         result = np.empty_like(data, dtype=np.float64)
         corr = np.full(24 * 48 * nquad, np.nan, dtype=np.float64)
         npts = np.zeros(24 * 48 * nquad, dtype=np.int32) - 1
@@ -1807,19 +1807,14 @@ class PixTable(object):
                                   ['file to mask out all bright objects',
                                    'reference sky spectrum'])
 
-        # autocalib file
-        autocalib = PixTableAutoCalib(
+        return PixTableAutoCalib(
             method='drs.pixtable.subtract_slice_median',
             maskfile=maskfile, skyref=skyref_file,
             pixtable=_get_file_basename(self.filename),
-            ifu=np.ravel(np.swapaxes(np.resize(np.arange(1, 25), (48 * nquad, 24)),
-                                     0, 1)),
-            sli=np.ravel(np.resize(np.arange(1, 49, 0.25).astype(np.int),
-                                   (nquad, 24, 48))),
-            quad=np.ravel(np.resize(np.arange(1, 5), (24 * 48, nquad))),
+            ifu=np.repeat(np.arange(1, 25), 48 * nquad),
+            sli=np.resize(np.repeat(np.arange(1, 49), nquad), nquad * 24 * 48),
+            quad=np.resize(np.arange(1, nquad+1), nquad * 24 * 48),
             npts=npts, corr=corr)
-
-        return autocalib
 
     def divide_slice_median(self, skyref, pixmask):
         """Compute the median value for all pairs (slices, quadrant) and
