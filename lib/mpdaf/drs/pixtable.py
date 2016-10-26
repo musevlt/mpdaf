@@ -43,6 +43,7 @@ import astropy.units as u
 
 from astropy.io import fits
 from astropy.io.fits import Column, ImageHDU
+from astropy.table import Table
 from os.path import basename
 from six.moves import range
 
@@ -208,10 +209,15 @@ class PixTableAutoCalib(object):
             self.sli = hdulist['sli'].data[:, 0]
             try:
                 self.quad = hdulist['quad'].data[:, 0]
-            except:
+            except KeyError:
                 self.quad = None
             self.npts = hdulist['npts'].data[:, 0]
             self.corr = hdulist['corr'].data[:, 0]
+
+    def as_table(self):
+        return Table([self.ifu, self.sli, self.quad, self.corr, self.npts],
+                     names=('ifu', 'slice', 'quad', 'correction', 'npts'),
+                     copy=False)
 
     def write(self, filename):
         """Save the object in a FITS file."""
