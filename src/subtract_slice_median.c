@@ -205,9 +205,7 @@ void compute_quad(int* xpix, int* ypix, int* quad, int npix) {
     }
 }
 
-#define SKYSEG_MODE
-#define NQUAD 8
-
+#define NQUAD 10
 #define NIFUS 24
 #define NSLICES 48
 #define MIN_PTS_PER_SLICE 100
@@ -233,7 +231,7 @@ void mpdaf_slice_median(
         int* ypix
 ) {
     size_t i, j, k, n, s, q;
-    int index;
+    int index, sky_count;
     double x[3];
 
     double *slice_sky = (double*) malloc(skyref_n*sizeof(double));
@@ -245,20 +243,17 @@ void mpdaf_slice_median(
 
     double lmin = skyref_lbda[0];
     double dl = skyref_lbda[1] - skyref_lbda[0];
+    printf("- Using lmin=%f, dlbda=%f ...\n", lmin, dl);
 
-    int sky_count = 0;
-    int nmax=2, nstop=2;
-    double nclip_low=5.0, nclip_up=5.0;
+    int skyseg[] = {0, 5400, 5850, 6440, 6750, 7200, 7700, 8265, 8731, 9275, 10000};
 
-    printf("Compute quadrants ...\n");
-#ifndef SKYSEG_MODE
-    printf("- 4 quadrants mode ...\n");
-    compute_quad(xpix, ypix, quad, npix);
-#else
-    printf("- %d lambda slices mode ...\n", NQUAD);
-    /* int skyseg[] = {0, 5400, 5850, 6440, 6750, 7200, 7700, 8265, 8731, 9275, 10000}; */
-    int skyseg[] = {0, 5400, 5850, 6440, 6750, 7200, 8200, 9275, 10000};
-    #pragma omp parallel for
+    // Clipping parameters
+    int nmax=5, nstop=2;
+    double nclip_low=3.0, nclip_up=3.0;
+
+    printf("- Using %d lambda slices\n", NQUAD);
+    printf("- Compute lambda indexes ... ");
+    #pragma omp parallel for private(q)
     for (i = 0; i < (size_t)npix; i++) {
         for (q = 1; q < NQUAD+1; q++) {
             if ((lbda[i] >= skyseg[q-1]) && (lbda[i] < skyseg[q])) {
@@ -267,8 +262,7 @@ void mpdaf_slice_median(
             }
         }
     }
-#endif
-    printf("\n");
+    printf("OK\n\n");
 
     for (k=0; k<NIFUS*NSLICES*NQUAD; k++) {
         npts[k] = 0;
@@ -287,12 +281,15 @@ void mpdaf_slice_median(
         i = IFUIDX(k);
         s = SLIIDX(k);
         q = QUADIDX(k);
-        if (s == 1) {
+        if ((s == 1) && (q == 1))
+            printf("=================================\n");
+        if (q == 1)
             printf("\n");
-        }
         /* printf("\n- IFU %02zu SLICE %02zu QUAD %02zu\n", i, s, q); */
+
         if (q == NQUAD) {
             corr[k] = corr[k-1];
+            printf("IFU %02zu SLICE %02zu QUAD %02zu : %f \n", i, s, q, corr[k]);
             continue;
         }
         if (npts[k] > MIN_PTS_PER_SLICE) {
@@ -308,7 +305,7 @@ void mpdaf_slice_median(
 
             sky_count = 0;
             for (j=0; j < (size_t)skyref_n; j++) {
-                if (bincount[j] > 10) {
+                if (bincount[j] > 50) {
                     indx[sky_count++] = j;
                     slice_diff[j] = slice_sky[j] - skyref_flux[j];
                 }
