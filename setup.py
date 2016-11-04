@@ -177,7 +177,8 @@ cmdclass = {'test': PyTest}
 
 ext = '.pyx' if HAVE_CYTHON else '.c'
 ext_modules = [
-    Extension('merging', ['src/tools.c', './lib/mpdaf/obj/merging' + ext],
+    Extension('obj.merging',
+              ['src/tools.c', './lib/mpdaf/obj/merging' + ext],
               include_dirs=[numpy.get_include()]),
 ]
 if HAVE_PKG_CONFIG:

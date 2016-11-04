@@ -398,7 +398,7 @@ class CubeList(object):
             raise
 
         try:
-            from ..merging import sigma_clip
+            from .merging import sigma_clip
         except:
             self._logger.error('The `merging` module must have been compiled '
                                'to use this method')
@@ -607,7 +607,7 @@ class CubeMosaic(CubeList):
             raise
 
         try:
-            from ..merging import sigma_clip
+            from .merging import sigma_clip
         except:
             self._logger.error('The `merging` module must have been compiled '
                                'to use this method')
