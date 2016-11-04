@@ -225,6 +225,33 @@ double mpdaf_linear_interpolation(double* xx, double* yy, int n, double x)
     return y;
 }
 
+void mpdaf_minmax(double data[], int n, int* indx, double res[]) {
+    int i;
+    double min, max;
+
+    if (n == 1) {
+        res[0] = data[indx[0]];
+        res[1] = data[indx[0]];
+        return;
+    }
+
+    if (data[indx[0]] > data[indx[1]]) {
+        max = data[indx[0]];
+        min = data[indx[1]];
+    } else {
+        max = data[indx[1]];
+        min = data[indx[0]];
+    }
+
+    for (i = 2; i<n; i++) {
+        if (data[indx[i]] >  max)
+            max = data[indx[i]];
+        else if (data[indx[i]] <  min)
+            min = data[indx[i]];
+    }
+    res[0] = min;
+    res[1] = max;
+}
 
 /*-----------------------------------------------------------------------------
   !
