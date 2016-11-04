@@ -155,8 +155,6 @@ class PixTableAutoCalib(object):
         Name of the auto calibration method.
     maskfile : str or None
         Name of the FITS image masking some objects.
-    skyref : str or None
-        sky reference spectrum.
     pixtable : str or None
         Name of the corresponding pixel table.
     ifu : array of int or None
@@ -178,8 +176,6 @@ class PixTableAutoCalib(object):
         Name of the auto calibration method.
     maskfile : str
         Name of the FITS image masking some objects.
-    skyref : str
-        sky reference spectrum.
     pixtable : str
         Name of the corresponding pixel table.
     ifu : array of int
@@ -194,13 +190,12 @@ class PixTableAutoCalib(object):
         correction value.
     """
 
-    def __init__(self, filename=None, method=None, maskfile=None, skyref=None,
+    def __init__(self, filename=None, method=None, maskfile=None,
                  pixtable=None, ifu=None, sli=None, quad=None, npts=None,
                  corr=None):
         if filename is None:
             self.method = method
             self.maskfile = maskfile
-            self.skyref = skyref
             self.pixtable = pixtable
             self.ifu = ifu
             self.sli = sli
@@ -211,7 +206,6 @@ class PixTableAutoCalib(object):
             hdulist = fits.open(filename)
             self.method = hdulist[0].header['method']
             self.maskfile = hdulist[0].header['mask']
-            self.skyref = hdulist[0].header['skyref']
             self.pixtable = hdulist[0].header['pixtable']
             self.ifu = hdulist['ifu'].data[:, 0]
             self.sli = hdulist['sli'].data[:, 0]
@@ -240,8 +234,6 @@ class PixTableAutoCalib(object):
         prihdu.header['pixtable'] = (basename(self.pixtable), 'pixtable')
         prihdu.header['mask'] = (basename(self.maskfile),
                                  'file to mask out all bright obj')
-        prihdu.header['skyref'] = (basename(self.skyref),
-                                   'reference sky spectrum')
 
         shape = (self.corr.shape[0], 1)
         hdulist = [
@@ -1739,7 +1731,7 @@ class PixTable(object):
                                    'clipping minimum number'])
         return spe
 
-    def subtract_slice_median(self, skyref, pixmask):
+    def subtract_slice_median(self, pixmask):
         """Compute the median value for all pairs (slice, quadrant) and
         subtracts this factor to each pixel to bring all slices to the same
         median value.
@@ -1748,8 +1740,6 @@ class PixTable(object):
 
         Parameters
         ----------
-        skyref : `~mpdaf.obj.Spectrum`
-            Reference sky spectrum
         pixmask : `mpdaf.drs.PixTableMask`
             Column corresponding to a mask file (previously computed by
             ``mask_column``).
@@ -1775,37 +1765,28 @@ class PixTable(object):
 
         data = np.asarray(self.get_data(), dtype=np.float64)
         lbda = np.asarray(self.get_lambda(), dtype=np.float64)
-        mask = np.asarray(maskcol, dtype=np.int32)
-        skyref_flux = np.asarray(skyref.data.filled(np.nan), dtype=np.float64)
-        if skyref.unit != self.unit_data:
-            skyref_flux = (skyref_flux * skyref.unit).to(self.unit_data).value
-        skyref_lbda = skyref.wave.coord(unit=self.wave)
+        mask = np.asarray(maskcol | self.get_dq().astype(bool), dtype=np.int32)
 
-        nquad = 10
+        nquad = 14
         ncorr = NIFUS * NSLICES * nquad
         result = np.empty_like(data, dtype=np.float64)
         corr = np.full(ncorr, np.nan, dtype=np.float64)
         npts = np.zeros(ncorr, dtype=np.int32) - 1
 
         ctools.mpdaf_slice_median(
-            result, corr, npts, ifu, sli, data, lbda, data.shape[0], mask,
-            skyref_flux, skyref_lbda, skyref.shape[0])
+            result, corr, npts, ifu, sli, data, lbda, data.shape[0], mask)
 
         # set pixtable data
         self.set_data(result)
 
         # store parameters of the method in FITS keywords
-        skyref_file = _get_file_basename(skyref.filename)
         add_mpdaf_method_keywords(self.primary_header,
                                   "drs.pixtable.subtract_slice_median",
-                                  ['mask', 'skyref'],
-                                  [maskfile, skyref_file],
-                                  ['file to mask out all bright objects',
-                                   'reference sky spectrum'])
+                                  ['mask'], [maskfile],
+                                  ['file to mask out all bright objects'])
 
         return PixTableAutoCalib(
-            method='drs.pixtable.subtract_slice_median',
-            maskfile=maskfile, skyref=skyref_file,
+            method='drs.pixtable.subtract_slice_median', maskfile=maskfile,
             pixtable=_get_file_basename(self.filename),
             ifu=np.repeat(np.arange(1, NIFUS + 1), NSLICES * nquad),
             sli=np.resize(np.repeat(np.arange(1, NSLICES + 1), nquad), ncorr),

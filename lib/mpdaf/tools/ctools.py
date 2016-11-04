@@ -96,6 +96,5 @@ else:
     ctools.mpdaf_slice_median.argtypes = [
         array_1d_double, array_1d_double, array_1d_int,
         array_1d_int, array_1d_int, array_1d_double, array_1d_double,
-        ctypes.c_int, array_1d_int, array_1d_double, array_1d_double,
-        ctypes.c_int
+        ctypes.c_int, array_1d_int
     ]
