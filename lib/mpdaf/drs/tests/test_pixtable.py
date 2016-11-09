@@ -263,11 +263,10 @@ def test_autocalib(tmpdir):
     # assert sky.shape == (4601,)
     # assert_array_equal(sky.get_range(), [4750, 9350])
 
-    cor = pix.subtract_slice_median(sky, mask)
-    div = pix.divide_slice_median(sky, mask)
+    cor = pix.subtract_slice_median(mask)
 
     # TODO: complete this
-    assert_array_equal(cor.npts, div.npts)
+    # assert_array_equal(cor.npts, div.npts)
 
     outcor = str(tmpdir.join('cor.fits'))
     cor.write(outcor)
