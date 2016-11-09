@@ -47,7 +47,7 @@ from astropy.table import Table
 from os.path import basename
 from six.moves import range
 
-from ..obj import Image, Spectrum, WaveCoord, WCS, Cube
+from ..obj import Image, Spectrum, WaveCoord, WCS
 from ..tools.fits import add_mpdaf_method_keywords, copy_header
 
 try:
@@ -1733,7 +1733,7 @@ class PixTable(object):
                                    'clipping minimum number'])
         return spe
 
-    def subtract_slice_median(self, cube, pixmask=None):
+    def subtract_slice_median(self, pixmask=None):
         """Compute the median value for all pairs (slice, quadrant) and
         subtracts this factor to each pixel to bring all slices to the same
         median value.
@@ -1753,9 +1753,6 @@ class PixTable(object):
         """
         from ..tools.ctools import ctools
 
-        if not isinstance(cube, Cube):
-            cube = Cube(filename=cube)
-
         if pixmask is None:
             maskfile = ''
             maskcol = np.zeros(self.nrows, dtype=bool)
@@ -1774,15 +1771,7 @@ class PixTable(object):
         mask = np.asarray(maskcol | self.get_dq().astype(bool), dtype=np.int32)
 
         skyseg = np.array(SKY_SEGMENTS, dtype=np.int32)
-        meanflux = []
-        for lmin, lmax in zip(skyseg[:-1], skyseg[1:]):
-            print('{:04d} - {:04d} : '.format(lmin, lmax), end='')
-            im = cube.get_image((lmin, lmax))
-            meanflux.append(im.background()[0])
-            print(meanflux[-1])
-        meanflux = np.array(meanflux)
-
-        nquad = len(skyseg)
+        nquad = len(skyseg) - 1
         ncorr = NIFUS * NSLICES * nquad
         result = np.empty_like(data, dtype=np.float64)
         corr = np.empty(ncorr, dtype=np.float64)
@@ -1790,7 +1779,7 @@ class PixTable(object):
 
         ctools.mpdaf_slice_median(
             result, corr, npts, ifu, sli, data, lbda, data.shape[0], mask,
-            meanflux, xpix, nquad, skyseg)
+            xpix, nquad, skyseg)
 
         # set pixtable data
         self.set_data(result)

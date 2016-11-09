@@ -114,12 +114,11 @@ void mpdaf_slice_median(
         double* lbda,
         int npix,
         int* mask,
-        double* meanflux,
         int* xpix,
         int lbdabins_n,
         int *lbdabins
 ) {
-    size_t nlbin = (size_t)lbdabins_n - 1;
+    size_t nlbin = (size_t)lbdabins_n;
     size_t i, k, n, s, q, slidx;
     double tot_flux, x[3], minmax[2];
     int slice_count, tot_count;
@@ -207,9 +206,6 @@ void mpdaf_slice_median(
                 nclip_up, nstop, tot_ind);
         printf("- Total flux (clipped) : %f (%f, %d)\n", x[0], x[1], (int)x[2]);
         tot_flux = x[0];
-
-        printf("- Reference flux : %f \n", meanflux[q]);
-        /* tot_flux = meanflux[q]; */
 
         printf("\nComputing corrections ...\n\n");
 

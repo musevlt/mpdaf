@@ -103,7 +103,6 @@ else:
         array_1d_double,  # double* lbda,
         ctypes.c_int,     # int npix,
         array_1d_int,     # int* mask,
-        array_1d_double,  # double* meanflux
         array_1d_int,     # int* xpix,
         ctypes.c_int,     # int lbdabins_n
         array_1d_int,     # int *lbdabins
