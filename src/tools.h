@@ -24,3 +24,4 @@ int mpdaf_locate(double* data, int n, double x);
 double mpdaf_linear_interpolation(double* xx, double* yy, int n, double x);
 
 void mpdaf_minmax(double data[], int n, int* indx, double res[]);
+void mpdaf_minmax_int(int data[], int n, int* indx, int res[]);

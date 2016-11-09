@@ -33,7 +33,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from __future__ import absolute_import, division
+from __future__ import absolute_import, division, print_function
 
 import datetime
 import logging
@@ -47,7 +47,7 @@ from astropy.table import Table
 from os.path import basename
 from six.moves import range
 
-from ..obj import Image, Spectrum, WaveCoord, WCS
+from ..obj import Image, Spectrum, WaveCoord, WCS, Cube
 from ..tools.fits import add_mpdaf_method_keywords, copy_header
 
 try:
@@ -1731,7 +1731,7 @@ class PixTable(object):
                                    'clipping minimum number'])
         return spe
 
-    def subtract_slice_median(self, pixmask):
+    def subtract_slice_median(self, cube, pixmask=None):
         """Compute the median value for all pairs (slice, quadrant) and
         subtracts this factor to each pixel to bring all slices to the same
         median value.
@@ -1751,6 +1751,9 @@ class PixTable(object):
         """
         from ..tools.ctools import ctools
 
+        if not isinstance(cube, Cube):
+            cube = Cube(filename=cube)
+
         if pixmask is None:
             maskfile = ''
             maskcol = np.zeros(self.nrows, dtype=bool)
@@ -1761,20 +1764,33 @@ class PixTable(object):
         origin = self.get_origin()
         ifu = np.asarray(self.origin2ifu(origin), dtype=np.int32)
         sli = np.asarray(self.origin2slice(origin), dtype=np.int32)
+        xpix = np.asarray((origin >> NIFUS) & 0x7f, dtype=np.int32)
         origin = None
 
         data = np.asarray(self.get_data(), dtype=np.float64)
         lbda = np.asarray(self.get_lambda(), dtype=np.float64)
         mask = np.asarray(maskcol | self.get_dq().astype(bool), dtype=np.int32)
 
-        nquad = 14
+        skyseg = np.array([0, 5100, 5400, 5800, 6120, 6440, 6760, 7200, 7450,
+                           7700, 8170, 8565, 8731, 9275, 10000],
+                          dtype=np.int32)
+        meanflux = []
+        for lmin, lmax in zip(skyseg[:-1], skyseg[1:]):
+            print('{:04d} - {:04d} : '.format(lmin, lmax), end='')
+            im = cube.get_image((lmin, lmax))
+            meanflux.append(im.background()[0])
+            print(meanflux[-1])
+        meanflux = np.array(meanflux)
+
+        nquad = len(skyseg)
         ncorr = NIFUS * NSLICES * nquad
         result = np.empty_like(data, dtype=np.float64)
-        corr = np.full(ncorr, np.nan, dtype=np.float64)
+        corr = np.empty(ncorr, dtype=np.float64)
         npts = np.zeros(ncorr, dtype=np.int32) - 1
 
         ctools.mpdaf_slice_median(
-            result, corr, npts, ifu, sli, data, lbda, data.shape[0], mask)
+            result, corr, npts, ifu, sli, data, lbda, data.shape[0], mask,
+            meanflux, xpix, nquad, skyseg)
 
         # set pixtable data
         self.set_data(result)
@@ -1788,7 +1804,7 @@ class PixTable(object):
         return PixTableAutoCalib(
             method='drs.pixtable.subtract_slice_median', maskfile=maskfile,
             pixtable=_get_file_basename(self.filename),
-            ifu=np.repeat(np.arange(1, NIFUS + 1), NSLICES * nquad),
-            sli=np.resize(np.repeat(np.arange(1, NSLICES + 1), nquad), ncorr),
-            quad=np.resize(np.arange(1, nquad+1), ncorr),
+            ifu=np.resize(np.repeat(np.arange(1, NIFUS + 1), NSLICES), ncorr),
+            sli=np.resize(np.arange(1, NSLICES + 1), ncorr),
+            quad=np.repeat(np.arange(1, nquad+1), NSLICES*NIFUS),
             npts=npts, corr=corr)
