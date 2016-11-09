@@ -1607,9 +1607,9 @@ class Cube(ArithmeticMixin, DataArray):
             chosen wavelength range. If the number of images between
             lbda1 and lbda2 is denoted, N, then the number of
             background images taken from below and above the wavelength
-            range are:
+            range are::
 
-              nbelow = nabove = (fband * N) / 2   [rounded up to an integer]
+                nbelow = nabove = (fband * N) / 2   [rounded up to an integer]
 
             where fband is an optional argument of this function.
 
