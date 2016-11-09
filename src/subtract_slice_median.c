@@ -9,6 +9,7 @@
 #include <omp.h>
 #endif
 
+#define MAX_PTS_PER_SLICE 2e5
 #define NIFUS 24
 #define NSLICES 48
 #define MIN_PTS_PER_SLICE 100
@@ -137,12 +138,11 @@ void mpdaf_slice_median(
     for (k=0; k<NIFUS*NSLICES*nlbin; k++) {
         npts[k] = 0;
         corr[k] = 1.0;
-        indmap[k] = (int*) malloc(npix/(NIFUS*NSLICES) * sizeof(int));
+        indmap[k] = (int*) malloc(MAX_PTS_PER_SLICE * sizeof(int));
     }
 
     printf("Using %zu lambda slices\n", nlbin);
     printf("Computing lambda indexes ...\n");
-    #pragma omp parallel for private(k,q)
     for (n = 0; n < (size_t)npix; n++) {
         for (q = 1; q < nlbin+1; q++) {
             if ((lbda[n] >= lbdabins[q-1]) && (lbda[n] < lbdabins[q])) {
@@ -154,6 +154,10 @@ void mpdaf_slice_median(
             k = MAPIDX(ifu[n], sli[n], quad[n]);
             indmap[k][npts[k]++] = n;
         }
+    }
+    for (k=0; k<NIFUS*NSLICES*nlbin; k++) {
+        if (npts[k] > MAX_PTS_PER_SLICE)
+            abort();
     }
 
     for (q = 0; q < nlbin; q++) {
@@ -176,6 +180,11 @@ void mpdaf_slice_median(
                 /* printf("  - SLICE %02zu : %f (%d)\n", s+1, slice_flux[slidx], npts[k]); */
             }
 
+            if (!slice_count) {
+                printf("WARNING: No values in this IFU\n");
+                ifu_flux[i] = 0.0;
+                continue;
+            }
             mpdaf_minmax(slice_flux, slice_count, slice_ind, minmax);
             printf("  - Min max : %f %f\n", minmax[0], minmax[1]);
 
@@ -216,6 +225,10 @@ void mpdaf_slice_median(
                     /* printf("  - SLICE %02zu : %f\n", s+1, corr[k]); */
                 }
             }
+            if (!slice_count) {
+                printf("WARNING: No values in this IFU\n");
+                continue;
+            }
             mpdaf_minmax(corr, slice_count, slice_ind, minmax);
             printf("  - Min max : %f %f\n", minmax[0], minmax[1]);
 
@@ -242,8 +255,9 @@ void mpdaf_slice_median(
         /* } */
     }
 
-    for (k=0; k<NIFUS*NSLICES*nlbin; k++)
+    for (k=0; k<NIFUS*NSLICES*nlbin; k++) {
         free(indmap[k]);
+    }
 
     printf("\nApply corrections ...\n");
     #pragma omp parallel for private(k)

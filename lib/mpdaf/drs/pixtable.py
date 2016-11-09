@@ -1775,7 +1775,7 @@ class PixTable(object):
         ncorr = NIFUS * NSLICES * nquad
         result = np.empty_like(data, dtype=np.float64)
         corr = np.empty(ncorr, dtype=np.float64)
-        npts = np.zeros(ncorr, dtype=np.int32) - 1
+        npts = np.empty(ncorr, dtype=np.int32)
 
         ctools.mpdaf_slice_median(
             result, corr, npts, ifu, sli, data, lbda, data.shape[0], mask,
