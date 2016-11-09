@@ -58,6 +58,8 @@ except ImportError:
 
 NIFUS = 24
 NSLICES = 48
+SKY_SEGMENTS = [0, 5100, 5400, 5800, 6120, 6440, 6760, 7200, 7450, 7700,
+                8170, 8565, 8731, 9275, 10000]
 
 KEYWORD = 'HIERARCH ESO DRS MUSE PIXTABLE'
 DEG2RAD = np.pi / 180
@@ -1771,9 +1773,7 @@ class PixTable(object):
         lbda = np.asarray(self.get_lambda(), dtype=np.float64)
         mask = np.asarray(maskcol | self.get_dq().astype(bool), dtype=np.int32)
 
-        skyseg = np.array([0, 5100, 5400, 5800, 6120, 6440, 6760, 7200, 7450,
-                           7700, 8170, 8565, 8731, 9275, 10000],
-                          dtype=np.int32)
+        skyseg = np.array(SKY_SEGMENTS, dtype=np.int32)
         meanflux = []
         for lmin, lmax in zip(skyseg[:-1], skyseg[1:]):
             print('{:04d} - {:04d} : '.format(lmin, lmax), end='')
