@@ -115,11 +115,12 @@ void mpdaf_slice_median(
         int* mask,
         int* xpix,
         int lbdabins_n,
-        int *lbdabins
+        int *lbdabins,
+        double corr_clip
 ) {
     size_t nlbin = (size_t)lbdabins_n;
     size_t i, k, n, s, q, slidx;
-    double tot_flux, x[3], minmax[2];
+    double tot_flux, x[3], minmax[2], tmp;
     int slice_count1, slice_count2, tot_count;
 
     double *slice_flux = (double*) malloc(NSLICES*NIFUS*sizeof(double));
@@ -196,18 +197,17 @@ void mpdaf_slice_median(
                 continue;
             }
             mpdaf_minmax(slice_flux, slice_count1, slice_ind1, minmax);
-            printf("  - Min max 1: %f %f\n", minmax[0], minmax[1]);
-            mpdaf_minmax(slice_flux, slice_count2, slice_ind2, minmax);
-            printf("  - Min max 2: %f %f\n", minmax[0], minmax[1]);
-
             mpdaf_mean_sigma_clip(slice_flux, slice_count1, x, nmax, nclip_low,
                     nclip_up, nstop, slice_ind1);
-            printf("  - Mean flux 1: %f (%f, %d)\n", x[0], x[1], (int)x[2]);
+            printf("  - 1: Min max = %f %f / Mean = %f (%f, %d)\n",
+                   minmax[0], minmax[1], x[0], x[1], (int)x[2]);
             ifu_flux[2*i] = x[0];
 
+            mpdaf_minmax(slice_flux, slice_count2, slice_ind2, minmax);
             mpdaf_mean_sigma_clip(slice_flux, slice_count2, x, nmax, nclip_low,
                     nclip_up, nstop, slice_ind2);
-            printf("  - Mean flux 2: %f (%f, %d)\n", x[0], x[1], (int)x[2]);
+            printf("  - 2: Min max = %f %f / Mean = %f (%f, %d)\n",
+                   minmax[0], minmax[1], x[0], x[1], (int)x[2]);
             ifu_flux[2*i+1] = x[0];
 
             if (isnan(x[0])) {
@@ -258,31 +258,30 @@ void mpdaf_slice_median(
                 continue;
             }
             mpdaf_minmax(corr, slice_count1, slice_ind1, minmax);
-            printf("  - Min max 1: %f %f\n", minmax[0], minmax[1]);
-            mpdaf_minmax(corr, slice_count2, slice_ind2, minmax);
-            printf("  - Min max 2: %f %f\n", minmax[0], minmax[1]);
-
             mpdaf_mean_sigma_clip(corr, slice_count1, x, nmax, nclip_low,
                     nclip_up, nstop, slice_ind1);
-            printf("  - Mean correction 1: %f (%f, %d)\n",
-                   x[0], x[1], (int)x[2]);
+            printf("  - 1: Min max = %f %f / Mean = %f (%f, %d)\n",
+                   minmax[0], minmax[1], x[0], x[1], (int)x[2]);
 
+            mpdaf_minmax(corr, slice_count2, slice_ind2, minmax);
             mpdaf_mean_sigma_clip(corr, slice_count2, x, nmax, nclip_low,
                     nclip_up, nstop, slice_ind2);
-            printf("  - Mean correction 2: %f (%f, %d)\n",
-                   x[0], x[1], (int)x[2]);
+            printf("  - 2: Min max = %f %f / Mean = %f (%f, %d)\n",
+                   minmax[0], minmax[1], x[0], x[1], (int)x[2]);
 
-            printf("  - Checking slice corrections ...\n");
+            printf("  - Checking slice corrections (%.1f sigma clip)...\n",
+                   corr_clip);
             for (s = 0; s < NSLICES; s++) {
                 k = MAPIDX(i+1, s+1, q+1);
-                if (fabs(corr[k] - x[0]) > 3*x[1]) {
-                    printf("    - SLICE %02zu : %f\n", s+1, corr[k]);
+                if (fabs(corr[k] - x[0]) > corr_clip*x[1]) {
+                    tmp = corr[k];
                     if (s < 24) {
                         corr[k] = tot_flux / ifu_flux[2*i];
                     } else {
                         corr[k] = tot_flux / ifu_flux[2*i+1];
                     }
-                    printf("      Using IFU Mean : %f\n", corr[k]);
+                    printf("    - SLICE %02zu : %f -> Using IFU Mean : %f\n",
+                           s+1, tmp, corr[k]);
                 }
             }
         }

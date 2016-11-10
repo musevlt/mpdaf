@@ -1733,7 +1733,7 @@ class PixTable(object):
                                    'clipping minimum number'])
         return spe
 
-    def subtract_slice_median(self, pixmask=None):
+    def subtract_slice_median(self, pixmask=None, corr_clip=8.0):
         """Compute the median value for all pairs (slice, quadrant) and
         subtracts this factor to each pixel to bring all slices to the same
         median value.
@@ -1745,6 +1745,8 @@ class PixTable(object):
         pixmask : `mpdaf.drs.PixTableMask`
             Column corresponding to a mask file (previously computed by
             ``mask_column``).
+        corr_clip : float
+            Clipping threshold for slice corrections in one IFU.
 
         Returns
         -------
@@ -1779,16 +1781,17 @@ class PixTable(object):
 
         ctools.mpdaf_slice_median(
             result, corr, npts, ifu, sli, data, lbda, data.shape[0], mask,
-            xpix, nquad, skyseg)
+            xpix, nquad, skyseg, corr_clip)
 
         # set pixtable data
         self.set_data(result)
 
         # store parameters of the method in FITS keywords
-        add_mpdaf_method_keywords(self.primary_header,
-                                  "drs.pixtable.subtract_slice_median",
-                                  ['mask'], [maskfile],
-                                  ['file to mask out all bright objects'])
+        add_mpdaf_method_keywords(
+            self.primary_header, "drs.pixtable.subtract_slice_median",
+            ['mask', 'corr_clip'], [maskfile, corr_clip],
+            ['file to mask out all bright objects',
+             'Clipping threshold for slice corrections in one IFU'])
 
         return PixTableAutoCalib(
             method='drs.pixtable.subtract_slice_median', maskfile=maskfile,
