@@ -244,10 +244,17 @@ class TestBasicPixTable(unittest.TestCase):
 
 @pytest.mark.skipif(not SUPP_FILES_PATH, reason='Missing test data')
 def test_autocalib(tmpdir):
+    # testpix-small.fits is a small pixtable with values from 2 IFUs, slices
+    # 1 to 23, and lambda between 6500A and 7500A
     pixfile = join(SUPP_FILES_PATH, 'testpix-small.fits')
     maskfile = join(SUPP_FILES_PATH, 'Mask-HDF.fits')
     pix = PixTable(pixfile)
+    assert pix.nrows == 2810172
+    assert repr(pix) == \
+        '<PixTable(2810172 rows, 2 ifus, projected, flux-calibrated)>'
+
     mask = pix.mask_column(maskfile=maskfile)
+    assert np.count_nonzero(mask.maskcol) == 97526
 
     outmask = str(tmpdir.join('MASK.fits'))
     mask.write(outmask)
@@ -260,13 +267,13 @@ def test_autocalib(tmpdir):
     sky = pix.sky_ref(pixmask=mask)
     assert sky.shape == (1001,)
     assert_array_equal(sky.get_range(), [6500, 7500])
-    # assert sky.shape == (4601,)
-    # assert_array_equal(sky.get_range(), [4750, 9350])
 
+    import mpdaf.drs.pixtable
+    mpdaf.drs.pixtable.SKY_SEGMENTS = [6500, 7000, 7500]
     cor = pix.subtract_slice_median(mask)
-
-    # TODO: complete this
-    # assert_array_equal(cor.npts, div.npts)
+    sel = cor.npts > 0
+    assert set(cor.ifu[sel]) == {1, 2}
+    assert set(cor.quad[sel]) == {1, 2}
 
     outcor = str(tmpdir.join('cor.fits'))
     cor.write(outcor)
