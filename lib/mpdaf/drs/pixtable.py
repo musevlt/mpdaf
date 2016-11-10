@@ -1733,7 +1733,7 @@ class PixTable(object):
                                    'clipping minimum number'])
         return spe
 
-    def subtract_slice_median(self, pixmask=None, corr_clip=5.0):
+    def subtract_slice_median(self, pixmask=None, corr_clip=15.0):
         """Compute the median value for all pairs (slice, quadrant) and
         subtracts this factor to each pixel to bring all slices to the same
         median value.
