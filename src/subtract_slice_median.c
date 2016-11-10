@@ -166,7 +166,6 @@ void mpdaf_slice_median(
         printf("\n\nLambda bin: %d - %d\n", lbdabins[q], lbdabins[q+1]);
         printf("Computing reference levels ...\n\n");
         tot_count = 0;
-        tot_flux = 0.0;
         for (i = 0; i < NIFUS; i++) {
             printf("- IFU %02zu\n", i+1);
             slice_count1 = 0;
@@ -233,7 +232,7 @@ void mpdaf_slice_median(
                 }
             }
         }
-        if (!tot_flux) {
+        if (!tot_count) {
             printf("WARNING: No values in this lambda bin\n");
             continue;
         }
