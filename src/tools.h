@@ -12,12 +12,12 @@ double mpdaf_sum(double* data, int n, int* indx);
 // Compute the median
 double mpdaf_median(double* data, int n, int* indx);
 // Compute the arithmetic mean and mad sigma
-void mpdaf_mean_mad(double* data, int n, double x[3], int *indx, double* work);
+void mpdaf_mean_mad(double* data, int n, double x[3], int *indx);
 // indexing
 int indexx(int n, double *arr, int *indx);
 // Iterative sigma-clipping of array elements
 void mpdaf_mean_sigma_clip(double* data, int n, double x[3], int nmax, double nclip_low, double nclip_up, int nstop, int* indx);
-void mpdaf_mean_madsigma_clip(double* data, int n, double x[3], int nmax, double nclip_low, double nclip_up, int nstop, int* indx, double* work);
+void mpdaf_mean_madsigma_clip(double* data, int n, double x[3], int nmax, double nclip_low, double nclip_up, int nstop, int* indx);
 void mpdaf_median_sigma_clip(double* data, int n, double x[3], int nmax, double nclip_low, double nclip_up, int nstop, int* indx);
 // Linear interpolation
 int mpdaf_locate(double* data, int n, double x);

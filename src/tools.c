@@ -51,10 +51,13 @@ double mpdaf_median(double *data, int  n, int *indx)
 }
 
 // Compute the arithmetic mean and MAD sigma
-void mpdaf_mean_mad(double* data, int n, double x[3], int *indx, double* work)
+void mpdaf_mean_mad(double* data, int n, double x[3], int *indx)
 {
     double mean=0.0, median=0.0;
     int i;
+    double *work = (double*) malloc(n*sizeof(double));
+    int *ind = (int*) malloc(n*sizeof(int));
+
     for(i=0; i<n;i++)
     {
         mean+=data[indx[i]];
@@ -64,10 +67,13 @@ void mpdaf_mean_mad(double* data, int n, double x[3], int *indx, double* work)
     median=mpdaf_median(data,n,indx);
     for(i=0; i<n;i++)
     {
-        work[indx[i]]=fabs(data[indx[i]]-median);
+        ind[i] = i;
+        work[i]=fabs(data[indx[i]]-median);
     }
     x[0] = mean;
-    x[1] = mpdaf_median(work,n,indx)*1.4826;
+    x[1] = mpdaf_median(work,n,ind)*1.4826;
+    free(ind);
+    free(work);
 }
 
 // Iterative sigma-clipping of array elements
@@ -113,10 +119,10 @@ void mpdaf_mean_sigma_clip(double* data, int n, double x[3], int nmax, double nc
 
 // Iterative MAD sigma-clipping of array elements
 // return x[0]=median, x[1]=MAD std, x[2]=n
-void mpdaf_mean_madsigma_clip(double* data, int n, double x[3], int nmax, double nclip_low, double nclip_up, int nstop, int* indx, double* work)
+void mpdaf_mean_madsigma_clip(double* data, int n, double x[3], int nmax, double nclip_low, double nclip_up, int nstop, int* indx)
 {
     double clip_lo, clip_up;
-    mpdaf_mean_mad(data, n, x, indx, work);
+    mpdaf_mean_mad(data, n, x, indx);
     x[2] = n;
     double med;
     med =  mpdaf_median(data,n, indx);
@@ -147,7 +153,7 @@ void mpdaf_mean_madsigma_clip(double* data, int n, double x[3], int nmax, double
             }
         }
         nmax = nmax - 1;
-        mpdaf_mean_madsigma_clip(data, ni, x, nmax, nclip_low, nclip_up, nstop, indx, work);
+        mpdaf_mean_madsigma_clip(data, ni, x, nmax, nclip_low, nclip_up, nstop, indx);
     }
 }
 
