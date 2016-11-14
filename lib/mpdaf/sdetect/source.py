@@ -1097,8 +1097,11 @@ class Source(object):
                 else:
                     image = image.rotate(pa_white - pa)
 
-        subima = image.subimage(center, size, **kwargs)
-
+        try:
+            subima = image.subimage(center, size, **kwargs)
+        except:
+            subima = None
+            
         if subima is None:
             self._logger.warning('Image %s not added. Source outside or at the'
                                  ' edges', name)

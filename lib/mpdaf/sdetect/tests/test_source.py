@@ -171,7 +171,7 @@ def test_add_cube(source2, minicube, tmpdir):
     assert src.images['MUSE_WHITE'].shape == (20, 20)
 
 
-def test_add_image(source2, a478hst):
+def test_add_image(source2, a478hst, a370II):
     """Source class: testing add_image method"""
     minicube = Cube(get_data_file('sdetect', 'minicube.fits'), dtype=float)
     source2.add_white_image(minicube)
@@ -213,6 +213,11 @@ def test_add_image(source2, a478hst):
     source2.add_image(a478hst, 'HST3', rotate=True)
     assert_almost_equal(source2.images['HST3'].get_rot(),
                         source2.images['MUSE_WHITE'].get_rot(), 3)
+    
+    # Trying to add image not overlapping with Source
+    assert source2.add_image(a370II, 'ERROR') == None
+    
+    
 
 
 def test_add_narrow_band_image(minicube, tmpdir):
