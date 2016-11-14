@@ -95,11 +95,13 @@ else:
     ctools.mpdaf_slice_median.restype = None
     ctools.mpdaf_slice_median.argtypes = [
         array_1d_double,  # double* result
+        array_1d_double,  # double* result_stat
         array_1d_double,  # double* corr,
         array_1d_int,     # int* npts,
         array_1d_int,     # int* ifu,
         array_1d_int,     # int* sli,
         array_1d_double,  # double* data,
+        array_1d_double,  # double* stat,
         array_1d_double,  # double* lbda,
         ctypes.c_int,     # int npix,
         array_1d_int,     # int* mask,

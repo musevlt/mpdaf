@@ -1769,6 +1769,7 @@ class PixTable(object):
         origin = None
 
         data = np.asarray(self.get_data(), dtype=np.float64)
+        stat = np.asarray(self.get_stat(), dtype=np.float64)
         lbda = np.asarray(self.get_lambda(), dtype=np.float64)
         mask = np.asarray(maskcol | self.get_dq().astype(bool), dtype=np.int32)
 
@@ -1776,15 +1777,17 @@ class PixTable(object):
         nquad = len(skyseg) - 1
         ncorr = NIFUS * NSLICES * nquad
         result = np.empty_like(data, dtype=np.float64)
+        result_stat = np.empty_like(data, dtype=np.float64)
         corr = np.empty(ncorr, dtype=np.float64)
         npts = np.empty(ncorr, dtype=np.int32)
 
         ctools.mpdaf_slice_median(
-            result, corr, npts, ifu, sli, data, lbda, data.shape[0], mask,
-            xpix, nquad, skyseg, corr_clip)
+            result, result_stat, corr, npts, ifu, sli, data, stat, lbda,
+            data.shape[0], mask, xpix, nquad, skyseg, corr_clip)
 
         # set pixtable data
         self.set_data(result)
+        self.set_stat(result_stat)
 
         # store parameters of the method in FITS keywords
         add_mpdaf_method_keywords(

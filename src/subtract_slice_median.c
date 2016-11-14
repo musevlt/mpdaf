@@ -106,11 +106,13 @@ void mpdaf_slice_mean(double* data, int* xpix, int n, double x[3], int* indx)
 
 void mpdaf_slice_median(
         double* result,
+        double* result_stat,
         double* corr,
         int* npts,
         int* ifu,
         int* sli,
         double* data,
+        double* stat,
         double* lbda,
         int npix,
         int* mask,
@@ -315,6 +317,7 @@ void mpdaf_slice_median(
     for (n=0; n < (size_t)npix; n++) {
         k = MAPIDX(ifu[n], sli[n], quad[n]);
         result[n] =  data[n] * corr[k];
+        result_stat[n] =  stat[n] * corr[k] * corr[k];
     }
     printf("\nOK, done.\n");
 
