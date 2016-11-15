@@ -4,245 +4,241 @@ v2.1 (16/11/2016)
 New Features
 ~~~~~~~~~~~~
 
-* Allow to pass optional arguments when opening a FITS file
+* Allow to pass optional arguments when opening a FITS file, using the
+  ``fits_kwargs`` parameter.
 
-* Allow to write CHECKSUM/DATASUM when saving a FITS file  [!53]
+* Allow to write ``CHECKSUM``/``DATASUM`` when saving a FITS file (use
+  ``checksum=True``). [!53]
 
-* ``Image`` and ``Spectrum`` objects keep now by default the type of the FITS data (like ``Cube``). [!50]
+* ``Image`` and ``Spectrum`` objects keep now by default the type of the FITS
+  data (like ``Cube``). [!50]
 
-* Add ``dtype`` property to Data classes (Spectrum/Image/Cube)
+* Add ``dtype`` property to Data classes (Spectrum/Image/Cube).
 
-* Add ``WCS`` naxis1/naxis2 properties which uses naxis from the underlying wcs object
+* Add ``WCS`` naxis1/naxis2 properties which uses naxis from the underlying wcs
+  object.
 
-* Determine the reference frame from the primary header if possible and don't force it if not found in the primary header.
-  HST and MUSE files usually have the EQUINOX/RADESYS/RADECSYS keywords only in the primary header, which cause mpdaf to use ICRS instead of FK5. [!47]
-  Add reference frame in ``WCS.info``
-  
+* Determine the reference frame from the primary header if possible and don't
+  force it if not found in the primary header.  HST and MUSE files usually have
+  the EQUINOX/RADESYS/RADECSYS keywords only in the primary header, which cause
+  MPDAF to use ICRS instead of FK5. [!47] Add reference frame in ``WCS.info``.
+
 * Enhance ``fftconvolve`` and add this method for ``Cube``. [!52]
 
-* New method `MUSE.get_FSF_from_cube_keywords <mpdaf.MUSE.get_FSF_from_cube_keywords>` which creates a cube of FSFs corresponding to the keywords presents in the MUSE data cube primary header.
+* New method `MUSE.get_FSF_from_cube_keywords
+  <mpdaf.MUSE.get_FSF_from_cube_keywords>` which creates a cube of FSFs
+  corresponding to the keywords presents in the MUSE data cube primary header.
 
-* Add small utility function to create field maps
+* Add small utility function to create field maps.
 
-* Make ``zscale`` available from mpdaf.tools
+* Make ``zscale`` available from ``mpdaf.tools``.
 
-* Move tests and data inside the mpdaf package so that they are installed with MPDAF.
+* Move tests and data inside the MPDAF package so that they are installed with
+  MPDAF.
 
-* Replace nose with py.test to run test unit tests
-    
+* Replace nosetest with py.test to run test.
+
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
 
 * ``Spectrum`` methods that return a value of flux or magnitude, return
-  now a tuple (value, error). This breaking change concerns: ``flux2mag``, ``mean``,
-  ``sum``, ``integrate``, ``abmag_band``, ``abmag_filter_name``,  ``abmag_filter``.
+  now a tuple (value, error). This breaking change concerns: ``flux2mag``,
+  ``mean``, ``sum``, ``integrate``, ``abmag_band``, ``abmag_filter_name``,
+  ``abmag_filter``.
 
-* Forbid the use of several methods in ``CubeMosaic``
+* Forbid the use of several (not implemented) methods in ``CubeMosaic``.
 
-* Remove ``WCS.set_naxis`` methods
+* Remove ``WCS.set_naxis`` methods.
 
 
 WCS
 ~~~
 
-* Remove ``WCS.set_naxis`` methods
+* Remove ``WCS.set_naxis`` methods.
 
-* Add ``WCS`` naxis1/naxis2 properties which uses naxis from the underlying wcs object
+* Add ``WCS`` naxis1/naxis2 properties which uses naxis from the underlying wcs
+  object.
 
-* Determine the reference frame from the primary header if possible and don't force it if not found in the primary header.
-  HST and MUSE files usually have the EQUINOX/RADESYS/RADECSYS keywords only in the primary header, which cause mpdaf to use ICRS instead of FK5.
-  Add reference frame in ``WCS.info``
+* Determine the reference frame from the primary header if possible and don't
+  force it if not found in the primary header.  HST and MUSE files usually have
+  the EQUINOX/RADESYS/RADECSYS keywords only in the primary header, which cause
+  mpdaf to use ICRS instead of FK5.  Add reference frame in ``WCS.info``.
 
-* Simplify ``deg2sexa`` and ``sexa2deg``
-  
+* Simplify ``deg2sexa`` and ``sexa2deg``.
+
 
 Data classes (Cube, Image, Spectrum)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* Enhance reading from an HDUList without having to specify a filename
+* Enhance reading from an HDUList without having to specify a filename.
 
-* ``Image`` and ``Spectrum`` objects keep now by default the type of the FITS data (like ``Cube``).
+* ``Image`` and ``Spectrum`` objects keep now by default the type of the FITS
+  data (like ``Cube``).
 
-* Add ``dtype`` property to Data classes (Spectrum/Image/Cube)
+* Add ``dtype`` property to Data classes (Spectrum/Image/Cube).
 
-* Make ``DataArray[item]`` preserve WCS and/or wavelength info for all legal item selections.
-  Prior to this patch, if c was a cube, c[10] returned an MPDAF Image that didn't have any WCS information,
-  and c[10:20] returned a Cube without either WCS or wavelength information.
-  
-* Add a generic ``DataArray._convolve()`` to implement Spectrum/Image/Cube.convolve()
-    
-    This takes a function argument that can be either
-    scipy.signal.convolve or scipy.signal.fftconvolve, depending on
-    whether one wants to use the discrete convolution equation or the
-    Fourier convolution theorem to perform the convolution.
-    
-    Spectrum,Image and Cube.fftconvolve() have all been modified to call
-    DataArray._convolve() with the function argument set to
-    scipy.signal.fftconvolve().
-    
-    Spectrum,Image and Cube.convolve() functions have now been created,
-    which call DataArray._convolve() with its function argument set to
-    scipy.signal.convolve().
-    
-    In the previous implementation of Image and Spectrum.fftconvolve(),
-    the shape of the 'other' array had to match the size of the Image or
-    Spectrum. In the new version, the 'other' array can be any size up to
-    the size of the MPDAF object that is being convolved.
-    
-    Another new feature of this implemenation, is that any variances in
-    self are propagated correctly.
-    
-    The optional interp argument of Image.fftconvolve() has been removed,
-    since it would be difficult to provide the same interpolation options
-    for a cube. Filling masked data and variances with zeros for the
-    duration of the convolution should be sufficient in most cases.
+* Make ``DataArray[item]`` preserve WCS and/or wavelength info for all legal
+  item selections.  Prior to this patch, if ``c`` was a cube, ``c[10]`` returned
+  an MPDAF Image that didn't have any WCS information, and ``c[10:20]`` returned
+  a Cube without either WCS or wavelength information.
+
+* Refactor Spectrum/Image/Cube's methods ``.convolve`` and ``.fftconvolve``,
+  with variance propagation.
+
+  In the previous implementation of Image and Spectrum.fftconvolve(), the shape
+  of the 'other' array had to match the size of the Image or Spectrum. In the
+  new version, the 'other' array can be any size up to the size of the MPDAF
+  object that is being convolved.
+
+  The optional ``interp`` argument of ``Image.fftconvolve()`` has been removed.
+  Filling masked data and variances with zeros for the duration of the
+  convolution should be sufficient in most cases.
 
 Spectrum
 ~~~~~~~~
 
-* Set xlimit for ``Spectrum`` plots
+* Set default limits on the x axis for ``Spectrum`` plots.
 
-* Simplify ``Spectrum.correlate``, ``Spectrum.fftconvolve_gauss``, ``Spectrum.median_filter`` and ``Spectrum._interp``
+* Simplify ``Spectrum.correlate``, ``Spectrum.fftconvolve_gauss``,
+  ``Spectrum.median_filter`` and ``Spectrum._interp``.
 
-* Return flux/magnitude error if relevant
+* Return flux/magnitude error if relevant.
 
-* Rewrote ``Spectrum.resample``
-    
-    When pixel sizes are being increased a decimation filtering stage is
-    now used before regridding, whereas the original behavior was to
-    perform piecewise integrations for each output pixel.
-    
-    When pixel sizes are being reduced, simple linear interpolation is
-    followed by decimation filtering.
+* Rewrote ``Spectrum.resample``: When pixel sizes are being increased
+  a decimation filtering stage is now used before regridding, whereas the
+  original behavior was to perform piecewise integrations for each output pixel.
+  When pixel sizes are being reduced, simple linear interpolation is followed by
+  decimation filtering.
 
 Image
 ~~~~~
 
-* Fix ``Image.fwhm`` which was returning twice the fwhm
+* Fix ``Image.fwhm`` which was returning twice the FWHM.
 
-* fix bug which caused resample to change the sign of the X-axis increment
+* Fix bug which caused resample to change the sign of the X-axis increment.
 
-* Simplify creation of subimages in ``Image.segment``
+* Simplify creation of subimages in ``Image.segment``.
 
-* Reduced memory usage in ``Image.truncate``, ``Image.regrid``, ``Image.align_with_image.`` This speeds up ``align_with_image`` significantly.
+* Reduced memory usage in ``Image.truncate``, ``Image.regrid``,
+  ``Image.align_with_image.`` This speeds up ``align_with_image`` significantly.
 
-* Fix exceptions in ``Image.plot`` when ``.wcs`` is None
+* Fix exceptions in ``Image.plot`` when ``.wcs`` is None.
 
-* fix bug that sometimes caused ``Image.plot`` to fail to show the cursor coordinates of an image.
+* Fix bug that sometimes caused ``Image.plot`` to fail to show the cursor
+  coordinates of an image.
 
-* Use zscale from Astropy if available (1.2 and later)
+* Use zscale from Astropy if available (1.2 and later).
 
-* Add method to visualize data in ds9 and interact with it (using pyds9)
-    
-    Based on SpectralCube.to_ds9:
-    https://github.com/radio-astro-tools/spectral-cube/blob/master/spectral_cube/spectral_cube.py#L2191
+* Add method ``.to_ds9()`` to visualize data in ds9 and interact with it (using
+  pyds9).
+
 
 Cube
 ~~~~
 
-* Fix bug in ``Cube.rebin`` (#471)
-    
-* Improved the method ``bandpass_image``
-    
-    If their isn't a complete overlap between the bandpasses of the
-    filter-curve and the cube, truncate the filter at the edges of the
-    cube instead of raising an exception. When this happens, display a
-    warning (using the logger) which tells the user what fraction of the
-    bandpass that has been truncated.
-    
-    When integrating the filter curve over each wavelength channel of the
-    cube, use linear interpolation by default, rather than cubic. This
-    greatly speeds up the function, and it makes no noticeable difference
-    to the final image when used with HST ACS filter curves. An optional
-    argument has also been added to give the user the option of selecting
-    cubic interpolation.
-    
+* Fix bug in ``Cube.rebin``. [!471]
+
+* Improved the method ``bandpass_image``:
+
+  - If their isn't a complete overlap between the bandpasses of the filter-curve
+    and the cube, truncate the filter at the edges of the cube instead of
+    raising an exception.
+
+  - When integrating the filter curve over each wavelength channel of the cube,
+    use linear interpolation by default, rather than cubic.
+
 
 Sources
 ~~~~~~~
 
-* Increase the file reading speed by uploading values of dictionaries (spectra, images, cubes and tables) just if necessary.
-  Use `collections.MutableMapping`
+* Increase the file reading speed by loading values of dictionaries (spectra,
+  images, cubes and tables) just if necessary.
 
-* CUBE* keywords became mandatory
+* ``CUBE*`` keywords became mandatory:
 
-  CUBE: Name of the MUSE data cube 
-  
-  CUBE_V:Cube version
+  - ``CUBE``: Name of the MUSE data cube.
 
-* Some keywords renamed
+  - ``CUBE_V``: Cube version.
 
-  ORIGIN -> FROM (Name of the software used  to detect the source)
-  
-  ORIGIN_V -> FROM_V (Version of the software used to detect the source)
-  
-  SRC_VERS -> SRC_V (Source version)
-  
-  SOURCE_V -> FORMAT (Version of the mpdaf.sdetect.Source class used to create the source)
-  
-  CONFI -> CONFID (Expert confidence index)  
-  
+* Some keywords are renamed:
+
+  - ``ORIGIN`` -> ``FROM`` (Name of the software used  to detect the source)
+
+  - ``ORIGIN_V`` -> ``FROM_V`` (Version of the software used to detect the
+    source)
+
+  - ``SRC_VERS`` -> ``SRC_V`` (Source version)
+
+  - ``SOURCE_V`` -> ``FORMAT`` (Version of the mpdaf.sdetect.Source class used
+    to create the source)
+
+  - ``CONFI`` -> ``CONFID`` (Expert confidence index)
+
 * Change format of COMMENT and HISTORY
 
-  COM*** -> COMMENT
-  
-  HIST*** -> HISTORY
-  
+  - ``COM***`` -> ``COMMENT``
+
+  - ``HIST***`` -> ``HISTORY``
+
   [Date Author] User comment/History
-  
-* updated ``Source.info``: comments and histories printed more properly
 
-* ``extract_spectra``: Add the possibility to extract MOFFAT PSF weighted spectra in addition to the Gaussian PSF
+* Updated ``Source.info``: comments and histories printed more properly.
 
-* Add primary indexes (with unicity constraint) to `mag['BAND']` and `z['Z_DESC']` for simpler indexing
+* ``extract_spectra``: Add the possibility to extract MOFFAT PSF weighted
+  spectra in addition to the Gaussian PSF.
 
-* Correct behaviour when trying to add image not overlapping with Source (issue #482)
-  
+* Add primary indexes (with unicity constraint) to `mag['BAND']` and
+  ``z['Z_DESC']`` for simpler indexing.
+
+* Correct behaviour when trying to add image not overlapping with Source [!482].
+
 
 Catalogs
 ~~~~~~~~
 
-* Optimize catalog initialization by not loading all source.tables
+* Optimize catalog initialization by not loading all tables.
 
-* Update the initialization in order to be correct for numpy arrays AND numpy masked arrays
+* Update the initialization in order to be correct for Numpy arrays and masked
+  arrays.
 
-* Make Catalog compatible with Py3
+* Make Catalog compatible with Python 3.
 
-* Add comments and histories in catalog generated from a list of Source objects
+* Add comments and histories in catalog generated from a list of Source objects.
 
-* Update Catalog documentation (issue #467)
+* Update Catalog documentation [!467]
 
 * Correct issue #466:
-    
-    - raise ValueError if astropy.Table try to convert a string to float/int. The message gives the name of the column.
-    
-    - add warning if a keyword has not the same type in all sources but the conversion is possible.
-    
-    - CUBE_V is now a mandatory keyword with the string format
+
+  - Raise ValueError if astropy.Table try to convert a string to float/int. The
+    message gives the name of the column.
+
+  - Add warning if a keyword has not the same type in all sources but the
+    conversion is possible.
+
+  - ``CUBE_V`` is now a mandatory keyword with the string format.
 
 
 muselet
 ~~~~~~~
 
-* Changed default SExtractor parameters (QUIET and no segmentation)
+* Changed default SExtractor parameters (QUIET and no segmentation).
 
-* little optimization (don't use mask array for the continuum computation, write NB images with astropy.io.fits, remove RuntimeWarning)
+* Little optimization (don't use mask array for the continuum computation, write
+  NB images with ``astropy.io.fits``, remove ``RuntimeWarning`` warnings).
 
-* muselet now compatible with python3
+* muselet now compatible with Python 3.
 
 
 Pixtable
 ~~~~~~~~
 
-* Use a more efficient implementation for ``PixTable.sky_ref``
-  Sort the lbda array once, and use an index array, instead of iterating
-  on the whole pixtable for each wavelength bin.
-    
-* Allow to work on ``PixTable`` object without .filename
+* Use a more efficient implementation for ``PixTable.sky_ref``.
 
-* Fix ``PixTable.divide_slice_median``
+* Allow to work on ``PixTable`` object without the ``.filename`` attribute.
 
-* Add ``__repr__ ``
+* Fix ``PixTable.divide_slice_median``.
 
-* Add unit tests
+* Add repr info for PixTable objects.
+
+* Add unit tests.
