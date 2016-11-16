@@ -388,10 +388,10 @@ This reference spectrum is used by the auto calibration method to normalise
 data values in each MUSE slice.  In this example, we choose to use the additive
 correction::
 
-  In [69]: autocalib = pix.subtract_slice_median(skyref, pixmask=mask)
+  In [69]: autocalib = pix.selfcalibrate(pixmask=mask)
   [INFO] pixtable PIXTABLE-MUSE.2014-07-26T04:37:08.541.fits updated
 
-`~mpdaf.drs.PixTable.subtract_slice_median` is a python pixtable method but it has been coded in C for efficiency.
+`~mpdaf.drs.PixTable.selfcalibrate` is a python pixtable method but it has been coded in C for efficiency.
 
 In the same way `~mpdaf.drs.PixTable.divide_slice_median` computes the median value for all slices and divides each slice by this correction to bring all slices to the same median value.
 

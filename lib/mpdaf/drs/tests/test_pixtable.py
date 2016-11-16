@@ -270,7 +270,7 @@ def test_autocalib(tmpdir):
 
     import mpdaf.drs.pixtable
     mpdaf.drs.pixtable.SKY_SEGMENTS = [6500, 7000, 7500]
-    cor = pix.subtract_slice_median(mask)
+    cor = pix.selfcalibrate(mask)
     sel = cor.npts > 0
     assert set(cor.ifu[sel]) == {1, 2}
     assert set(cor.quad[sel]) == {1, 2}
@@ -278,7 +278,7 @@ def test_autocalib(tmpdir):
     outcor = str(tmpdir.join('cor.fits'))
     cor.write(outcor)
     savedcor = PixTableAutoCalib(filename=outcor)
-    assert savedcor.method == 'drs.pixtable.subtract_slice_median'
+    assert savedcor.method == 'drs.pixtable.selfcalibrate'
     assert savedcor.maskfile == basename(maskfile)
     assert savedcor.pixtable == basename(pixfile)
 

@@ -239,11 +239,11 @@ Pixtable
   seems to use double precision by default) and probably also with other
   methods.
 
-* Fix initial value for `~mpdaf.drs.PixTable.subtract_slice_median` correction.  This value was
-  set to 1 which seems wrong for an additive correction. To emphasize the fact
-  that some combination of slices and quadrants are not valid, and allow to
-  filter these values later, this commit changes the init value for the count
-  to -1, and the correction to NaN.
+* Fix initial value for `~mpdaf.drs.PixTable.subtract_slice_median` correction.
+  This value was set to 1 which seems wrong for an additive correction. To
+  emphasize the fact that some combination of slices and quadrants are not
+  valid, and allow to filter these values later, this commit changes the init
+  value for the count to -1, and the correction to NaN.
 
 * Fix `~mpdaf.drs.PixTable.select_sky` in the case of positioned pixel table.
 
