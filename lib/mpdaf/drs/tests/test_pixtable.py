@@ -268,6 +268,12 @@ def test_autocalib(tmpdir):
     assert sky.shape == (1001,)
     assert_array_equal(sky.get_range(), [6500, 7500])
 
+    with pytest.raises(AttributeError):
+        pix.subtract_slice_median(sky, mask)
+
+    with pytest.raises(AttributeError):
+        pix.divide_slice_median(sky, mask)
+
     import mpdaf.drs.pixtable
     mpdaf.drs.pixtable.SKY_SEGMENTS = [6500, 7000, 7500]
     cor = pix.selfcalibrate(mask)
