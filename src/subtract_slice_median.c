@@ -278,26 +278,35 @@ void mpdaf_slice_median(
                 fprintf(fp, "WARNING: No values in this IFU\n");
                 continue;
             }
-            mpdaf_minmax(corr, slice_count1, slice_ind1, minmax);
-            mpdaf_mean_madsigma_clip(corr, slice_count1, x1, nmax, nclip_low,
-                    nclip_up, nstop, slice_ind1);
-            fprintf(fp, "  - 1: Min max = %f %f / Mean = %f (%f, %d)\n",
-                   minmax[0], minmax[1], x1[0], x1[1], (int)x1[2]);
 
-            mpdaf_minmax(corr, slice_count2, slice_ind2, minmax);
-            mpdaf_mean_madsigma_clip(corr, slice_count2, x2, nmax, nclip_low,
-                    nclip_up, nstop, slice_ind2);
-            fprintf(fp, "  - 2: Min max = %f %f / Mean = %f (%f, %d)\n",
-                   minmax[0], minmax[1], x2[0], x2[1], (int)x2[2]);
+            if (slice_count1) {
+                mpdaf_minmax(corr, slice_count1, slice_ind1, minmax);
+                mpdaf_mean_madsigma_clip(corr, slice_count1, x1, nmax, nclip_low,
+                        nclip_up, nstop, slice_ind1);
+                fprintf(fp, "  - 1: Min max = %f %f / Mean = %f (%f, %d)\n",
+                        minmax[0], minmax[1], x1[0], x1[1], (int)x1[2]);
+            }
+
+            if (slice_count2) {
+                mpdaf_minmax(corr, slice_count2, slice_ind2, minmax);
+                mpdaf_mean_madsigma_clip(corr, slice_count2, x2, nmax, nclip_low,
+                        nclip_up, nstop, slice_ind2);
+                fprintf(fp, "  - 2: Min max = %f %f / Mean = %f (%f, %d)\n",
+                        minmax[0], minmax[1], x2[0], x2[1], (int)x2[2]);
+            }
 
             fprintf(fp, "  - Checking slice corrections (%.1f sigma clip)...\n",
                    corr_clip);
             for (s = 0; s < NSLICES; s++) {
                 k = MAPIDX(i+1, s+1, q+1);
                 if (s < 24) {
+                    if (!slice_count1)
+                        continue;
                     refx = x1;
                     refflux = ifu_flux[2*i];
                 } else {
+                    if (!slice_count2)
+                        continue;
                     refx = x2;
                     refflux = ifu_flux[2*i+1];
                 }
