@@ -1740,17 +1740,45 @@ class PixTable(object):
         raise AttributeError('This method was replaced with .selfcalibrate')
 
     def selfcalibrate(self, pixmask=None, corr_clip=15.0, logfile=None):
-        """Compute the median value for all pairs (slice, quadrant) and
-        subtracts this factor to each pixel to bring all slices to the same
-        median value.
+        """Correct the background level of the slices.
 
-        pix(x,y,lbda) += < skyref(lbda) - pix(x,y,lbda) >_slice
+        This requires a Pixtable that is *not sky-subtracted*. It uses the mean
+        sky level as a reference, and compute a multiplicative correction to
+        apply to each slice to bring its background level to the reference one.
+
+        A mask of sources can be provided. A `~mpdaf.drs.PixTableMask` must be
+        computed from a 2D mask file with `~mpdaf.drs.PixTable.mask_column`.
+        This mask will be merged with the 'DQ' column from the pixtable.
+
+        The method works on wavelength bins, defined in
+        `~mpdaf.drs.pixtable.SKY_SEGMENTS`. These bins have been chosen so that
+        their edges do not fall on a sky line, with a 200A to 300A width. They
+        can also be modified (by setting a new list to this global variable).
+
+        Then, the algorithm can be summarized as follow::
+
+            - foreach ifu:
+                - foreach slice:
+                    - foreach pixel:
+                        - compute the mean flux
+                    - compute the median flux of the slice
+                - compute the median flux of the ifu
+                - foreach slice:
+                    - if too few points, use the mean ifu flux
+            - compute the total mean flux
+
+            - foreach ifu:
+                - foreach slice:
+                    - compute the correction: total_flux / slice_flux
+                - compute the mean and stddev of the corrections
+                - for slices where |correction - mean| > corr_clip*std_dev:
+                    - use the mean ifu correction: total_flux / ifu_flux
 
         Parameters
         ----------
         pixmask : `mpdaf.drs.PixTableMask`
             Column corresponding to a mask file (previously computed by
-            ``mask_column``).
+            `~mpdaf.drs.PixTable.mask_column`).
         corr_clip : float
             Clipping threshold for slice corrections in one IFU.
         corr_clip : str
