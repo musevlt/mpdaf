@@ -99,7 +99,7 @@ built-in ``help()`` function:
 
 .. ipython::
 
-   In [7]: Cube.sum?
+   In [7]: Cube.median?
 
 .. ipython::
 

@@ -55,6 +55,7 @@ try:
 except ImportError:
     numexpr = False
 
+__all__ = ('PixTable', 'PixTableMask', 'PixTableAutoCalib')
 
 NIFUS = 24
 NSLICES = 48
@@ -1751,7 +1752,7 @@ class PixTable(object):
         This mask will be merged with the 'DQ' column from the pixtable.
 
         The method works on wavelength bins, defined in
-        `~mpdaf.drs.pixtable.SKY_SEGMENTS`. These bins have been chosen so that
+        `mpdaf.drs.pixtable.SKY_SEGMENTS`. These bins have been chosen so that
         their edges do not fall on a sky line, with a 200A to 300A width. They
         can also be modified (by setting a new list to this global variable).
 
