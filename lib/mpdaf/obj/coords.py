@@ -1292,7 +1292,7 @@ class WCS(object):
         elif self.wcs.wcs.has_cd():    # CD matrix
             self.wcs.wcs.cd = cd
         elif self.wcs.wcs.has_crota():  # CROTA + CDELT
-            self.wcs.wcs.crota = image_angle_from_cd(cd, u.deg)
+            self.wcs.wcs.crota = [0., image_angle_from_cd(cd, u.deg)]
             self.wcs.wcs.cdelt = axis_increments_from_cd(cd, u.deg)[::-1]
 
         self.wcs.wcs.set()
