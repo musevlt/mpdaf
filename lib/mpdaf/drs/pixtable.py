@@ -1733,7 +1733,8 @@ class PixTable(object):
                                    'clipping minimum number'])
         return spe
 
-    def subtract_slice_median(self, pixmask=None, corr_clip=15.0):
+    def subtract_slice_median(self, pixmask=None, corr_clip=15.0,
+                              logfile=None):
         """Compute the median value for all pairs (slice, quadrant) and
         subtracts this factor to each pixel to bring all slices to the same
         median value.
@@ -1747,6 +1748,8 @@ class PixTable(object):
             ``mask_column``).
         corr_clip : float
             Clipping threshold for slice corrections in one IFU.
+        corr_clip : str
+            Path to a file to which the log will be written.
 
         Returns
         -------
@@ -1781,9 +1784,12 @@ class PixTable(object):
         corr = np.empty(ncorr, dtype=np.float64)
         npts = np.empty(ncorr, dtype=np.int32)
 
+        if logfile is None:
+            logfile = ''
+
         ctools.mpdaf_slice_median(
             result, result_stat, corr, npts, ifu, sli, data, stat, lbda,
-            data.shape[0], mask, xpix, nquad, skyseg, corr_clip)
+            data.shape[0], mask, xpix, nquad, skyseg, corr_clip, logfile)
 
         # set pixtable data
         self.set_data(result)

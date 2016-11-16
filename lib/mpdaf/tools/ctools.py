@@ -109,4 +109,5 @@ else:
         ctypes.c_int,     # int lbdabins_n
         array_1d_int,     # int *lbdabins
         ctypes.c_double,  # double corr_clip
+        charptr,          # char* logfile
     ]
