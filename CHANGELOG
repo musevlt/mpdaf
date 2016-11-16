@@ -1,3 +1,16 @@
+v2.2-dev (xx/xx/2016)
+---------------------
+
+Pixtable
+~~~~~~~~
+
+- A new method `~mpdaf.drs.PixTable.selfcalibrate` was added to correct the
+  background levels of the slices. This method replaces the
+  ``subtract_slice_median`` and ``divide_slice_median`` methods (which have
+  been removed). The new method works differently, gives better results, and no
+  more requires to pre-compute a mean sky spectrum with
+  `~mpdaf.drs.PixTable.sky_ref`.
+
 v2.1 (16/11/2016)
 -----------------
 
