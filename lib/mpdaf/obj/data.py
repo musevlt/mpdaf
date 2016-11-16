@@ -622,6 +622,11 @@ class DataArray(object):
             primary_header=self.primary_header.copy()
         )
 
+    def __repr__(self):
+        fmt = """<{}(shape={}, unit='{}', dtype='{}')>"""
+        return fmt.format(self.__class__.__name__, self.shape,
+                          self.unit.to_string(), self.dtype)
+
     def info(self):
         """Print information."""
         log = self._logger.info
