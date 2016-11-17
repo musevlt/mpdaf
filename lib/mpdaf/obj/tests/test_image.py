@@ -444,6 +444,9 @@ def test_rebin():
         mask=[[False, False], [False, False], [True, True]])
     image2 = image1.rebin(2)
     assert_masked_allclose(image2.data, expected)
+    
+    image2 = image1.rebin(factor=(2,2))
+    assert_masked_allclose(image2.data, expected)
 
     # The variances of the original pixels were all 0.5, so taking the
     # mean of N of these should give the mean a variance of 0.5/N.

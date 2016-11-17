@@ -1333,6 +1333,8 @@ class DataArray(object):
         # Use the same reduction factor for all dimensions?
         if is_int(factor):
             factor = np.ones((res.ndim), dtype=int) * factor
+        else:
+            factor = np.asarray(factor)
 
         # The reduction factors must be in the range 1 to shape-1.
         if np.any(factor < 1) or np.any(factor >= res.shape):
