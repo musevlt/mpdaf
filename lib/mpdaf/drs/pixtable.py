@@ -35,11 +35,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import absolute_import, division, print_function
 
+import astropy.units as u
 import datetime
 import logging
 import numpy as np
 import warnings
-import astropy.units as u
+import six
 
 from astropy.io import fits
 from astropy.io.fits import Column, ImageHDU
@@ -1779,7 +1780,7 @@ class PixTable(object):
             - foreach ifu:
                 - foreach slice:
                     - foreach lambda bin:
-                        - rejection spikes in the correction curves, using
+                        - reject spikes in the correction curves, using
                           a comparison with the correction from the next and
                           previous lambda bin.
 
@@ -1828,6 +1829,8 @@ class PixTable(object):
 
         if logfile is None:
             logfile = ''
+        if six.PY3:
+            logfile = logfile.encode('utf8')
 
         ctools.mpdaf_slice_median(
             result, result_stat, corr, npts, ifu, sli, data, stat, lbda,
