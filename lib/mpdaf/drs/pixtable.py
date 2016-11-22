@@ -1758,22 +1758,30 @@ class PixTable(object):
 
         Then, the algorithm can be summarized as follow::
 
-            - foreach ifu:
-                - foreach slice:
-                    - foreach pixel:
-                        - compute the mean flux
-                    - compute the median flux of the slice
-                - compute the median flux of the ifu
-                - foreach slice:
-                    - if too few points, use the mean ifu flux
-            - compute the total mean flux
+            - foreach lambda bin:
+                - foreach ifu:
+                    - foreach slice:
+                        - foreach pixel:
+                            - compute the mean flux
+                        - compute the median flux of the slice
+                    - compute the median flux of the ifu
+                    - foreach slice:
+                        - if too few points, use the mean ifu flux
+                - compute the total mean flux
+
+                - foreach ifu:
+                    - foreach slice:
+                        - compute the correction: total_flux / slice_flux
+                    - compute the mean and stddev of the corrections
+                    - for slices where |correction - mean| > corr_clip*std_dev:
+                        - use the mean ifu correction: total_flux / ifu_flux
 
             - foreach ifu:
                 - foreach slice:
-                    - compute the correction: total_flux / slice_flux
-                - compute the mean and stddev of the corrections
-                - for slices where |correction - mean| > corr_clip*std_dev:
-                    - use the mean ifu correction: total_flux / ifu_flux
+                    - foreach lambda bin:
+                        - rejection spikes in the correction curves, using
+                          a comparison with the correction from the next and
+                          previous lambda bin.
 
         Parameters
         ----------
@@ -1782,7 +1790,7 @@ class PixTable(object):
             `~mpdaf.drs.PixTable.mask_column`).
         corr_clip : float
             Clipping threshold for slice corrections in one IFU.
-        corr_clip : str
+        logfile : str
             Path to a file to which the log will be written.
 
         Returns

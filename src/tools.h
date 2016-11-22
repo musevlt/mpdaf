@@ -5,6 +5,9 @@ tools.h
 different C methods used by several functions
 */
 
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
+
 // Compute the arithmetic mean
 void mpdaf_mean(double* data, int n, double x[3], int* indx);
 // Compute sum

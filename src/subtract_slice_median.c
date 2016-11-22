@@ -123,8 +123,8 @@ void mpdaf_slice_median(
         char* logfile
 ) {
     size_t nlbin = (size_t)lbdabins_n;
-    size_t i, k, n, s, q, slidx;
-    double tot_flux, x[3], x1[3], x2[3], minmax[2], tmp;
+    size_t i, k, n, s, q, slidx, prev, next;
+    double tot_flux, x[3], x1[3], x2[3], minmax[2], meanq, threshq, tmp;
     double *refx, refflux;
     int slice_count1, slice_count2, tot_count;
 
@@ -318,12 +318,32 @@ void mpdaf_slice_median(
                 }
             }
         }
+    }
 
-        /* if (q == nlbin) { */
-        /*     corr[k] = corr[k-1]; */
-        /*     fprintf(fp, "IFU %02zu SLICE %02zu QUAD %02zu : %f \n", i, s, q, corr[k]); */
-        /*     continue; */
-        /* } */
+    fprintf(fp, "\nCleaning corrections ...\n\n");
+    for (i = 1; i <= NIFUS; i++) {
+        for (s = 1; s <= NSLICES; s++) {
+            for (q = 1; q <= nlbin; q++) {
+                k = MAPIDX(i, s, q);
+                if (q == 1) {
+                    prev = MAPIDX(i, s, q+1);
+                    next = MAPIDX(i, s, q+2);
+                } else if (q == nlbin) {
+                    prev = MAPIDX(i, s, q-1);
+                    next = MAPIDX(i, s, q-2);
+                } else {
+                    prev = MAPIDX(i, s, q-1);
+                    next = MAPIDX(i, s, q+1);
+                }
+                meanq = (corr[prev] + corr[next]) / 2.;
+                threshq = MAX(0.03, 3*fabs(corr[prev] - corr[next]));
+                if (fabs(corr[k] - meanq) > threshq) {
+                    fprintf(fp, "- %02zu / %02zu / %02zu : %f -> %f \n",
+                            i, s, q, corr[k], meanq);
+                    corr[k] = meanq;
+                }
+            }
+        }
     }
 
     for (k=0; k<NIFUS*NSLICES*nlbin; k++) {
