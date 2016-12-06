@@ -2136,12 +2136,10 @@ class Cube(ArithmeticMixin, DataArray):
         out : `~mpdaf.obj.Cube`
 
         """
-
-        # Extract a subcube of a square image area of 2*radius x 2*radius.
         subcub = self.subcube(center, radius * 2, unit_center=unit_center,
-                              unit_size=unit_radius)
-
-        # Mask the region outside the circle.
+                              unit_size=unit_radius).copy()
+        # Mask the region outside the circle. Work on a copy to avoid modifying
+        # the original cube.
         center = np.array(subcub.shape[1:]) / 2.0
         subcub.mask_region(center, radius, inside=False,
                            unit_center=None, unit_radius=unit_radius)

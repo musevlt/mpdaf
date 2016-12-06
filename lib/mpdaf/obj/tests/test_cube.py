@@ -591,16 +591,16 @@ def test_subcube():
     # these pixels, and the closest corner to the requested center
     # of 2.3,2.8 is 2.5,2.5. Thus the sub-images should be from pixels
     # 2,3 along both the X and Y axes.
-
     cube2 = cube1.subcube(center=(2.3, 2.8), size=2, lbda=(5, 8),
                           unit_center=None, unit_size=None)
     assert_allclose(cube1.data[5:9, 2:4, 2:4], cube2.data)
 
-    # The following should select the same image area as above,
-    # followed by masking pixels in this area outside a circle
-    # of radius 1.
+    # The following should select the same image area as above, followed by
+    # masking pixels in this area outside a circle of radius 1.
     cube2 = cube1.subcube_circle_aperture(center=(2.3, 2.8), radius=1,
                                           unit_center=None, unit_radius=None)
+    # masking the subcube should not mask the original cube
+    assert np.ma.count_masked(cube1[0].data) == 0
     assert bool(cube2.data.mask[0, 0, 0]) is True
     assert_array_equal(cube2.get_start(), (1, 2, 2))
     assert_array_equal(cube2.shape, (10, 2, 2))
