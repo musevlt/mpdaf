@@ -25,7 +25,16 @@ ASTROPY_LT_1_2 = not minversion('astropy', '1.2')
 
 if not ASTROPY_LT_1_2:
     from astropy.io.fits import table_to_hdu
-    from astropy.visualization.zscale import zscale
+    from astropy.visualization import ZScaleInterval
+
+    def zscale(image, nsamples=1000, contrast=0.25, max_reject=0.5,
+               min_npixels=5, krej=2.5, max_iterations=5):
+        interval = ZScaleInterval(nsamples=nsamples, contrast=contrast,
+                                  max_reject=max_reject,
+                                  min_npixels=min_npixels, krej=krej,
+                                  max_iterations=max_iterations)
+        return interval.get_limits(image)
+
 else:
     def table_to_hdu(table):
         """
