@@ -726,7 +726,7 @@ class Source(object):
             hdulist.writeto(filename, clobber=True, output_verify='fix')
         else:
             # update the existing FITS file
-            if filename != self._filename:
+            if os.path.abspath(filename) != self._filename:
                 shutil.copy(self._filename, filename)
 
             with pyfits.open(filename, mode='update') as hdulist:
@@ -1660,7 +1660,7 @@ class Source(object):
             wavelength (in arcsec) or a cube with the PSF to use.
             psf=None by default (no PSF-weighted extraction).
         beta : float or none
-            if not none, the PSF is a Moffat function with beta value, 
+            if not none, the PSF is a Moffat function with beta value,
             else it is a Gaussian
         lbda : (float, float) or none
             if not none, tuple giving the wavelength range.
@@ -1777,7 +1777,7 @@ class Source(object):
                             shape=(subcub.shape[1], subcub.shape[2]),
                             wcs=subcub.wcs, fwhm=(psf[l], psf[l]), n=beta, peak=False,
                             unit_fwhm=u.arcsec)
-                        white_cube[l, :, :] = moffat_ima.data.data                                       
+                        white_cube[l, :, :] = moffat_ima.data.data
             else:
                 self._logger.warning('Incorrect dimensions for the PSF vector '
                                      '(%i) (it must be (%i)) ', psf.shape[0],
