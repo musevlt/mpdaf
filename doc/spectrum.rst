@@ -125,6 +125,7 @@ Next the `mask_region <mpdaf.obj.Spectrum.mask_region>` method is used to mask a
 strong sky emission line around 5577 Angstroms:
 
 .. ipython::
+  :okwarning:
 
   In [5]: spvar.mask_region(lmin=5575, lmax=5590, unit=u.angstrom)
 
@@ -132,6 +133,7 @@ Then the `~mpdaf.obj.Spectrum.subspec` method is used to select the sub-set of
 the spectrum that we are interested in, including the masked region:
 
 .. ipython::
+  :okwarning:
 
   In [5]: spvarcut = spvar.subspec(lmin=4000, lmax=6250, unit=u.angstrom)
 
