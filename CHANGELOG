@@ -1,6 +1,28 @@
 v2.2-dev (xx/xx/2016)
 ---------------------
 
+WCS
+~~~
+
+- Fix bugs with the handling of ``CROTa``. [!77]
+
+Image
+~~~~~
+
+- Fix bug in ``Image.rebin`` when the ``factor`` parameter is a tuple. [#483]
+
+Cube
+~~~~
+
+- Fix issue with ``subcube_circle_aperture`` which was masking the original
+  cube.
+
+
+Sources
+~~~~~~~
+
+- Correct behaviour when adding an image not overlapping with Source. [#482]
+
 Pixtable
 ~~~~~~~~
 
@@ -9,7 +31,7 @@ Pixtable
   ``subtract_slice_median`` and ``divide_slice_median`` methods (which have
   been removed). The new method works differently, gives better results, and no
   more requires to pre-compute a mean sky spectrum with
-  `~mpdaf.drs.PixTable.sky_ref`.
+  `~mpdaf.drs.PixTable.sky_ref`. [!78]
 
 v2.1 (16/11/2016)
 -----------------
