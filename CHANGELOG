@@ -17,6 +17,8 @@ Cube
 - Fix issue with ``subcube_circle_aperture`` which was masking the original
   cube.
 
+- Fix offset computation in ``CubeMosaic``, using CRPIX from the output cube.
+
 
 Sources
 ~~~~~~~

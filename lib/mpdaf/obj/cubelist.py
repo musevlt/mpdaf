@@ -635,8 +635,9 @@ class CubeMosaic(CubeList):
             self.shape[0] = nl
 
         data = [fitsio.FITS(f)[1] for f in self.files]
-        offsets = np.array([-cube.wcs.wcs.wcs.crpix[::-1]
-                            for cube in self.cubes], dtype=int) + 1
+        crpix_out = self.wcs.wcs.wcs.crpix[::-1]
+        offsets = np.array([crpix_out - cube.wcs.wcs.wcs.crpix[::-1]
+                            for cube in self.cubes], dtype=int)
         shapes = np.array([cube.shape[1:] for cube in self.cubes])
 
         cube = np.empty(self.shape, dtype=np.float64)
