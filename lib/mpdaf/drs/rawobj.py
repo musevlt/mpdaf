@@ -38,13 +38,14 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 import os.path
-import warnings
 
 from astropy.io import fits
 from scipy import integrate
 from six.moves import range
 
 from ..obj import Image, WCS
+
+__all__ = ('RawFile', 'Channel')
 
 NB_SUBSLICERS = 4  # number of sub-slicers
 NB_SPEC_PER_SLICE = 75  # number of pixels per slice
@@ -524,7 +525,7 @@ class RawFile(object):
     Parameters
     ----------
     filename : str
-        The raw FITS file name. 
+        The raw FITS file name.
 
     Attributes
     ----------

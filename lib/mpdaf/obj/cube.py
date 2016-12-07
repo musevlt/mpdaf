@@ -822,7 +822,6 @@ class Cube(ArithmeticMixin, DataArray):
             - axis = (1,2) performs a sum over the (X,Y) axes and returns
               a spectrum.
 
-            Other cases return None.
         weights : ndarray, np.ma.array, float
             When an array of weights is provided via this argument, it
             used to perform a weighted sum. This involves obtaining a
@@ -902,24 +901,23 @@ class Cube(ArithmeticMixin, DataArray):
         """Return a weighted or unweighted mean over a given axis or axes.
 
         The mean is computed as follows. Note that weights of 1.0 are
-        implicitly used for each data-point if the weights option is
-        None.  Given N data points of values, d[i], with weights,
-        w[i], the weighted mean of d[0..N-1] is given by:
+        implicitly used for each data-point if the weights option is None.
+        Given N data points of values, d[i], with weights, w[i], the weighted
+        mean of d[0..N-1] is given by::
 
-        mean = Sum(d[i] * w[i]) / Sum(w[i])  for i=0..N-1
+            mean = Sum(d[i] * w[i]) / Sum(w[i])  for i=0..N-1
 
         If data point d[i] has a variance of v[i], then the variance
-        of the mean is given by:
+        of the mean is given by::
 
-        variance = Sum(v[i] * w[i]**2) / Sum(w[i])**2   for i=0..N-1
+            variance = Sum(v[i] * w[i]**2) / Sum(w[i])**2   for i=0..N-1
 
-        Note that if one substitutes 1/v[i] for w[i] in this equation,
-        the result is a variance of 1/Sum(1/v[i]). If all the
-        variances, v[i], happen to have the same value, v, then this
-        further simplifies to v / N, which is equivalent to a standard
-        deviation of sigma/sqrt(N).  This is the familiar result that
-        the signal-to-noise ratio of a mean of N samples increases as
-        sqrt(N).
+        Note that if one substitutes 1/v[i] for w[i] in this equation, the
+        result is a variance of 1/Sum(1/v[i]). If all the variances, v[i],
+        happen to have the same value, v, then this further simplifies to
+        v / N, which is equivalent to a standard deviation of sigma/sqrt(N).
+        This is the familiar result that the signal-to-noise ratio of a mean of
+        N samples increases as sqrt(N).
 
         Parameters
         ----------
@@ -935,7 +933,6 @@ class Cube(ArithmeticMixin, DataArray):
             axis = (1,2) performs a mean over the (X,Y) axes and
             returns a spectrum.
 
-            Other cases return None.
         weights : numpy.ndarray or numpy.ma.core.MaskedArray
             When an array of weights is provided via this argument, it
             used to perform a weighted mean, as described in the
@@ -1039,10 +1036,9 @@ class Cube(ArithmeticMixin, DataArray):
     def median(self, axis=None):
         """Return the median over a given axis.
 
-        Beware that if the pixels of the cube have associated
-        variances, these are discarded by this function, because
-        there is no way to estimate the effects of a median on
-        the variance.
+        Beware that if the pixels of the cube have associated variances, these
+        are discarded by this function, because there is no way to estimate the
+        effects of a median on the variance.
 
         Parameters
         ----------
@@ -1057,8 +1053,6 @@ class Cube(ArithmeticMixin, DataArray):
 
             axis = (1,2) performs a median over the (X,Y) axes and
             returns a spectrum.
-
-            Other cases return None.
 
         """
         if axis is None:
@@ -1607,9 +1601,9 @@ class Cube(ArithmeticMixin, DataArray):
             chosen wavelength range. If the number of images between
             lbda1 and lbda2 is denoted, N, then the number of
             background images taken from below and above the wavelength
-            range are:
+            range are::
 
-              nbelow = nabove = (fband * N) / 2   [rounded up to an integer]
+                nbelow = nabove = (fband * N) / 2   [rounded up to an integer]
 
             where fband is an optional argument of this function.
 

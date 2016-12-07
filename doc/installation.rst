@@ -66,9 +66,8 @@ and these require optional dependencies:
 - The first extension needs ``pkg-config``, to find the correct compiler and
   library flags, and CFITSIO_. If not available, the extension is not
   built, and a few things will not work (`~mpdaf.obj.CubeList`, and several
-  PixTable methods: `~mpdaf.drs.PixTable.sky_ref`,
-  `~mpdaf.drs.PixTable.subtract_slice_median` and
-  `~mpdaf.drs.PixTable.divide_slice_median`).
+  PixTable methods: `~mpdaf.drs.PixTable.sky_ref` and
+  `~mpdaf.drs.PixTable.selfcalibrate`).
 
   This extension can also use OpenMP_ if available.  Note that on Mac OS,
   OpenMP is not used by default because clang doesn't support OpenMP. To force

@@ -425,7 +425,7 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
 	firstpix[0] = 1;
 
 	//initialization
-	double *pix[MAX_FILES_PER_THREAD], *pixvar[MAX_FILES_PER_THREAD], *wdata, *wvar=NULL, *wmad=NULL;
+	double *pix[MAX_FILES_PER_THREAD], *pixvar[MAX_FILES_PER_THREAD], *wdata, *wvar=NULL;
 	int *indx, *files_id;
 	double x[3];
 	long npixels = naxes[0];
@@ -454,10 +454,6 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
 	wdata = (double *) malloc(nfiles * sizeof(double));
 	indx = (int *) malloc(nfiles * sizeof(int));
 	files_id = (int *) malloc(nfiles * sizeof(int));
-	if (mad==1)
-	{
-	    wmad = (double *) malloc(nfiles * sizeof(double));
-	}
 
 	for (firstpix[2] = start; firstpix[2] <= end; firstpix[2]++)
         {
@@ -519,7 +515,7 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
             {
                 if (mad==1)
                 {
-                    mpdaf_mean_madsigma_clip(wdata, n, x, nmax, nclip_low, nclip_up, nstop, indx, wmad);
+                    mpdaf_mean_madsigma_clip(wdata, n, x, nmax, nclip_low, nclip_up, nstop, indx);
                 }
                 else
                 {
@@ -589,10 +585,6 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
 	      free(pixvar[i]);
 	      fits_close_file(fvar[i], &status);
 	  }
-	}
-	if (mad==1)
-	{
-	  free(wmad);
 	}
 
 	if (status)
