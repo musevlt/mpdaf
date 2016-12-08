@@ -64,7 +64,7 @@ __all__ = ('iter_spe', 'iter_ima', 'Cube')
 def iter_spe(cube, index=False):
     """An iterator over the spectra of successive image pixels in a Cube
 
-    Each call to the iterator returns the spectrum of one pixel of the
+    Each call to the iterator as the spectrum of one pixel of the
     image. The first spectrum to be returned, is the spectrum of image
     pixel 0,0. Thereafter the X-axis pixel index is incremented by one
     at each call (modulus the length of the X-axis), and the Y-axis
@@ -2140,10 +2140,10 @@ class Cube(ArithmeticMixin, DataArray):
         return subcub
 
     def aperture(self, center, radius, unit_center=u.deg,
-                 unit_radius=u.arcsec):
+                 unit_radius=u.arcsec, is_sum=True):
         """Extract the spectrum of a circular aperture of given radius.
 
-        A spectrum is formed by summing the pixels within a specified
+        A spectrum is formed by summing/averaging the pixels within a specified
         circular region of each wavelength image. This yields a spectrum
         that has the same length as the wavelength axis of the cube.
 
@@ -2164,6 +2164,9 @@ class Cube(ArithmeticMixin, DataArray):
             The units of the radius argument (arcseconds by default)
             The special value, None, indicates that the radius is
             specified in pixels.
+        is_sum : bool
+            If True, compute the sum of the pixels, otherwise compute
+            the arithmetic mean of the pixels.
 
         Returns
         -------
@@ -2175,9 +2178,11 @@ class Cube(ArithmeticMixin, DataArray):
             cub = self.subcube_circle_aperture(center, radius,
                                                unit_center=unit_center,
                                                unit_radius=unit_radius)
-            spec = cub.sum(axis=(1, 2))
-            self._logger.info('%d spaxels summed', cub.shape[1] * cub.shape[2])
-
+            if is_sum:
+                spec = cub.sum(axis=(1, 2))
+            else:
+                spec = cub.mean(axis=(1, 2))
+            self._logger.info('%d spaxels used', cub.shape[1] * cub.shape[2])
         # Sum over a single image pixel?
         else:
             if unit_center is not None:
