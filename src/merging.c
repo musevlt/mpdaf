@@ -13,52 +13,86 @@
 #endif
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX_FILES 500
+#define MAX_FILE_LENGTH 500
 #define MAX_FILES_PER_THREAD 300
 
-int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
-{
-    char* filenames[500];
-    char buffer[80], begin[80];
-    int nfiles;
-    time_t now;
-    struct tm *info;
+/**************************************************************
+ *
+ * Cubes combination with median, mean, sigma clipping, etc.
+ *
+ **************************************************************/
 
-    // read input files list
-    nfiles = 0;
+
+// split input files list
+int split_files_list(char* input, char* filenames[]) {
+    int nfiles=0;
     const char s[2] = "\n";
     char *token;
     token = strtok(input, s);
-    while( token != NULL )
-    {
-        filenames[nfiles] = strdup(token);
-        nfiles++;
+    while( token != NULL ) {
+        filenames[nfiles++] = strdup(token);
+        if (nfiles > MAX_FILES) {
+            printf("ERROR: Too many files, limit is %d \n", MAX_FILES);
+            return 0;
+        }
         printf("%3d: %s\n", nfiles, filenames[nfiles-1]);
         token = strtok(NULL, s);
     }
     printf("nfiles: %d\n",nfiles);
+    return nfiles;
+}
 
+
+int get_max_threads(int nfiles, int typ_var) {
     struct rlimit limit;
     /* Get max number of files. */
     if (getrlimit(RLIMIT_NOFILE, &limit) != 0) {
         printf("getrlimit() failed");
-        return 1;
+        return 0;
     }
 
     int num_nthreads = limit.rlim_cur/nfiles * 0.9;
-    if (1000/nfiles < num_nthreads) //limit of cfitsio
-      {
-	num_nthreads = 1000/nfiles;
-      }
+    if (1000/nfiles < num_nthreads) {
+        //limit of cfitsio
+        num_nthreads = 1000/nfiles;
+    }
+    printf("num_nthreads: %d\n", num_nthreads);
+
+    if (typ_var==0) {
+      num_nthreads = num_nthreads/2;
+    }
 
     int nthreads;
     #pragma omp parallel
     {
-      nthreads = omp_get_num_threads();
+        nthreads = omp_get_num_threads();
     }
-    if (nthreads < num_nthreads)
-      {
-	num_nthreads=nthreads;
-      }
+    printf("omp_get_num_threads: %d\n", nthreads);
+    if (nthreads < num_nthreads) {
+        num_nthreads=nthreads;
+    }
+    printf("Using %d threads\n", num_nthreads);
+    return num_nthreads;
+}
+
+
+int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
+{
+    char* filenames[MAX_FILES];
+    char buffer[80], begin[80];
+    int nfiles=0;
+    time_t now;
+    struct tm *info;
+
+    // read input files list
+    nfiles = split_files_list(input, filenames);
+    if (!nfiles)
+        return EXIT_FAILURE;
+
+    int num_nthreads = get_max_threads(nfiles, -1);
+    if (!num_nthreads)
+        return EXIT_FAILURE;
 
     // create threads
     #pragma omp parallel shared(filenames, nfiles, data, expmap, valid_pix, buffer, begin) num_threads(num_nthreads)
@@ -66,7 +100,7 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
         int rang = omp_get_thread_num(); //current thread number
         int nthreads = omp_get_num_threads(); //number of threads
 
-        char filename[500];
+        char filename[MAX_FILE_LENGTH];
         fitsfile *fdata[MAX_FILES_PER_THREAD];
         int naxis;
         int status = 0;  // CFITSIO status value MUST be initialized to zero!
@@ -240,7 +274,7 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
   }
   printf("%s 100%%\n", buffer);
   fflush(stdout);
-  return(1);
+  return EXIT_SUCCESS;
 }
 
 
@@ -249,9 +283,9 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
 // var=2:  'stat_one'
 int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* expmap, double* scale, int* selected_pix, int* valid_pix, int nmax, double nclip_low, double nclip_up, int nstop, int typ_var, int mad)
 {
-    char* filenames[500];
+    char* filenames[MAX_FILES];
     char buffer[80], begin[80];
-    int nfiles;
+    int nfiles=0;
 
     time_t now;
     struct tm *info;
@@ -263,49 +297,13 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
     printf("nstop = %d\n", nstop);
 
     // read input files list
-    nfiles = 0;
-    const char s[2] = "\n";
-    char *token;
-    token = strtok(input, s);
-    while( token != NULL )
-    {
-        filenames[nfiles] = strdup(token);
-        nfiles++;
-        printf("%3d: %s\n", nfiles, filenames[nfiles-1]);
-        token = strtok(NULL, s);
-    }
-    printf("nfiles: %d\n",nfiles);
+    nfiles = split_files_list(input, filenames);
+    if (!nfiles)
+        return EXIT_FAILURE;
 
-    struct rlimit limit;
-    /* Get max number of files. */
-    if (getrlimit(RLIMIT_NOFILE, &limit) != 0) {
-        printf("getrlimit() failed");
-        return 1;
-    }
-
-    int num_nthreads = limit.rlim_cur/nfiles * 0.9;
-    if (1000/nfiles < num_nthreads) //limit of cfitsio
-      {
-	num_nthreads = 1000/nfiles;
-      }
-    printf("num_nthreads: %d\n", num_nthreads);
-
-    if (typ_var==0)
-    {
-      num_nthreads = num_nthreads/2;
-    }
-
-    int nthreads;
-    #pragma omp parallel
-    {
-      nthreads = omp_get_num_threads();
-    }
-    printf("omp_get_num_threads: %d\n", nthreads);
-    if (nthreads < num_nthreads)
-    {
-        num_nthreads=nthreads;
-    }
-    printf("Using %d threads\n", num_nthreads);
+    int num_nthreads = get_max_threads(nfiles, typ_var);
+    if (!num_nthreads)
+        return EXIT_FAILURE;
 
     // create threads
     #pragma omp parallel shared(filenames, nfiles, data, var, expmap, scale, valid_pix, buffer, begin, nmax, nclip_low, nclip_up, nstop, selected_pix, typ_var, mad) num_threads(num_nthreads)
@@ -313,7 +311,7 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
         int rang = omp_get_thread_num(); // current thread number
         int nthreads = omp_get_num_threads(); // number of threads
 
-        char filename[500];
+        char filename[MAX_FILE_LENGTH];
 	fitsfile *fdata[MAX_FILES_PER_THREAD], *fvar[MAX_FILES_PER_THREAD];
 	int naxis;
 	int status = 0;  // CFITSIO status value MUST be initialized to zero!
@@ -595,28 +593,5 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
     }
     printf("%s 100%%\n", buffer);
     fflush(stdout);
-    return(1);
+    return EXIT_SUCCESS;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//gcc merging.c -o merging -L/usr/local/lib -lcfitsio -O2 -march=native -Wall
-//./merging cubes.txt mean.fits expmap.fits novalid.txt mean 2 5 1
-
-
-
-
-
