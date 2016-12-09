@@ -119,10 +119,7 @@ class CubeList(object):
 
         See `mpdaf.obj.Cube.__getitem__` for details.
         """
-        if not (isinstance(item, tuple) and len(item) == 3):
-            raise ValueError('Operation forbidden')
-
-        return np.array([cube[item] for cube in self.cubes])
+        return [cube[item] for cube in self.cubes]
 
     def info(self, verbose=False):
         """Print information."""

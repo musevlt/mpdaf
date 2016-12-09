@@ -59,8 +59,8 @@ class TestCubeList(unittest.TestCase):
         assert_array_equal(clist[0, 2, 2], self.cubevals)
         assert_array_equal(np.array([a.data for a in clist[0, :, :]])[:, 0, 0],
                            self.cubevals)
-        with pytest.raises(ValueError):
-            clist[2, 2]
+        assert_array_equal(np.array([a.data for a in clist[0]])[:, 0, 0],
+                           self.cubevals)
 
     def test_checks(self):
         cube = generate_cube(shape=(3, 2, 1))
