@@ -27,17 +27,17 @@
 // split input files list
 int split_files_list(char* input, char* filenames[]) {
     int nfiles=0;
-    const char s[2] = "\n";
+    const char delim[2] = "\n";
     char *token;
-    token = strtok(input, s);
+    token = strtok(input, delim);
     while( token != NULL ) {
         filenames[nfiles++] = strdup(token);
         if (nfiles > MAX_FILES) {
             printf("ERROR: Too many files, limit is %d \n", MAX_FILES);
-            return 0;
+            exit(EXIT_FAILURE);
         }
         printf("%3d: %s\n", nfiles, filenames[nfiles-1]);
-        token = strtok(NULL, s);
+        token = strtok(NULL, delim);
     }
     printf("nfiles: %d\n",nfiles);
     return nfiles;
@@ -49,7 +49,7 @@ int get_max_threads(int nfiles, int typ_var) {
     /* Get max number of files. */
     if (getrlimit(RLIMIT_NOFILE, &limit) != 0) {
         printf("getrlimit() failed");
-        return 0;
+        exit(EXIT_FAILURE);
     }
 
     int num_nthreads = limit.rlim_cur/nfiles * 0.9;
@@ -77,6 +77,26 @@ int get_max_threads(int nfiles, int typ_var) {
 }
 
 
+int open_fits(char *input, char *extname, fitsfile **fdata, long naxes[]) {
+    int status = 0;  // CFITSIO status value MUST be initialized to zero!
+    int naxis=0;
+    char filename[MAX_FILE_LENGTH];
+    sprintf(filename, "%s[%s]", input, extname);
+    fits_open_file(fdata, filename, READONLY, &status); // open DATA extension
+    if (status) {
+        fits_report_error(stderr, status);
+        exit(EXIT_FAILURE);
+    }
+    fits_get_img_dim(*fdata, &naxis, &status);  // read dimensions
+    if (naxis != 3) {
+        printf("Error: %s not a cube\n", filename);
+        exit(EXIT_FAILURE);
+    }
+    fits_get_img_size(*fdata, 3, naxes, &status); // read shape
+    return EXIT_SUCCESS;
+}
+
+
 int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
 {
     char* filenames[MAX_FILES];
@@ -87,12 +107,8 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
 
     // read input files list
     nfiles = split_files_list(input, filenames);
-    if (!nfiles)
-        return EXIT_FAILURE;
 
     int num_nthreads = get_max_threads(nfiles, -1);
-    if (!num_nthreads)
-        return EXIT_FAILURE;
 
     // create threads
     #pragma omp parallel shared(filenames, nfiles, data, expmap, valid_pix, buffer, begin) num_threads(num_nthreads)
@@ -100,9 +116,7 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
         int rang = omp_get_thread_num(); //current thread number
         int nthreads = omp_get_num_threads(); //number of threads
 
-        char filename[MAX_FILE_LENGTH];
         fitsfile *fdata[MAX_FILES_PER_THREAD];
-        int naxis;
         int status = 0;  // CFITSIO status value MUST be initialized to zero!
         long naxes[3] = {1,1,1}, bnaxes[3] = {1,1,1};
 
@@ -112,55 +126,19 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
         int valid[nfiles];
 
         // read first file
+        open_fits(filenames[0], "data", &fdata[0], naxes);
         #pragma omp master
         {
             printf("Read fits files\n");
-        }
-        sprintf(filename, "%s[data]", filenames[0]);
-        /* strcpy(filename, filenames[0]); */
-        /* strcat(filename,"[data]\0" ); */
-        fits_open_file(&(fdata[0]), filename, READONLY, &status); // open DATA extension
-        if (status)
-        {
-            fits_report_error(stderr, status);
-            exit(EXIT_FAILURE);
-        }
-        fits_get_img_dim(fdata[0], &naxis, &status);  // read dimensions
-        if (naxis != 3)
-        {
-            printf("Error: %s not a cube\n", filename);
-            exit(EXIT_FAILURE);
-        }
-        fits_get_img_size(fdata[0], 3, naxes, &status); // read shape
-        #pragma omp master
-        {
             printf("naxes %zu %zu %zu\n", naxes[0], naxes[1], naxes[2]);
         }
 
-        // read other files
-        for (i=1; i<nfiles; i++)
-        {
-            sprintf(filename, "%s[data]", filenames[i]);
-            /* strcpy(filename, filenames[i]); */
-            /* strcat(filename,"[data]\0" ); */
-            fits_open_file(&(fdata[i]), filename, READONLY, &status); // open data extension
-            if (status)
-            {
-                fits_report_error(stderr, status);
-                exit(EXIT_FAILURE);
-            }
-            fits_get_img_dim(fdata[i], &naxis, &status);  // read dimensions
-            if (naxis != 3)
-            {
-                printf("Error: %s not a cube\n", filename);
-                exit(EXIT_FAILURE);
-            }
-            fits_get_img_size(fdata[i], 3, bnaxes, &status); //compare that the shape is the same
-            if ( naxes[0] != bnaxes[0] ||
-                    naxes[1] != bnaxes[1] ||
-                    naxes[2] != bnaxes[2] )
-            {
-                printf("Error: %s don't have same size\n", filename);
+        // read other files and compare that the shape is the same
+        for (i=1; i<nfiles; i++) {
+            open_fits(filenames[i], "data", &fdata[i], bnaxes);
+            if (naxes[0] != bnaxes[0] || naxes[1] != bnaxes[1] ||
+                    naxes[2] != bnaxes[2]) {
+                printf("Error: %s don't have same size\n", filenames[i]);
                 exit(EXIT_FAILURE);
             }
         }
@@ -298,12 +276,8 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
 
     // read input files list
     nfiles = split_files_list(input, filenames);
-    if (!nfiles)
-        return EXIT_FAILURE;
 
     int num_nthreads = get_max_threads(nfiles, typ_var);
-    if (!num_nthreads)
-        return EXIT_FAILURE;
 
     // create threads
     #pragma omp parallel shared(filenames, nfiles, data, var, expmap, scale, valid_pix, buffer, begin, nmax, nclip_low, nclip_up, nstop, selected_pix, typ_var, mad) num_threads(num_nthreads)
@@ -311,9 +285,7 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
         int rang = omp_get_thread_num(); // current thread number
         int nthreads = omp_get_num_threads(); // number of threads
 
-        char filename[MAX_FILE_LENGTH];
         fitsfile *fdata[MAX_FILES_PER_THREAD], *fvar[MAX_FILES_PER_THREAD];
-        int naxis;
         int status = 0;  // CFITSIO status value MUST be initialized to zero!
         long naxes[3] = {1,1,1}, bnaxes[3] = {1,1,1};
 
@@ -322,86 +294,31 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
 
         int valid[nfiles], select[nfiles];
 
+        // read first file
+        open_fits(filenames[0], "data", &fdata[0], naxes);
         #pragma omp master
         {
             printf("Read fits files\n");
-        }
-        // read first file
-        sprintf(filename, "%s[data]", filenames[0]);
-        /* strcpy(filename, filenames[0]); */
-        /* strcat(filename,"[data]\0" ); */
-        fits_open_file(&(fdata[0]), filename, READONLY, &status); // open data extension
-        if (status)
-        {
-            fits_report_error(stderr, status);
-            exit(EXIT_FAILURE);
-        }
-        fits_get_img_dim(fdata[0], &naxis, &status);  /* read dimensions */
-        if (naxis != 3)
-        {
-            printf("Error: %s not a cube\n", filename);
-            exit(EXIT_FAILURE);
-        }
-        fits_get_img_size(fdata[0], 3, naxes, &status);
-        #pragma omp master
-        {
             printf("naxes %zu %zu %zu\n", naxes[0], naxes[1], naxes[2]);
         }
 
-        // read other files
-        for (i=1; i<nfiles; i++)
-        {
-            sprintf(filename, "%s[data]", filenames[i]);
-            /* strcpy(filename, filenames[i]); */
-            /* strcat(filename,"[data]\0" ); */
-            fits_open_file(&(fdata[i]), filename, READONLY, &status); // open data extension
-            if (status)
-            {
-                fits_report_error(stderr, status);
-                exit(EXIT_FAILURE);
-            }
-            fits_get_img_dim(fdata[i], &naxis, &status);  // read dimensions
-            if (naxis != 3)
-            {
-                printf("Error: %s not a cube\n", filename);
-                exit(EXIT_FAILURE);
-            }
-            fits_get_img_size(fdata[i], 3, bnaxes, &status);
-            if ( naxes[0] != bnaxes[0] ||
-                    naxes[1] != bnaxes[1] ||
-                    naxes[2] != bnaxes[2] )
-            {
-                printf("Error: %s don't have same size\n", filename);
+        // read other files and compare that the shape is the same
+        for (i=1; i<nfiles; i++) {
+            open_fits(filenames[i], "data", &fdata[i], bnaxes);
+            if (naxes[0] != bnaxes[0] || naxes[1] != bnaxes[1] ||
+                    naxes[2] != bnaxes[2]) {
+                printf("Error: %s don't have same size\n", filenames[i]);
                 exit(EXIT_FAILURE);
             }
         }
 
-        if (typ_var==0)
-        {
+        if (typ_var==0) {
             // read variance extension
-            for (i=0; i<nfiles; i++)
-            {
-                sprintf(filename, "%s[stat]", filenames[i]);
-                /* strcpy(filename, filenames[i]); */
-                /* strcat(filename,"[stat]\0" ); */
-                fits_open_file(&(fvar[i]), filename, READONLY, &status);
-                if (status)
-                {
-                    fits_report_error(stderr, status);
-                    exit(EXIT_FAILURE);
-                }
-                fits_get_img_dim(fvar[i], &naxis, &status);
-                if (naxis != 3)
-                {
-                    printf("Error: %s not a cube\n", filename);
-                    exit(EXIT_FAILURE);
-                }
-                fits_get_img_size(fvar[i], 3, bnaxes, &status);
-                if ( naxes[0] != bnaxes[0] ||
-                        naxes[1] != bnaxes[1] ||
-                        naxes[2] != bnaxes[2] )
-                {
-                    printf("Error: %s don't have same size\n", filename);
+            for (i=0; i<nfiles; i++) {
+                open_fits(filenames[i], "stat", &fvar[i], bnaxes);
+                if (naxes[0] != bnaxes[0] || naxes[1] != bnaxes[1] ||
+                        naxes[2] != bnaxes[2]) {
+                    printf("Error: %s don't have same size\n", filenames[i]);
                     exit(EXIT_FAILURE);
                 }
             }
