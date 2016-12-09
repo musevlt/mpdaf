@@ -4079,7 +4079,7 @@ class Image(ArithmeticMixin, DataArray):
             # Choose vmin and vmax automatically?
             if zscale:
                 from ..tools.astropycompat import zscale as plt_zscale
-                vmin, vmax = plt_zscale(self.data.filled(0))
+                vmin, vmax = plt_zscale(self.data.filled(np.nan))
 
             # How are values between vmin and vmax mapped to corresponding
             # positions along the colorbar?
