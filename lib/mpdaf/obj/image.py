@@ -4079,7 +4079,7 @@ class Image(ArithmeticMixin, DataArray):
             # Choose vmin and vmax automatically?
             if zscale:
                 from ..tools.astropycompat import zscale as plt_zscale
-                if im.data.dtype == np.float64:
+                if self.data.dtype == np.float64:
                     vmin, vmax = plt_zscale(self.data.filled(np.nan))
                 else:
                     vmin, vmax = plt_zscale(self.data.filled(0))
