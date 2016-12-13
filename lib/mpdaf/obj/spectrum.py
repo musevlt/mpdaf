@@ -40,6 +40,7 @@ import numpy as np
 import types
 
 import astropy.units as u
+from os.path import join, abspath, dirname
 from scipy import interpolate, signal
 from scipy.optimize import leastsq
 from six.moves import range
@@ -675,7 +676,7 @@ class Spectrum(ArithmeticMixin, DataArray):
                 var = None
             mask = out._mask
         else:                             # Is out.data just a numpy array?
-            mask = ~isfinite(out._data)
+            mask = ~np.isfinite(out._data)
             data = out._data.copy()
             data[mask] = 0.0
             if out.var is not None:
@@ -1151,6 +1152,8 @@ class Spectrum(ArithmeticMixin, DataArray):
         out : float, float
               Magnitude value and its error
         """
+        
+        
         if name == 'U':
             return self.abmag_band(3663., 650.)
         elif name == 'B':
@@ -1166,11 +1169,21 @@ class Spectrum(ArithmeticMixin, DataArray):
         elif name == 'R-Johnson':
             (l0, lmin, lmax, tck) = ABmag_filters.mag_RJohnson()
             return self._filter(l0, lmin, lmax, tck)
-        elif name == 'F606W':
-            (l0, lmin, lmax, tck) = ABmag_filters.mag_F606W()
-            return self._filter(l0, lmin, lmax, tck)
         else:
-            pass
+            DATADIR = join(abspath(dirname(__file__)), 'filters')
+            filenames = {'F606W': 'wfc_F606W.dat',
+                         'F775W': 'wfc_F775W.dat',
+                         'F814W': 'wfc_F814W.dat',
+                         'F850LP': 'wfc_F850LP.dat'}
+            lbda, thr = np.loadtxt(join(DATADIR, filenames[name]),
+                                   dtype=float, delimiter=' ',
+                                   unpack=True)
+            lmin = np.min(lbda)
+            lmax = np.max(lbda)
+            l0 = np.mean(lbda)
+            tck = interpolate.splrep(lbda, thr, k=3)
+            return self._filter(l0, lmin, lmax, tck)
+
 
     def abmag_filter(self, lbda, eff):
         """Compute AB magnitude using array filter.
