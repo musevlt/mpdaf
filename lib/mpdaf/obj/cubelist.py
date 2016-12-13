@@ -64,6 +64,7 @@ KEYWORDS_TO_COPY = (
 
 def _pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
                header=None, mad=False, pos=None, shapes=None, method=''):
+    """Common implementation used by CubeList and CubeMosaic."""
     try:
         import fitsio
     except ImportError:
@@ -77,10 +78,7 @@ def _pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
                            'to use this method')
         raise
 
-    if np.isscalar(nclip):
-        nclip_low, nclip_up = nclip, nclip
-    else:
-        nclip_low, nclip_up = nclip
+    nclip_low, nclip_up = (nclip, nclip) if np.isscalar(nclip) else nclip
 
     if var == 'propagate':
         var_mean = 0
@@ -95,8 +93,10 @@ def _pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
     info("nclip_low = %f", nclip_low)
     info("nclip_high = %f", nclip_up)
     info("variance = %s", var)
+    info("mad = %s", mad)
 
     if nl is not None:
+        info("cutting wavelength range to %s", nl)
         self.shape[0] = nl
 
     if pos is None:
@@ -104,6 +104,7 @@ def _pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
     if shapes is None:
         shapes = np.repeat([self.shape[1:]], self.nfiles, axis=0)
 
+    # Create output arrays
     cube = np.empty(self.shape, dtype=np.float64)
     vardata = np.empty(self.shape, dtype=np.float64)
     expmap = np.empty(self.shape, dtype=np.int32)
@@ -115,8 +116,8 @@ def _pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
     arr = np.empty(fshape, dtype=float)
     starr = np.empty(fshape, dtype=float)
 
+    # Open input files
     data = [fitsio.FITS(f)['DATA'] for f in self.files]
-
     if var_mean == 0:
         stat = [fitsio.FITS(f)['STAT'] for f in self.files]
 
@@ -145,7 +146,7 @@ def _pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
     stat = None
     data = None
 
-    # no valid pixels
+    # Compute stats
     npixels = np.prod(self.shape)
     no_valid_pix = npixels - valid_pix
     rejected_pix = valid_pix - select_pix
@@ -155,10 +156,13 @@ def _pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
     stat_pix = Table([self.files, no_valid_pix, rejected_pix],
                      names=['FILENAME', 'NPIX_NAN', 'NPIX_REJECTED'])
 
-    keywords = [('nmax', nmax, 'max number of clipping iterations'),
-                ('nclip_low', nclip, 'lower clipping parameter'),
-                ('nclip_up', nclip, 'upper clipping parameter'),
-                ('var', var, 'type of variance')]
+    keywords = [
+        ('nmax', nmax, 'max number of clipping iterations'),
+        ('nclip_low', nclip, 'lower clipping parameter'),
+        ('nclip_up', nclip, 'upper clipping parameter'),
+        ('var', var, 'type of variance'),
+        ('mad', mad, 'use of MAD')
+    ]
     kwargs = dict(expnb=np.nanmedian(expmap), header=header,
                   keywords=keywords, method=method)
     cube = self.save_combined_cube(cube, var=vardata, **kwargs)
@@ -167,6 +171,55 @@ def _pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
     rejmap = self.save_combined_cube(rejmap, unit=u.dimensionless_unscaled,
                                      **kwargs)
     return cube, expmap, stat_pix, rejmap
+
+
+_combine_doc = """\
+Combines cubes in a single data cube using sigma clipped mean.
+
+Parameters
+----------
+nmax : int
+    Maximum number of clipping iterations.
+nclip : float or tuple of float
+    Number of sigma at which to clip.
+    Single clipping parameter or lower / upper clipping parameters.
+nstop : int
+    If the number of not rejected pixels is less
+    than this number, the clipping iterations stop.
+var : {'propagate', 'stat_mean', 'stat_one'}
+    - ``propagate``: the variance is the sum of the variances
+        of the N individual exposures divided by N**2.
+    - ``stat_mean``: the variance of each combined pixel
+        is computed as the variance derived from the comparison
+        of the N individual exposures divided N-1.
+    - ``stat_one``: the variance of each combined pixel is
+        computed as the variance derived from the comparison
+        of the N individual exposures.
+mad : bool
+    Use MAD (median absolute deviation) statistics for sigma-clipping.
+
+Returns
+-------
+cube : `~mpdaf.obj.Cube`
+    The merged cube.
+expmap: `mpdaf.obj.Cube`
+    Exposure map data cube which counts the number of exposures used for
+    the combination of each pixel.
+statpix: `astropy.table.Table`
+    Table that gives the number of NaN pixels and rejected pixels per exposures
+    (columns are FILENAME, NPIX_NAN and NPIX_REJECTED).
+"""
+
+_pycombine_doc = """\
+Combines cubes in a single data cube using sigma clipped mean.
+
+This is less optimized but more flexible version, compared to
+`CubeList.combine`. It is useful mostly for `CubeMosaic`, where we need to
+shift the individual cubes into the output one.
+%s
+rejmap: `~mpdaf.obj.Cube`
+    Cube which contains the number of rejected values for each pixel.
+""" % '\n'.join(_combine_doc.splitlines()[1:])
 
 
 class CubeList(object):
@@ -366,45 +419,6 @@ class CubeList(object):
 
     def combine(self, nmax=2, nclip=5.0, nstop=2, var='propagate', mad=False,
                 header=None):
-        """combines cubes in a single data cube using sigma clipped mean.
-
-        Parameters
-        ----------
-        nmax  : int
-            maximum number of clipping iterations
-        nclip : float or (float,float)
-            Number of sigma at which to clip.
-            Single clipping parameter or lower / upper clipping parameters.
-        nstop : int
-            If the number of not rejected pixels is less
-            than this number, the clipping iterations stop.
-        var   : str
-            ``propagate``, ``stat_mean``, ``stat_one``
-
-            - ``propagate``: the variance is the sum of the variances
-              of the N individual exposures divided by N**2.
-            - ``stat_mean``: the variance of each combined pixel
-              is computed as the variance derived from the comparison
-              of the N individual exposures divided N-1.
-            - ``stat_one``: the variance of each combined pixel is
-              computed as the variance derived from the comparison
-              of the N individual exposures.
-        mad : bool
-            Use MAD (median absolute deviation) statistics for sigma-clipping
-
-        Returns
-        -------
-        out : `~mpdaf.obj.Cube`, `mpdaf.obj.Cube`, astropy.table
-            cube, expmap, statpix
-
-            - ``cube`` will contain the merged cube
-            - ``expmap`` will contain an exposure map data cube which counts
-              the number of exposures used for the combination of each pixel.
-            - ``statpix`` is a table that will give the number of Nan pixels
-              and rejected pixels per exposures (columns are FILENAME,
-              NPIX_NAN and NPIX_REJECTED)
-
-        """
         from ..tools.ctools import ctools
 
         if np.isscalar(nclip):
@@ -498,6 +512,9 @@ class CubeList(object):
         return _pycombine(self, nmax=nmax, nclip=nclip, var=var, nstop=nstop,
                           nl=nl, header=header, mad=mad,
                           method='obj.cubelist.pycombine')
+
+    combine.__doc__ = _combine_doc
+    pycombine.__doc__ = _pycombine_doc
 
 
 class CubeMosaic(CubeList):
@@ -624,3 +641,5 @@ class CubeMosaic(CubeList):
         return _pycombine(self, nmax=nmax, nclip=nclip, var=var, nstop=nstop,
                           nl=nl, header=header, mad=mad, pos=pos,
                           shapes=shapes, method='obj.cubemosaic.pycombine')
+
+    pycombine.__doc__ = _pycombine_doc
