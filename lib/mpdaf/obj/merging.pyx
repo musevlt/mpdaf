@@ -43,7 +43,12 @@ from libc.stdlib cimport malloc, free
 
 cdef extern from "../../../src/tools.h":
     double mpdaf_sum(double* data, int n, int* indx) nogil
-    void mpdaf_mean_sigma_clip(double* data, int n, double x[3], int nmax, double nclip_low, double nclip_up, int nstop, int* indx) nogil
+    void mpdaf_mean_sigma_clip(double* data, int n, double x[3], int nmax,
+                               double nclip_low, double nclip_up, int nstop,
+                               int* indx) nogil
+    void mpdaf_mean_madsigma_clip(double* data, int n, double x[3], int nmax,
+                                  double nclip_low, double nclip_up, int nstop,
+                                  int* indx) nogil
 
 cdef extern from "numpy/npy_math.h" nogil:
     long double NAN "NPY_NAN"
@@ -55,7 +60,8 @@ cdef extern from "numpy/npy_math.h" nogil:
 def sigma_clip(double[:,:,:] data, double[:,:,:] stat, double[:,:,:] cube,
                double[:,:,:] var, int[:,:,:] expmap, int[:,:,:] rejmap,
                int[:] valid_pix, int[:] select_pix, int l, int nmax,
-               double nclip_low, double nclip_up, int nstop, int vartype):
+               double nclip_low, double nclip_up, int nstop, int vartype,
+               int mad):
     cdef unsigned int i, x, y, n, nuse
     cdef unsigned int ymax = data.shape[0]
     cdef unsigned int xmax = data.shape[1]
@@ -66,6 +72,11 @@ def sigma_clip(double[:,:,:] data, double[:,:,:] stat, double[:,:,:] cube,
     cdef unsigned int *files_id = <unsigned int *>malloc(nfiles * sizeof(unsigned int))
     cdef double *wdata = <double *>malloc(nfiles * sizeof(double))
     cdef double *wstat = <double *>malloc(nfiles * sizeof(double))
+
+    if mad == 0:
+        merge_func = mpdaf_mean_sigma_clip
+    else:
+        merge_func = mpdaf_mean_madsigma_clip
 
     # with nogil:
     for y in range(ymax):
@@ -90,8 +101,8 @@ def sigma_clip(double[:,:,:] data, double[:,:,:] stat, double[:,:,:] cube,
                 #     for i in range(n): print wstat[i], ' / ',
                 #     print '\n'
 
-                mpdaf_mean_sigma_clip(&wdata[0], n, res, nmax, nclip_low,
-                                      nclip_up, nstop, &ind[0])
+                merge_func(&wdata[0], n, res, nmax, nclip_low, nclip_up,
+                           nstop, &ind[0])
                 nuse = <int>res[2]
                 cube[l, y, x] = res[0]
                 expmap[l, y, x] = nuse

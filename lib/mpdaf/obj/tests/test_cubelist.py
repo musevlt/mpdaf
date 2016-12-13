@@ -98,6 +98,10 @@ class TestCubeList(unittest.TestCase):
             else:
                 cube, expmap, stat_pix, rejmap = out
 
+            out2 = method(header={'FOO': 'BAR'}, mad=True)
+            assert_array_equal(out[0].data, out2[0].data)
+            assert_array_equal(out[1].data, out2[1].data)
+
             self.assert_header(cube)
             assert_array_equal(cube.data, combined_cube)
             assert_array_equal(expmap.data, self.expmap)
@@ -123,3 +127,7 @@ class TestCubeList(unittest.TestCase):
         self.assert_header(cube)
         assert_array_equal(cube.data, combined_cube)
         assert_array_equal(expmap.data, self.expmap)
+
+        cube2, expmap2, _, _ = clist.pycombine(header={'FOO': 'BAR'}, mad=True)
+        assert_array_equal(cube.data, cube2.data)
+        assert_array_equal(expmap.data, expmap2.data)

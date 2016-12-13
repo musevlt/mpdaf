@@ -387,7 +387,7 @@ class CubeList(object):
         return cube, expmap, stat_pix
 
     def pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
-                  header=None):
+                  header=None, mad=False):
         try:
             import fitsio
         except ImportError:
@@ -451,7 +451,7 @@ class CubeList(object):
 
             sigma_clip(arr, starr, cube, vardata, expmap, rejmap, valid_pix,
                        select_pix, l, nmax, nclip_low, nclip_up, nstop,
-                       var_mean)
+                       var_mean, int(mad))
 
         arr = None
         data = None
@@ -596,7 +596,7 @@ class CubeMosaic(CubeList):
         raise NotImplementedError
 
     def pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
-                  header=None):
+                  header=None, mad=False):
         try:
             import fitsio
         except ImportError:
@@ -668,7 +668,7 @@ class CubeMosaic(CubeList):
 
             sigma_clip(arr, starr, cube, vardata, expmap, rejmap, valid_pix,
                        select_pix, l, nmax, nclip_low, nclip_up, nstop,
-                       var_mean)
+                       var_mean, int(mad))
 
         arr = None
         starr = None
