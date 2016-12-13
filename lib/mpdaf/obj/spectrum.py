@@ -1145,7 +1145,8 @@ class Spectrum(ArithmeticMixin, DataArray):
         Parameters
         ----------
         name : string
-            'U', 'B', 'V', 'Rc', 'Ic', 'z', 'R-Johnson','F606W'
+            'U', 'B', 'V', 'Rc', 'Ic', 'z', 'R-Johnson',
+            'F606W', 'F775W', 'F814W', 'F850LP'
 
         Returns
         -------
