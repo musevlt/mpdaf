@@ -62,6 +62,113 @@ KEYWORDS_TO_COPY = (
 )
 
 
+def _pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
+               header=None, mad=False, pos=None, shapes=None, method=''):
+    try:
+        import fitsio
+    except ImportError:
+        self._logger.error('fitsio is required !')
+        raise
+
+    try:
+        from .merging import sigma_clip
+    except:
+        self._logger.error('The `merging` module must have been compiled '
+                           'to use this method')
+        raise
+
+    if np.isscalar(nclip):
+        nclip_low, nclip_up = nclip, nclip
+    else:
+        nclip_low, nclip_up = nclip
+
+    if var == 'propagate':
+        var_mean = 0
+    elif var == 'stat_mean':
+        var_mean = 1
+    else:
+        var_mean = 2
+
+    info = self._logger.info
+    info("Merging cube using sigma clipped mean")
+    info("nmax = %d", nmax)
+    info("nclip_low = %f", nclip_low)
+    info("nclip_high = %f", nclip_up)
+    info("variance = %s", var)
+
+    if nl is not None:
+        self.shape[0] = nl
+
+    if pos is None:
+        pos = np.zeros((self.nfiles, 2), dtype=int)
+    if shapes is None:
+        shapes = np.repeat([self.shape[1:]], self.nfiles, axis=0)
+
+    cube = np.empty(self.shape, dtype=np.float64)
+    vardata = np.empty(self.shape, dtype=np.float64)
+    expmap = np.empty(self.shape, dtype=np.int32)
+    rejmap = np.empty(self.shape, dtype=np.int32)
+    valid_pix = np.zeros(self.nfiles, dtype=np.int32)
+    select_pix = np.zeros(self.nfiles, dtype=np.int32)
+    nl = self.shape[0]
+    fshape = (self.shape[1], self.shape[2], self.nfiles)
+    arr = np.empty(fshape, dtype=float)
+    starr = np.empty(fshape, dtype=float)
+
+    data = [fitsio.FITS(f)['DATA'] for f in self.files]
+
+    if var_mean == 0:
+        stat = [fitsio.FITS(f)['STAT'] for f in self.files]
+
+    info('Looping on the %d planes of the cube', nl)
+    for l in range(nl):
+        if l % 100 == 0:
+            info('%d/%d', l, nl)
+        arr.fill(np.nan)
+        for i, f in enumerate(data):
+            x, y = pos[i]
+            nx, ny = shapes[i]
+            arr[x:x + nx, y:y + ny, i] = f[l, :, :][0]
+        if var_mean == 0:
+            starr.fill(np.nan)
+            for i, f in enumerate(stat):
+                x, y = pos[i]
+                nx, ny = shapes[i]
+                starr[x:x + nx, y:y + ny, i] = f[l, :, :][0]
+
+        sigma_clip(arr, starr, cube, vardata, expmap, rejmap, valid_pix,
+                   select_pix, l, nmax, nclip_low, nclip_up, nstop,
+                   var_mean, int(mad))
+
+    arr = None
+    starr = None
+    stat = None
+    data = None
+
+    # no valid pixels
+    npixels = np.prod(self.shape)
+    no_valid_pix = npixels - valid_pix
+    rejected_pix = valid_pix - select_pix
+    rej = rejected_pix / valid_pix.astype(float) * 100.0
+    rej = " ".join("{:.2f}".format(p) for p in rej)
+    info("%% of rejected pixels per files: %s", rej)
+    stat_pix = Table([self.files, no_valid_pix, rejected_pix],
+                     names=['FILENAME', 'NPIX_NAN', 'NPIX_REJECTED'])
+
+    keywords = [('nmax', nmax, 'max number of clipping iterations'),
+                ('nclip_low', nclip, 'lower clipping parameter'),
+                ('nclip_up', nclip, 'upper clipping parameter'),
+                ('var', var, 'type of variance')]
+    kwargs = dict(expnb=np.nanmedian(expmap), header=header,
+                  keywords=keywords, method=method)
+    cube = self.save_combined_cube(cube, var=vardata, **kwargs)
+    expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
+                                     **kwargs)
+    rejmap = self.save_combined_cube(rejmap, unit=u.dimensionless_unscaled,
+                                     **kwargs)
+    return cube, expmap, stat_pix, rejmap
+
+
 class CubeList(object):
 
     """Manages a list of cubes and handles the combination.
@@ -388,97 +495,9 @@ class CubeList(object):
 
     def pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
                   header=None, mad=False):
-        try:
-            import fitsio
-        except ImportError:
-            self._logger.error('fitsio is required !')
-            raise
-
-        try:
-            from .merging import sigma_clip
-        except:
-            self._logger.error('The `merging` module must have been compiled '
-                               'to use this method')
-            raise
-
-        if np.isscalar(nclip):
-            nclip_low, nclip_up = nclip, nclip
-        else:
-            nclip_low, nclip_up = nclip
-
-        if var == 'propagate':
-            var_mean = 0
-        elif var == 'stat_mean':
-            var_mean = 1
-        else:
-            var_mean = 2
-
-        info = self._logger.info
-
-        info("Merging cube using sigma clipped mean")
-        info("nmax = %d", nmax)
-        info("nclip_low = %f", nclip_low)
-        info("nclip_high = %f", nclip_up)
-
-        if nl is not None:
-            self.shape[0] = nl
-
-        data = [fitsio.FITS(f)['DATA'] for f in self.files]
-        cube = np.empty(self.shape, dtype=np.float64)
-        expmap = np.zeros(self.shape, dtype=np.int32)
-        rejmap = np.zeros(self.shape, dtype=np.int32)
-        vardata = np.empty(self.shape, dtype=np.float64)
-        valid_pix = np.zeros(self.nfiles, dtype=np.int32)
-        select_pix = np.zeros(self.nfiles, dtype=np.int32)
-        nl = self.shape[0]
-        fshape = (self.shape[1], self.shape[2], self.nfiles)
-        arr = np.empty(fshape, dtype=float)
-        starr = np.empty(fshape, dtype=float)
-
-        if var_mean == 0:
-            stat = [fitsio.FITS(f)['STAT'] for f in self.files]
-
-        info('Looping on the %d planes of the cube', nl)
-
-        for l in range(nl):
-            if l % 100 == 0:
-                info('%d/%d', l, nl)
-            for i, f in enumerate(data):
-                arr[:, :, i] = f[l, :, :][0]
-            if var_mean == 0:
-                for i, f in enumerate(stat):
-                    starr[:, :, i] = f[l, :, :][0]
-
-            sigma_clip(arr, starr, cube, vardata, expmap, rejmap, valid_pix,
-                       select_pix, l, nmax, nclip_low, nclip_up, nstop,
-                       var_mean, int(mad))
-
-        arr = None
-        data = None
-
-        # no valid pixels
-        npixels = np.prod(self.shape)
-        no_valid_pix = npixels - valid_pix
-        rejected_pix = valid_pix - select_pix
-        rej = rejected_pix / valid_pix.astype(float) * 100.0
-        rej = " ".join("{:.2f}".format(p) for p in rej)
-        info("%% of rejected pixels per files: %s", rej)
-
-        stat_pix = Table([self.files, no_valid_pix, rejected_pix],
-                         names=['FILENAME', 'NPIX_NAN', 'NPIX_REJECTED'])
-
-        keywords = [('nmax', nmax, 'max number of clipping iterations'),
-                    ('nclip_low', nclip, 'lower clipping parameter'),
-                    ('nclip_up', nclip, 'upper clipping parameter'),
-                    ('var', var, 'type of variance')]
-        kwargs = dict(expnb=np.nanmedian(expmap), header=header,
-                      keywords=keywords, method='obj.cubelist.pymerging')
-        cube = self.save_combined_cube(cube, var=vardata, **kwargs)
-        expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
-                                         **kwargs)
-        rejmap = self.save_combined_cube(rejmap, unit=u.dimensionless_unscaled,
-                                         **kwargs)
-        return cube, expmap, stat_pix, rejmap
+        return _pycombine(self, nmax=nmax, nclip=nclip, var=var, nstop=nstop,
+                          nl=nl, header=header, mad=mad,
+                          method='obj.cubelist.pycombine')
 
 
 class CubeMosaic(CubeList):
@@ -597,103 +616,11 @@ class CubeMosaic(CubeList):
 
     def pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
                   header=None, mad=False):
-        try:
-            import fitsio
-        except ImportError:
-            self._logger.error('fitsio is required !')
-            raise
-
-        try:
-            from .merging import sigma_clip
-        except:
-            self._logger.error('The `merging` module must have been compiled '
-                               'to use this method')
-            raise
-
-        if np.isscalar(nclip):
-            nclip_low, nclip_up = nclip, nclip
-        else:
-            nclip_low, nclip_up = nclip
-
-        info = self._logger.info
-        info("Merging cube using sigma clipped mean")
-        info("nmax = %d", nmax)
-        info("nclip_low = %f", nclip_low)
-        info("nclip_high = %f", nclip_up)
-
-        if var == 'propagate':
-            var_mean = 0
-        elif var == 'stat_mean':
-            var_mean = 1
-        else:
-            var_mean = 2
-
-        if nl is not None:
-            self.shape[0] = nl
-
-        data = [fitsio.FITS(f)[1] for f in self.files]
         crpix_out = self.wcs.wcs.wcs.crpix[::-1]
-        offsets = np.array([crpix_out - cube.wcs.wcs.wcs.crpix[::-1]
-                            for cube in self.cubes], dtype=int)
+        pos = np.array([crpix_out - cube.wcs.wcs.wcs.crpix[::-1]
+                        for cube in self.cubes], dtype=int)
         shapes = np.array([cube.shape[1:] for cube in self.cubes])
 
-        cube = np.empty(self.shape, dtype=np.float64)
-        vardata = np.empty(self.shape, dtype=np.float64)
-        expmap = np.empty(self.shape, dtype=np.int32)
-        rejmap = np.empty(self.shape, dtype=np.int32)
-        valid_pix = np.zeros(self.nfiles, dtype=np.int32)
-        select_pix = np.zeros(self.nfiles, dtype=np.int32)
-        nl = self.shape[0]
-        fshape = (self.shape[1], self.shape[2], self.nfiles)
-        arr = np.empty(fshape, dtype=float)
-        starr = np.empty(fshape, dtype=float)
-
-        if var_mean == 0:
-            stat = [fitsio.FITS(f)['STAT'] for f in self.files]
-
-        info('Looping on the %d planes of the cube', nl)
-        for l in range(nl):
-            if l % 100 == 0:
-                info('%d/%d', l, nl)
-            arr.fill(np.nan)
-            for i, f in enumerate(data):
-                x, y = offsets[i]
-                arr[x:x + shapes[i][0], y:y + shapes[i][1], i] = f[l, :, :][0]
-            if var_mean == 0:
-                starr.fill(np.nan)
-                for i, f in enumerate(stat):
-                    x, y = offsets[i]
-                    nx, ny = shapes[i]
-                    starr[x:x + nx, y:y + ny, i] = f[l, :, :][0]
-
-            sigma_clip(arr, starr, cube, vardata, expmap, rejmap, valid_pix,
-                       select_pix, l, nmax, nclip_low, nclip_up, nstop,
-                       var_mean, int(mad))
-
-        arr = None
-        starr = None
-        stat = None
-        data = None
-
-        # no valid pixels
-        npixels = np.prod(self.shape)
-        no_valid_pix = npixels - valid_pix
-        rejected_pix = valid_pix - select_pix
-        rej = rejected_pix / valid_pix.astype(float) * 100.0
-        rej = " ".join("{:.2f}".format(p) for p in rej)
-        info("%% of rejected pixels per files: %s", rej)
-        stat_pix = Table([self.files, no_valid_pix, rejected_pix],
-                         names=['FILENAME', 'NPIX_NAN', 'NPIX_REJECTED'])
-
-        keywords = [('nmax', nmax, 'max number of clipping iterations'),
-                    ('nclip_low', nclip, 'lower clipping parameter'),
-                    ('nclip_up', nclip, 'upper clipping parameter'),
-                    ('var', var, 'type of variance')]
-        kwargs = dict(expnb=np.nanmedian(expmap), header=header,
-                      keywords=keywords, method='obj.cubemosaic.pymerging')
-        cube = self.save_combined_cube(cube, var=vardata, **kwargs)
-        expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
-                                         **kwargs)
-        rejmap = self.save_combined_cube(rejmap, unit=u.dimensionless_unscaled,
-                                         **kwargs)
-        return cube, expmap, stat_pix, rejmap
+        return _pycombine(self, nmax=nmax, nclip=nclip, var=var, nstop=nstop,
+                          nl=nl, header=header, mad=mad, pos=pos,
+                          shapes=shapes, method='obj.cubemosaic.pycombine')
