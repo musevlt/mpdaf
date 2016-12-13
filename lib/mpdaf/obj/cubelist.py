@@ -104,6 +104,8 @@ def _pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
     if shapes is None:
         shapes = np.repeat([self.shape[1:]], self.nfiles, axis=0)
 
+    pos = np.hstack([pos, pos + shapes])
+
     # Create output arrays
     cube = np.empty(self.shape, dtype=np.float64)
     vardata = np.empty(self.shape, dtype=np.float64)
@@ -122,24 +124,51 @@ def _pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
         stat = [fitsio.FITS(f)['STAT'] for f in self.files]
 
     info('Looping on the %d planes of the cube', nl)
-    for l in range(nl):
-        if l % 100 == 0:
-            info('%d/%d', l, nl)
-        arr.fill(np.nan)
-        for i, f in enumerate(data):
-            x, y = pos[i]
-            nx, ny = shapes[i]
-            arr[x:x + nx, y:y + ny, i] = f[l, :, :][0]
-        if var_mean == 0:
-            starr.fill(np.nan)
-            for i, f in enumerate(stat):
-                x, y = pos[i]
-                nx, ny = shapes[i]
-                starr[x:x + nx, y:y + ny, i] = f[l, :, :][0]
 
-        sigma_clip(arr, starr, cube, vardata, expmap, rejmap, valid_pix,
-                   select_pix, l, nmax, nclip_low, nclip_up, nstop,
-                   var_mean, int(mad))
+    if self.flux_scales is None and self.flux_offsets is None:
+        for l in range(nl):
+            if l % 100 == 0:
+                info('%d/%d', l, nl)
+            arr.fill(np.nan)
+            for i, f in enumerate(data):
+                x, y, x2, y2 = pos[i]
+                arr[x:x2, y:y2, i] = f[l, :, :][0]
+            if var_mean == 0:
+                starr.fill(np.nan)
+                for i, f in enumerate(stat):
+                    x, y, x2, y2 = pos[i]
+                    starr[x:x2, y:y2, i] = f[l, :, :][0]
+
+            sigma_clip(arr, starr, cube, vardata, expmap, rejmap, valid_pix,
+                       select_pix, l, nmax, nclip_low, nclip_up, nstop,
+                       var_mean, int(mad))
+    else:
+        if self.flux_scales is None:
+            scales = np.ones(self.nfiles)
+        else:
+            scales = np.asarray(self.flux_scales)
+
+        if self.flux_offsets is None:
+            offsets = np.zeros(self.nfiles)
+        else:
+            offsets = np.asarray(self.flux_offsets)
+
+        for l in range(nl):
+            if l % 100 == 0:
+                info('%d/%d', l, nl)
+            arr.fill(np.nan)
+            for i, f in enumerate(data):
+                x, y, x2, y2 = pos[i]
+                arr[x:x2, y:y2, i] = (f[l, :, :][0] + offsets[i]) * scales[i]
+            if var_mean == 0:
+                starr.fill(np.nan)
+                for i, f in enumerate(stat):
+                    x, y, x2, y2 = pos[i]
+                    starr[x:x2, y:y2, i] = f[l, :, :][0] * scales[i]**2
+
+            sigma_clip(arr, starr, cube, vardata, expmap, rejmap, valid_pix,
+                       select_pix, l, nmax, nclip_low, nclip_up, nstop,
+                       var_mean, int(mad))
 
     arr = None
     starr = None
@@ -227,7 +256,8 @@ class CubeList(object):
     """Manages a list of cubes and handles the combination.
 
     To run the combination, all the cubes must have the same dimensions and be
-    on the same WCS grid.
+    on the same WCS grid. A global flux offset and scale can be given for each
+    cube: ``(data + offset) * scale``.
 
     Parameters
     ----------
@@ -235,6 +265,8 @@ class CubeList(object):
         List of cubes FITS filenames.
     scalelist: list of float, optional
         List of scales to be applied to each cube.
+    offsetlist: list of float, optional
+        List of offsets to be applied to each cube.
 
     Attributes
     ----------
@@ -242,8 +274,10 @@ class CubeList(object):
         List of cubes FITS filenames.
     nfiles : int
         Number of files.
-    scales : list of doubles
-        List of scales
+    flux_scales : list of double
+        List of flux scales corrections.
+    flux_offsets : list of double
+        List of flux offsets corrections.
     shape : tuple
         Lengths of data in Z and Y and X (python notation (nz,ny,nx)).
     wcs : `mpdaf.obj.WCS`
@@ -256,17 +290,17 @@ class CubeList(object):
 
     checkers = ('check_dim', 'check_wcs')
 
-    def __init__(self, files, scalelist=None):
+    def __init__(self, files, scalelist=None, offsetlist=None):
         self._logger = logging.getLogger(__name__)
         self.files = files
         self.nfiles = len(files)
-        if scalelist:
-            self.scales = np.array(scalelist)
-        else:
-            self.scales = np.ones(self.nfiles)
+
         self.cubes = [Cube(filename=f) for f in self.files]
         self._set_defaults()
         self.check_compatibility()
+
+        self.flux_scales = scalelist
+        self.flux_offsets = offsetlist
 
     def _set_defaults(self):
         self.shape = self.cubes[0].shape
@@ -447,8 +481,14 @@ class CubeList(object):
         files = '\n'.join(self.files)
         if not six.PY2:
             files = files.encode('utf8')
+
+        if self.flux_scales is None:
+            scales = np.ones(self.nfiles)
+        else:
+            scales = np.asarray(self.flux_scales)
+
         ctools.mpdaf_merging_sigma_clipping(
-            c_char_p(files), data, vardata, expmap, self.scales, select_pix,
+            c_char_p(files), data, vardata, expmap, scales, select_pix,
             valid_pix, nmax, np.float64(nclip_low), np.float64(nclip_up),
             nstop, np.int32(var_mean), np.int32(mad))
 
@@ -509,8 +549,8 @@ class CubeList(object):
 
     def pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
                   header=None, mad=False):
-        return _pycombine(self, nmax=nmax, nclip=nclip, var=var, nstop=nstop,
-                          nl=nl, header=header, mad=mad,
+        return _pycombine(self, nmax=nmax, nclip=nclip, var=var,
+                          nstop=nstop, nl=nl, header=header, mad=mad,
                           method='obj.cubelist.pycombine')
 
     combine.__doc__ = _combine_doc
