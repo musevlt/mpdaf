@@ -3,7 +3,7 @@
 import numpy as np
 from astropy.io import fits
 from astropy.table import Table
-from mpdaf.tools.astropycompat import zscale, table_to_hdu
+from mpdaf.tools import zscale, table_to_hdu, write_hdulist_to
 
 
 def test_zscale():
@@ -30,4 +30,4 @@ def test_table_to_hdu(tmpdir):
     hdu = table_to_hdu(table)
     assert isinstance(hdu, fits.BinTableHDU)
     filename = str(tmpdir.join('test_table_to_hdu.fits'))
-    hdu.writeto(filename, clobber=True)
+    write_hdulist_to(hdu, filename, overwrite=True)

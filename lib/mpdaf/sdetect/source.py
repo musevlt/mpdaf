@@ -58,7 +58,7 @@ from scipy.optimize import leastsq
 
 from ..obj import Cube, Image, Spectrum, gauss_image, moffat_image
 from ..obj.objs import is_int, is_float, bounding_box
-from ..tools import deprecated
+from ..tools import deprecated, write_hdulist_to
 from ..MUSE import FieldsMap, FSF
 from ..MUSE.PSF import MOFFAT1
 from ..sdetect.sea import segmentation, mask_creation, findCentralDetection
@@ -723,7 +723,8 @@ class Source(object):
                 _write_table(tab, 'TAB_%s' % key, hdulist)
 
             # save to disk
-            hdulist.writeto(filename, clobber=True, output_verify='fix')
+            write_hdulist_to(hdulist, filename, overwrite=True,
+                             output_verify='fix')
         else:
             # update the existing FITS file
             if os.path.abspath(filename) != self._filename:
@@ -1101,7 +1102,7 @@ class Source(object):
             subima = image.subimage(center, size, **kwargs)
         except:
             subima = None
-            
+
         if subima is None:
             self._logger.warning('Image %s not added. Source outside or at the'
                                  ' edges', name)

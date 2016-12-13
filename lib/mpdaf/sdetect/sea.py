@@ -60,6 +60,7 @@ import six
 import subprocess
 
 from ..obj import Image, Spectrum
+from ..tools import write_hdulist_to
 
 __version__ = 1.0
 
@@ -252,7 +253,7 @@ def segmentation(source, tags, DIR, remove):
             data_hdu = ima2.get_data_hdu(name='DATA', savemask='nan')
         hdulist.append(data_hdu)
         hdu = pyfits.HDUList(hdulist)
-        hdu.writeto(fname, clobber=True, output_verify='fix')
+        write_hdulist_to(hdu, fname, overwrite=True, output_verify='fix')
 
         catalogFile = 'cat-' + fname
         segFile = 'seg-' + fname
