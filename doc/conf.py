@@ -44,10 +44,8 @@ extensions = [
     'numpydoc',
     'IPython.sphinxext.ipython_console_highlighting',
     'ipython_directive',
-    # From astropy:
-    'automodsumm',
-    'automodapi',
-    'smart_resolver'
+    'sphinx_automodapi.automodapi',
+    'sphinx_automodapi.smart_resolver'
 ]
 
 try:
