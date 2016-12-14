@@ -79,6 +79,7 @@ Contents
    sdetect
    muse
    logging
+   tools
    contribute
    changelog
    credits
