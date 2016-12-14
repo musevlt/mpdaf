@@ -10,6 +10,6 @@ dependencies:
   - psutil
   - six
   - ipython
-  - psutil
   - pip:
     - numpydoc
+    - sphinx_automodapi
