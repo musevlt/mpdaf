@@ -147,11 +147,13 @@ def _pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
             scales = np.ones(self.nfiles)
         else:
             scales = np.asarray(self.flux_scales)
+            self._logger.info('Using scales: %s', scales)
 
         if self.flux_offsets is None:
             offsets = np.zeros(self.nfiles)
         else:
             offsets = np.asarray(self.flux_offsets)
+            self._logger.info('Using offsets: %s', offsets)
 
         for l in range(nl):
             if l % 100 == 0:
@@ -599,9 +601,9 @@ class CubeMosaic(CubeList):
 
     checkers = ('check_dim', 'check_wcs')
 
-    def __init__(self, files, output_wcs):
+    def __init__(self, files, output_wcs, **kwargs):
         self.out = Cube(output_wcs)
-        super(CubeMosaic, self).__init__(files)
+        super(CubeMosaic, self).__init__(files, **kwargs)
 
     def __getitem__(self, item):
         raise ValueError('Operation forbidden')
