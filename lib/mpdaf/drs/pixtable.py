@@ -49,7 +49,7 @@ from os.path import basename
 from six.moves import range
 
 from ..obj import Image, Spectrum, WaveCoord, WCS
-from ..tools.fits import add_mpdaf_method_keywords, copy_header
+from ..tools import add_mpdaf_method_keywords, copy_header, write_hdulist_to
 
 try:
     import numexpr
@@ -140,7 +140,7 @@ class PixTableMask(object):
             name='maskcol', data=np.int32(self.maskcol.reshape((nrows, 1)))))
         hdu = fits.HDUList(hdulist)
         hdu[1].header['BUNIT'] = 'boolean'
-        hdu.writeto(filename, clobber=True, output_verify='fix')
+        write_hdulist_to(hdu, filename, overwrite=True, output_verify='fix')
 
 
 class PixTableAutoCalib(object):
@@ -248,7 +248,7 @@ class PixTableAutoCalib(object):
             ImageHDU(name='npts', data=np.int32(self.npts.reshape(shape))),
             ImageHDU(name='corr', data=np.float64(self.corr.reshape(shape)))]
         hdu = fits.HDUList(hdulist)
-        hdu.writeto(filename, clobber=True, output_verify='fix')
+        write_hdulist_to(hdu, filename, overwrite=True, output_verify='fix')
         warnings.simplefilter("default")
 
 
@@ -322,7 +322,7 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
         tbhdu = fits.TableHDU(fits.FITS_rec.from_columns(coltab))
         hdu = fits.HDUList([prihdu, tbhdu])
 
-    hdu.writeto(filename, clobber=True, output_verify='fix')
+    write_hdulist_to(hdu, filename, overwrite=True, output_verify='fix')
 
     warnings.simplefilter("default")
 

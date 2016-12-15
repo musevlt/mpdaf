@@ -497,8 +497,8 @@ class Catalog(Table):
         """Mask where invalid values occur (NaNs or infs or -9999 or '')."""
         for col in self.colnames:
             try:
-                self[col] = np.ma.masked_invalid(self[col])
-                self[col] = np.ma.masked_equal(self[col], -9999)
+                self[col][:] = np.ma.masked_invalid(self[col])
+                self[col][:] = np.ma.masked_equal(self[col], -9999)
             except:
                 pass
 

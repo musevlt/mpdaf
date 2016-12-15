@@ -13,15 +13,52 @@ from __future__ import absolute_import, division
 
 import numpy as np
 import six
+import textwrap
 import warnings
+from astropy.io import fits
 from astropy.units.format.fits import UnitScaleError
 from astropy.utils import minversion
 from astropy.utils.exceptions import AstropyUserWarning
 
-__all__ = ['zscale', 'table_to_hdu']
+__all__ = ['zscale', 'table_to_hdu', 'write_hdulist_to', 'write_fits_to']
 
 ASTROPY_LT_1_1 = not minversion('astropy', '1.1')
 ASTROPY_LT_1_2 = not minversion('astropy', '1.2')
+ASTROPY_LT_1_3 = not minversion('astropy', '1.3')
+
+
+if ASTROPY_LT_1_3:
+    # the 'clobber' parameter was renamed to 'overwrite' in 1.3
+    def write_hdulist_to(hdulist, fileobj, overwrite=False, **kwargs):
+        hdulist.writeto(fileobj, clobber=overwrite, **kwargs)
+
+    def write_fits_to(filename, data, overwrite=False, **kwargs):
+        fits.writeto(filename, data, clobber=overwrite, **kwargs)
+else:
+    def write_hdulist_to(hdulist, fileobj, overwrite=False, **kwargs):
+        hdulist.writeto(fileobj, overwrite=overwrite, **kwargs)
+
+    write_fits_to = fits.writeto
+
+write_hdulist_to.__doc__ = """
+Wrapper function for `astropy.io.fits.HDUList.writeto`.
+
+The aim of this function is to provide a compatible way to overwrite a file,
+with ``clobber`` for Astropy < 1.3 and ``overwrite`` for Astropy >= 1.3.
+
+Original docstring follows:
+""" + textwrap.dedent(fits.HDUList.writeto.__doc__)
+
+
+write_fits_to.__doc__ = """
+Wrapper function for `astropy.io.fits.writeto`.
+
+The aim of this function is to provide a compatible way to overwrite a file,
+with ``clobber`` for Astropy < 1.3 and ``overwrite`` for Astropy >= 1.3.
+
+Original docstring follows:
+""" + textwrap.dedent(fits.writeto.__doc__)
+
 
 if not ASTROPY_LT_1_2:
     from astropy.io import fits

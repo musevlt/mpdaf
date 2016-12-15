@@ -43,14 +43,14 @@ import subprocess
 import stat
 import sys
 
-from astropy.io import fits as pyfits
+from astropy.io import fits
 from astropy.table import Table
 from os.path import join
 from six.moves import range
 
 from ..obj import Cube, Image
 from ..sdetect import Source, SourceList
-from ..tools import chdir
+from ..tools import chdir, write_hdulist_to, write_fits_to
 
 __version__ = 2.1
 
@@ -148,7 +148,7 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
     fwcube = np.ones((5, size2, size3)) * fw[:, np.newaxis, np.newaxis]
 
     hdr = wcs.to_header()
-    
+
     data0 = np.ma.filled(data, 0)
 
     for k in range(2, size1 - 3):
@@ -160,8 +160,8 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
         imslice = np.ma.average(data[k - 2:k + 3, :, :],
                                 weights=fwcube / mvar[k - 2:k + 3, :, :],
                                 axis=0)
-        
-        
+
+
         if leftmax == 1:
             contleft = data0[0, :, :]
         elif leftmax > leftmin + 1:
@@ -182,10 +182,11 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
                     (sizeleft + sizeright))
         kstr = "%04d" % k
         imnb = np.ma.filled(imslice, np.nan) - contmean
-        hdulist = pyfits.HDUList([pyfits.PrimaryHDU(),
-                                  pyfits.ImageHDU(name='DATA', data=imnb, header=hdr)])
-        hdulist.writeto('nb/nb%04d.fits'%k, clobber=True)
-        
+        hdulist = fits.HDUList([fits.PrimaryHDU(),
+                                fits.ImageHDU(name='DATA', data=imnb,
+                                              header=hdr)])
+        write_hdulist_to(hdulist, 'nb/nb%04d.fits' % k, overwrite=True)
+
         if nbcube:
             outnbcube[k, :, :] = imnb[:, :]
 
@@ -204,7 +205,7 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
 
     if nbcube:
         outnbcubename = 'NB_' + os.path.basename(cubename)
-        pyfits.writeto(outnbcubename, outnbcube, data_header, clobber=True)
+        write_fits_to(outnbcubename, outnbcube, data_header, overwrite=True)
 
 
 def step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta):

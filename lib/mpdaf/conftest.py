@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import astropy
+import matplotlib
 import numpy as np
 import pytest
+import scipy
 
 from astropy.table import Table
 from mpdaf.obj import Image, Cube, Spectrum
@@ -13,8 +15,9 @@ from .tests.utils import (get_data_file, generate_cube, generate_image,
 
 
 def pytest_report_header(config):
-    return "project deps: Numpy {}, Astropy {}".format(
-        np.__version__, astropy.__version__)
+    return "Deps: Numpy {}, Scipy {}, Matplotlib {}, Astropy {}".format(
+        np.__version__, scipy.__version__, matplotlib.__version__,
+        astropy.__version__)
 
 
 @pytest.fixture

@@ -47,7 +47,8 @@ from numpy import ma
 from .coords import WCS, WaveCoord, determine_refframe
 from .objs import UnitMaskedArray, UnitArray, is_int
 from ..tools import (MpdafUnitsWarning, deprecated, fix_unit_read,
-                     is_valid_fits_file, copy_header, read_slice_from_fits)
+                     is_valid_fits_file, copy_header, read_slice_from_fits,
+                     write_hdulist_to)
 
 __all__ = ('DataArray', )
 
@@ -1074,8 +1075,8 @@ class DataArray(object):
                 name='DQ', header=datahdu.header.copy(),
                 data=np.uint8(self.data.mask)))
 
-        hdulist.writeto(filename, clobber=True, output_verify='silentfix',
-                        checksum=checksum)
+        write_hdulist_to(hdulist, filename, overwrite=True,
+                         output_verify='silentfix', checksum=checksum)
         self.filename = filename
 
     def sqrt(self, out=None):
