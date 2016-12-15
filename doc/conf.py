@@ -44,10 +44,8 @@ extensions = [
     'numpydoc',
     'IPython.sphinxext.ipython_console_highlighting',
     'ipython_directive',
-    # From astropy:
-    'automodsumm',
-    'automodapi',
-    'smart_resolver'
+    'sphinx_automodapi.automodapi',
+    'sphinx_automodapi.smart_resolver'
 ]
 
 try:
@@ -296,19 +294,3 @@ latex_documents = [
 
 # If false, no module index is generated.
 # latex_domain_indices = True
-
-
-# -------------------------------------------------------------------------
-# Ugly hack to remove the license from module docstrings and having it appear
-# at the top of the documentation
-
-def cut_license(app, what_, name, obj, options, lines):
-    if what_ not in ['module']:
-        return
-    if lines[0].startswith('Copyright (c) 2010-2016 CNRS'):
-        print('Remove license from {} ({} lines)'.format(name, len(lines)))
-        del lines[:-1]
-
-
-def setup(app):
-    app.connect('autodoc-process-docstring', cut_license)
