@@ -16,9 +16,9 @@ astropy10:
 astropy11:
   script: tox -v -e astropy11
 
-astropy-dev:
-  allow_failure: true
-  script: tox -v -e astropy-dev
+# astropy-dev:
+#   allow_failure: true
+#   script: tox -v -e astropy-dev
 
 docs:
   script: tox -v -e docs
