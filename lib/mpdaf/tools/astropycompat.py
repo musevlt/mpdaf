@@ -38,7 +38,8 @@ else:
     def write_hdulist_to(hdulist, fileobj, overwrite=False, **kwargs):
         hdulist.writeto(fileobj, overwrite=overwrite, **kwargs)
 
-    write_fits_to = fits.writeto
+    def write_fits_to(filename, data, overwrite=False, **kwargs):
+        fits.writeto(filename, data, overwrite=overwrite, **kwargs)
 
 write_hdulist_to.__doc__ = """
 Wrapper function for `astropy.io.fits.HDUList.writeto`.
