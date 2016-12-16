@@ -76,10 +76,19 @@ else:
 
     # mpdaf_merging_sigma_clipping
     ctools.mpdaf_merging_sigma_clipping.argtypes = [
-        charptr, array_1d_double, array_1d_double, array_1d_int,
-        array_1d_double, array_1d_int, array_1d_int, ctypes.c_int,
-        ctypes.c_double, ctypes.c_double, ctypes.c_int, ctypes.c_int,
-        ctypes.c_int
+        charptr,          # char* input
+        array_1d_double,  # double* data
+        array_1d_double,  # double* var
+        array_1d_int,     # int* expmap
+        array_1d_double,  # double* scale
+        array_1d_int,     # int* selected_pix
+        array_1d_int,     # int* valid_pix
+        ctypes.c_int,     # int nmax
+        ctypes.c_double,  # double nclip_low
+        ctypes.c_double,  # double nclip_up
+        ctypes.c_int,     # int nstop
+        ctypes.c_int,     # int typ_var
+        ctypes.c_int      # int mad
     ]
 
     # mpdaf_sky_ref
