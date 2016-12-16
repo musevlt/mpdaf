@@ -1,6 +1,8 @@
 v2.2-dev (xx/xx/2016)
 ---------------------
 
+- Compatibility with Astropy 1.3
+
 WCS
 ~~~
 
@@ -9,16 +11,30 @@ WCS
 Image
 ~~~~~
 
-- Fix bug in ``Image.rebin`` when the ``factor`` parameter is a tuple. [#483]
+- Fix bug in `~mpdaf.obj.Image.rebin` when the ``factor`` parameter is a tuple.
+  [#483]
+
+Spectrum
+~~~~~~~~
+
+- Add HST filters to the list of filters available in
+  `~mpdaf.obj.Spectrum.abmag_filter_name`. [#484]
 
 Cube
 ~~~~
 
-- Fix issue with ``subcube_circle_aperture`` which was masking the original
-  cube.
+- Fix issue with `~mpdaf.obj.Cube.subcube_circle_aperture` which was masking
+  the original cube.
 
-- Fix offset computation in ``CubeMosaic``, using CRPIX from the output cube.
+- Add ``is_sum`` option in `~mpdaf.obj.Cube.aperture`.
 
+CubeList
+~~~~~~~~
+
+- Fix offset computation in `~mpdaf.obj.CubeMosaic`, using CRPIX from the
+  output cube.
+
+- More options in the ``pycombine`` methods: MAD, scales, offsets.
 
 Sources
 ~~~~~~~
