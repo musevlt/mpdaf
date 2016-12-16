@@ -1181,7 +1181,7 @@ class Spectrum(ArithmeticMixin, DataArray):
                                    unpack=True)
             lmin = np.min(lbda)
             lmax = np.max(lbda)
-            l0 = np.mean(lbda)
+            l0 = np.sum(lbda * thr) / np.sum(lbda)
             tck = interpolate.splrep(lbda, thr, k=3)
             return self._filter(l0, lmin, lmax, tck)
 
