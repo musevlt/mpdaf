@@ -555,7 +555,7 @@ class Catalog(Table):
             for k in duplicate:
                 mask = id2match == k
                 idlist = np.arange(len(id2match))[mask]
-                to_remove.append(idlist[d2match[mask].argsort()[1:]].tolist())
+                to_remove += idlist[d2match[mask].argsort()[1:]].tolist()
             id2match = np.delete(id2match, to_remove)
             id1match = np.delete(id1match, to_remove)
             d2match = np.delete(d2match, to_remove)
