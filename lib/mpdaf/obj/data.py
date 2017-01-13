@@ -93,7 +93,8 @@ class LazyData(object):
     def __set__(self, obj, val):
         label = self.label
         if label == '_data':
-            obj.__dict__['_mask'] = np.zeros_like(val)
+            # Make sure that we have a mask for this data array
+            obj.__dict__.setdefault('_mask', np.zeros_like(val))
             obj._loaded_data = True
         elif (val is not None and val is not np.ma.nomask and
                 obj.shape is not None and
