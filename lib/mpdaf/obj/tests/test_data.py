@@ -945,7 +945,7 @@ def test_shared_masks():
     new_var[30] = np.inf
     new_var[31] = np.nan
     new_var[32] = ma.masked
-    new_var = np.ma.masked_invalid(new_var, copy=False)
+    new_var = ma.masked_invalid(new_var, copy=False)
 
     # What should the shared mask of the spectrum be after we assign
     # the above array to the .var property? When a masked array of the
@@ -1445,3 +1445,20 @@ def test_float32_ndarray():
     assert_array_equal(d.data.mask, mask)
     assert_array_equal(d.var.mask, mask)
     assert d.data.mask is d.mask and d.var.mask is d.mask
+
+
+def test_replace_data():
+    """Test replacement of the data array"""
+    testimg = get_data_file('obj', 'a370II.fits')
+    data = DataArray(filename=testimg)
+    data.data = np.zeros(data.shape)
+    assert_array_equal(data.data, 0)
+
+    data = DataArray(filename=testimg)
+    new = ma.zeros(data.shape)
+    new[:5, :5] = ma.masked
+    data.data = new
+
+    assert_array_equal(data.data, 0)
+    assert ma.count_masked(data.data) == 5*5
+    assert np.all(data.mask[:5, :5])
