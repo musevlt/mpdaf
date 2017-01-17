@@ -47,7 +47,7 @@ from astropy.io import fits
 from matplotlib.path import Path
 from numpy import ma
 from six.moves import range, zip
-from scipy import integrate, interpolate
+from scipy import integrate, interpolate, signal
 
 from .arithmetic import ArithmeticMixin
 from .coords import WCS, WaveCoord
