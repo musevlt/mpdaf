@@ -1060,11 +1060,12 @@ class Cube(ArithmeticMixin, DataArray):
         elif axis == 0:
             # return an image
             data = np.ma.median(self.data, axis)
-            return Image.new_from_obj(self, data=data, var=False)
+            return Image.new_from_obj(self, data=data, var=False, copy=False)
         elif axis == (1, 2):
             # return a spectrum
             data = np.ma.median(np.ma.median(self.data, axis=1), axis=1)
-            return Spectrum.new_from_obj(self, data=data, var=False)
+            return Spectrum.new_from_obj(self, data=data, var=False,
+                                         copy=False)
         else:
             raise ValueError('Invalid axis argument')
 
