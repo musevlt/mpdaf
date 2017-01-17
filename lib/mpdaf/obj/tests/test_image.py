@@ -444,8 +444,8 @@ def test_rebin():
         mask=[[False, False], [False, False], [True, True]])
     image2 = image1.rebin(2)
     assert_masked_allclose(image2.data, expected)
-    
-    image2 = image1.rebin(factor=(2,2))
+
+    image2 = image1.rebin(factor=(2, 2))
     assert_masked_allclose(image2.data, expected)
 
     # The variances of the original pixels were all 0.5, so taking the
@@ -491,19 +491,13 @@ def test_fftconvolve():
 def test_convolve():
     """Image class: testing discrete convolution method."""
 
-    data_shape = (12, 25)
-    wcs = WCS(cdelt=(1.0, 1.0), crval=(0.0, 0.0), shape=data_shape)
-
-    # Create a test data array whose pixels are all zero except one pixel.
-    data = np.zeros(data_shape)
+    shape = (12, 25)
+    wcs = WCS(cdelt=(1.0, 1.0), crval=(0.0, 0.0), shape=shape)
+    data = np.zeros(shape)
     data[7, 5] = 1.0
-
-    # Also mask a few points.
-    mask = np.zeros(data_shape, dtype=bool)
+    mask = np.zeros(shape, dtype=bool)
     mask[5, 3] = True
-
-    # Encapsulate the data array in an Image container.
-    ima = Image(wcs=wcs, data=data, mask=mask)
+    ima = Image(wcs=wcs, data=data, mask=mask, copy=False)
 
     # Create a symmetric convolution kernel with an even number of elements
     # along one dimension and and odd number along the other dimension.
@@ -513,14 +507,19 @@ def test_convolve():
                      [0.25, 0.50, 0.25, 0.0],
                      [0.1, 0.25, 0.1, 0.0]])
 
-    # Convolve the test image with the kernel.
-    ima.convolve(kern, inplace=True)
-
     # The image should consist of a copy of the convolution kernel, centered
     # such that pixels (kern.shape-1)//2 is at pixel 7,5 of data.
-    expected_data = np.ma.array(data=np.zeros(data_shape), mask=mask)
+    expected_data = np.ma.array(data=np.zeros(shape), mask=mask)
     expected_data.data[6:9, 4:8] = kern
-    assert_masked_allclose(ima.data, expected_data)
+
+    res = ima.convolve(kern)
+    assert_masked_allclose(res.data, expected_data)
+
+    res = ima.convolve(Image(data=kern))
+    assert_masked_allclose(res.data, expected_data)
+
+    res = ima.fftconvolve(kern)
+    assert_masked_allclose(res.data, expected_data, atol=1e-15)
 
 
 def test_dtype():
@@ -566,11 +565,12 @@ def test_peak_detection_and_fwhm():
     assert_allclose(peaks[0], (np.array(shape) - 1) / 2.0)
     assert_allclose(ima.fwhm(unit_radius=None), fwhm, rtol=0.1)
 
+
 def test_get_item():
     """Image class: testing __getitem__"""
     # Set the shape and contents of the image's data array.
-    shape = (4,5)
-    data = np.arange(shape[0]*shape[1]).reshape(shape[0],shape[1])
+    shape = (4, 5)
+    data = np.arange(shape[0] * shape[1]).reshape(shape[0], shape[1])
 
     # Create a test image with the above data array.
     im = generate_image(data=data, shape=shape)
@@ -578,7 +578,7 @@ def test_get_item():
     im.data_header['KEY'] = 'data value'
 
     # Select the whole image.
-    for r in [im[:,:], im[:]]:
+    for r in [im[:, :], im[:]]:
         assert_array_equal(r.shape, im.shape)
         assert_allclose(r.data, im.data)
         assert r.primary_header['KEY'] == im.primary_header['KEY']
@@ -590,7 +590,7 @@ def test_get_item():
     # Select a subimage that only has one pixel along the y axis.
     for r in [im[2, :], im[2]]:
         assert_array_equal(r.shape, (1, im.shape[1]))
-        assert_allclose(r.data.ravel(), im.data[2,:].ravel())
+        assert_allclose(r.data.ravel(), im.data[2, :].ravel())
         assert r.primary_header['KEY'] == im.primary_header['KEY']
         assert r.data_header['KEY'] == im.data_header['KEY']
         assert isinstance(r, Image)
@@ -600,7 +600,7 @@ def test_get_item():
     # Select a subimage that only has one pixel along the x axis.
     r = im[:, 2]
     assert_array_equal(r.shape, (im.shape[0], 1))
-    assert_allclose(r.data.ravel(), im.data[:,2].ravel())
+    assert_allclose(r.data.ravel(), im.data[:, 2].ravel())
     assert r.primary_header['KEY'] == im.primary_header['KEY']
     assert r.data_header['KEY'] == im.data_header['KEY']
     assert isinstance(r, Image)
@@ -620,4 +620,4 @@ def test_get_item():
     # Select a single pixel.
     r = im[2, 3]
     assert np.isscalar(r)
-    assert_allclose(r, im.data[2,3])
+    assert_allclose(r, im.data[2, 3])

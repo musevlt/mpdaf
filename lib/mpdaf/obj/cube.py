@@ -2219,9 +2219,9 @@ class Cube(ArithmeticMixin, DataArray):
         the convolution is performed, but they are masked again after the
         convolution.
 
-        If self.var exists, the variances are propagated using the equation:
+        If self.var exists, the variances are propagated using the equation::
 
-          result.var = self.var (*) other**2
+            result.var = self.var (*) other**2
 
         where (*) indicates convolution. This equation can be derived by
         applying the usual rules of error-propagation to the discrete
@@ -2258,7 +2258,6 @@ class Cube(ArithmeticMixin, DataArray):
         out : `~mpdaf.obj.Cube`
 
         """
-        # Delegate the task to DataArray._convolve()
         return self._convolve(signal.convolve, other=other, inplace=inplace)
 
     def fftconvolve(self, other, inplace=False):
@@ -2274,9 +2273,9 @@ class Cube(ArithmeticMixin, DataArray):
         the convolution is performed, but they are masked again after the
         convolution.
 
-        If self.var exists, the variances are propagated using the equation:
+        If self.var exists, the variances are propagated using the equation::
 
-          result.var = self.var (*) other**2
+            result.var = self.var (*) other**2
 
         where (*) indicates convolution. This equation can be derived by
         applying the usual rules of error-propagation to the discrete
@@ -2317,7 +2316,6 @@ class Cube(ArithmeticMixin, DataArray):
         out : `~mpdaf.obj.Cube`
 
         """
-        # Delegate the task to DataArray._convolve()
         return self._convolve(signal.fftconvolve, other=other, inplace=inplace)
 
     @deprecated('get_lambda method is deprecated, use select_lambda instead')

@@ -1487,19 +1487,14 @@ class DataArray(object):
         out : `~mpdaf.obj.DataArray`
 
         """
-
         out = self if inplace else self.copy()
 
-        # The other array must have the same rank as self.
         if out.ndim != other.ndim:
             raise IOError('The other array must have the same rank as self')
 
-        # The number of elements along each axis of other can be less than
-        # or equal to the number in self.
         if np.any(np.asarray(other.shape) > np.asarray(self.shape)):
             raise IOError('The other array must be no larger than self')
 
-        # Get the array to convolve with.
         if not isinstance(other, DataArray):
             kernel = other
         else:
@@ -1509,35 +1504,26 @@ class DataArray(object):
         if isinstance(kernel, ma.MaskedArray) and ma.count_masked(kernel) > 0:
             kernel = kernel.filled(0.0)
 
-        # Are there any masked pixels in self.data and self.var?
+        # Replace any masked pixels in out._data with zeros
         masked = self._mask is not None and self._mask.sum() > 0
-
-        # Replace any masked pixels in out._data with zeros, being
-        # careful to avoid making a redundant copy of the data
-        # array if there are no bad pixels to be zeroed.
         if masked:
             out._data = out.data.filled(0.0)
         elif out._mask is None and ~np.isfinite(out._data.sum()):
             out._data = out._data.copy()
             out._data[~np.isfinite(out._data)] = 0.0
 
-        # Convolve the data array with the kernel.
         out._data = convolution_function(out._data, kernel, mode="same")
 
         # Are there any variances to be propagated?
         if out._var is not None:
-
-            # Replace any masked pixels in out._var with zeros, being
-            # careful to avoid making a redundant copy of the variance
-            # array if there are no bad pixels to be zeroed.
+            # Replace any masked pixels in out._var with zeros
             if masked:
                 out._var = out.var.filled(0.0)
             elif out._mask is None and ~np.isfinite(out._var.sum()):
                 out._var = out._var.copy()
                 out._var[~np.isfinite(out._var)] = 0.0
 
-            # Convolve the var array with the square of the kernel to
-            # propagate them.
+            # Convolve the var array with the square of the kernel
             out._var = convolution_function(out._var, kernel**2, mode="same")
 
         return out

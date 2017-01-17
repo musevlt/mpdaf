@@ -3854,7 +3854,6 @@ class Image(ArithmeticMixin, DataArray):
         out : `~mpdaf.obj.Image`
 
         """
-
         ima = gauss_image(self.shape, wcs=self.wcs, center=center,
                           flux=flux, fwhm=fwhm, peak=peak, rot=rot,
                           factor=factor, gauss=None, unit_center=unit_center,
@@ -3862,8 +3861,6 @@ class Image(ArithmeticMixin, DataArray):
 
         # Normalize the total flux of the Gaussian.
         ima.norm(typ='sum')
-
-        # Perform the convolution in the Fourier plane.
         return self.fftconvolve(ima, inplace=inplace)
 
     def fftconvolve_moffat(self, center=None, flux=1., a=1.0, q=1.0,
@@ -3912,12 +3909,10 @@ class Image(ArithmeticMixin, DataArray):
         """
         fwhmy = a * (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
         fwhmx = fwhmy / q
-
         ima = moffat_image(self.shape, wcs=self.wcs, factor=factor,
                            center=center, flux=flux, fwhm=(fwhmy, fwhmx), n=n,
                            rot=rot, peak=peak, unit_center=unit_center,
                            unit_fwhm=unit_a, unit=self.unit)
-
         ima.norm(typ='sum')
         return self.fftconvolve(ima, inplace=inplace)
 
