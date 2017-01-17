@@ -47,25 +47,21 @@ def assert_image_equal(ima, shape=None, start=None, end=None, step=None):
         assert_array_equal(ima.get_step(), step)
 
 
-def assert_masked_allclose(d1, d2):
+def assert_masked_allclose(d1, d2, **kwargs):
     """Compare the values of two masked arrays"""
 
     if d1 is not None or d2 is not None:
-
         # Check that the two arrays have the same shape.
-
         assert_array_equal(d1.shape, d2.shape)
 
         # Check that they have identical masks.
-
         if d1.mask is np.ma.nomask or d2.mask is np.ma.nomask:
             assert d2.mask is d1.mask
         else:
             assert_array_equal(d1.mask, d2.mask)
 
         # Check that unmasked values in the array are approximately equal.
-
-        assert_allclose(np.ma.filled(d1, 0.0), np.ma.filled(d2, 0.0))
+        assert_allclose(np.ma.filled(d1, 0.0), np.ma.filled(d2, 0.0), **kwargs)
 
 
 def _generate_test_data(data=2.3, var=1.0, mask=None, shape=None, unit=u.ct,

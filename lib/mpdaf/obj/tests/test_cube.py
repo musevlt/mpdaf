@@ -83,7 +83,7 @@ def test_arithmetic_variance(cube):
     assert_almost_equal(cube.var, cube2.var)
 
     cube2 = image1 * cube
-    assert_almost_equal(cube2.var, cube.var*image1.data*image1.data)
+    assert_almost_equal(cube2.var, cube.var * image1.data * image1.data)
 
     cube.var = None
     image1 = generate_image(wcs=cube.wcs)
@@ -91,7 +91,8 @@ def test_arithmetic_variance(cube):
     assert_almost_equal(cube2.var, np.tile(image1.var, (cube2.shape[0], 1, 1)))
 
     cube2 = image1 * cube
-    assert_almost_equal(cube2.var, image1.var*cube.data*cube.data)
+    assert_almost_equal(cube2.var, image1.var * cube.data * cube.data)
+
 
 def test_get_cube(cube):
     """Cube class: tests getters"""
@@ -650,8 +651,8 @@ def test_write(tmpdir):
 def test_get_item():
     """Cube class: testing __getitem__"""
     # Set the shape and contents of the cube's data array.
-    shape = (3,4,5)
-    data = np.arange(shape[0]*shape[1]*shape[2]).reshape(shape[0],shape[1],shape[2])
+    shape = (3, 4, 5)
+    data = np.arange(shape[0] * shape[1] * shape[2]).reshape(shape[0], shape[1], shape[2])
 
     # Create a test cube with the above data array.
     c = generate_cube(data=data, shape=shape, wave=WaveCoord(crval=1, cunit=u.angstrom))
@@ -659,7 +660,7 @@ def test_get_item():
     c.data_header['KEY'] = 'data value'
 
     # Select the whole cube.
-    for r in [c[:,:,:], c[:,:], c[:]]:
+    for r in [c[:, :, :], c[:, :], c[:]]:
         assert_array_equal(r.shape, c.shape)
         assert_allclose(r.data, c.data)
         assert r.primary_header['KEY'] == c.primary_header['KEY']
@@ -671,7 +672,7 @@ def test_get_item():
     # Select a subimage that only has one pixel along the y axis.
     for r in [c[1, 2, :], c[1, 2]]:
         assert_array_equal(r.shape, (1, c.shape[2]))
-        assert_allclose(r.data.ravel(), c.data[1,2,:].ravel())
+        assert_allclose(r.data.ravel(), c.data[1, 2, :].ravel())
         assert r.primary_header['KEY'] == c.primary_header['KEY']
         assert r.data_header['KEY'] == c.data_header['KEY']
         assert isinstance(r, Image)
@@ -681,7 +682,7 @@ def test_get_item():
     # Select a subcube that only has one pixel along the y axis.
     for r in [c[:, 2, :], c[:, 2]]:
         assert_array_equal(r.shape, (c.shape[0], 1, c.shape[2]))
-        assert_allclose(r.data.ravel(), c.data[:,2,:].ravel())
+        assert_allclose(r.data.ravel(), c.data[:, 2, :].ravel())
         assert r.primary_header['KEY'] == c.primary_header['KEY']
         assert r.data_header['KEY'] == c.data_header['KEY']
         assert isinstance(r, Cube)
@@ -691,7 +692,7 @@ def test_get_item():
     # Select a subimage that only has one pixel along the x axis.
     r = c[1, :, 2]
     assert_array_equal(r.shape, (c.shape[1], 1))
-    assert_allclose(r.data.ravel(), c.data[1,:,2].ravel())
+    assert_allclose(r.data.ravel(), c.data[1, :, 2].ravel())
     assert r.primary_header['KEY'] == c.primary_header['KEY']
     assert r.data_header['KEY'] == c.data_header['KEY']
     assert isinstance(r, Image)
@@ -701,7 +702,7 @@ def test_get_item():
     # Select a subcube that only has one pixel along the x axis.
     r = c[:, :, 2]
     assert_array_equal(r.shape, (c.shape[0], c.shape[1], 1))
-    assert_allclose(r.data.ravel(), c.data[:,:,2].ravel())
+    assert_allclose(r.data.ravel(), c.data[:, :, 2].ravel())
     assert r.primary_header['KEY'] == c.primary_header['KEY']
     assert r.data_header['KEY'] == c.data_header['KEY']
     assert isinstance(r, Cube)
@@ -711,7 +712,7 @@ def test_get_item():
     # Select a sub-cube using a non-scalar slice along each axis.
     r = c[:, :2, :2]
     assert_array_equal(r.shape, (c.shape[0], 2, 2))
-    assert_allclose(r.data.ravel(), c.data[:,:2,:2].ravel())
+    assert_allclose(r.data.ravel(), c.data[:, :2, :2].ravel())
     assert r.primary_header['KEY'] == c.primary_header['KEY']
     assert r.data_header['KEY'] == c.data_header['KEY']
     assert isinstance(r, Cube)
@@ -721,7 +722,7 @@ def test_get_item():
     # Select the image of a single spectral pixel.
     for r in [c[1, :, :], c[1, :], c[1]]:
         assert_array_equal(r.shape, (c.shape[1], c.shape[2]))
-        assert_allclose(r.data.ravel(), c.data[1,:,:].ravel())
+        assert_allclose(r.data.ravel(), c.data[1, :, :].ravel())
         assert r.primary_header['KEY'] == c.primary_header['KEY']
         assert r.data_header['KEY'] == c.data_header['KEY']
         assert isinstance(r, Image)
@@ -731,7 +732,7 @@ def test_get_item():
     # Select the spectrum of a single spatial pixel.
     r = c[:, 2, 2]
     assert_array_equal(r.shape, (c.shape[0], ))
-    assert_allclose(r.data.ravel(), c.data[:,2,2].ravel())
+    assert_allclose(r.data.ravel(), c.data[:, 2, 2].ravel())
     assert r.primary_header['KEY'] == c.primary_header['KEY']
     assert r.data_header['KEY'] == c.data_header['KEY']
     assert isinstance(r, Spectrum)
@@ -741,7 +742,8 @@ def test_get_item():
     # Select a single pixel.
     r = c[2, 2, 2]
     assert np.isscalar(r)
-    assert_allclose(r, c.data[2,2,2])
+    assert_allclose(r, c.data[2, 2, 2])
+
 
 def test_bandpass_image():
     """Cube class: testing bandpass_image"""
@@ -845,3 +847,36 @@ def test_bandpass_image():
 
     assert_masked_allclose(im.data, expected_data)
     assert_masked_allclose(im.var, expected_var)
+
+
+def test_convolve():
+
+    shape = (3, 12, 25)
+    data = np.zeros(shape)
+    data[:, 7, 5] = 1.0
+    mask = np.zeros(shape, dtype=bool)
+    mask[:, 5, 3] = True
+    c = generate_cube(data=data, mask=mask, shape=shape,
+                      wave=WaveCoord(crval=1, cunit=u.angstrom))
+
+    # Create a symmetric convolution kernel with an even number of elements
+    # along one dimension and and odd number along the other dimension.
+    # Make the kernel symmetric around (shape-1)//2. This requires that
+    # the final column be all zeros.
+    kern = np.array([[[0.1, 0.25, 0.1, 0.0],
+                      [0.25, 0.50, 0.25, 0.0],
+                      [0.1, 0.25, 0.1, 0.0]]])
+
+    # The image should consist of a copy of the convolution kernel, centered
+    # such that pixels (kern.shape-1)//2 is at pixel 7,5 of data.
+    expected_data = np.ma.array(data=np.zeros(shape), mask=mask)
+    expected_data.data[:, 6:9, 4:8] = kern
+
+    res = c.convolve(kern)
+    assert_masked_allclose(res.data, expected_data)
+
+    res = c.convolve(Image(data=kern))
+    assert_masked_allclose(res.data, expected_data)
+
+    res = c.fftconvolve(kern)
+    assert_masked_allclose(res.data, expected_data, atol=1e-15)
