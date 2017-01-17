@@ -397,13 +397,13 @@ class Spectrum(ArithmeticMixin, DataArray):
             if unit is None:
                 if lmin > self.shape[0]:
                     raise ValueError('Minimum and maximum wavelengths '
-                             'are outside the spectrum range')
+                                     'are outside the spectrum range')
                 i1 = max(0, int(lmin + 0.5))
             else:
                 i1 = self.wave.pixel(lmin, nearest=False, unit=unit)
                 if i1 > self.shape[0]:
                     raise ValueError('Minimum and maximum wavelengths '
-                             'are outside the spectrum range')
+                                     'are outside the spectrum range')
                 i1 = self.wave.pixel(lmin, nearest=True, unit=unit)
 
         # Get the pixel index that corresponds to the maximum wavelength.
@@ -413,13 +413,13 @@ class Spectrum(ArithmeticMixin, DataArray):
             if unit is None:
                 if lmax < 0:
                     raise ValueError('Minimum and maximum wavelengths '
-                             'are outside the spectrum range')
+                                     'are outside the spectrum range')
                 i2 = min(self.shape[0], int(lmax + 0.5))
             else:
                 i2 = self.wave.pixel(lmax, nearest=False, unit=unit)
                 if i2 < 0:
                     raise ValueError('Minimum and maximum wavelengths '
-                             'are outside the spectrum range')
+                                     'are outside the spectrum range')
                 i2 = self.wave.pixel(lmax, nearest=True, unit=unit) + 1
 
         return slice(i1, i2)
@@ -495,7 +495,8 @@ class Spectrum(ArithmeticMixin, DataArray):
         self.data = np.ma.masked_invalid(self._interp_data(spline))
 
     def rebin(self, factor, margin='center', inplace=False):
-        """Combine neighboring pixels to reduce the size of a spectrum by an integer factor.
+        """Combine neighboring pixels to reduce the size of a spectrum by an
+        integer factor.
 
         Each output pixel is the mean of n pixels, where n is the
         specified reduction factor.
@@ -568,7 +569,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         # Calculate the standard deviation of a Gaussian whose Fourier
         # transform drops from unity at the center to gcut at the Nyquist
         # folding frequency.
-        sigma = 0.5 / np.pi / nyquist_folding_freq * np.sqrt(-2.0*np.log(gcut))
+        sigma = 0.5 / np.pi / nyquist_folding_freq * np.sqrt(-2.0 * np.log(gcut))
 
         # Convert the standard deviation from wavelength units to input pixels.
         sigma /= self.get_step(unit=unit)
@@ -589,7 +590,7 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         # Sample the gaussian filter symmetrically around the central pixel.
         gx = np.arange(gshape, dtype=float) - gshape // 2
-        gy = np.exp(-0.5 * (gx/sigma)**2)
+        gy = np.exp(-0.5 * (gx / sigma)**2)
 
         # Area-normalize the gaussian profile.
         gy /= gy.sum()
@@ -598,7 +599,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         self.fftconvolve(gy, inplace=True)
 
     def resample(self, step, start=None, shape=None, unit=u.angstrom,
-                     inplace=False, atten=40.0, cutoff=0.25):
+                 inplace=False, atten=40.0, cutoff=0.25):
         """Resample a spectrum to have a different wavelength interval.
 
         Parameters
@@ -636,14 +637,13 @@ class Spectrum(ArithmeticMixin, DataArray):
         out : Spectrum
 
         """
-        # Should we resample the spectrum in-place, or resample a copy?
-
         out = self if inplace else self.copy()
 
         # Don't allow the spectrum to be started beyond the far end of
         # the spectrum, because this would result in an empty spectrum.
         if start is not None and start > self.get_end(unit):
-            raise ValueError('The start value is past the end of the spectrum range')
+            raise ValueError('The start value is past the end of the '
+                             'spectrum range')
 
         # Get wavelength world coordinates of the output spectrum.
         newwave = self.wave.resample(step, start, unit)
@@ -692,12 +692,13 @@ class Spectrum(ArithmeticMixin, DataArray):
         # Get a resampled versions of the data array, optionally the variance
         # array, and a floating point version of the mask array. Note that the
         # choice of linear interpolation is required to preserve flux.
-        data = interpolate.griddata(xi, data, xo, method="linear", fill_value=np.nan)
+        data = interpolate.griddata(xi, data, xo, method="linear",
+                                    fill_value=np.nan)
         if var is not None:
             var = interpolate.griddata(xi, var, xo, method="linear",
                                        fill_value=np.nan)
-        mask = interpolate.griddata(xi, mask.astype(float), xo, method="linear",
-                                    fill_value=1.0)
+        mask = interpolate.griddata(xi, mask.astype(float), xo,
+                                    method="linear", fill_value=1.0)
 
         # Create a new boolean mask in which all pixels that had an integrated
         # contribution of more than 'cutoff' originally masked pixels are
@@ -768,14 +769,14 @@ class Spectrum(ArithmeticMixin, DataArray):
         except ValueError:
             return (0.0, np.inf)
 
-
         # Obtain the mean flux of the sub-spectrum.
         if weight:
             weights = 1.0 / self.var[lambda_slice].filled(np.inf)
             flux, wsum = np.ma.average(self.data[lambda_slice],
                                        weights=weights, returned=True)
             if self.var is not None:
-                err_flux = np.sqrt(np.ma.sum(self.var[lambda_slice] * weights**2) / wsum**2)
+                err_flux = np.sqrt(
+                    np.ma.sum(self.var[lambda_slice] * weights**2) / wsum**2)
             else:
                 err_flux = np.inf
         else:
@@ -819,18 +820,20 @@ class Spectrum(ArithmeticMixin, DataArray):
         # Perform a weighted sum?
         if weight and self._var is not None:
             weights = 1.0 / self.var[lambda_slice].filled(np.inf)
-            
+
             # How many unmasked pixels will be averaged?
             nsum = np.ma.count(self.data[lambda_slice])
-            
+
             fmean, wsum = np.ma.average(self.data[lambda_slice],
-                                       weights=weights, returned=True)
-            
+                                        weights=weights, returned=True)
+
             # The weighted average multiplied by the number of unmasked pixels.
             flux = fmean * nsum
-            
+
             if self.var is not None:
-                err_flux = np.sqrt(np.ma.sum(self.var[lambda_slice] * weights**2) / wsum**2 * nsum**2)
+                err_flux = np.sqrt(
+                    np.ma.sum(self.var[lambda_slice] * weights**2) /
+                    wsum**2 * nsum**2)
             else:
                 err_flux = np.inf
         else:
@@ -901,13 +904,12 @@ class Spectrum(ArithmeticMixin, DataArray):
         Returns
         -------
         out : `astropy.units.quantity.Quantity`, `astropy.units.quantity.Quantity`
-            The result of the integration and its error.
-            Thez are expressed as a floating
-            point number with accompanying units. The integrated value
-            and its physical units can be extracted using the .value
-            and .unit attributes of the returned quantity. The value
-            can also be converted to different units, using the .to()
-            method of the returned objected.
+            The result of the integration and its error, expressed as
+            a floating point number with accompanying units. The integrated
+            value and its physical units can be extracted using the .value and
+            .unit attributes of the returned quantity. The value can also be
+            converted to different units, using the .to() method of the
+            returned objected.
 
         """
 
@@ -964,7 +966,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             out_unit = self.unit * unit
         else:
             try:
-                # Attempt to determine the wavelength units of the flux density.
+                # Attempt to determine the wavelength units of the flux density
                 wunit = (set(self.unit.bases) &
                          set([u.pm, u.angstrom, u.nm, u.um])).pop()
 
@@ -1127,7 +1129,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         Returns
         -------
         out : float, float
-              Magnitude value and its error 
+              Magnitude value and its error
         """
         vflux, err_flux = self.mean(lmin=lbda - dlbda / 2.0,
                                     lmax=lbda + dlbda / 2.0,
@@ -1135,8 +1137,9 @@ class Spectrum(ArithmeticMixin, DataArray):
         if vflux == 0:
             return (99, 0)
         else:
-            vflux2 = (vflux * self.unit).to(u.Unit('erg.s-1.cm-2.Angstrom-1'))
-            err_flux2 = (err_flux * self.unit).to(u.Unit('erg.s-1.cm-2.Angstrom-1'))
+            unit = u.Unit('erg.s-1.cm-2.Angstrom-1')
+            vflux2 = (vflux * self.unit).to(unit)
+            err_flux2 = (err_flux * self.unit).to(unit)
             return flux2mag(vflux2.value, err_flux2.value, lbda)
 
     def abmag_filter_name(self, name):
@@ -1153,8 +1156,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         out : float, float
               Magnitude value and its error
         """
-        
-        
+
         if name == 'U':
             return self.abmag_band(3663., 650.)
         elif name == 'B':
@@ -1184,7 +1186,6 @@ class Spectrum(ArithmeticMixin, DataArray):
             l0 = np.sum(lbda * thr) / np.sum(thr)
             tck = interpolate.splrep(lbda, thr, k=3)
             return self._filter(l0, lmin, lmax, tck)
-
 
     def abmag_filter(self, lbda, eff):
         """Compute AB magnitude using array filter.
@@ -1226,8 +1227,8 @@ class Spectrum(ArithmeticMixin, DataArray):
         lmax : float
             Maximum wavelength in Angstrom.
         tck : 3-tuple
-            (t,c,k) contains the spline representation.
-            t = the knot-points, c = coefficients and k = the order of the spline.
+            (t,c,k) contains the spline representation. t = the knot-points,
+            c = coefficients and k = the order of the spline.
         """
         try:
             lambda_slice = self._wavelengths_to_slice(lmin, lmax, u.Angstrom)
@@ -1236,20 +1237,22 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         if lambda_slice.start == (lambda_slice.stop - 1):
             raise ValueError('Filter band smaller than spectrum step')
-        
-        
+
         lb = self.wave.coord(np.arange(lambda_slice.start, lambda_slice.stop),
-                              unit=u.Angstrom)
+                             unit=u.Angstrom)
         w = interpolate.splev(lb, tck, der=0)
 
-        vflux, wsum = np.ma.average(self.data[lambda_slice], weights=w, returned=True)
+        vflux, wsum = np.ma.average(self.data[lambda_slice], weights=w,
+                                    returned=True)
         if self.var is not None:
-            err_flux = np.sqrt(np.ma.sum(self.var[lambda_slice] * w**2) / wsum**2)
+            err_flux = np.sqrt(np.ma.sum(self.var[lambda_slice] * w**2) /
+                               wsum**2)
         else:
             err_flux = np.inf
-        
-        vflux2 = (vflux * self.unit).to(u.Unit('erg.s-1.cm-2.Angstrom-1'))
-        err_flux2 = (err_flux * self.unit).to(u.Unit('erg.s-1.cm-2.Angstrom-1'))
+
+        unit = u.Unit('erg.s-1.cm-2.Angstrom-1')
+        vflux2 = (vflux * self.unit).to(unit)
+        err_flux2 = (err_flux * self.unit).to(unit)
         return flux2mag(vflux2.value, err_flux2.value, l0)
 
     def truncate(self, lmin=None, lmax=None, unit=u.angstrom):
@@ -1683,13 +1686,17 @@ class Spectrum(ArithmeticMixin, DataArray):
         # inital guesses for Gaussian Fit
         v0 = [flux_1, lpeak_1, sigma, flux_2]
         # Minimize the sum of squares
-        v, covar, info, mesg, success = leastsq(e_gauss_fit, v0[:], args=(l, d, wght), maxfev=100000, full_output=1)  # Gauss Fit
+        v, covar, info, mesg, success = leastsq(
+            e_gauss_fit, v0[:], args=(l, d, wght), maxfev=100000,
+            full_output=1)
 
         # calculate the errors from the estimated covariance matrix
         chisq = sum(info["fvec"] * info["fvec"])
         dof = len(info["fvec"]) - len(v)
         if covar is not None:
-            err = np.array([np.sqrt(np.abs(covar[i, i])) * np.sqrt(np.abs(chisq / dof)) for i in range(len(v))])
+            err = np.array([np.sqrt(np.abs(covar[i, i])) *
+                            np.sqrt(np.abs(chisq / dof))
+                            for i in range(len(v))])
         else:
             err = None
 
@@ -1716,9 +1723,11 @@ class Spectrum(ArithmeticMixin, DataArray):
             err_sigma = err[2]
             err_fwhm = err_sigma * 2 * np.sqrt(2 * np.log(2))
             err_peak_1 = np.abs(1. / np.sqrt(2 * np.pi) *
-                                (err_flux_1 * sigma - flux_1 * err_sigma) / sigma / sigma)
+                                (err_flux_1 * sigma - flux_1 * err_sigma) /
+                                sigma / sigma)
             err_peak_2 = np.abs(1. / np.sqrt(2 * np.pi) *
-                                (err_flux_2 * sigma - flux_2 * err_sigma) / sigma / sigma)
+                                (err_flux_2 * sigma - flux_2 * err_sigma) /
+                                sigma / sigma)
         else:
             err_flux_1 = np.NAN
             err_flux_2 = np.NAN
@@ -1845,9 +1854,15 @@ class Spectrum(ArithmeticMixin, DataArray):
         else:
             pass
 
-        # Asymetric gaussian function (p[0]: flux of the right-hand side if it was full... ; p[1]: lambda peak; p[2]:sigma_right; p[3]: sigma_left)
-        asymfit = lambda p, x: np.where(x > p[1], cont0 + p[0] / np.sqrt(2 * np.pi) / p[2] * np.exp(-(x - p[1]) ** 2 / (2. * p[2] ** 2)), cont0 + p[0] * p[3] / p[2] / np.sqrt(2 * np.pi) / p[3] * np.exp(-(x - p[1]) ** 2 / (2. * p[3] ** 2)))
-        #cont + p[0] / np.sqrt(2*np.pi)/p[2] * np.exp(-(x-p[1])**2/(2.*p[2]**2)) if x > p[1] else cont + p[0] * p[3]/p[2] / np.sqrt(2*np.pi)/p[3] * np.exp(-(x-p[1])**2/(2.*p[3]**2))
+        # Asymetric gaussian function (p[0]: flux of the right-hand side if it
+        # was full... ; p[1]: lambda peak; p[2]:sigma_right; p[3]: sigma_left)
+        asymfit = lambda p, x: np.where(
+            x > p[1],
+            cont0 + p[0] / np.sqrt(2 * np.pi) / p[2] *
+            np.exp(-(x - p[1]) ** 2 / (2. * p[2] ** 2)),
+            cont0 + p[0] * p[3] / p[2] / np.sqrt(2 * np.pi) / p[3] *
+            np.exp(-(x - p[1]) ** 2 / (2. * p[3] ** 2))
+        )
 
         # 1d Gaussian fit
         if spec.var is not None and weight:
@@ -1862,19 +1877,22 @@ class Spectrum(ArithmeticMixin, DataArray):
         v0 = [peak, lpeak, sigma, sigma]
 
         # Minimize the sum of squares
-        v, covar, info, mesg, success = leastsq(e_asym_fit, v0[:], args=(l, d, wght), maxfev=100000, full_output=1)
+        v, covar, info, mesg, success = leastsq(
+            e_asym_fit, v0[:], args=(l, d, wght), maxfev=100000, full_output=1)
 
         # calculate the errors from the estimated covariance matrix
         chisq = sum(info["fvec"] * info["fvec"])
         dof = len(info["fvec"]) - len(v)
         if covar is not None:
-            err = np.array([np.sqrt(np.abs(covar[i, i])) * np.sqrt(np.abs(chisq / dof)) for i in range(len(v))])
+            err = np.array([np.sqrt(np.abs(covar[i, i])) *
+                            np.sqrt(np.abs(chisq / dof))
+                            for i in range(len(v))])
         else:
             err = None
 
-        # plot
         if plot:
-            xxx = np.arange(l[0], l[-1], (l[1] - l[0]) / plot_factor)  # Same wavelenght grid as input spectrum
+            # Same wavelenght grid as input spectrum
+            xxx = np.arange(l[0], l[-1], (l[1] - l[0]) / plot_factor)
             ccc = asymfit(v, xxx)
             plt.plot(xxx, ccc, 'm--', label='Asymmetric')
 
@@ -1895,7 +1913,10 @@ class Spectrum(ArithmeticMixin, DataArray):
             err_sigma_left = err[3]
             err_fwhm_right = err_sigma_right * 2 * np.sqrt(2 * np.log(2))
             err_fwhm_left = err_sigma_left * 2 * np.sqrt(2 * np.log(2))
-            err_peak = np.abs(1. / np.sqrt(2 * np.pi) * (err_flux * sigma_right - flux * err_sigma_right) / sigma_right / sigma_right)
+            err_peak = np.abs(
+                1. / np.sqrt(2 * np.pi) *
+                (err_flux * sigma_right - flux * err_sigma_right) /
+                sigma_right / sigma_right)
         else:
             err_flux = np.NAN
             err_lpeak = np.NAN
@@ -1932,7 +1953,13 @@ class Spectrum(ArithmeticMixin, DataArray):
             Type of the wavelength coordinates. If None, inputs are in pixels.
         """
 
-        asym_gauss = lambda p, x: np.where(x > p[1], cont + p[0] / np.sqrt(2 * np.pi) / p[2] * np.exp(-(x - p[1]) ** 2 / (2. * p[2] ** 2)), cont + p[0] * p[3] / p[2] / np.sqrt(2 * np.pi) / p[3] * np.exp(-(x - p[1]) ** 2 / (2. * p[3] ** 2)))
+        asym_gauss = lambda p, x: np.where(
+            x > p[1],
+            cont + p[0] / np.sqrt(2 * np.pi) / p[2] *
+            np.exp(-(x - p[1]) ** 2 / (2. * p[2] ** 2)),
+            cont + p[0] * p[3] / p[2] / np.sqrt(2 * np.pi) / p[3] *
+            np.exp(-(x - p[1]) ** 2 / (2. * p[3] ** 2))
+        )
         sigma_left = fwhm_left / (2. * np.sqrt(2. * np.log(2.0)))
         sigma_right = fwhm_right / (2. * np.sqrt(2. * np.log(2.0)))
 
@@ -2405,15 +2432,17 @@ class Spectrum(ArithmeticMixin, DataArray):
         data[:k] = self._data[k:0:-1]
         data[-k:] = self._data[-2:-k - 2:-1]
 
-        res._data = np.array([(f(lbda[i], step, size, **kwargs)
-                               * data[i:i + size]).sum() for i in range(self.shape[0])])
+        res._data = np.array([(f(lbda[i], step, size, **kwargs) *
+                               data[i:i + size]).sum()
+                              for i in range(self.shape[0])])
         res._mask = self._mask
 
         if self._var is None:
             res._var = None
         else:
-            res._var = np.array([(f(lbda[i], step, size, **kwargs)
-                                  * data[i:i + size]).sum() for i in range(self.shape[0])])
+            res._var = np.array([(f(lbda[i], step, size, **kwargs) *
+                                  data[i:i + size]).sum()
+                                 for i in range(self.shape[0])])
         return res
 
     def plot(self, max=None, title=None, noise=False, snr=False,

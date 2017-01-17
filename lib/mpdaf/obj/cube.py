@@ -37,7 +37,6 @@ from __future__ import absolute_import, division
 
 import astropy.units as u
 import multiprocessing
-import warnings
 import numpy as np
 import os.path
 import sys
@@ -201,7 +200,10 @@ class _MultiprocessReporter(object):
             self._update_report_time()
 
             # Inform the user of the progress through the task list.
-            output = "\r Completed %d of %d tasks (%d%%) in %.1fs" % (self.completed, self.ntask, self.completed * 100.0 / self.ntask, now - self.start_time)
+            output = "\r Completed %d of %d tasks (%d%%) in %.1fs" % (
+                self.completed, self.ntask,
+                self.completed * 100.0 / self.ntask, now - self.start_time
+            )
             sys.stdout.write("\r\x1b[K" + output.__str__())
             sys.stdout.flush()
 
@@ -353,9 +355,9 @@ class Cube(ArithmeticMixin, DataArray):
         # If the radius argument is a scalar value, this requests
         # that a circular region be masked. Delegate this to mask_ellipse().
         if np.isscalar(radius):
-            return self.mask_ellipse(center=center, radius=radius, posangle=0.0,
+            return self.mask_ellipse(center=center, radius=radius,
                                      lmin=lmin, lmax=lmax, inside=inside,
-                                     unit_center=unit_center,
+                                     posangle=0.0, unit_center=unit_center,
                                      unit_radius=unit_radius,
                                      unit_wave=unit_wave)
 
@@ -514,8 +516,9 @@ class Cube(ArithmeticMixin, DataArray):
         # ellipse and > 1 for pixels outside the ellipse.
         #
         #   k = (xp / rx)**2 + (yp / ry)**2
-        x, y = np.meshgrid((np.arange(sx.start, sx.stop) - center[1]) * step[1],
-                           (np.arange(sy.start, sy.stop) - center[0]) * step[0])
+        x, y = np.meshgrid(
+            (np.arange(sx.start, sx.stop) - center[1]) * step[1],
+            (np.arange(sy.start, sy.stop) - center[0]) * step[0])
         ksel = (((x * cospa + y * sinpa) / radii[0]) ** 2 +
                 ((y * cospa - x * sinpa) / radii[1]) ** 2)
 
@@ -597,7 +600,7 @@ class Cube(ArithmeticMixin, DataArray):
             lmax = self.wave.pixel(lmax, nearest=True, unit=unit_wave)
 
         # Combine the previous mask with the new one between lmin and lmax.
-        self._mask[lmin:lmax, :, :] = np.logical_or(self._mask[lmin:lmax, :, :], c)
+        self._mask[lmin:lmax, :, :] |= c
 
         # When masking pixels outside the region, mask all pixels
         # outside the specified wavelength range.
@@ -671,7 +674,8 @@ class Cube(ArithmeticMixin, DataArray):
         # Convert wavelength limits to the nearest pixels.
         else:
             pix_min = max(0, int(self.wave.pixel(lbda_min, unit=unit_wave)))
-            pix_max = min(self.shape[0], int(self.wave.pixel(lbda_max, unit=unit_wave)) + 1)
+            pix_max = min(self.shape[0],
+                          int(self.wave.pixel(lbda_max, unit=unit_wave)) + 1)
 
         # When just one channel is selected, return an Image. When
         # multiple channels are selected, return a sub-cube.
@@ -892,8 +896,8 @@ class Cube(ArithmeticMixin, DataArray):
                     var = ma.sum(ma.sum(self.var, axis=1), axis=1).filled(np.inf)
                 else:
                     var = None
-                return Spectrum(wave=self.wave, unit=self.unit, data=data, var=var,
-                                copy=False)
+                return Spectrum(wave=self.wave, unit=self.unit, data=data,
+                                var=var, copy=False)
         else:
             raise ValueError('Invalid axis argument')
 
@@ -965,19 +969,23 @@ class Cube(ArithmeticMixin, DataArray):
             # the dimensions of the data, remedy this if possible using
             # the rules given in the description of the weights argument.
             if not np.array_equal(weights.shape, self.shape):
-                excmsg = 'Wrong dimensions for the weights (%s) (should be (%s))'
+                excmsg = ('Wrong dimensions for the weights (%s) '
+                          '(should be (%s))')
                 if weights.ndim == 3:
                     raise ValueError(excmsg % (weights.shape, self.shape))
                 elif weights.ndim == 2:
                     if np.array_equal(weights.shape, self.shape[1:]):
                         weights = np.tile(weights, (self.shape[0], 1, 1))
                     else:
-                        raise ValueError(excmsg % (weights.shape, self.shape[1:]))
+                        raise ValueError(excmsg % (weights.shape,
+                                                   self.shape[1:]))
                 elif weights.ndim == 1:
                     if weights.shape[0] == self.shape[0]:
-                        weights = np.ones_like(self._data) * weights[:, np.newaxis, np.newaxis]
+                        weights = (np.ones_like(self._data) *
+                                   weights[:, np.newaxis, np.newaxis])
                     else:
-                        raise ValueError(excmsg % (weights.shape[0], self.shape[0]))
+                        raise ValueError(excmsg % (weights.shape[0],
+                                                   self.shape[0]))
                 else:
                     raise ValueError(excmsg % (None, self.shape))
 
@@ -1161,7 +1169,8 @@ class Cube(ArithmeticMixin, DataArray):
         return res
 
     def rebin(self, factor, margin='center', inplace=False):
-        """Combine neighboring pixels to reduce the size of a cube by integer factors along each axis.
+        """Combine neighboring pixels to reduce the size of a cube by integer
+        factors along each axis.
 
         Each output pixel is the mean of n pixels, where n is the
         product of the reduction factors in the factor argument.
@@ -1697,7 +1706,8 @@ class Cube(ArithmeticMixin, DataArray):
             # chosen wavelength range to compute the background, give up.
             if(lower_maxpix - nbelow < 0 or
                upper_minpix + nabove > self.shape[0]):
-                raise ValueError("Insufficient space outside the wavelength range to estimate a background")
+                raise ValueError('Insufficient space outside the wavelength '
+                                 'range to estimate a background')
 
             # Calculate slices that select the wavelength pixels below
             # and above the chosen wavelength range.
@@ -1708,8 +1718,9 @@ class Cube(ArithmeticMixin, DataArray):
             # obtain the same unit scaling as the combination of the 'nim'
             # foreground images.
             if is_sum:
-                off_im = (self[below, :, :].sum(axis=0) +
-                          self[above, :, :].sum(axis=0)) * float(nim) / float(nbelow + nabove)
+                off_im = ((self[below, :, :].sum(axis=0) +
+                           self[above, :, :].sum(axis=0)) *
+                          float(nim) / float(nbelow + nabove))
             else:
                 off_im = (self[below, :, :].mean(axis=0) +
                           self[above, :, :].mean(axis=0)) / 2.0
@@ -2043,7 +2054,8 @@ class Cube(ArithmeticMixin, DataArray):
             shape=self.shape[1:], step=step)
 
         if (sx.start >= self.shape[2] or sx.stop < 0 or sx.start == sx.stop or
-                sy.start >= self.shape[1] or sy.stop < 0 or sy.start == sy.stop):
+                sy.start >= self.shape[1] or sy.stop < 0 or
+                sy.start == sy.stop):
             raise ValueError('Sub-cube boundaries are outside the cube')
 
         # Extract the requested part of the cube.

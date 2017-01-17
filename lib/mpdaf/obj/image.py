@@ -1476,8 +1476,8 @@ class Image(ArithmeticMixin, DataArray):
         if center is None or radius == 0:
             img = self
         else:
-            size = ((radius*2, radius*2) if is_number(radius)
-                    else (radius[0]*2, radius[1]*2))
+            size = ((radius * 2, radius * 2) if is_number(radius)
+                    else (radius[0] * 2, radius[1] * 2))
             img = self.subimage(center, size, unit_center=unit_center,
                                 unit_size=unit_radius)
 
