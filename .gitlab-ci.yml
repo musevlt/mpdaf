@@ -19,6 +19,9 @@ astropy11:
 astropy12:
   script: tox -v -e astropy12
 
+check-setup:
+  script: tox -v -e check
+
 # astropy-dev:
 #   allow_failure: true
 #   script: tox -v -e astropy-dev
