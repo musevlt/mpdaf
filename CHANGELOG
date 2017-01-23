@@ -41,6 +41,11 @@ Sources
 
 - Correct behaviour when adding an image not overlapping with Source. [#482]
 
+Catalog
+~~~~~~~
+
+- Fix issue in `~mpdaf.sdetect.Catalog.match`
+
 Pixtable
 ~~~~~~~~
 
