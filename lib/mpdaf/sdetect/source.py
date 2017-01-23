@@ -1347,7 +1347,7 @@ class Source(object):
         subcub = cube.subcube(center=(self.dec, self.ra), size=size,
                               unit_center=u.deg, unit_size=unit_size)
 
-        z = self.z['Z'][self.z['Z_DESC'] == six.b(z_desc)]
+        z = self.z['Z'][self.z['Z_DESC'] == z_desc]
 
         if z > 0:
             if eml is None:
