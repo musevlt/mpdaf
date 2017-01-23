@@ -435,8 +435,10 @@ class Spectrum(ArithmeticMixin, DataArray):
         unit : `astropy.units.Unit`
             Type of the wavelength coordinates
         spline : bool
-            False: linear interpolation (`scipy.interpolate.interp1d` used),
-            True: spline interpolation (`scipy.interpolate.splrep/splev` used).
+            False: linear interpolation (use `scipy.interpolate.interp1d`),
+            True: spline interpolation (use `scipy.interpolate.splrep`
+            and `scipy.interpolate.splev`).
+
         """
         lbda = self.wave.coord()
         d = np.pad(self.data.compressed(), 1, 'edge')
@@ -470,18 +472,19 @@ class Spectrum(ArithmeticMixin, DataArray):
         Parameters
         ----------
         spline : bool
-            False: linear interpolation (`scipy.interpolate.interp1d` used),
-            True: spline interpolation (`scipy.interpolate.splrep/splev` used).
+            False: linear interpolation (use `scipy.interpolate.interp1d`),
+            True: spline interpolation (use `scipy.interpolate.splrep`
+            and `scipy.interpolate.splev`).
+
         """
-        if np.count_nonzero(self._mask) == 0:
+        if np.count_nonzero(self._mask) in (0, self.shape[0]):
             return self._data
-        else:
-            lbda = self.wave.coord()
-            ksel = np.where(self._mask == True)
-            wnew = lbda[ksel]
-            data = self._data.copy()
-            data[ksel] = self._interp(wnew, spline)
-            return data
+
+        lbda = self.wave.coord()
+        wnew = lbda[self._mask]
+        data = self._data.copy()
+        data[self._mask] = self._interp(wnew, spline)
+        return data
 
     def interp_mask(self, spline=False):
         """Interpolate masked pixels.
@@ -489,8 +492,10 @@ class Spectrum(ArithmeticMixin, DataArray):
         Parameters
         ----------
         spline : bool
-            False: linear interpolation (`scipy.interpolate.interp1d` used),
-            True: spline interpolation (`scipy.interpolate.splrep/splev` used).
+            False: linear interpolation (use `scipy.interpolate.interp1d`),
+            True: spline interpolation (use `scipy.interpolate.splrep`
+            and `scipy.interpolate.splev`).
+
         """
         self.data = np.ma.masked_invalid(self._interp_data(spline))
 
@@ -1028,11 +1033,11 @@ class Spectrum(ArithmeticMixin, DataArray):
             d = self._data
             w = self.wave.coord()
         else:
-            mask = np.array(1 - self._mask, dtype=bool)
-            d = self._data.compress(mask)
-            w = self.wave.coord().compress(mask)
+            mask = ~self._mask
+            d = self._data[mask]
+            w = self.wave.coord()[mask]
             if weight:
-                vec_weight = vec_weight.compress(mask)
+                vec_weight = vec_weight[mask]
 
         # normalize w
         w0 = np.min(w)
@@ -1062,10 +1067,9 @@ class Spectrum(ArithmeticMixin, DataArray):
                 n_p = len(ind[0])
 
                 if verbose:
-                    msg = 'Number of iteration: '\
-                        '%d Std: %10.4e Np: %d Frac: %4.2f' \
-                        % (it + 1, sig, n_p, 100. * n_p / self.shape[0])
-                    self._logger.info(msg)
+                    self._logger.info('Number of iteration: %d Std: %10.4e '
+                                      'Np: %d Frac: %4.2f', it + 1, sig, n_p,
+                                      100. * n_p / self.shape[0])
 
         return p
 
@@ -1077,10 +1081,11 @@ class Spectrum(ArithmeticMixin, DataArray):
         Parameters
         ----------
         z : array
-            The polynomial coefficients, in increasing powers.
+            The polynomial coefficients, in increasing powers:
 
-            data = z0 + z1(lbda-min(lbda))/(max(lbda)-min(lbda)) + ...
-            + zn ((lbda-min(lbda))/(max(lbda)-min(lbda)))**n
+                data = z0 + z1(lbda-min(lbda))/(max(lbda)-min(lbda)) + ...
+                + zn ((lbda-min(lbda))/(max(lbda)-min(lbda)))**n
+
         """
         l = self.wave.coord()
         w0 = np.min(l)
