@@ -2540,6 +2540,7 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         # Set the default plot arguments.
         kwargs.setdefault('drawstyle', 'steps-mid')
+        kwargs.setdefault('linewidth', 1)
 
         # Plot the data with a linear or logarithmic Y axis.
         if stretch == 'linear':
