@@ -3,6 +3,8 @@ v2.2-dev (xx/xx/2016)
 
 - Compatibility with Astropy 1.3
 
+- Fix direct replacement of .data in a Cube/Image/Spectrum object. [!82]
+
 WCS
 ~~~
 
