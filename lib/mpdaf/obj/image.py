@@ -3511,14 +3511,14 @@ class Image(ArithmeticMixin, DataArray):
 
         # Quadratically interpolate a more precise peak position from three
         # points along the X and Y axes, centered on the position found above.
-        py = py - 1 + _find_quadratic_peak(cc[py - 1: py + 2, px])
-        px = px - 1 + _find_quadratic_peak(cc[py, px - 1: px + 2])
+        py2 = py - 1 + _find_quadratic_peak(cc[py - 1: py + 2, px])
+        px2 = px - 1 + _find_quadratic_peak(cc[py, px - 1: px + 2])
 
         # Compute the offset of the peak relative to the central pixel
         # of the correlation image. This yields the offset between the
         # two images.
-        dy = py - float(cc.shape[0] // 2)
-        dx = px - float(cc.shape[1] // 2)
+        dy = py2 - float(cc.shape[0] // 2)
+        dx = px2 - float(cc.shape[1] // 2)
 
         return dy, dx
 

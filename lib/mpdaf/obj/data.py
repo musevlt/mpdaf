@@ -495,8 +495,7 @@ class DataArray(object):
             self._mask = value.mask
         else:
             self._data = value
-            if self._mask is not ma.nomask:
-                self._mask = ~(np.isfinite(value))
+            self._mask = ~(np.isfinite(value))
 
     @property
     def var(self):
