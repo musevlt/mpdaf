@@ -1355,7 +1355,7 @@ def test_non_masked_data():
     new_data = np.arange(n, dtype=float) * 0.3
     new_var = np.arange(n, dtype=float) * 0.1
     spec = template_spec.copy()
-    spec.data = new_data
+    spec.data = ma.MaskedArray(new_data, mask=np.ma.nomask)
     spec.var = new_var
 
     assert_masked_allclose(spec.data, ma.array(new_data, mask=ma.nomask))
