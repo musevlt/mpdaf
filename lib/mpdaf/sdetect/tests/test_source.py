@@ -373,14 +373,25 @@ def test_SEA2(minicube):
     psf[:, sl, sl] = np.max(dist) - dist
 
     # extract spectra
-    s.extract_spectra(cube, skysub=False, psf=psf, obj_mask='MASK_OBJ')
-    s.extract_spectra(cube, skysub=True, psf=psf, obj_mask='MASK_OBJ')
+    s.extract_spectra(cube, skysub=False, psf=psf, obj_mask='MASK_OBJ',
+                      apertures=(0.3, 1.0))
+    s.extract_spectra(cube, skysub=True, psf=psf, obj_mask='MASK_OBJ',
+                      apertures=(0.3, 1.0))
 
     # MUSE_TOT
     sptot = cube.data[:, sl, sl].sum(axis=(1, 2))
     npix_sky = np.sum((~cube.mask) & mask, axis=(1, 2))
     assert_almost_equal(s.spectra['MUSE_TOT'].data, sptot)
     assert_almost_equal(s.spectra['MUSE_TOT_SKYSUB'].data,
+                        sptot - sky_value * npix_sky)
+
+    # MUSE_APER
+    # 0.3" gives a similar mask as the white image
+    assert_almost_equal(s.spectra['MUSE_APER_0.3'].data,
+                        s.spectra['MUSE_WHITE'].data)
+    # 1" aperture is wider than the object mask, so we get the same flux
+    assert_almost_equal(s.spectra['MUSE_APER_1.0'].data, sptot)
+    assert_almost_equal(s.spectra['MUSE_APER_1.0_SKYSUB'].data,
                         sptot - sky_value * npix_sky)
 
     # MUSE_PSF

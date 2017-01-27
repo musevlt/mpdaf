@@ -486,13 +486,10 @@ class Image(ArithmeticMixin, DataArray):
         # If the radius argument is a scalar value, this requests
         # that a circular region be masked. Delegate this to mask_ellipse().
         if np.isscalar(radius):
-            return self.mask_ellipse(center=center, radius=radius, posangle=0.0,
-                                     unit_center=unit_center,
-                                     unit_radius=unit_radius,
-                                     inside=inside)
+            return self.mask_ellipse(center=center, radius=radius,
+                                     posangle=0.0, unit_center=unit_center,
+                                     unit_radius=unit_radius, inside=inside)
 
-        # If the units of the center are not already in pixels, convert
-        # them to pixels.
         if unit_center is not None:
             center = self.wcs.sky2pix(center, unit=unit_center)[0]
 

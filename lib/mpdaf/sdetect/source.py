@@ -1607,15 +1607,16 @@ class Source(object):
                         tags_to_try=('MUSE_WHITE', 'NB_LYALPHA',
                                      'NB_HALPHA', 'NB_SUMOII3726'),
                         skysub=True, psf=None, beta=None, lbda=None,
-                        unit_wave=u.angstrom):
-        """Extract spectra from the MUSE data cube and from a list of
-        narrow-band images (to define spectrum extraction apertures).
+                        apertures=None, unit_wave=u.angstrom):
+        """Extract spectra from a data cube.
 
-        First, this method computes a subcube that has the same size along the
-        spatial axis as the image that contains the mask of the objet.
+        This method extracts several spectra from a data cube and from a list
+        of narrow-band images (to define spectrum extraction apertures).
+        First, it computes a subcube that has the same size along the spatial
+        axis as the mask image given by ``obj_mask``.
 
         Then, the no-weighting spectrum is computed as the sum of the subcube
-        weighted by the mask of the object.  It is saved in
+        weighted by the mask of the object and saved in
         ``self.spectra['MUSE_TOT']``.
 
         The weighted spectra are computed as the sum of the subcube weighted by
@@ -1645,7 +1646,7 @@ class Source(object):
         Parameters
         ----------
         cube : `~mpdaf.obj.Cube`
-            MUSE data cube.
+            Input data cube.
         obj_mask : str
             Name of the image that contains the mask of the object.
         sky_mask : str
@@ -1655,11 +1656,10 @@ class Source(object):
         skysub : bool
             If True, a local sky subtraction is done.
         psf : numpy.ndarray
-            The PSF to use for PSF-weighted extraction.
-            This can be a vector of length equal to the wavelength
-            axis to give the FWHM of the Gaussian or Moffat PSF at each
-            wavelength (in arcsec) or a cube with the PSF to use.
-            psf=None by default (no PSF-weighted extraction).
+            The PSF to use for PSF-weighted extraction.  This can be a vector
+            of length equal to the wavelength axis to give the FWHM of the
+            Gaussian or Moffat PSF at each wavelength (in arcsec) or a cube
+            with the PSF to use. No PSF-weighted extraction by default.
         beta : float or none
             if not none, the PSF is a Moffat function with beta value,
             else it is a Gaussian
@@ -1668,6 +1668,9 @@ class Source(object):
         unit_wave : `astropy.units.Unit`
             Wavelengths unit (angstrom by default)
             If None, inputs are in pixels
+        apertures : list of float
+            List of aperture radii (arcseconds) for which a spectrum is
+            extracted.
 
         """
         if obj_mask not in self.images:
@@ -1687,7 +1690,8 @@ class Source(object):
             size = ima.wcs.get_step(unit=u.arcsec)[0] * ima.shape[0]
             unit_size = u.arcsec
 
-        subcub = cube.subcube(center=(self.dec, self.ra), size=size,
+        center = (self.dec, self.ra)
+        subcub = cube.subcube(center=center, size=size,
                               unit_center=u.deg, unit_size=unit_size,
                               lbda=lbda, unit_wave=unit_wave)
         wcsref = subcub.wcs
@@ -1721,6 +1725,16 @@ class Source(object):
         # No weighting
         spec = compute_spectrum(subcub, weights=object_mask)
         self.spectra['MUSE_TOT' + suffix] = spec
+
+        if apertures:
+            tmpim = Image(data=np.zeros_like(object_mask, dtype=bool),
+                          copy=False, wcs=ima.wcs)
+            for radius in apertures:
+                tmpim.mask_ellipse(center, radius, 0)
+                mask = object_mask & tmpim.mask
+                spec = compute_spectrum(subcub, weights=mask)
+                self.spectra['MUSE_APER_%.1f%s' % (radius, suffix)] = spec
+                tmpim.unmask()
 
         # Now loop over the narrow-band images we want to use. Apply
         # the object mask and ensure that the weight map within the
