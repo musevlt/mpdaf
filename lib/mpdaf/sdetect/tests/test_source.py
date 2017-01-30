@@ -106,7 +106,7 @@ def test_write(tmpdir, source1):
     assert src.z['Z_MAX'][sel] == 2.5
 
     assert src.tables['TEST'].colnames == table.colnames
-    assert src.tables['TEST'][0].data == table[0].data
+    assert src.tables['TEST'][0].as_void() == table[0].as_void()
 
 
 def test_comments(source1):
