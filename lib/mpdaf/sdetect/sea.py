@@ -298,59 +298,61 @@ def mask_creation(source, maps):
 
 def compute_spectrum(cube, weights):
     """Compute a spectrum for a cube by summing along the spatial axis.
-    The method conserves the flux by using the algorithm
-    from Jarle Brinchmann (jarle@strw.leidenuniv.nl):
-    It takes into account bad pixels in the addition.
-    It normalizes with the median value of weighting sum/no-weighting sum
+
+    The method conserves the flux by using the algorithm from Jarle Brinchmann
+    (jarle@strw.leidenuniv.nl): It takes into account bad pixels in the
+    addition, and normalize for flux conservation.
 
     Parameters
     ----------
-
     cube : `~mpdaf.obj.Cube`
-           Data cube
-    weights : array
-              An array of weights associated with the data values.
-    """
-    w = np.array(weights, dtype=np.float)
-    excmsg = 'Incorrect dimensions for the weights (%s) (it must be (%s))'
+        Input data cube.
+    weights : array-like
+        An array of weights associated with the data values.
 
+    """
+    w = np.asarray(weights, dtype=float)
+
+    # First ensure that we have a 3D mask
+    excmsg = 'Incorrect dimensions for the weights (%s) (it must be (%s))'
     if len(w.shape) == 3:
         if not np.array_equal(w.shape, cube.shape):
             raise IOError(excmsg % (w.shape, cube.shape))
     elif len(w.shape) == 2:
         if w.shape[0] != cube.shape[1] or w.shape[1] != cube.shape[2]:
             raise IOError(excmsg % (w.shape, cube.shape[1:]))
-        else:
-            w = np.tile(w, (cube.shape[0], 1, 1))
+        w = np.tile(w, (cube.shape[0], 1, 1))
     elif len(w.shape) == 1:
         if w.shape[0] != cube.shape[0]:
             raise IOError(excmsg % (w.shape[0], cube.shape[0]))
-        else:
-            w = np.ones_like(cube._data) * w[:, np.newaxis, np.newaxis]
+        w = np.ones_like(cube._data) * w[:, np.newaxis, np.newaxis]
     else:
         raise IOError(excmsg % (None, cube.shape))
 
-    # weights mask
-    wmask = np.ma.masked_where(cube._mask, np.ma.masked_where(w == 0, w))
+    # mask of the non-zero weights and its surface
+    wmask = (w != 0)
+    npix = np.sum(wmask, axis=(1, 2))
 
-    data = cube.data * w
-    npix = np.sum(np.sum(~cube.mask, axis=1), axis=1)
-    data = np.ma.sum(np.ma.sum(data, axis=1), axis=1) / npix
-    orig_data = cube.data * ~wmask.mask
-    orig_data = np.ma.sum(np.ma.sum(orig_data, axis=1), axis=1)
+    # Normalize weights
+    w /= np.sum(w, axis=(1, 2))[:, np.newaxis, np.newaxis]
+
+    data = np.ma.sum(np.ma.sum(cube.data * w, axis=1), axis=1) * npix
+
+    # flux conservation: as weighted sums does not conserve flux, we compute
+    # the total flux on the aperture to normalize the spectrum
+    orig_data = np.ma.sum(np.ma.sum(cube.data * wmask, axis=1), axis=1)
     rr = data / orig_data
     med_rr = np.ma.median(rr)
     if med_rr > 0:
         data /= med_rr
+
     if cube._var is not None:
-        var = np.ma.sum(np.ma.sum(cube.var * w, axis=1), axis=1) / npix
+        var = np.ma.sum(np.ma.sum(cube.var * w, axis=1), axis=1) * npix
         dspec = np.ma.sqrt(var)
         if med_rr > 0:
             dspec /= med_rr
-        orig_var = cube._var * ~wmask.mask
-        orig_var = np.ma.masked_where(cube.mask,
-                                      np.ma.masked_invalid(orig_var))
-        orig_var = np.ma.sum(np.ma.sum(orig_var, axis=1), axis=1)
+
+        orig_var = np.ma.sum(np.ma.sum(cube.var * wmask, axis=1), axis=1)
         sn_orig = orig_data / np.ma.sqrt(orig_var)
         sn_now = data / dspec
         sn_ratio = np.ma.median(sn_orig / sn_now)

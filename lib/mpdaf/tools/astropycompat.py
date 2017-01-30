@@ -20,7 +20,8 @@ from astropy.units.format.fits import UnitScaleError
 from astropy.utils import minversion
 from astropy.utils.exceptions import AstropyUserWarning
 
-__all__ = ['zscale', 'table_to_hdu', 'write_hdulist_to', 'write_fits_to']
+__all__ = ['zscale', 'table_to_hdu', 'write_hdulist_to', 'write_fits_to',
+           'ASTROPY_LT_1_1', 'ASTROPY_LT_1_2', 'ASTROPY_LT_1_3']
 
 ASTROPY_LT_1_1 = not minversion('astropy', '1.1')
 ASTROPY_LT_1_2 = not minversion('astropy', '1.2')

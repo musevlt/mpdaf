@@ -8,9 +8,10 @@ import os
 import pytest
 
 from astropy.table import Table
-from mpdaf.obj import Cube
+from mpdaf.obj import Cube, Image
 from mpdaf.sdetect import Source
-from mpdaf.tools.astropycompat import ASTROPY_LT_1_1
+from mpdaf.tools import ASTROPY_LT_1_1
+from mpdaf.tools.numpycompat import broadcast_to
 from numpy.testing import assert_array_equal, assert_almost_equal
 
 from ...tests.utils import get_data_file
@@ -213,11 +214,9 @@ def test_add_image(source2, a478hst, a370II):
     source2.add_image(a478hst, 'HST3', rotate=True)
     assert_almost_equal(source2.images['HST3'].get_rot(),
                         source2.images['MUSE_WHITE'].get_rot(), 3)
-    
+
     # Trying to add image not overlapping with Source
     assert source2.add_image(a370II, 'ERROR') == None
-    
-    
 
 
 def test_add_narrow_band_image(minicube, tmpdir):
@@ -324,6 +323,98 @@ def test_SEA(minicube, a478hst):
         assert len(np.unique(Ny)) == 1
         Nx = np.array([source.images[tag].shape[1] for tag in tags])
         assert len(np.unique(Nx)) == 1
+
+
+def test_SEA2(minicube):
+    size = 9
+    shape = (5, size, size)
+    center = size // 2
+    data = np.random.choice([-0.01, 0.02],
+                            np.prod(shape[1:])).reshape(shape[1:])
+
+    # Put fake data at the center of the image
+    sl = slice(2, -2)
+    for i in range(sl.start, center+1):
+        data[i:-i, i:-i] = i - 1
+
+    data = np.repeat([data], 5, axis=0)
+    # Mask some values in the background
+    data[1:4, 0, 0] = np.nan
+    # Ideally we should test with NaNs in the data, but the algorithm used
+    # makes it diffcult to compute expected values without reimplementing the
+    # same code here
+    # data[:, 3, 3] = np.nan
+
+    cube = Cube(data=data, wcs=minicube.wcs, wave=minicube.wave)
+    dec, ra = cube.wcs.pix2sky([4, 4])[0]
+
+    origin = ('sea', '0.0', 'test', 'v0')
+    s = Source.from_data('1', ra, dec, origin)
+    s.add_white_image(cube, size, unit_size=None)
+    white = s.images['MUSE_WHITE'].data
+    assert_array_equal(white, data[0])
+
+    mask = np.zeros(shape[1:], dtype=bool)
+    mask[sl, sl] = True
+    s.images['MASK_OBJ'] = Image(data=mask, wcs=cube.wcs)
+    s.images['MASK_SKY'] = Image(data=~mask, wcs=cube.wcs)
+    sky_value = np.nanmean(data[:, ~mask], axis=1)
+
+    # extract spectra errors
+    with pytest.raises(ValueError):
+        s.extract_spectra(cube, skysub=False)
+
+    with pytest.raises(ValueError):
+        s.extract_spectra(cube, skysub=True, obj_mask='MASK_OBJ',
+                          sky_mask='NONE')
+
+    dist = np.sum((np.mgrid[:5, :5] - 2) ** 2, axis=0)
+    psf = np.zeros(shape)
+    psf[:, sl, sl] = np.max(dist) - dist
+
+    # extract spectra
+    s.extract_spectra(cube, skysub=False, psf=psf, obj_mask='MASK_OBJ',
+                      apertures=(0.3, 1.0))
+    s.extract_spectra(cube, skysub=True, psf=psf, obj_mask='MASK_OBJ',
+                      apertures=(0.3, 1.0))
+
+    # MUSE_TOT
+    sptot = cube.data[:, sl, sl].sum(axis=(1, 2))
+    npix_sky = np.sum((~cube.mask) & mask, axis=(1, 2))
+    assert_almost_equal(s.spectra['MUSE_TOT'].data, sptot)
+    assert_almost_equal(s.spectra['MUSE_TOT_SKYSUB'].data,
+                        sptot - sky_value * npix_sky)
+
+    # MUSE_APER
+    # 0.3" gives a similar mask as the white image
+    assert_almost_equal(s.spectra['MUSE_APER_0.3'].data,
+                        s.spectra['MUSE_WHITE'].data)
+    # 1" aperture is wider than the object mask, so we get the same flux
+    assert_almost_equal(s.spectra['MUSE_APER_1.0'].data, sptot)
+    assert_almost_equal(s.spectra['MUSE_APER_1.0_SKYSUB'].data,
+                        sptot - sky_value * npix_sky)
+
+    # MUSE_PSF
+    mask = (psf > 0) & s.images['MASK_OBJ']._data
+    sp = np.nansum(cube.data * mask, axis=(1, 2))
+    npix_sky = np.sum((~cube.mask) & mask, axis=(1, 2))
+    assert_almost_equal(sp, s.spectra['MUSE_PSF'].data)
+    assert_almost_equal(sp - sky_value * npix_sky,
+                        s.spectra['MUSE_PSF_SKYSUB'].data, decimal=3)
+
+    # MUSE_WHITE
+    # here compute_spectrum subtracts the min value of the weight image, to
+    # ensure that weights are positive, but this means that on our fake data
+    # the weights of the boundary are put to 0. So we need to compare on the
+    # inner part only.
+    mask = ((white - white[sl, sl].min()) > 0) & s.images['MASK_OBJ'].data
+    mask = broadcast_to(mask, cube.shape)
+    sp = np.nansum(cube.data * mask, axis=(1, 2))
+    npix_sky = np.sum((~cube.mask) & mask, axis=(1, 2))
+
+    assert_almost_equal(sp, s.spectra['MUSE_WHITE'].data)
+    assert_almost_equal(sp - sky_value * npix_sky,
+                        s.spectra['MUSE_WHITE_SKYSUB'].data, decimal=3)
 
 
 def test_add_FSF():

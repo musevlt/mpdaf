@@ -1607,15 +1607,16 @@ class Source(object):
                         tags_to_try=('MUSE_WHITE', 'NB_LYALPHA',
                                      'NB_HALPHA', 'NB_SUMOII3726'),
                         skysub=True, psf=None, beta=None, lbda=None,
-                        unit_wave=u.angstrom):
-        """Extract spectra from the MUSE data cube and from a list of
-        narrow-band images (to define spectrum extraction apertures).
+                        apertures=None, unit_wave=u.angstrom):
+        """Extract spectra from a data cube.
 
-        First, this method computes a subcube that has the same size along the
-        spatial axis as the image that contains the mask of the objet.
+        This method extracts several spectra from a data cube and from a list
+        of narrow-band images (to define spectrum extraction apertures).
+        First, it computes a subcube that has the same size along the spatial
+        axis as the mask image given by ``obj_mask``.
 
         Then, the no-weighting spectrum is computed as the sum of the subcube
-        weighted by the mask of the object.  It is saved in
+        weighted by the mask of the object and saved in
         ``self.spectra['MUSE_TOT']``.
 
         The weighted spectra are computed as the sum of the subcube weighted by
@@ -1645,7 +1646,7 @@ class Source(object):
         Parameters
         ----------
         cube : `~mpdaf.obj.Cube`
-            MUSE data cube.
+            Input data cube.
         obj_mask : str
             Name of the image that contains the mask of the object.
         sky_mask : str
@@ -1655,11 +1656,10 @@ class Source(object):
         skysub : bool
             If True, a local sky subtraction is done.
         psf : numpy.ndarray
-            The PSF to use for PSF-weighted extraction.
-            This can be a vector of length equal to the wavelength
-            axis to give the FWHM of the Gaussian or Moffat PSF at each
-            wavelength (in arcsec) or a cube with the PSF to use.
-            psf=None by default (no PSF-weighted extraction).
+            The PSF to use for PSF-weighted extraction.  This can be a vector
+            of length equal to the wavelength axis to give the FWHM of the
+            Gaussian or Moffat PSF at each wavelength (in arcsec) or a cube
+            with the PSF to use. No PSF-weighted extraction by default.
         beta : float or none
             if not none, the PSF is a Moffat function with beta value,
             else it is a Gaussian
@@ -1668,6 +1668,9 @@ class Source(object):
         unit_wave : `astropy.units.Unit`
             Wavelengths unit (angstrom by default)
             If None, inputs are in pixels
+        apertures : list of float
+            List of aperture radii (arcseconds) for which a spectrum is
+            extracted.
 
         """
         if obj_mask not in self.images:
@@ -1687,67 +1690,64 @@ class Source(object):
             size = ima.wcs.get_step(unit=u.arcsec)[0] * ima.shape[0]
             unit_size = u.arcsec
 
-        subcub = cube.subcube(center=(self.dec, self.ra), size=size,
+        center = (self.dec, self.ra)
+        subcub = cube.subcube(center=center, size=size,
                               unit_center=u.deg, unit_size=unit_size,
                               lbda=lbda, unit_wave=unit_wave)
-        if ima.wcs.isEqual(subcub.wcs):
-            object_mask = ima.data.data
-        else:
-            object_mask = ima.resample(
-                newdim=(subcub.shape[1], subcub.shape[2]),
-                newstart=subcub.wcs.get_start(unit=u.deg),
-                newstep=subcub.wcs.get_step(unit=u.arcsec),
-                order=0, unit_start=u.deg, unit_step=u.arcsec).data.data
+        wcsref = subcub.wcs
+
+        if not ima.wcs.isEqual(wcsref):
+            ima = ima.resample(
+                newdim=subcub.shape[1:],
+                newstart=wcsref.get_start(unit=u.deg),
+                newstep=wcsref.get_step(unit=u.arcsec),
+                order=0, unit_start=u.deg, unit_step=u.arcsec)
+
+        object_mask = ima.data.data
 
         if skysub:
-            if self.images[sky_mask].wcs.isEqual(subcub.wcs):
-                skymask = self.images[sky_mask].data.data
-            else:
-                skymask = self.images[sky_mask].resample(
-                    newdim=(subcub.shape[1], subcub.shape[2]),
-                    newstart=subcub.wcs.get_start(unit=u.deg),
-                    newstep=subcub.wcs.get_step(unit=u.arcsec),
-                    order=0, unit_start=u.deg, unit_step=u.arcsec).data.data
+            skymask = self.images[sky_mask]
+            if not skymask.wcs.isEqual(wcsref):
+                skymask = skymask.resample(
+                    newdim=subcub.shape[1:],
+                    newstart=wcsref.get_start(unit=u.deg),
+                    newstep=wcsref.get_step(unit=u.arcsec),
+                    order=0, unit_start=u.deg, unit_step=u.arcsec)
 
-            # Get the sky spectrum to subtract
-            # FIXME: next line seems useless
-            sky = compute_spectrum(subcub, weights=skymask)
-            old_mask = subcub.data.mask.copy()
-            subcub.data.mask[np.where(
-                np.tile(skymask, (subcub.shape[0], 1, 1)) == 0)] = True
-            sky = subcub.mean(axis=(1, 2))
-            self.spectra['MUSE_SKY'] = sky
-            subcub.data.mask = old_mask
-
-            # substract sky
-            subcub = subcub - sky
-
-        # extract spectra
-        # select narrow bands images
-        nb_tags = list(set(tags_to_try) & set(self.images))
+            # Get the sky spectrum and subtract it
+            self.spectra['MUSE_SKY'] = subcub.mean(weights=skymask.data.data,
+                                                   axis=(1, 2))
+            subcub -= self.spectra['MUSE_SKY']
+            suffix = '_SKYSUB'
+        else:
+            suffix = ''
 
         # No weighting
         spec = compute_spectrum(subcub, weights=object_mask)
-        if skysub:
-            self.spectra['MUSE_TOT_SKYSUB'] = spec
-        else:
-            self.spectra['MUSE_TOT'] = spec
+        self.spectra['MUSE_TOT' + suffix] = spec
+
+        if apertures:
+            tmpim = Image(data=np.zeros_like(object_mask, dtype=bool),
+                          copy=False, wcs=ima.wcs)
+            for radius in apertures:
+                tmpim.mask_ellipse(center, radius, 0)
+                mask = object_mask & tmpim.mask
+                spec = compute_spectrum(subcub, weights=mask)
+                self.spectra['MUSE_APER_%.1f%s' % (radius, suffix)] = spec
+                tmpim.unmask()
 
         # Now loop over the narrow-band images we want to use. Apply
         # the object mask and ensure that the weight map within the
         # object mask is >=0.
-        # Weighted extractions
+        nb_tags = list(set(tags_to_try) & set(self.images))
         ksel = (object_mask != 0)
         for tag in nb_tags:
-            if self.images[tag].wcs.isEqual(subcub.wcs):
+            if self.images[tag].wcs.isEqual(wcsref):
                 weight = self.images[tag].data * object_mask
                 weight[ksel] -= np.min(weight[ksel])
                 weight = weight.filled(0)
-                spec = compute_spectrum(subcub, weights=weight)
-                if skysub:
-                    self.spectra[tag + '_SKYSUB'] = spec
-                else:
-                    self.spectra[tag] = spec
+                self.spectra[tag + suffix] = compute_spectrum(subcub,
+                                                              weights=weight)
 
         # PSF
         if psf is not None:
@@ -1768,7 +1768,7 @@ class Source(object):
                     for l in range(subcub.shape[0]):
                         gauss_ima = gauss_image(
                             shape=(subcub.shape[1], subcub.shape[2]),
-                            wcs=subcub.wcs, fwhm=(psf[l], psf[l]), peak=False,
+                            wcs=wcsref, fwhm=(psf[l], psf[l]), peak=False,
                             unit_fwhm=u.arcsec)
                         white_cube[l, :, :] = gauss_ima.data.data
                 else:
@@ -1776,8 +1776,8 @@ class Source(object):
                     for l in range(subcub.shape[0]):
                         moffat_ima = moffat_image(
                             shape=(subcub.shape[1], subcub.shape[2]),
-                            wcs=subcub.wcs, fwhm=(psf[l], psf[l]), n=beta, peak=False,
-                            unit_fwhm=u.arcsec)
+                            wcs=wcsref, fwhm=(psf[l], psf[l]), n=beta,
+                            peak=False, unit_fwhm=u.arcsec)
                         white_cube[l, :, :] = moffat_ima.data.data
             else:
                 self._logger.warning('Incorrect dimensions for the PSF vector '
@@ -1785,13 +1785,9 @@ class Source(object):
                                      subcub.shape[0])
                 white_cube = None
             if white_cube is not None:
-                weight = white_cube * np.tile(object_mask,
-                                              (subcub.shape[0], 1, 1))
+                weight = white_cube * object_mask
                 spec = compute_spectrum(subcub, weights=weight)
-                if skysub:
-                    self.spectra['MUSE_PSF_SKYSUB'] = spec
-                else:
-                    self.spectra['MUSE_PSF'] = spec
+                self.spectra['MUSE_PSF' + suffix] = spec
                 # Insert the PSF weighted flux - here re-normalised?
 
     def crack_z(self, eml=None, nlines=np.inf, cols=('LBDA_OBS', 'FLUX'),
