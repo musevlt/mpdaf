@@ -10,7 +10,7 @@ a slice number between the various numbering schemes. The definition of the
 various numbering schemes and the conversion table can be found in the *“Global
 Positioning System”* document (VLT-TRE-MUSE-14670-0657).
 
-All the methods are static and thus there is no need to instanciate an object
+All the methods are static and thus there is no need to instantiate an object
 to use this class.
 
 For example, we convert slice number 4 in CCD numbering to SKY numbering:
@@ -40,7 +40,7 @@ LSF *qsim_v1*
 This is a simple model where the LSF is supposed to be constant over the filed
 of view. It uses a simple parametric model of variation with wavelength.
 
-The model is a convolution of a step function with a gaussian. The resulting
+The model is a convolution of a step function with a Gaussian. The resulting
 function is then sample by the pixel size::
 
     LSF = T(y2+dy/2) - T(y2-dy/2) - T(y1+dy/2) + T(y1-dy/2)
@@ -51,7 +51,7 @@ function is then sample by the pixel size::
 
     y2 = (y+h/2) / sigma
 
-The slit width is assumed to be constant (h = 2.09 pixels).  The gaussian sigma
+The slit width is assumed to be constant (h = 2.09 pixels).  The Gaussian sigma
 parameter is a polynomial approximation of order 3 with wavelength::
 
     c = [-0.09876662, 0.44410609, -0.03166038, 0.46285363]
@@ -59,7 +59,8 @@ parameter is a polynomial approximation of order 3 with wavelength::
     sigma(x) = c[3] + c[2]*x + c[1]*x**2 + c[0]*x**3
 
 
-To use it, create a `~mpdaf.MUSE.LSF` object with attribute 'typ' equal to 'qsim_v1':
+To use it, create a `~mpdaf.MUSE.LSF` object with attribute 'typ' equal to
+'qsim_v1':
 
 .. ipython::
 
@@ -91,12 +92,16 @@ Only one model of FSF (Field Spread Function) is currently available.
 FSF *MOFFAT1*
 -------------
 
-The MUSE FSF is supposed to be a Moffat function with a FWHM which varies linearly with the wavelength.
+The MUSE FSF is supposed to be a Moffat function with a FWHM which varies
+linearly with the wavelength:
 
-The model is defined with 3 parameters:
+    fwhm = a + b*lbda
+
+With:
+
  - beta (float) Power index of the Moffat.
- - a (float) constant in arcsec which defined the FWHM (fwhm=a+b*lbda)
- - b (float) constant which defined the FWHM (fwhm=a+b*lbda)
+ - a (float) constant in arcsec which defined the FWHM.
+ - b (float) constant which defined the FWHM.
 
 We create the `~mpdaf.MUSE.FSF` object like this:
 
@@ -106,7 +111,8 @@ We create the `~mpdaf.MUSE.FSF` object like this:
 
   In [2]: fsf = FSF(typ='MOFFAT1')
 
-`~mpdaf.MUSE.FSF.get_FSF` returns for each wavelength an array and the FWHM in pixel and in arcseconds.
+`~mpdaf.MUSE.FSF.get_FSF` returns for each wavelength an array and the FWHM in
+pixel and in arcseconds.
 
 .. ipython::
 
@@ -126,14 +132,16 @@ We create the `~mpdaf.MUSE.FSF` object like this:
   @savefig FSF2.png width=3.5in
   In [28]: plt.imshow(fsf_array[0], vmin=0, vmax=60, interpolation='nearest')
 
-It is also possible to use `~mpdaf.MUSE.FSF.get_FSF_cube` that returns a cube of FSFs with the same coordinates that the MUSE data cube given as input.
+It is also possible to use `~mpdaf.MUSE.FSF.get_FSF_cube` that returns a cube of
+FSFs with the same coordinates that the MUSE data cube given as input.
 
 MUSE mosaic field map
 =====================
 
 .. warning:: FieldsMap class is currently under development
 
-`~mpdaf.MUSE.FieldsMap` reads the possible FIELDMAP extension of the MUSE data cube.
+`~mpdaf.MUSE.FieldsMap` reads the possible FIELDMAP extension of the MUSE data
+cube.
 
 .. ipython::
 
@@ -141,7 +149,8 @@ MUSE mosaic field map
 
   In [7]: fmap = FieldsMap('sdetect/subcub_mosaic.fits', extname='FIELDMAP')
 
-`~mpdaf.MUSE.FieldsMap.get_pixel_fields` returns a list of fields that cover a given pixel (y, x):
+`~mpdaf.MUSE.FieldsMap.get_pixel_fields` returns a list of fields that cover
+a given pixel (y, x):
 
 .. ipython::
 
@@ -149,7 +158,8 @@ MUSE mosaic field map
 
   In [20]: fmap.get_pixel_fields(20,20)
 
-`~mpdaf.MUSE.FieldsMap.get_field_mask` returns an array with non-zeros values for pixels matching a field:
+`~mpdaf.MUSE.FieldsMap.get_field_mask` returns an array with non-zeros values
+for pixels matching a field:
 
 .. ipython::
 
