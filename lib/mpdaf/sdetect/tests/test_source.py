@@ -84,6 +84,10 @@ def test_write(tmpdir, source1):
     source1.tables['TEST'] = table
 
     source1.write(filename)
+
+    with pytest.raises(OSError):
+        source1.write(filename, overwrite=False)
+
     source1.info()
     source1 = None
 

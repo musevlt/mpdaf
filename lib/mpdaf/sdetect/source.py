@@ -683,15 +683,20 @@ class Source(object):
                    mask_invalid=mask_invalid,
                    filename=os.path.abspath(filename))
 
-    def write(self, filename):
+    def write(self, filename, overwrite=True):
         """Write the source object in a FITS file.
 
         Parameters
         ----------
         filename : str
             FITS filename
+        overwrite : bool
+            If ``True``, overwrite the output file if it exists.
 
         """
+        if not overwrite and os.path.exists(filename):
+            raise OSError("File '%s' already exists." % filename)
+
         if self._filename is None:
             # create and write the FITS file from scratch
             prihdu = pyfits.PrimaryHDU(header=self.header)
