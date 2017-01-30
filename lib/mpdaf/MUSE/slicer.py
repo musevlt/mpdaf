@@ -109,8 +109,11 @@ class Slicer(object):
 
         Return None if the input slice number is invalid.
 
-        :param s: slice number in CCD numbering scheme
-        :type s: int
+        Parameters
+        ----------
+        s : int
+            slice number in CCD numbering scheme
+
         """
         return Slicer.__CCD2SKY__.get(s)
 
@@ -120,8 +123,11 @@ class Slicer(object):
 
         Return None if the input slice number is invalid.
 
-        :param s: slice number in SKY numbering scheme
-        :type s: int
+        Parameters
+        ----------
+        s : int
+            slice number in SKY numbering scheme
+
         """
         return Slicer.__SKY2CCD__.get(s)
 
@@ -131,8 +137,11 @@ class Slicer(object):
 
         Return None if the input slice number is invalid.
 
-        :param s: slice number in SKY numbering scheme
-        :type s: int
+        Parameters
+        ----------
+        s : int
+            slice number in SKY numbering scheme
+
         """
         return Slicer.__SKY2OPTICAL__.get(s)
 
@@ -142,8 +151,11 @@ class Slicer(object):
 
         Return None if the input slice number is invalid.
 
-        :param s: slice number in OPTICAL numbering scheme
-        :type s: tuple of ints
+        Parameters
+        ----------
+        s : tuple of int
+            slice number in OPTICAL numbering scheme
+
         """
         return Slicer.__OPTICAL2SKY__.get(s)
 
@@ -153,10 +165,12 @@ class Slicer(object):
 
         Return None if the input slice number is invalid.
 
-        :param s: slice number in OPTICAL numbering scheme
-        :type s: tuple of ints
-        """
+        Parameters
+        ----------
+        s : tuple of int
+            slice number in OPTICAL numbering scheme
 
+        """
         return Slicer.sky2ccd(Slicer.optical2sky(s))
 
     @staticmethod
@@ -165,7 +179,10 @@ class Slicer(object):
 
         Return None if the input slice number is invalid.
 
-        :param s: slice number in CCD numbering scheme
-        :type s: int
+        Parameters
+        ----------
+        s : int
+            slice number in CCD numbering scheme
+
         """
         return Slicer.sky2optical(Slicer.ccd2sky(s))

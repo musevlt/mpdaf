@@ -48,24 +48,25 @@ class LSF(object):
 
     Attributes
     ----------
+    typ : str
+        LSF type.
 
-    typ (string) : LSF type.
     """
 
     def __init__(self, typ="qsim_v1"):
         """Manages LSF model.
 
+        *qsim_v1* : simple model where the LSF is supposed to be constant over
+        the FoV. It is a convolution of a step function with a Gaussian.  The
+        resulting function is then sample by the pixel size.  The slit width is
+        assumed to be constant (2.09 pixels).  The Gaussian sigma parameter is
+        a polynomial approximation of order 3 with wavelength.
+
         Parameters
         ----------
-        typ : string
-              type of LSF
+        typ : str
+            type of LSF
 
-        qsim_v1 : simple model where the LSF is supposed to be constant over
-        the FoV. It is a convolution of a step function with a Gaussian.
-        The resulting function is then sample by the pixel size.
-        The slit width is assumed to be constant (2.09 pixels).
-        The Gaussian sigma parameter is a polynomial approximation of order 3
-        with wavelength.
         """
         self.typ = typ
 
@@ -75,18 +76,19 @@ class LSF(object):
         Parameters
         ----------
         lbda : float
-               Wavelength value in A.
+            Wavelength value in A.
         step : float
-               Size of the pixel in A.
-        size : odd integer
-               Number of pixels.
+            Size of the pixel in A.
+        size : odd int
+            Number of pixels.
         kargs : dict
-                kargs can be used to set LSF parameters.
+            kargs can be used to set LSF parameters.
 
         Returns
         -------
         out : array
-              array containing the LSF
+            array containing the LSF
+
         """
         if self.typ == "qsim_v1":
             T = lambda x: np.exp((-x ** 2) / 2.0) + np.sqrt(2.0 * np.pi) \
@@ -118,17 +120,18 @@ class LSF(object):
         Parameters
         ----------
         lbda : float
-               Wavelength value in A.
+            Wavelength value in A.
         step : float
-               Size of the pixel in A.
+            Size of the pixel in A.
         epsilon : float
-                  This factor is used to determine the size of LSF
-                  min(LSF) < max(LSF)*epsilon
+            This factor is used to determine the size of LSF
+                min(LSF) < max(LSF)*epsilon
 
         Returns
         -------
-        out : integer
-              Size in pixels.
+        out : int
+            Size in pixels.
+
         """
         x0 = lbda
         # x = np.array([x0])
@@ -148,23 +151,24 @@ def Moffat(step_arcsec, Nfsf, beta, fwhm):
     Parameters
     ----------
     step_arcsec : float
-                  Size of the pixel in arcsec.
-    Nfsf        : int
-                  Spatial dimension of the FSF.
-    beta        : float
-                  Power index of the Moffat.
-    fwhm        : float or array of float
-                  Moffat fwhm in arcsec.
+        Size of the pixel in arcsec.
+    Nfsf : int
+        Spatial dimension of the FSF.
+    beta : float
+        Power index of the Moffat.
+    fwhm : float or array of float
+        Moffat fwhm in arcsec.
 
 
     Returns
     -------
     PSF_Moffat : array (Nz, Nfsf, Nfsf)
-                 MUSE PSF
-    fwhm_pix   : array (Nz)
-                 fwhm of the PSF in pixels
+        MUSE PSF
+    fwhm_pix : array (Nz)
+        fwhm of the PSF in pixels
     fwhm_arcsec : array (Nz)
-                  fwhm of the PSF in arcsec
+        fwhm of the PSF in arcsec
+
     """
     # conversion fwhm arcsec -> pixels
     fwhm_pix = fwhm / step_arcsec
@@ -199,27 +203,28 @@ def MOFFAT1(lbda, step_arcsec, Nfsf, beta, a, b):
 
     Parameters
     ----------
-    lbda        : float or array of float
-                  Wavelength values in Angstrom.
+    lbda : float or array of float
+        Wavelength values in Angstrom.
     step_arcsec : float
-                  Size of the pixel in arcsec
-    Nfsf        : int
-                  Spatial dimension of the FSF.
-    beta        : float
-                  Power index of the Moffat.
-    a           : float
-                  Moffat parameter in arcsec (fwhm=a+b*lbda)
-    b           : float
-                  Moffat parameter (fwhm=a+b*lbda)
+        Size of the pixel in arcsec
+    Nfsf : int
+        Spatial dimension of the FSF.
+    beta : float
+        Power index of the Moffat.
+    a : float
+        Moffat parameter in arcsec (fwhm=a+b*lbda)
+    b : float
+        Moffat parameter (fwhm=a+b*lbda)
 
     Returns
     -------
     PSF_Moffat : array (Nz, Nfsf, Nfsf)
-                 MUSE PSF
-    fwhm_pix   : array (Nz)
-                 fwhm of the PSF in pixels
+        MUSE PSF
+    fwhm_pix : array (Nz)
+        fwhm of the PSF in pixels
     fwhm_arcsec : array (Nz)
-                  fwhm of the PSF in arcsec
+        fwhm of the PSF in arcsec
+
     """
     fwhm_arcsec = a + b * lbda
     PSF_Moffat, fwhm_pix = Moffat(step_arcsec, Nfsf, beta, fwhm_arcsec)
@@ -232,8 +237,9 @@ class FSF(object):
 
     Attributes
     ----------
+    typ : str
+        FSF type.
 
-    typ (string) : FSF type.
     """
 
     def __init__(self, typ="MOFFAT1"):
@@ -241,8 +247,8 @@ class FSF(object):
 
         Parameters
         ----------
-        typ : string
-              type of LSF
+        typ : str
+            type of LSF
 
 
         MOFFAT1: Moffat function with a FWHM which varies linearly with the
@@ -259,23 +265,24 @@ class FSF(object):
 
         Parameters
         ----------
-        lbda  : float
-                Wavelength value in A.
-        step  : float
-                Size of the pixel in arcsec.
-        size  : integer
-                Number of pixels.
+        lbda : float
+            Wavelength value in A.
+        step : float
+            Size of the pixel in arcsec.
+        size : int
+            Number of pixels.
         kargs : dict
-                kargs can be used to set FSF parameters.
+            kargs can be used to set FSF parameters.
 
         Returns
         -------
-        FSF         : array (size, size)
-                      MUSE FSF
-        fwhm_pix    : float
-                      fwhm of the FSF in pixels
+        FSF : array (size, size)
+            MUSE FSF
+        fwhm_pix : float
+            fwhm of the FSF in pixels
         fwhm_arcsec : array
-                      fwhm of the FSF in arcsec
+            fwhm of the FSF in arcsec
+
         """
         lbda = np.asarray(lbda)
         if self.typ == "MOFFAT1":
@@ -290,21 +297,22 @@ class FSF(object):
 
         Parameters
         ----------
-        cube  : `mpdaf.obj.Cube`
-                MUSE data cube
-        size  : integer
-                FSF size in pixels.
+        cube : `mpdaf.obj.Cube`
+            MUSE data cube
+        size : int
+            FSF size in pixels.
         kargs : dict
-                kargs can be used to set FSF parameters.
+            kargs can be used to set FSF parameters.
 
         Returns
         -------
-        FSF         : array (cube.shape[0], size, size)
-                      Cube containing MUSE FSF (one per wavelength)
-        fwhm_pix    : array(cube.shape[0])
-                      fwhm of the FSF in pixels
+        FSF : array (cube.shape[0], size, size)
+            Cube containing MUSE FSF (one per wavelength)
+        fwhm_pix : array(cube.shape[0])
+            fwhm of the FSF in pixels
         fwhm_arcsec : array(cube.shape[0])
-                      fwhm of the FSF in arcsec
+            fwhm of the FSF in arcsec
+
         """
         # size of the pixel in arcsec.
         step = cube.wcs.get_step(unit=u.arcsec)[0]
@@ -314,56 +322,53 @@ class FSF(object):
             return MOFFAT1(lbda, step, size, **kargs)
         else:
             raise IOError('Invalid FSF type')
-        
+
 
 def get_FSF_from_cube_keywords(cube, size):
     """Return a cube of FSFs corresponding to the keywords presents in the
     MUSE data cube primary header ('FSF***')
-    
-    The step of the FSF pixel is equal to the spatial step of the MUSE data cube.
-    
-    If the cube corresponds to mosaic of several fields ('NFIELDS'>1),
+
+    The step of the FSF pixel is equal to the spatial step of the MUSE data
+    cube.  If the cube corresponds to mosaic of several fields ('NFIELDS'>1),
     a list of FSF cubes is returned.
 
     Parameters
     ----------
-    cube  : `mpdaf.obj.Cube`
-             MUSE data cube
-    size  : integer
-            FSF size in pixels.
-        
+    cube : `mpdaf.obj.Cube`
+        MUSE data cube
+    size : int
+        FSF size in pixels.
+
     Returns
     -------
-    FSF         : array (cube.shape[0], size, size) or list of arrays
-                  Cube containing MUSE FSF (one per wavelength). One cube per field.
-    fwhm_pix    : array(cube.shape[0]) or list of arrays
-                  fwhm of the FSF in pixels
+    FSF : array (cube.shape[0], size, size) or list of arrays
+        Cube containing MUSE FSF (one per wavelength). One cube per field.
+    fwhm_pix : array(cube.shape[0]) or list of arrays
+        fwhm of the FSF in pixels
     fwhm_arcsec : array(cube.shape[0]) or list of arrays
-                  fwhm of the FSF in arcsec
-    
-    
+        fwhm of the FSF in arcsec
+
     """
     if 'FSFMODE' in cube.primary_header:
         FSF_mode = cube.primary_header['FSFMODE']
         if FSF_mode != 'MOFFAT1':
             raise IOError('This method is coded only for FSFMODE=MOFFAT1')
-        #self.param['PSF'] = FSF_mode
         nfields = cube.primary_header['NFIELDS']
         FSF_model = FSF(FSF_mode)
-        if nfields == 1: # just one FSF
+        if nfields == 1:  # just one FSF
             nf = 0
-            beta = cube.primary_header['FSF%02dBET'%nf]
-            a = cube.primary_header['FSF%02dFWA'%nf]
-            b = cube.primary_header['FSF%02dFWB'%nf]
+            beta = cube.primary_header['FSF%02dBET' % nf]
+            a = cube.primary_header['FSF%02dFWA' % nf]
+            b = cube.primary_header['FSF%02dFWB' % nf]
             return FSF_model.get_FSF_cube(cube, size, beta=beta, a=a, b=b)
         else:
             l_PSF = []
             l_fwhm_pix = []
             l_fwhm_arcsec = []
-            for i in range(1, nfields+1):
-                beta = cube.primary_header['FSF%02dBET'%i]
-                a = cube.primary_header['FSF%02dFWA'%i]
-                b = cube.primary_header['FSF%02dFWB'%i]
+            for i in range(1, nfields + 1):
+                beta = cube.primary_header['FSF%02dBET' % i]
+                a = cube.primary_header['FSF%02dFWA' % i]
+                b = cube.primary_header['FSF%02dFWB' % i]
                 PSF, fwhm_pix, fwhm_arcsec = \
                     FSF_model.get_FSF_cube(cube, size, beta=beta, a=a, b=b)
                 l_PSF.append(PSF)
