@@ -832,7 +832,7 @@ class Source(object):
             n = len(text) - len(ttext) + 68
             ttext = '[%s] %s (%s %s)' % (version, text[:n], author,str(date))
         self.header['HISTORY'] = ttext
-            
+
 
     def add_attr(self, key, value, desc=None, unit=None, fmt=None):
         """Add a new attribute for the current Source object. This attribute
@@ -1740,7 +1740,7 @@ class Source(object):
                           copy=False, wcs=ima.wcs)
             for radius in apertures:
                 tmpim.mask_ellipse(center, radius, 0)
-                mask = object_mask & tmpim.mask
+                mask = object_mask.astype(bool) & tmpim.mask
                 spec = compute_spectrum(subcub, weights=mask)
                 self.spectra['MUSE_APER_%.1f%s' % (radius, suffix)] = spec
                 tmpim.unmask()
