@@ -358,8 +358,7 @@ def _read_table(hdulist, extname, **kwargs):
 
 def _remove_hdu(hdulist, name):
     try:
-        idx = hdulist.index_of(name)
-        hdulist.remove(hdulist[idx])
+        del hdulist[name]
     except KeyError:
         pass
 
