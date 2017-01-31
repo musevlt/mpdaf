@@ -7,6 +7,7 @@ import numpy as np
 import os
 import pytest
 
+from astropy.io import fits
 from astropy.table import Table
 from mpdaf.obj import Cube, Image
 from mpdaf.sdetect import Source
@@ -45,7 +46,7 @@ def test_from_data():
         src.test
 
 
-def test_from_file(tmpdir, source2):
+def test_from_file(tmpdir):
     filename = get_data_file('sdetect', 'sing-0032.fits')
     src = Source.from_file(filename, ext='NB*')
     assert 'NB7317' in src.images
@@ -111,6 +112,40 @@ def test_write(tmpdir, source1):
 
     assert src.tables['TEST'].colnames == table.colnames
     assert src.tables['TEST'][0].as_void() == table[0].as_void()
+
+
+def test_delete_extension(tmpdir, source2):
+    filename = str(tmpdir.join('source.fits'))
+
+    table = Table(rows=[[1, 2.34, 'Hello']], names=('ID', 'value', 'name'))
+    source2.tables['TEST'] = table
+    table = Table(rows=[[2, 0.34, 'Foo']], names=('ID2', 'value2', 'name2'))
+    source2.tables['TEST2'] = table
+
+    source2.images['NB7317'].var = np.ones(source2.images['NB7317'].shape)
+    source2.images['MUSE_WHITE'] = source2.images['NB7317'].copy()
+    source2.add_image(source2.images['NB7317'], 'TESTIM')
+    del source2.images['NB7317']
+
+    # Write file from scratch
+    source2._filename = None
+    source2.write(filename)
+    source2 = None
+
+    src = Source.from_file(filename)
+    assert 'NB7317' not in src.images
+    assert len(src.tables['TEST2']) == 1
+    del src.tables['TEST']
+    del src.images['TESTIM']
+    src.write(filename)
+
+    src = Source.from_file(filename)
+    assert list(src.tables.keys()) == ['TEST2']
+    assert list(src.images.keys()) == ['MUSE_WHITE']
+
+    assert [h.name for h in fits.open(filename)] == [
+        'PRIMARY', 'LINES', 'IMA_MUSE_WHITE_DATA', 'IMA_MUSE_WHITE_STAT',
+        'TAB_TEST2']
 
 
 def test_comments(source1):
