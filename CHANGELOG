@@ -1,6 +1,18 @@
 v2.3.dev (**/**/2017)
 ---------------------
 
+Sources
+~~~~~~~
+
+- Fix removal of extension with the optimized source writing. [!87]
+
+- Add an overwrite parameter to ``Source.write``. [#485]
+
+- Fix text truncated in source history.
+
+- Rework spectra extraction and allow to extract spectra from a list of
+  apertures (``Source.extract_spectra``).
+
 
 v2.2 (24/01/2017)
 -----------------
