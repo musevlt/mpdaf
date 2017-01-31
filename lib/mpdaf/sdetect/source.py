@@ -356,6 +356,13 @@ def _read_table(hdulist, extname, **kwargs):
     return t
 
 
+def _remove_hdu(hdulist, name):
+    try:
+        del hdulist[name]
+    except KeyError:
+        pass
+
+
 def _insert_or_update_hdu(hdulist, name, hdu):
     try:
         idx = hdulist.index_of(name)
@@ -413,6 +420,7 @@ class ExtLoader(collections.MutableMapping):
     def __init__(self, type_, filename=None, data=None):
         self.data = {}
         self.loaded_ext = set()
+        self.deleted_ext = set()
         self.filename = filename
         self.type = type_
         if data is not None:
@@ -441,9 +449,12 @@ class ExtLoader(collections.MutableMapping):
         self.data[key] = value
         if not isinstance(value, self.delayed_types):
             self.loaded_ext.add(key)
+        if key in self.deleted_ext:
+            self.deleted_ext.remove(key)
 
     def __delitem__(self, key):
         del self.data[key]
+        self.deleted_ext.add(key)
         if key in self.loaded_ext:
             self.loaded_ext.remove(key)
 
@@ -711,17 +722,10 @@ class Source(object):
             _write_table(self.mag, 'MAG', hdulist)
             _write_table(self.z, 'Z', hdulist)
 
-            # spectra
-            for key, spe in six.iteritems(self.spectra):
-                _write_mpdaf_obj(spe, 'SPE', key, hdulist)
-
-            # images
-            for key, ima in six.iteritems(self.images):
-                _write_mpdaf_obj(ima, 'IMA', key, hdulist)
-
-            # cubes
-            for key, cub in six.iteritems(self.cubes):
-                _write_mpdaf_obj(cub, 'CUB', key, hdulist)
+            for typ in ('spectra', 'images', 'cubes'):
+                for key, obj in six.iteritems(getattr(self, typ)):
+                    _write_mpdaf_obj(obj, _ATTRIBUTES_TO_EXTNAME[typ], key,
+                                     hdulist)
 
             # tables
             for key, tab in six.iteritems(self.tables):
@@ -742,21 +746,20 @@ class Source(object):
                 _write_table(self.mag, 'MAG', hdulist)
                 _write_table(self.z, 'Z', hdulist)
 
-                # spectra
-                for key in self.spectra.loaded_ext:
-                    _write_mpdaf_obj(self.spectra[key], 'SPE', key, hdulist)
-
-                # images
-                for key in self.images.loaded_ext:
-                    _write_mpdaf_obj(self.images[key], 'IMA', key, hdulist)
-
-                # cubes
-                for key in self.cubes.loaded_ext:
-                    _write_mpdaf_obj(self.cubes[key], 'CUB', key, hdulist)
+                for typ in ('spectra', 'images', 'cubes'):
+                    obj = getattr(self, typ)
+                    extname = _ATTRIBUTES_TO_EXTNAME[typ]
+                    for key in obj.loaded_ext:
+                        _write_mpdaf_obj(obj[key], extname, key, hdulist)
+                    for key in obj.deleted_ext:
+                        _remove_hdu(hdulist, '{}_{}_DATA'.format(extname, key))
+                        _remove_hdu(hdulist, '{}_{}_STAT'.format(extname, key))
 
                 # tables
                 for key in self.tables.loaded_ext:
                     _write_table(self.tables[key], 'TAB_%s' % key, hdulist)
+                for key in self.tables.deleted_ext:
+                    _remove_hdu(hdulist, 'TAB_%s' % key)
 
                 hdulist.flush()
 
@@ -1081,7 +1084,8 @@ class Source(object):
                     minsize /= image.wcs.get_step(unit=unit_size)[0]
                     unit_size = None
             else:
-                size = white_ima.wcs.get_step(unit=u.arcsec)[0] * white_ima.shape[0]
+                size = (white_ima.wcs.get_step(unit=u.arcsec)[0] *
+                        white_ima.shape[0])
                 if unit_size is None:
                     minsize *= image.wcs.get_step(unit=u.arcsec)[0]
                 else:
@@ -1109,14 +1113,11 @@ class Source(object):
 
         try:
             subima = image.subimage(center, size, **kwargs)
-        except:
-            subima = None
-
-        if subima is None:
+        except Exception:
             self._logger.warning('Image %s not added. Source outside or at the'
                                  ' edges', name)
-            return
-        self.images[name] = subima
+        else:
+            self.images[name] = subima
 
     def add_cube(self, cube, name, size=None, lbda=None,
                  unit_size=u.arcsec, unit_wave=u.angstrom):
