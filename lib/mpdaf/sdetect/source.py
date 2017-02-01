@@ -56,13 +56,14 @@ from numpy import ma
 from six.moves import range, zip
 from scipy.optimize import leastsq
 
-from ..obj import Cube, Image, Spectrum, gauss_image, moffat_image
+from ..obj import Cube, Image, Spectrum
 from ..obj.objs import is_int, is_float, bounding_box
 from ..tools import deprecated, write_hdulist_to
 from ..MUSE import FieldsMap, FSF
 from ..MUSE.PSF import MOFFAT1, create_psf_cube
 from ..sdetect.sea import segmentation, mask_creation, findCentralDetection
-from ..sdetect.sea import union, intersection, compute_spectrum
+from ..sdetect.sea import (union, intersection, compute_spectrum,
+                           compute_optimal_spectrum)
 from ..tools.astropycompat import ASTROPY_LT_1_1, table_to_hdu
 
 emlines = {1215.67: 'LYALPHA1216',
@@ -1733,7 +1734,7 @@ class Source(object):
             suffix = ''
 
         # No weighting
-        spec = compute_spectrum(subcub, weights=object_mask)
+        spec = (subcub * object_mask).sum(axis=(1, 2))
         self.spectra['MUSE_TOT' + suffix] = spec
 
         if apertures:
@@ -1742,7 +1743,8 @@ class Source(object):
             for radius in apertures:
                 tmpim.mask_ellipse(center, radius, 0)
                 mask = object_mask.astype(bool) & tmpim.mask
-                spec = compute_spectrum(subcub, weights=mask)
+                # spec = compute_spectrum(subcub, weights=mask)
+                spec = (subcub * mask).sum(axis=(1, 2))
                 self.spectra['MUSE_APER_%.1f%s' % (radius, suffix)] = spec
                 tmpim.unmask()
 
@@ -1753,11 +1755,11 @@ class Source(object):
         ksel = (object_mask != 0)
         for tag in nb_tags:
             if self.images[tag].wcs.isEqual(wcsref):
-                weight = self.images[tag].data * object_mask
+                weight = self.images[tag].data
                 weight[ksel] -= np.min(weight[ksel])
                 weight = weight.filled(0)
-                self.spectra[tag + suffix] = compute_spectrum(subcub,
-                                                              weights=weight)
+                self.spectra[tag + suffix] = compute_optimal_spectrum(
+                    subcub, object_mask, weight)
 
         # PSF
         if psf is not None:
@@ -1768,13 +1770,10 @@ class Source(object):
                     raise ValueError('Incorrect dimensions for the PSF cube '
                                      '({}) (it must be ({})) '
                                      .format(psf.shape, subcub.shape))
-                white_cube = psf
             elif len(psf.shape) == 1:
-                white_cube = create_psf_cube(subcub.shape, psf, beta=beta,
-                                             wcs=wcsref)
+                psf = create_psf_cube(subcub.shape, psf, beta=beta, wcs=wcsref)
 
-            weight = white_cube * object_mask
-            spec = compute_spectrum(subcub, weights=weight)
+            spec = compute_optimal_spectrum(subcub, object_mask, psf)
             self.spectra['MUSE_PSF' + suffix] = spec
             # Insert the PSF weighted flux - here re-normalised?
 

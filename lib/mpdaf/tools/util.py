@@ -134,7 +134,5 @@ def broadcast_to_cube(arr, shape):
         if arr.shape[0] != shape[0]:
             raise ValueError(excmsg % (arr.shape[0], shape[0]))
         arr = arr[:, np.newaxis, np.newaxis]
-    else:
-        raise ValueError(excmsg % (None, shape))
 
-    arr = broadcast_to(arr, shape)
+    return broadcast_to(arr, shape)

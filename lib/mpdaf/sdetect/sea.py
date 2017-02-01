@@ -318,11 +318,10 @@ def compute_spectrum(cube, weights):
     w = broadcast_to_cube(w, cube.shape)
 
     # mask of the non-zero weights and its surface
-    wmask = (w != 0)
-    npix = np.sum(wmask, axis=(1, 2))
+    npix = np.sum(w != 0, axis=(1, 2))
 
     # Normalize weights
-    w /= np.sum(w, axis=(1, 2))[:, np.newaxis, np.newaxis]
+    w = w / np.sum(w, axis=(1, 2))[:, np.newaxis, np.newaxis]
 
     data = np.nansum(cube.data.filled(np.nan) * w, axis=(1, 2)) * npix
 
@@ -332,4 +331,43 @@ def compute_spectrum(cube, weights):
         var = None
 
     return Spectrum(wave=cube.wave, unit=cube.unit, data=data, var=var,
+                    copy=False)
+
+
+def compute_optimal_spectrum(cube, mask, psf):
+    """Compute a spectrum for a cube by summing along the spatial axis.
+
+    An optimal extraction algorithm for CCD spectroscopy Horne, K. 1986
+    http://adsabs.harvard.edu/abs/1986PASP...98..609H
+
+    Parameters
+    ----------
+    cube : `~mpdaf.obj.Cube`
+        Input data cube.
+    mask : np.ndarray
+        Aperture mask.
+    psf : np.ndarray
+        PSF, 2D or 3D.
+
+    """
+    # First ensure that we have a 3D psf
+    if psf.ndim != 3:
+        psf = broadcast_to_cube(psf, cube.shape)
+
+    # Normalize weights
+    psf = psf / np.sum(psf, axis=(1, 2))[:, np.newaxis, np.newaxis]
+
+    data = cube.data.filled(np.nan)
+
+    if cube._var is not None:
+        var = cube.var.filled(np.nan)
+        d = np.nansum(mask * psf**2 / var, axis=(1, 2))
+        newdata = np.nansum(mask * psf * data / var, axis=(1, 2)) / d
+        newvar = np.nansum(mask * psf, axis=(1, 2)) / d
+    else:
+        d = np.nansum(mask * psf**2, axis=(1, 2))
+        newdata = np.nansum(mask * psf * data, axis=(1, 2)) / d
+        newvar = None
+
+    return Spectrum(wave=cube.wave, unit=cube.unit, data=newdata, var=newvar,
                     copy=False)
