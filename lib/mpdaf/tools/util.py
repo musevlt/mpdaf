@@ -35,6 +35,7 @@ from __future__ import absolute_import, print_function
 import functools
 import inspect
 import logging
+import numpy as np
 import os
 import warnings
 
@@ -43,8 +44,10 @@ from contextlib import contextmanager
 from functools import wraps
 from time import time
 
+from .numpycompat import broadcast_to
+
 __all__ = ('MpdafWarning', 'MpdafUnitsWarning', 'deprecated', 'chdir',
-           'timeit', 'timer')
+           'timeit', 'timer', 'broadcast_to_cube')
 
 
 # NOTE(kgriffs): We don't want our deprecations to be ignored by default,
@@ -117,3 +120,21 @@ def timer():
     start = time()
     yield
     logger.info('Request took %.03f sec.', time() - start)
+
+
+def broadcast_to_cube(arr, shape):
+    """Broadcast an array (image or spectrum to a cube."""
+    assert len(shape) == 3
+    excmsg = 'Incorrect dimensions for the weights (%s) (it must be (%s))'
+    if arr.ndim == 3 and arr.shape != shape:
+        raise ValueError(excmsg % (arr.shape, shape))
+    elif arr.ndim == 2 and arr.shape != shape[1:]:
+        raise ValueError(excmsg % (arr.shape, shape[1:]))
+    elif arr.ndim == 1:
+        if arr.shape[0] != shape[0]:
+            raise ValueError(excmsg % (arr.shape[0], shape[0]))
+        arr = arr[:, np.newaxis, np.newaxis]
+    else:
+        raise ValueError(excmsg % (None, shape))
+
+    arr = broadcast_to(arr, shape)
