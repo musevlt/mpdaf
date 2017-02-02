@@ -58,9 +58,10 @@ import os
 import shutil
 import six
 import subprocess
+import warnings
 
 from ..obj import Image, Spectrum
-from ..tools import write_hdulist_to, broadcast_to_cube
+from ..tools import write_hdulist_to, broadcast_to_cube, MpdafWarning
 
 __version__ = 1.0
 
@@ -289,12 +290,14 @@ def mask_creation(source, maps):
     wcs = source.images['MUSE_WHITE'].wcs
     yc, xc = wcs.sky2pix((source.DEC, source.RA), unit=u.deg)[0]
     r = findCentralDetection(maps, yc, xc, tolerance=3)
+
+    segmaps = list(r['seg'].values())
     source.images['MASK_UNION'] = Image(wcs=wcs, dtype=np.uint8, copy=False,
-                                        data=union(list(r['seg'].values())))
+                                        data=union(segmaps))
     source.images['MASK_SKY'] = Image(wcs=wcs, dtype=np.uint8, copy=False,
                                       data=findSkyMask(list(maps.values())))
     source.images['MASK_INTER'] = Image(wcs=wcs, dtype=np.uint8, copy=False,
-                                        data=intersection(list(r['seg'].values())))
+                                        data=intersection(segmaps))
 
 
 def compute_spectrum(cube, weights):
@@ -365,6 +368,8 @@ def compute_optimal_spectrum(cube, mask, psf):
         newdata = np.nansum(mask * psf * data / var, axis=(1, 2)) / d
         newvar = np.nansum(mask * psf, axis=(1, 2)) / d
     else:
+        warnings.warn('Extracting spectrum from a cube without variance',
+                      MpdafWarning)
         d = np.nansum(mask * psf**2, axis=(1, 2))
         newdata = np.nansum(mask * psf * data, axis=(1, 2)) / d
         newvar = None

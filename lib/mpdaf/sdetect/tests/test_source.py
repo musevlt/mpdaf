@@ -6,13 +6,13 @@ import astropy.units as u
 import numpy as np
 import os
 import pytest
+import warnings
 
 from astropy.io import fits
 from astropy.table import Table
 from mpdaf.obj import Cube, Image
 from mpdaf.sdetect import Source
-from mpdaf.tools import ASTROPY_LT_1_1
-from mpdaf.tools.numpycompat import broadcast_to
+from mpdaf.tools import ASTROPY_LT_1_1, MpdafWarning
 from numpy.testing import assert_array_equal, assert_almost_equal
 
 from ...tests.utils import get_data_file
@@ -255,7 +255,7 @@ def test_add_image(source2, a478hst, a370II):
                         source2.images['MUSE_WHITE'].get_rot(), 3)
 
     # Trying to add image not overlapping with Source
-    assert source2.add_image(a370II, 'ERROR') == None
+    assert source2.add_image(a370II, 'ERROR') is None
 
 
 def test_add_narrow_band_image(minicube, tmpdir):
@@ -385,7 +385,10 @@ def test_SEA2(minicube):
     # same code here
     # data[:, 3, 3] = np.nan
 
-    cube = Cube(data=data, wcs=minicube.wcs, wave=minicube.wave)
+    cube = Cube(data=data, var=np.ones(shape), wcs=minicube.wcs,
+                wave=minicube.wave, copy=False)
+    cube_novar = Cube(data=data, wcs=minicube.wcs, wave=minicube.wave,
+                      copy=False)
     dec, ra = cube.wcs.pix2sky([4, 4])[0]
 
     origin = ('sea', '0.0', 'test', 'v0')
@@ -412,6 +415,19 @@ def test_SEA2(minicube):
     psf = np.zeros(shape)
     psf[:, sl, sl] = np.max(dist) - dist
 
+    # extract spectra without var
+    with warnings.catch_warnings(record=True) as w:
+        # Cause all warnings to always be triggered.
+        warnings.simplefilter("always")
+        s.extract_spectra(cube_novar, skysub=False, obj_mask='MASK_OBJ')
+        assert len(w) == 1
+        assert issubclass(w[-1].category, MpdafWarning)
+
+    # MUSE_TOT
+    sptot = cube[:, sl, sl].sum(axis=(1, 2))
+    assert_almost_equal(s.spectra['MUSE_TOT'].data, sptot.data)
+    assert s.spectra['MUSE_TOT'].var is None
+
     # extract spectra
     s.extract_spectra(cube, skysub=False, psf=psf, obj_mask='MASK_OBJ',
                       apertures=(0.3, 1.0))
@@ -419,25 +435,29 @@ def test_SEA2(minicube):
                       apertures=(0.3, 1.0))
 
     # MUSE_TOT
-    sptot = cube.data[:, sl, sl].sum(axis=(1, 2))
     npix_sky = np.sum((~cube.mask) & mask, axis=(1, 2))
-    assert_almost_equal(s.spectra['MUSE_TOT'].data, sptot)
+    assert_almost_equal(s.spectra['MUSE_TOT'].data, sptot.data)
+    assert_almost_equal(s.spectra['MUSE_TOT'].var, sptot.var)
     assert_almost_equal(s.spectra['MUSE_TOT_SKYSUB'].data,
-                        sptot - sky_value * npix_sky)
+                        sptot.data - sky_value * npix_sky)
 
     # MUSE_APER
-    # 0.3" gives a similar mask as the white image
-    assert_almost_equal(s.spectra['MUSE_APER_0.3'].data, 19.0)
+    sl03 = slice(3, -3)
+    sp03 = cube[:, sl03, sl03].sum(axis=(1, 2))
+    assert_almost_equal(s.spectra['MUSE_APER_0.3'].data, sp03.data)
+    assert_almost_equal(s.spectra['MUSE_APER_0.3'].var, sp03.var)
     # 1" aperture is wider than the object mask, so we get the same flux
-    assert_almost_equal(s.spectra['MUSE_APER_1.0'].data, sptot)
+    assert_almost_equal(s.spectra['MUSE_APER_1.0'].data, sptot.data)
+    assert_almost_equal(s.spectra['MUSE_APER_1.0'].var, sptot.var)
     assert_almost_equal(s.spectra['MUSE_APER_1.0_SKYSUB'].data,
-                        sptot - sky_value * npix_sky)
+                        sptot.data - sky_value * npix_sky)
 
     # MUSE_PSF
     # mask = (psf > 0) & s.images['MASK_OBJ']._data
     # sp = np.nansum(cube.data * mask, axis=(1, 2))
     # npix_sky = np.sum((~cube.mask) & mask, axis=(1, 2))
     assert_almost_equal(31.11, s.spectra['MUSE_PSF'].data, decimal=2)
+    assert_almost_equal(18.51, s.spectra['MUSE_PSF'].var, decimal=2)
     assert_almost_equal(30.98, s.spectra['MUSE_PSF_SKYSUB'].data, decimal=2)
 
     # MUSE_WHITE
@@ -450,6 +470,7 @@ def test_SEA2(minicube):
     # sp = np.nansum(cube.data * mask, axis=(1, 2))
     # npix_sky = np.sum((~cube.mask) & mask, axis=(1, 2))
     assert_almost_equal(19.01, s.spectra['MUSE_WHITE'].data, decimal=2)
+    assert_almost_equal(8.64, s.spectra['MUSE_WHITE'].var, decimal=2)
     assert_almost_equal(18.96, s.spectra['MUSE_WHITE_SKYSUB'].data, decimal=2)
 
 
