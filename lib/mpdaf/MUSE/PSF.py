@@ -33,13 +33,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import absolute_import, division
 
-from astropy.convolution import Model2DKernel
-from astropy.modeling.functional_models import Moffat2D
 import astropy.units as u
 import numpy as np
-from scipy import special
 
+from astropy.convolution import Model2DKernel
+from astropy.modeling.functional_models import Moffat2D
+from scipy import special
 from six.moves import range
+
+from ..obj import gauss_image, moffat_image
 
 
 class LSF(object):
@@ -377,3 +379,39 @@ def get_FSF_from_cube_keywords(cube, size):
             return l_PSF, l_fwhm_pix, l_fwhm_arcsec
     else:
         raise IOError('No FSF keywords in the cube primary header')
+
+
+def create_psf_cube(shape, fwhm, beta=None, wcs=None, unit_fwhm=u.arcsec):
+    """Create a PSF cube with FWHM varying along each wavelength plane.
+
+    Depending on the value of the 'fwhm' parameter, the PSF can be a Gaussian
+    or a Moffat.
+
+    Parameters
+    ----------
+    fwhm : list
+        List of FHHM values for each wavelength plane.
+    beta : float or none
+        if not none, the PSF is a Moffat function with beta value,
+        else it is a Gaussian.
+
+    """
+    if len(fwhm) != shape[0]:
+        raise ValueError('fwhm length ({}) and input shape ({}) do not match'
+                         .format(len(fwhm), shape[0]))
+
+    cube = np.zeros(shape)
+    if beta is None:
+        # a Gaussian expected.
+        for l in range(shape[0]):
+            gauss_ima = gauss_image(shape=(shape[1], shape[2]), wcs=wcs,
+                                    fwhm=(fwhm[l], fwhm[l]), peak=False,
+                                    unit_fwhm=unit_fwhm)
+            cube[l, :, :] = gauss_ima.data.data
+    else:
+        for l in range(shape[0]):
+            moffat_ima = moffat_image(shape=(shape[1], shape[2]), wcs=wcs,
+                                      fwhm=(fwhm[l], fwhm[l]), n=beta,
+                                      peak=False, unit_fwhm=unit_fwhm)
+            cube[l, :, :] = moffat_ima.data.data
+    return cube

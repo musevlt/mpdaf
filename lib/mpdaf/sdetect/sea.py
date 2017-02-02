@@ -49,7 +49,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import absolute_import, division
 
-from astropy.io import fits as pyfits
+from astropy.io import fits
 import astropy.units as u
 
 import logging
@@ -58,29 +58,31 @@ import os
 import shutil
 import six
 import subprocess
+import warnings
 
 from ..obj import Image, Spectrum
-from ..tools import write_hdulist_to
+from ..tools import write_hdulist_to, broadcast_to_cube, MpdafWarning
 
 __version__ = 1.0
+
+DEFAULT_SEX_FILES = ['default.nnw', 'default.param', 'default.sex',
+                     'gauss_5.0_9x9.conv']
 
 
 def setup_config_files(DIR=None):
     if DIR is None:
         DIR = os.path.dirname(__file__) + '/sea_data/'
-        files = ['default.nnw', 'default.param', 'default.sex', 'gauss_5.0_9x9.conv']
+        files = DEFAULT_SEX_FILES
     else:
         files = os.listdir(DIR)
+
     for f in files:
         if not os.path.isfile(f):
             shutil.copy(DIR + '/' + f, './' + f)
 
 
 def remove_config_files(DIR=None):
-    if DIR is None:
-        files = ['default.nnw', 'default.param', 'default.sex', 'gauss_5.0_9x9.conv']
-    else:
-        files = os.listdir(DIR)
+    files = DEFAULT_SEX_FILES if DIR is None else os.listdir(DIR)
     for f in files:
         os.remove(f)
 
@@ -237,7 +239,7 @@ def segmentation(source, tags, DIR, remove):
         start_ima = ima.wcs.pix2sky([0, 0], unit=u.deg)[0]
         step_ima = ima.get_step(unit=u.arcsec)
         rot_ima = ima.get_rot()
-        prihdu = pyfits.PrimaryHDU()
+        prihdu = fits.PrimaryHDU()
         hdulist = [prihdu]
         if ima.shape[0] == dim[0] and ima.shape[1] == dim[1] and \
                 start_ima[0] == start[0] and start_ima[1] == start[1] and \
@@ -252,7 +254,7 @@ def segmentation(source, tags, DIR, remove):
             ima2 = ima2.resample(dim, start, step, flux=True)
             data_hdu = ima2.get_data_hdu(name='DATA', savemask='nan')
         hdulist.append(data_hdu)
-        hdu = pyfits.HDUList(hdulist)
+        hdu = fits.HDUList(hdulist)
         write_hdulist_to(hdu, fname, overwrite=True, output_verify='fix')
 
         catalogFile = 'cat-' + fname
@@ -264,7 +266,7 @@ def segmentation(source, tags, DIR, remove):
         # remove source file
         os.remove(fname)
         try:
-            hdul = pyfits.open(segFile)
+            hdul = fits.open(segFile)
             maps[tag] = hdul[0].data
             hdul.close()
         except Exception as e:
@@ -288,12 +290,14 @@ def mask_creation(source, maps):
     wcs = source.images['MUSE_WHITE'].wcs
     yc, xc = wcs.sky2pix((source.DEC, source.RA), unit=u.deg)[0]
     r = findCentralDetection(maps, yc, xc, tolerance=3)
+
+    segmaps = list(r['seg'].values())
     source.images['MASK_UNION'] = Image(wcs=wcs, dtype=np.uint8, copy=False,
-                                        data=union(list(r['seg'].values())))
+                                        data=union(segmaps))
     source.images['MASK_SKY'] = Image(wcs=wcs, dtype=np.uint8, copy=False,
                                       data=findSkyMask(list(maps.values())))
     source.images['MASK_INTER'] = Image(wcs=wcs, dtype=np.uint8, copy=False,
-                                        data=intersection(list(r['seg'].values())))
+                                        data=intersection(segmaps))
 
 
 def compute_spectrum(cube, weights):
@@ -314,53 +318,61 @@ def compute_spectrum(cube, weights):
     w = np.asarray(weights, dtype=float)
 
     # First ensure that we have a 3D mask
-    excmsg = 'Incorrect dimensions for the weights (%s) (it must be (%s))'
-    if len(w.shape) == 3:
-        if not np.array_equal(w.shape, cube.shape):
-            raise IOError(excmsg % (w.shape, cube.shape))
-    elif len(w.shape) == 2:
-        if w.shape[0] != cube.shape[1] or w.shape[1] != cube.shape[2]:
-            raise IOError(excmsg % (w.shape, cube.shape[1:]))
-        w = np.tile(w, (cube.shape[0], 1, 1))
-    elif len(w.shape) == 1:
-        if w.shape[0] != cube.shape[0]:
-            raise IOError(excmsg % (w.shape[0], cube.shape[0]))
-        w = np.ones_like(cube._data) * w[:, np.newaxis, np.newaxis]
-    else:
-        raise IOError(excmsg % (None, cube.shape))
+    w = broadcast_to_cube(w, cube.shape)
 
     # mask of the non-zero weights and its surface
-    wmask = (w != 0)
-    npix = np.sum(wmask, axis=(1, 2))
+    npix = np.sum(w != 0, axis=(1, 2))
 
     # Normalize weights
-    w /= np.sum(w, axis=(1, 2))[:, np.newaxis, np.newaxis]
+    w = w / np.sum(w, axis=(1, 2))[:, np.newaxis, np.newaxis]
 
-    data = np.ma.sum(np.ma.sum(cube.data * w, axis=1), axis=1) * npix
-
-    # flux conservation: as weighted sums does not conserve flux, we compute
-    # the total flux on the aperture to normalize the spectrum
-    orig_data = np.ma.sum(np.ma.sum(cube.data * wmask, axis=1), axis=1)
-    rr = data / orig_data
-    med_rr = np.ma.median(rr)
-    if med_rr > 0:
-        data /= med_rr
+    data = np.nansum(cube.data.filled(np.nan) * w, axis=(1, 2)) * npix
 
     if cube._var is not None:
-        var = np.ma.sum(np.ma.sum(cube.var * w, axis=1), axis=1) * npix
-        dspec = np.ma.sqrt(var)
-        if med_rr > 0:
-            dspec /= med_rr
-
-        orig_var = np.ma.sum(np.ma.sum(cube.var * wmask, axis=1), axis=1)
-        sn_orig = orig_data / np.ma.sqrt(orig_var)
-        sn_now = data / dspec
-        sn_ratio = np.ma.median(sn_orig / sn_now)
-        dspec /= sn_ratio
-        var = dspec * dspec
-        var = var.filled(np.inf)
+        var = np.nansum(cube.var.filled(np.nan) * w, axis=(1, 2)) * npix
     else:
         var = None
 
     return Spectrum(wave=cube.wave, unit=cube.unit, data=data, var=var,
+                    copy=False)
+
+
+def compute_optimal_spectrum(cube, mask, psf):
+    """Compute a spectrum for a cube by summing along the spatial axis.
+
+    An optimal extraction algorithm for CCD spectroscopy Horne, K. 1986
+    http://adsabs.harvard.edu/abs/1986PASP...98..609H
+
+    Parameters
+    ----------
+    cube : `~mpdaf.obj.Cube`
+        Input data cube.
+    mask : np.ndarray
+        Aperture mask.
+    psf : np.ndarray
+        PSF, 2D or 3D.
+
+    """
+    # First ensure that we have a 3D psf
+    if psf.ndim != 3:
+        psf = broadcast_to_cube(psf, cube.shape)
+
+    # Normalize weights
+    psf = psf / np.sum(psf, axis=(1, 2))[:, np.newaxis, np.newaxis]
+
+    data = cube.data.filled(np.nan)
+
+    if cube._var is not None:
+        var = cube.var.filled(np.nan)
+        d = np.nansum(mask * psf**2 / var, axis=(1, 2))
+        newdata = np.nansum(mask * psf * data / var, axis=(1, 2)) / d
+        newvar = np.nansum(mask * psf, axis=(1, 2)) / d
+    else:
+        warnings.warn('Extracting spectrum from a cube without variance',
+                      MpdafWarning)
+        d = np.nansum(mask * psf**2, axis=(1, 2))
+        newdata = np.nansum(mask * psf * data, axis=(1, 2)) / d
+        newvar = None
+
+    return Spectrum(wave=cube.wave, unit=cube.unit, data=newdata, var=newvar,
                     copy=False)
