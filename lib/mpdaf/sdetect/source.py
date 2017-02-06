@@ -62,8 +62,7 @@ from ..tools import deprecated, write_hdulist_to
 from ..MUSE import FieldsMap, FSF
 from ..MUSE.PSF import MOFFAT1, create_psf_cube
 from ..sdetect.sea import segmentation, mask_creation, findCentralDetection
-from ..sdetect.sea import (union, intersection, compute_spectrum,
-                           compute_optimal_spectrum)
+from ..sdetect.sea import union, intersection, compute_optimal_spectrum
 from ..tools.astropycompat import ASTROPY_LT_1_1, table_to_hdu
 
 emlines = {1215.67: 'LYALPHA1216',

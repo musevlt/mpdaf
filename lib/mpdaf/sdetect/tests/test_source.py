@@ -469,9 +469,9 @@ def test_SEA2(minicube):
     # mask = broadcast_to(mask, cube.shape)
     # sp = np.nansum(cube.data * mask, axis=(1, 2))
     # npix_sky = np.sum((~cube.mask) & mask, axis=(1, 2))
-    assert_almost_equal(19.01, s.spectra['MUSE_WHITE'].data, decimal=2)
-    assert_almost_equal(8.64, s.spectra['MUSE_WHITE'].var, decimal=2)
-    assert_almost_equal(18.96, s.spectra['MUSE_WHITE_SKYSUB'].data, decimal=2)
+    assert_almost_equal(18.33, s.spectra['MUSE_WHITE'].data, decimal=2)
+    assert_almost_equal(8.33, s.spectra['MUSE_WHITE'].var, decimal=2)
+    assert_almost_equal(18.27, s.spectra['MUSE_WHITE_SKYSUB'].data, decimal=2)
 
 
 def test_add_FSF():

@@ -358,20 +358,21 @@ def compute_optimal_spectrum(cube, mask, psf):
         psf = broadcast_to_cube(psf, cube.shape)
 
     # Normalize weights
-    psf = psf / np.sum(psf, axis=(1, 2))[:, np.newaxis, np.newaxis]
+    psf = psf * mask
+    psf /= np.sum(psf, axis=(1, 2))[:, np.newaxis, np.newaxis]
 
     data = cube.data.filled(np.nan)
 
     if cube._var is not None:
         var = cube.var.filled(np.nan)
-        d = np.nansum(mask * psf**2 / var, axis=(1, 2))
-        newdata = np.nansum(mask * psf * data / var, axis=(1, 2)) / d
-        newvar = np.nansum(mask * psf, axis=(1, 2)) / d
+        d = np.nansum(psf**2 / var, axis=(1, 2))
+        newdata = np.nansum(psf * data / var, axis=(1, 2)) / d
+        newvar = np.nansum(psf, axis=(1, 2)) / d
     else:
         warnings.warn('Extracting spectrum from a cube without variance',
                       MpdafWarning)
-        d = np.nansum(mask * psf**2, axis=(1, 2))
-        newdata = np.nansum(mask * psf * data, axis=(1, 2)) / d
+        d = np.nansum(psf**2, axis=(1, 2))
+        newdata = np.nansum(psf * data, axis=(1, 2)) / d
         newvar = None
 
     return Spectrum(wave=cube.wave, unit=cube.unit, data=newdata, var=newvar,

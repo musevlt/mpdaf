@@ -48,7 +48,7 @@ def make_white_image(inputfile, outputfile, verbose=False):
         cube.info()
 
     im = cube.mean(axis=0)
-    im.write(outputfile)
+    im.write(outputfile, savemask='nan')
     if verbose:
         print('Execution time {:.3f} seconds.'.format(time() - t0))
 
