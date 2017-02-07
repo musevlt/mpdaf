@@ -1727,7 +1727,7 @@ class Source(object):
             # Get the sky spectrum and subtract it
             self.spectra['MUSE_SKY'] = subcub.mean(weights=skymask.data.data,
                                                    axis=(1, 2))
-            subcub -= self.spectra['MUSE_SKY']
+            subcub = subcub - self.spectra['MUSE_SKY']
             suffix = '_SKYSUB'
         else:
             suffix = ''
@@ -1754,7 +1754,7 @@ class Source(object):
         ksel = (object_mask != 0)
         for tag in nb_tags:
             if self.images[tag].wcs.isEqual(wcsref):
-                weight = self.images[tag].data
+                weight = self.images[tag].data.copy()
                 weight[ksel] -= np.min(weight[ksel])
                 weight = weight.filled(0)
                 self.spectra[tag + suffix] = compute_optimal_spectrum(

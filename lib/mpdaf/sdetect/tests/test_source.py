@@ -434,6 +434,10 @@ def test_SEA2(minicube):
     s.extract_spectra(cube, skysub=True, psf=psf, obj_mask='MASK_OBJ',
                       apertures=(0.3, 1.0))
 
+    # Check that extraction does not modified the data
+    assert_almost_equal(cube.data.data, data)
+    assert_almost_equal(s.images['MUSE_WHITE'].data, data[0])
+
     # MUSE_TOT
     npix_sky = np.sum((~cube.mask) & mask, axis=(1, 2))
     assert_almost_equal(s.spectra['MUSE_TOT'].data, sptot.data)
