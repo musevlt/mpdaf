@@ -1047,7 +1047,7 @@ class Source(object):
             self.lines.add_row(row, mask=mask)
 
     def add_image(self, image, name, size=None, minsize=2.0,
-                  unit_size=u.arcsec, rotate=False):
+                  unit_size=u.arcsec, rotate=False, order=1):
         """Extract an image centered on the source center from the input
         image and append it to the images dictionary.
 
@@ -1071,6 +1071,9 @@ class Source(object):
         rotate : bool
             if True, the image is rotated to the same PA as the white-light
             image.
+        order : int
+            The order of the prefilter that is applied by the affine
+            transform function for the rotation.
 
         """
         if size is None:
@@ -1109,7 +1112,7 @@ class Source(object):
                 if ((uniq == 0) | (uniq == 1)).all():
                     image = image.rotate(pa_white - pa, order=0)
                 else:
-                    image = image.rotate(pa_white - pa)
+                    image = image.rotate(pa_white - pa, order=order)
 
         try:
             subima = image.subimage(center, size, **kwargs)
