@@ -74,7 +74,8 @@ void mpdaf_sky_ref(double* data, double* lbda, int* mask, int npix, double lmin,
 }
 
 
-void mpdaf_slice_mean(double* data, int* xpix, int n, double x[3], int* indx)
+void mpdaf_slice_mean(double* data, int* xpix, int n, double x[3], int* indx,
+                      int min_pix)
 {
     int i, j, count, meancount=0, minmax[2];
 
@@ -96,9 +97,15 @@ void mpdaf_slice_mean(double* data, int* xpix, int n, double x[3], int* indx)
             meancount++;
         }
     }
-    for (j=0; j<meancount; j++)
-        ind[j] = j;
-    mpdaf_mean_madsigma_clip(meanarr, meancount, x, 15, 3, 3, 15, ind);
+    if (meancount < min_pix) {
+        x[0] = 0;
+        x[1] = 0;
+        x[2] = 0;
+    } else {
+        for (j=0; j<meancount; j++)
+            ind[j] = j;
+        mpdaf_mean_madsigma_clip(meanarr, meancount, x, 15, 3, 3, 15, ind);
+    }
 
     free(ind);
     free(meanarr);
@@ -135,6 +142,9 @@ void mpdaf_slice_median(
     int *tot_ind = (int*) malloc(NIFUS*NSLICES*sizeof(int));
     int* quad = (int*) malloc(npix*sizeof(int));
     int *indmap[nlbin * NIFUS * NSLICES];
+
+    // Minimum number of pixels for which we have a flux, in one slice
+    int min_pix_per_slice=20;
 
     // Clipping parameters
     int nmax=15, nstop=20;
@@ -185,8 +195,8 @@ void mpdaf_slice_median(
                 k = MAPIDX(i+1, s+1, q+1);
                 slidx = NSLICES*i + s;
                 if (npts[k] > 100) {
-                    mpdaf_slice_mean(data, xpix, npts[k], x, indmap[k]);
-                    if (x[2] > 20) {
+                    mpdaf_slice_mean(data, xpix, npts[k], x, indmap[k], min_pix_per_slice);
+                    if (x[2] > min_pix_per_slice) {
                         slice_flux[slidx] = x[0];
                         if (s < 24) {
                             slice_ind1[slice_count1++] = slidx;
