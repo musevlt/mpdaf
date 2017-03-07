@@ -1900,7 +1900,7 @@ class Cube(ArithmeticMixin, DataArray):
 
             if lossage > 0.005:
                 self._logger.warning(
-                    "%.2g%% of the integrated " % (lossage*100.0) +
+                    "%.2g%% of the integrated " % (lossage * 100.0) +
                     "filter curve is beyond the edges of the cube.")
 
         # Get the range of indexes along the wavelength axis that

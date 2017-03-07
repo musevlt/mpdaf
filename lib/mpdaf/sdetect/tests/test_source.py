@@ -374,7 +374,7 @@ def test_SEA2(minicube):
 
     # Put fake data at the center of the image
     sl = slice(2, -2)
-    for i in range(sl.start, center+1):
+    for i in range(sl.start, center + 1):
         data[i:-i, i:-i] = i - 1
 
     data = np.repeat([data], 5, axis=0)

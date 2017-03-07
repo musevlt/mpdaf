@@ -124,7 +124,6 @@ class Catalog(Table):
             h = source.header
             d.update(dict(list(zip(list(h.keys()), [(type(c[1]), c[2]) for c in h.cards]))))
 
-
         keys = set(d.keys())
         excluded_cards = {'SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
                           'AUTHOR'}
@@ -276,7 +275,7 @@ class Catalog(Table):
             row = []
             for key, typ in zip(names_hdr, dtype_hdr):
                 if typ == type('1'):
-                    row += [('%s' % h[key]).replace('\n',' ') if key in keys else INVALID[typ]]
+                    row += [('%s' % h[key]).replace('\n', ' ') if key in keys else INVALID[typ]]
                 else:
                     k = [h[key] if key in keys else INVALID[typ]]
                     if type(k[0]) == type('1'):
@@ -324,7 +323,7 @@ class Catalog(Table):
                 else:
                     if fmt == 'default':
                         if 'LINE' not in source.lines.colnames:
-                            logger.warning('source %d:LINE column not present in LINE table. LINE information will be not loaded with the default format.'%source.ID)
+                            logger.warning('source %d:LINE column not present in LINE table. LINE information will be not loaded with the default format.' % source.ID)
                             for typ in dtype_lines:
                                 row += [INVALID[typ.type]]
                         else:
@@ -361,7 +360,6 @@ class Catalog(Table):
                     else:
                         pass
 
-
             # final row
             data_rows.append(row)
 
@@ -389,7 +387,7 @@ class Catalog(Table):
                                names[i], check, dtype[i])
 
         t = cls(rows=data_rows, names=names, masked=True, dtype=dtype)
-        #index
+        # index
         if not ASTROPY_LT_1_1:
             t.add_index('ID')
 
@@ -481,7 +479,7 @@ class Catalog(Table):
             except KeyboardInterrupt:
                 return
             except Exception as inst:
-                logger.warning('source %s not loaded (%s)'%(f,inst))
+                logger.warning('source %s not loaded (%s)' % (f, inst))
             sys.stdout.write("\r\x1b[K %i%%" % (100 * len(filenames) / n))
             sys.stdout.flush()
 

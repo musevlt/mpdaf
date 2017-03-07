@@ -1852,5 +1852,5 @@ class PixTable(object):
             pixtable=_get_file_basename(self.filename),
             ifu=np.resize(np.repeat(np.arange(1, NIFUS + 1), NSLICES), ncorr),
             sli=np.resize(np.arange(1, NSLICES + 1), ncorr),
-            quad=np.repeat(np.arange(1, nquad+1), NSLICES*NIFUS),
+            quad=np.repeat(np.arange(1, nquad + 1), NSLICES * NIFUS),
             npts=npts, corr=corr)

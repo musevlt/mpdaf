@@ -20,7 +20,7 @@ def test_muselet_fast(tmpdir, minicube):
     assert len(cont) == 1
     assert len(single) == 7
     assert len(raw) == 22
-    
+
     cont.write('cont', path=str(tmpdir), fmt='working')
     single.write('sing', path=str(tmpdir), fmt='working')
     raw.write('raw', path=str(tmpdir), fmt='working')
@@ -42,7 +42,7 @@ def test_muselet_full(tmpdir, minicube):
     assert len(cont) == 1
     assert len(single) == 8
     assert len(raw) == 39
-    
+
     cont.write('cont', path=str(tmpdir), fmt='working')
     single.write('sing', path=str(tmpdir), fmt='working')
     raw.write('raw', path=str(tmpdir), fmt='working')

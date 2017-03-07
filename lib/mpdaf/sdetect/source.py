@@ -830,12 +830,11 @@ class Source(object):
         """
         date = datetime.date.today()
         version = self.header['SRC_V']
-        ttext = '[%s] %s (%s %s)' % (version, text, author,str(date))
-        if len(ttext)> 68:
+        ttext = '[%s] %s (%s %s)' % (version, text, author, str(date))
+        if len(ttext) > 68:
             n = len(text) - len(ttext) + 68
-            ttext = '[%s] %s (%s %s)' % (version, text[:n], author,str(date))
+            ttext = '[%s] %s (%s %s)' % (version, text[:n], author, str(date))
         self.header['HISTORY'] = ttext
-
 
     def add_attr(self, key, value, desc=None, unit=None, fmt=None):
         """Add a new attribute for the current Source object. This attribute

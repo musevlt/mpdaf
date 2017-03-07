@@ -161,7 +161,6 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
                                 weights=fwcube / mvar[k - 2:k + 3, :, :],
                                 axis=0)
 
-
         if leftmax == 1:
             contleft = data0[0, :, :]
         elif leftmax > leftmin + 1:
@@ -286,7 +285,7 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max):
 
     c = Cube(cubename)
     if 'CUBE_V' in c.primary_header:
-        cubevers = '%s'%c.primary_header['CUBE_V']
+        cubevers = '%s' % c.primary_header['CUBE_V']
     else:
         cubevers = ''
 

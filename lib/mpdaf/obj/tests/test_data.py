@@ -1460,5 +1460,5 @@ def test_replace_data():
     data.data = new
 
     assert_array_equal(data.data, 0)
-    assert ma.count_masked(data.data) == 5*5
+    assert ma.count_masked(data.data) == 5 * 5
     assert np.all(data.mask[:5, :5])

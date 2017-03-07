@@ -189,7 +189,7 @@ def test_resample():
 
     # Specify the desired increase in pixel size, and the resulting pixel size.
     factor = 6.5
-    newstep = ((factor*oldstep)*oldunit).to(u.nm).value
+    newstep = ((factor * oldstep) * oldunit).to(u.nm).value
 
     # Specify the wavelength at which the peak of the resampled spectrum should
     # be expected.
@@ -207,16 +207,16 @@ def test_resample():
     # amplitude by resampling more than wide gaussians, we arrange
     # that the peak gaussian before and after correctly resampling are
     # different.
-    gaussians = [(0.5,  12.0,   800.0),
-                 (0.7,   5.0,   1200.0),
-                 (0.4, 700.0,   1600.0),
-                 (1.5,   2.6,   1980.0),             # Peak before resampling
-                 (1.2,   2.6,   2000.0),
-                 (1.3,  15.0,   expected_peak_wave), # Peak if resampled correctly
-                 (1.0,   2.0,   3200.0)]
-    for amp,sigma,center in gaussians:
+    gaussians = [(0.5, 12.0, 800.0),
+                 (0.7, 5.0, 1200.0),
+                 (0.4, 700.0, 1600.0),
+                 (1.5, 2.6, 1980.0),             # Peak before resampling
+                 (1.2, 2.6, 2000.0),
+                 (1.3, 15.0, expected_peak_wave),  # Peak if resampled correctly
+                 (1.0, 2.0, 3200.0)]
+    for amp, sigma, center in gaussians:
         sigma *= oldstep
-        data += amp * np.exp(-0.5 * ((center - w)/sigma)**2)
+        data += amp * np.exp(-0.5 * ((center - w) / sigma)**2)
 
     # Fill the variance array with a simple window function.
     var = np.hamming(oldshape)
@@ -226,14 +226,14 @@ def test_resample():
     # the output grid doesn't spread flux from the edges off the edge
     # of the output grid. It takes about 3 pixel widths for the gaussian
     # PSF to drop to about 0.01 of its peak.
-    margin = np.ceil(3*factor).astype(int)
-    data[margin:-margin] += np.random.normal(scale=0.1,size=data.shape-2*margin)
+    margin = np.ceil(3 * factor).astype(int)
+    data[margin:-margin] += np.random.normal(scale=0.1, size=data.shape - 2 * margin)
 
     # Install the spectral data in a Spectrum container.
     oldsp = Spectrum(data=data, var=var, wave=wave)
 
     # Mask a few pixels.
-    masked_slice = slice(900,910)
+    masked_slice = slice(900, 910)
     oldsp.mask[masked_slice] = True
 
     # Create a down-sampled version of the input spectrum.
@@ -455,7 +455,8 @@ def test_write(tmpdir):
 
     with fits.open(testfile) as hdu:
         assert u.Unit(hdu[1].header['CUNIT1']) == u.angstrom
-        
+
+
 def test_resample2():
     """Spectrum class: testing resampling function 
     with a spectrum of integers and resampling to a smaller pixel size"""
@@ -466,6 +467,7 @@ def test_resample2():
     spectrum2 = spectrum1.resample(0.3)
     flux2 = spectrum2.sum()[0] * spectrum2.wave.get_step()
     assert_almost_equal(flux1, flux2, 2)
+
 
 def test_get_item():
     """Spectrum class: testing __getitem__"""

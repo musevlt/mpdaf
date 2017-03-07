@@ -101,13 +101,13 @@ else:
         # Tables with mixin columns are not supported
         if table.has_mixin_columns:
             mixin_names = [name for name, col in table.columns.items()
-                        if not isinstance(col, table.ColumnClass)]
+                           if not isinstance(col, table.ColumnClass)]
             raise ValueError('cannot write table with mixin column(s) {0}'
-                            .format(mixin_names))
+                             .format(mixin_names))
 
         # Create a new HDU object
         if table.masked:
-            #float column's default mask value needs to be Nan
+            # float column's default mask value needs to be Nan
             for column in six.itervalues(table.columns):
                 fill_value = column.get_fill_value()
                 if column.dtype.kind == 'f' and np.allclose(fill_value, 1e20):

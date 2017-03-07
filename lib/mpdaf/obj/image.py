@@ -4696,7 +4696,10 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
     # divided by its cutoff frequency.
 
     if window is None or window == "blackman":
-        winfn = lambda r: np.where(r <= 1.0, 0.42 + 0.5 * np.cos(np.pi * r) + 0.08 * np.cos(2 * np.pi * r), 0.0)
+        winfn = lambda r: np.where(r <= 1.0,
+                                   0.42 + 0.5 * np.cos(np.pi * r) +
+                                   0.08 * np.cos(2 * np.pi * r),
+                                   0.0)
 
     # For the gaussian window the standard deviation, sigma, is
     # as a fraction of the normalized cutoff frequency. Note that
