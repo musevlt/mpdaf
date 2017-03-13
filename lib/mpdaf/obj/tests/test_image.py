@@ -130,7 +130,13 @@ def test_crop():
 
 def test_truncate(image):
     """Image class: testing truncation"""
-    image = image.truncate(0, 1, 1, 3, unit=image.wcs.unit)
+    image_orig = image.copy()
+    new_image = image.truncate(0, 1, 1, 3, unit=image.wcs.unit)
+    new_image[:] = 10
+    assert_array_equal(image_orig.data, image.data)
+    assert_image_equal(new_image, shape=(2, 3), start=(0, 1), end=(1, 3))
+
+    image.truncate(0, 1, 1, 3, unit=image.wcs.unit, inplace=True)
     assert_image_equal(image, shape=(2, 3), start=(0, 1), end=(1, 3))
 
 
@@ -621,3 +627,24 @@ def test_get_item():
     r = im[2, 3]
     assert np.isscalar(r)
     assert_allclose(r, im.data[2, 3])
+
+
+def test_align_with_image(hdfs_muse_image, hdfs_hst_image):
+    muse = hdfs_muse_image
+    hst = hdfs_hst_image
+    hst_orig = hdfs_hst_image.copy()
+
+    im = hst.align_with_image(muse)
+
+    assert im.wcs.isEqual(muse.wcs)
+    assert im.shape == muse.shape
+
+    sy, sx = im.crop()
+    corners = muse.wcs.sky2pix(hst.wcs.pix2sky([[0, 0], hst.shape]),
+                               nearest=True).T
+
+    assert (sy.start, sy.stop) == tuple(corners[0])
+    # FIXME: check why a -1 is necessary below
+    assert (sx.start, sx.stop - 1) == tuple(corners[1])
+
+    assert_array_equal(hst_orig.data, hst.data)
