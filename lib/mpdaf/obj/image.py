@@ -669,16 +669,14 @@ class Image(ArithmeticMixin, DataArray):
                  inplace=False):
         """Return a sub-image that contains a specified area of the sky.
 
-        The ranges x_min to x_max and y_min to y_max, specify a
-        rectangular region of the sky in world coordinates. The
-        truncate function returns the sub-image that just encloses
-        this region. Note that if the world coordinate axes are not
-        parallel to the array axes, the region will appear to be a
-        rotated rectangle within the sub-image. In such cases, the
-        corners of the sub-image will contain pixels that are outside
-        the region. By default these pixels are masked. However this
-        can be disabled by changing the optional mask argument to
-        False.
+        The ranges x_min to x_max and y_min to y_max, specify a rectangular
+        region of the sky in world coordinates. The truncate function returns
+        the sub-image that just encloses this region. Note that if the world
+        coordinate axes are not parallel to the array axes, the region will
+        appear to be a rotated rectangle within the sub-image. In such cases,
+        the corners of the sub-image will contain pixels that are outside the
+        region. By default these pixels are masked. However this can be
+        disabled by changing the optional mask argument to False.
 
         Parameters
         ----------
@@ -709,15 +707,12 @@ class Image(ArithmeticMixin, DataArray):
 
         """
 
-        # Get the sky coordinates of the corners of the rectangular
+        # Get the sky and pixel coordinates of the corners of the rectangular
         # region that is bounded by x_min..x_max and y_min..y_max.
-
         skycrd = np.array([[y_min, x_min],
                            [y_min, x_max],
                            [y_max, x_min],
                            [y_max, x_max]])
-
-        # Find the pixel indexes of the corners of the same region.
 
         if unit is not None:
             pixcrd = self.wcs.sky2pix(skycrd, unit=unit)
@@ -727,7 +722,6 @@ class Image(ArithmeticMixin, DataArray):
         # The sides of the selected region may not be parallel with the
         # array axes. Determine the pixel bounds of a rectangular
         # region of the array that contains the requested region.
-
         imin = max(0, int(np.min(pixcrd[:, 0]) + 0.5))
         imax = min(self.shape[0], int(np.max(pixcrd[:, 0]) + 0.5) + 1)
         jmin = max(0, int(np.min(pixcrd[:, 1]) + 0.5))
@@ -743,22 +737,18 @@ class Image(ArithmeticMixin, DataArray):
             self.wcs = subima.wcs
             out = self
         else:
-            out = subima
+            out = subima.copy()
 
         # If the region is rotated relative to the image array axes
         # then the rectangular sub-image that contains this will has
         # some pixels outside this region. Should these be masked?
-
         if mask:
 
             # Get the indexes of all of the pixels in the "out" array,
             # ordered like: [[0,0], [0,1], [1,0], [1,1], [2,0], [2,1]...]
-
             py, px = np.meshgrid(np.arange(0, out.shape[0]),
                                  np.arange(0, out.shape[1]), indexing='ij')
             pixcrd = np.column_stack((np.ravel(py), np.ravel(px)))
-
-            # Look up the sky coordinates of each pixel.
 
             if unit is None:
                 skycrd = pixcrd
@@ -767,21 +757,18 @@ class Image(ArithmeticMixin, DataArray):
 
             # Reshape the array of coordinates to have the shape of
             # the output array.
-
             x = skycrd[:, 1].reshape(out.shape)
             y = skycrd[:, 0].reshape(out.shape)
 
             # Test the X and Y coordinates of each pixel against the
             # requested range of X and Y coordinates, and mask pixels
             # that are outside this range.
-
             test_x = np.logical_or(x < x_min, x > x_max)
             test_y = np.logical_or(y < y_min, y > y_max)
             test = np.logical_or(test_x, test_y)
             out._mask = np.logical_or(out._mask, test)
 
             # Remove any array margins that are now completely masked.
-
             out.crop()
 
         return out

@@ -65,6 +65,16 @@ def image():
 
 
 @pytest.fixture
+def hdfs_muse_image():
+    return Image(get_data_file('obj', 'IMAGE-HDFS-1.34.fits'))
+
+
+@pytest.fixture
+def hdfs_hst_image():
+    return Image(get_data_file('obj', 'HST-HDFS.fits'))
+
+
+@pytest.fixture
 def spectrum():
     return generate_spectrum()
 
