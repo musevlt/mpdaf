@@ -668,9 +668,7 @@ class RawFile(object):
         if channels == "all":
             for name in self.channels.keys():
                 chan = self.get_channel(name)
-                ima = chan.get_trimmed_image(det_out=None,
-                                             bias_substract=False,
-                                             bias=False)
+                ima = chan.get_trimmed_image(det_out=None, bias=False)
                 if area is not None:
                     ima = ima[area[0]:area[1], area[2]:area[3]]
                 ima = ima.rebin(6)
@@ -690,8 +688,7 @@ class RawFile(object):
                 ncols = int(nchan // nrows) + 1
             for i, name in enumerate(channels):
                 chan = self.get_channel(name)
-                ima = chan.get_trimmed_image(det_out=None,
-                                             bias_substract=False, bias=False)
+                ima = chan.get_trimmed_image(det_out=None, bias=False)
                 if area is not None:
                     ima = ima[area[0]:area[1], area[2]:area[3]]
                 ima = ima.rebin(6)
