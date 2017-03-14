@@ -906,10 +906,10 @@ def test_convolve():
     expected_data.data[:, 6:9, 4:8] = kern
 
     res = c.convolve(kern)
-    assert_masked_allclose(res.data, expected_data)
+    assert_masked_allclose(res.data, expected_data, atol=1e-15)
 
     res = c.convolve(Image(data=kern))
-    assert_masked_allclose(res.data, expected_data)
+    assert_masked_allclose(res.data, expected_data, atol=1e-15)
 
     res = c.fftconvolve(kern)
     assert_masked_allclose(res.data, expected_data, atol=1e-15)
