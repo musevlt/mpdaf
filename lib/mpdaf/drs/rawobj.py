@@ -52,7 +52,7 @@ NB_SPEC_PER_SLICE = 75  # number of pixels per slice
 NB_SLICES = 12  # number of slices per sub-slicer
 INTERSPEC = 7  # inter-spectrum distance in pixel
 OVERSCAN = 32  # overscan width in pixel
-slit_position = np.array([9, 8, 1, 10, 7, 2, 11, 6, 3, 12, 5, 4])
+SLIT_POSITION = np.array([9, 8, 1, 10, 7, 2, 11, 6, 3, 12, 5, 4])
 
 
 class Channel(object):
@@ -76,8 +76,9 @@ class Channel(object):
         Lengths of data in X
     ny : int
         Lengths of data in Y
-    mask : array of booleans
+    mask : array of bool
         Arrays that contents TRUE for overscanned pixels, FALSE for the others.
+
     """
 
     def __init__(self, extname, filename):
@@ -96,57 +97,74 @@ class Channel(object):
 
         self.mask = self._init_mask()
 
+    def _get_detector_indices(self, idx, with_prescan=True):
+        """Return the indices for one quadrant, with prescan or not."""
+
+        if idx not in (1, 2, 3, 4):
+            raise ValueError('Invalid quadrant index')
+
+        # Physical active pixels in X, Y
+        nx_data = self.header["ESO DET CHIP NX"]
+        ny_data = self.header["ESO DET CHIP NY"]
+
+        # Output data pixels in X, Y
+        key = "ESO DET OUT%i" % idx
+        nx = self.header["%s NX" % key]
+        ny = self.header["%s NY" % key]
+
+        # Output prescan pixels in X, Y
+        prscx = self.header.get("%s PRSCX" % key, OVERSCAN)
+        prscy = self.header.get("%s PRSCY" % key, OVERSCAN)
+
+        # X, Y location of output
+        x = self.header["%s X" % key]
+        y = self.header["%s Y" % key]
+
+        if with_prescan:
+            if x < nx_data // 2:
+                i1 = x - 1
+                i2 = i1 + nx + 2 * prscx
+            else:
+                i2 = self.nx
+                i1 = i2 - nx - 2 * prscx
+
+            if y < ny_data // 2:
+                j1 = y - 1
+                j2 = j1 + ny + 2 * prscy
+            else:
+                j2 = self.ny
+                j1 = j2 - ny - 2 * prscy
+        else:
+            if x < nx_data // 2:
+                i1 = x - 1 + prscx
+                i2 = i1 + nx
+            else:
+                i2 = self.nx - prscx
+                i1 = i2 - nx
+
+            if y < ny_data // 2:
+                j1 = y - 1 + prscy
+                j2 = j1 + ny
+            else:
+                j2 = self.ny - prscy
+                j1 = j2 - ny
+
+        return slice(j1, j2), slice(i1, i2)
+
     def _init_mask(self):
         """Create mask that invalidates over scanned pixels."""
         mask = np.ones((self.ny, self.nx), dtype=bool)
-        try:
-            # Physical active pixels in X, Y
-            nx_data = self.header["ESO DET CHIP NX"]
-            ny_data = self.header["ESO DET CHIP NY"]
-
-            for i in range(4):
-                # Output data pixels in X, Y
-                key = "ESO DET OUT%i" % (i + 1)
-                nx = self.header["%s NX" % key]
-                ny = self.header["%s NY" % key]
-
-                # Output prescan pixels in X, Y
-                prscx = self.header.get("%s PRSCX" % key, OVERSCAN)
-                prscy = self.header.get("%s PRSCY" % key, OVERSCAN)
-
-                # X, Y location of output
-                x = self.header["%s X" % key]
-                y = self.header["%s Y" % key]
-
-                if x < nx_data // 2:
-                    i1 = x - 1 + prscx
-                    i2 = i1 + nx
-                else:
-                    i2 = self.nx - prscx
-                    i1 = i2 - nx
-
-                if y < ny_data // 2:
-                    j1 = y - 1 + prscy
-                    j2 = j1 + ny
-                else:
-                    j2 = self.ny - prscy
-                    j1 = j2 - ny
-
-                mask[j1:j2, i1:i2] = False
-        except:
-            pass
+        for i in range(1, 5):
+            sy, sx = self._get_detector_indices(i, with_prescan=False)
+            mask[sy, sx] = False
         return mask
 
     def trimmed(self, copy=True):
-        """Return a masked array containing only reference to the valid
-        pixels.
-        """
+        """Return a masked array where overscan pixels are masked."""
         return np.ma.MaskedArray(self.data, mask=self.mask, copy=copy)
 
     def overscan(self, copy=True):
-        """Return a masked array containing only reference to the overscanned
-        pixels.
-        """
+        """Return a masked array where only overscan pixels are not masked."""
         return np.ma.MaskedArray(self.data, mask=~self.mask, copy=copy)
 
     def get_image(self, det_out=None, bias=False):
@@ -156,7 +174,7 @@ class Channel(object):
         ----------
         det_out : int in [1,4]
             Number of output detector. If None, all image is returned.
-        bias : boolean
+        bias : bool
             If True, median value of the overscanned pixels is subtracted.
 
         Returns
@@ -168,71 +186,15 @@ class Channel(object):
         ima = Image(wcs=wcs, data=self.data, dtype=None)
 
         if det_out is not None:
-            # Physical active pixels in X
-            nx_data2 = self.header["ESO DET CHIP NX"]
-            # Physical active pixels in Y
-            ny_data2 = self.header["ESO DET CHIP NY"]
-            key = "ESO DET OUT%i" % det_out
-            # Output data pixels in X
-            nx = self.header["%s NX" % key]
-            # Output data pixels in Y
-            ny = self.header["%s NY" % key]
-            # Output prescan pixels in X
-            prscx = self.header["%s PRSCX" % key]
-            # Output prescan pixels in Y
-            prscy = self.header["%s PRSCY" % key]
-            # X location of output
-            x = self.header["%s X" % key]
-            # Y location of output
-            y = self.header["%s Y" % key]
-            if x < nx_data2 // 2:
-                i1 = x - 1
-                i2 = i1 + nx + 2 * prscx
-            else:
-                i2 = self.nx
-                i1 = i2 - nx - 2 * prscx
-            if y < ny_data2 // 2:
-                j1 = y - 1
-                j2 = j1 + ny + 2 * prscy
-            else:
-                j2 = self.ny
-                j1 = j2 - ny - 2 * prscy
-            ima = ima[j1:j2, i1:i2]
+            sy, sx = self._get_detector_indices(det_out, with_prescan=True)
+            ima = ima[sy, sx]
             if bias:
                 ima = ima - self.get_bias_level(det_out)
 
         if det_out is None and bias:
-            # Physical active pixels in X
-            nx_data2 = self.header["ESO DET CHIP NX"]
-            # Physical active pixels in Y
-            ny_data2 = self.header["ESO DET CHIP NY"]
             for det in range(1, 5):
-                key = "ESO DET OUT%i" % det
-                # Output data pixels in X
-                nx = self.header["%s NX" % key]
-                # Output data pixels in Y
-                ny = self.header["%s NY" % key]
-                # Output prescan pixels in X
-                prscx = self.header["%s PRSCX" % key]
-                # Output prescan pixels in Y
-                prscy = self.header["%s PRSCY" % key]
-                # X location of output
-                x = self.header["%s X" % key]
-                # Y location of output
-                y = self.header["%s Y" % key]
-                if x < nx_data2 // 2:
-                    i1 = x - 1
-                    i2 = i1 + nx + 2 * prscx
-                else:
-                    i2 = self.nx
-                    i1 = i2 - nx - 2 * prscx
-                if y < ny_data2 // 2:
-                    j1 = y - 1
-                    j2 = j1 + ny + 2 * prscy
-                else:
-                    j2 = self.ny
-                    j1 = j2 - ny - 2 * prscy
-                ima[j1:j2, i1:i2] = ima[j1:j2, i1:i2] - self.get_bias_level(det)
+                sy, sx = self._get_detector_indices(det, with_prescan=True)
+                ima[sy, sx] = ima[sy, sx] - self.get_bias_level(det)
 
         return ima
 
@@ -259,128 +221,36 @@ class Channel(object):
         ----------
         det_out : int in [1,4]
             Number of output detector. If None, all image is returned.
-        bias : boolean
+        bias : bool
             If True, median value of the overscanned pixels is subtracted.
 
         Returns
         -------
         out : `~mpdaf.obj.Image`
+
         """
-        # Physical active pixels in X
-        nx_data2 = self.header["ESO DET CHIP NX"]
-        # Physical active pixels in Y
-        ny_data2 = self.header["ESO DET CHIP NY"]
-        if isinstance(self.data, np.ma.core.MaskedArray):
-            work = np.ma.MaskedArray(self.data.data.__copy__(),
-                                     mask=self.mask)
-        else:
-            work = np.ma.MaskedArray(self.data.__copy__(), mask=self.mask)
+        work = self.trimmed()
 
         if bias:
-            ksel = np.where(self.mask == True)
-            # length of data in X
-            nx_data = self.header["NAXIS1"]
-            # length of data in Y
-            ny_data = self.header["NAXIS2"]
+            det_out = [det_out] if isinstance(det_out, int) else range(1, 5)
+            for det in range(1, 5):
+                sy, sx = self._get_detector_indices(det, with_prescan=True)
+                ksel = np.where(self.mask[sy, sx] == True)
+                bias_level = np.median(work.data[sy, sx][ksel])
+                work[sy, sx] = work[sy, sx] - bias_level
 
-            if det_out is None:
-                for det in range(1, 5):
-                    key = "ESO DET OUT%i" % det
-                    # Output data pixels in X
-                    nx = self.header["%s NX" % key]
-                    # Output data pixels in Y
-                    ny = self.header["%s NY" % key]
-                    # Output prescan pixels in X
-                    prscx = self.header["%s PRSCX" % key]
-                    # Output prescan pixels in Y
-                    prscy = self.header["%s PRSCY" % key]
-                    # X location of output
-                    x = self.header["%s X" % key]
-                    # Y location of output
-                    y = self.header["%s Y" % key]
-                    if x < nx_data2 // 2:
-                        i1 = x - 1
-                        i2 = i1 + nx + 2 * prscx
-                    else:
-                        i2 = nx_data
-                        i1 = i2 - nx - 2 * prscx
-                    if y < ny_data2 // 2:
-                        j1 = y - 1
-                        j2 = j1 + ny + 2 * prscy
-                    else:
-                        j2 = ny_data
-                        j1 = j2 - ny - 2 * prscy
-
-                    ksel = np.where(self.mask[j1:j2, i1:i2] == True)
-                    bias_level = np.median((work.data[j1:j2, i1:i2])[ksel])
-                    work[j1:j2, i1:i2] = work[j1:j2, i1:i2] - bias_level
-            else:
-                key = "ESO DET OUT%i" % det_out
-                # Output data pixels in X
-                nx = self.header["%s NX" % key]
-                # Output data pixels in Y
-                ny = self.header["%s NY" % key]
-                # Output prescan pixels in X
-                prscx = self.header["%s PRSCX" % key]
-                # Output prescan pixels in Y
-                prscy = self.header["%s PRSCY" % key]
-                # X location of output
-                x = self.header["%s X" % key]
-                # Y location of output
-                y = self.header["%s Y" % key]
-                if x < nx_data2 // 2:
-                    i1 = x - 1
-                    i2 = i1 + nx + 2 * prscx
-                else:
-                    i2 = nx_data
-                    i1 = i2 - nx - 2 * prscx
-                if y < ny_data2 // 2:
-                    j1 = y - 1
-                    j2 = j1 + ny + 2 * prscy
-                else:
-                    j2 = ny_data
-                    j1 = j2 - ny - 2 * prscy
-
-                ksel = np.where(self.mask[j1:j2, i1:i2] == True)
-                bias_level = np.median(work.data[j1:j2, i1:i2][ksel])
-                work[j1:j2, i1:i2] = work[j1:j2, i1:i2] - bias_level
+        # Physical active pixels in X, Y
+        nx_data = self.header["ESO DET CHIP NX"]
+        ny_data = self.header["ESO DET CHIP NY"]
 
         data = np.ma.compressed(work)
-        data = np.reshape(data, (ny_data2, nx_data2))
-        wcs = WCS(crpix=(1.0, 1.0), shape=(ny_data2, nx_data2))
+        data = np.reshape(data, (ny_data, nx_data))
+        wcs = WCS(crpix=(1.0, 1.0), shape=(ny_data, nx_data))
         ima = Image(wcs=wcs, data=data, dtype=None)
 
         if det_out is not None:
-            # length of data in X
-            nx_data = self.header["NAXIS1"]
-            # length of data in Y
-            ny_data = self.header["NAXIS2"]
-            key = "ESO DET OUT%i" % det_out
-            # Output data pixels in X
-            nx = self.header["%s NX" % key]
-            # Output data pixels in Y
-            ny = self.header["%s NY" % key]
-            # Output prescan pixels in X
-            prscx = self.header["%s PRSCX" % key]
-            # Output prescan pixels in Y
-            prscy = self.header["%s PRSCY" % key]
-            # X location of output
-            x = self.header["%s X" % key]
-            # Y location of output
-            y = self.header["%s Y" % key]
-            if x < nx_data2 // 2:
-                i1 = x - 1 + prscx
-                i2 = i1 + nx
-            else:
-                i2 = nx_data - prscx
-                i1 = i2 - nx
-            if y < ny_data2 // 2:
-                j1 = y - 1 + prscy
-                j2 = j1 + ny
-            else:
-                j2 = ny_data - prscy
-                j1 = j2 - ny
-            ima = ima[j1:j2, i1:i2]
+            sy, sx = self._get_detector_indices(det_out, with_prescan=False)
+            ima = ima[sy, sx]
 
         return ima
 
@@ -396,45 +266,12 @@ class Channel(object):
         Returns
         -------
         out : `~mpdaf.obj.Image`
+
         """
         ima = Image(wcs=WCS(self.header), data=self.trimmed(), copy=False)
-
         if det_out is not None:
-            # length of data in X
-            nx_data = self.header["NAXIS1"]
-            # length of data in Y
-            ny_data = self.header["NAXIS2"]
-            # Physical active pixels in X
-            nx_data2 = self.header["ESO DET CHIP NX"]
-            # Physical active pixels in Y
-            ny_data2 = self.header["ESO DET CHIP NY"]
-            key = "ESO DET OUT%i" % det_out
-            # Output data pixels in X
-            nx = self.header["%s NX" % key]
-            # Output data pixels in Y
-            ny = self.header["%s NY" % key]
-            # Output prescan pixels in X
-            prscx = self.header["%s PRSCX" % key]
-            # Output prescan pixels in Y
-            prscy = self.header["%s PRSCY" % key]
-            # X location of output
-            x = self.header["%s X" % key]
-            # Y location of output
-            y = self.header["%s Y" % key]
-            if x < nx_data2 // 2:
-                i1 = x - 1
-                i2 = i1 + nx + 2 * prscx
-            else:
-                i2 = nx_data
-                i1 = i2 - nx - 2 * prscx
-            if y < ny_data2 // 2:
-                j1 = y - 1
-                j2 = j1 + ny + 2 * prscy
-            else:
-                j2 = ny_data
-                j1 = j2 - ny - 2 * prscy
-            ima = ima[j1:j2, i1:i2]
-
+            sy, sx = self._get_detector_indices(det_out, with_prescan=True)
+            ima = ima[sy, sx]
         return ima
 
     def get_image_just_overscan(self, det_out=None):
@@ -449,45 +286,12 @@ class Channel(object):
         Returns
         -------
         out : `~mpdaf.obj.Image`
+
         """
         ima = Image(wcs=WCS(self.header), data=self.overscan(), copy=False)
-
         if det_out is not None:
-            # length of data in X
-            nx_data = self.header["NAXIS1"]
-            # length of data in Y
-            ny_data = self.header["NAXIS2"]
-            # Physical active pixels in X
-            nx_data2 = self.header["ESO DET CHIP NX"]
-            # Physical active pixels in Y
-            ny_data2 = self.header["ESO DET CHIP NY"]
-            key = "ESO DET OUT%i" % det_out
-            # Output data pixels in X
-            nx = self.header["%s NX" % key]
-            # Output data pixels in Y
-            ny = self.header["%s NY" % key]
-            # Output prescan pixels in X
-            prscx = self.header["%s PRSCX" % key]
-            # Output prescan pixels in Y
-            prscy = self.header["%s PRSCY" % key]
-            # X location of output
-            x = self.header["%s X" % key]
-            # Y location of output
-            y = self.header["%s Y" % key]
-            if x < nx_data2 // 2:
-                i1 = x - 1
-                i2 = i1 + nx + 2 * prscx
-            else:
-                i2 = nx_data
-                i1 = i2 - nx - 2 * prscx
-            if y < ny_data2 // 2:
-                j1 = y - 1
-                j2 = j1 + ny + 2 * prscy
-            else:
-                j2 = ny_data
-                j1 = j2 - ny - 2 * prscy
-            ima = ima[j1:j2, i1:i2]
-
+            sy, sx = self._get_detector_indices(det_out, with_prescan=True)
+            ima = ima[sy, sx]
         return ima
 
 
@@ -728,7 +532,7 @@ class RawFile(object):
                 # For each slice 1-12*/
                 for l in range(1, NB_SLICES + 1):
                     noslice = (k - 1) * NB_SLICES + l
-                    wr_row = NB_SLICES - slit_position[l - 1] \
+                    wr_row = NB_SLICES - SLIT_POSITION[l - 1] \
                         + 12 * (24 - ifu)
                     wr_col = k * NB_SPEC_PER_SLICE
                     white_ima[wr_row, wr_col - NB_SPEC_PER_SLICE:wr_col] = \
@@ -747,7 +551,7 @@ class RawFile(object):
         # plot slice
         k = np.floor((sli - 1) // NB_SLICES)
         l = np.mod(sli - 1, NB_SLICES) + 1
-        wr_row = NB_SLICES - slit_position[l - 1] + 12 * (24 - ifu) - 0.5
+        wr_row = NB_SLICES - SLIT_POSITION[l - 1] + 12 * (24 - ifu) - 0.5
         wr_col = k * NB_SPEC_PER_SLICE - 0.5
         plt.plot(np.arange(wr_col, wr_col + 76), np.ones(76) * wr_row, 'r-')
         plt.plot(np.arange(wr_col, wr_col + 76),
@@ -808,7 +612,7 @@ class RawFile(object):
                     ifu = 24 - int(p + 0.5) // NB_SLICES
                     k = int(q + 0.5) // NB_SPEC_PER_SLICE
                     pos = NB_SLICES + 12 * (24 - ifu) - int(p + 0.5)
-                    l = np.where(slit_position == pos)[0][0] + 1
+                    l = np.where(SLIT_POSITION == pos)[0][0] + 1
                     sli = k * NB_SLICES + l
                     ax = plt.subplot(1, 2, 1)
                     ax.clear()
