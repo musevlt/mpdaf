@@ -83,84 +83,71 @@ class Channel(object):
     def __init__(self, extname, filename):
         self._logger = logging.getLogger(__name__)
         self.extname = extname
-        hdulist = fits.open(filename)
-        self.header = hdulist[extname].header
-        self.nx = hdulist[extname].header["NAXIS1"]
-        self.ny = hdulist[extname].header["NAXIS2"]
-        try:
-            self.data = hdulist[extname].data
-        except:
-            self._logger.warning("extension %s not loaded" % extname)
-            self.data = None
-        hdulist.close()
+
+        with fits.open(filename) as hdulist:
+            self.header = hdr = hdulist[extname].header
+            self.nx = hdr["NAXIS1"]
+            self.ny = hdr["NAXIS2"]
+            try:
+                self.data = hdulist[extname].data
+            except:
+                self._logger.warning("extension %s not loaded" % extname)
+                self.data = None
+
         self.mask = self._init_mask()
 
     def _init_mask(self):
         """Create mask that invalidates over scanned pixels."""
-        m = np.ones((self.ny, self.nx), dtype=int)
+        mask = np.ones((self.ny, self.nx), dtype=bool)
         try:
-            nx_data = self.header["NAXIS1"]  # length of data in X
-            ny_data = self.header["NAXIS2"]  # length of data in Y
-            # Physical active pixels in X
-            nx_data2 = self.header["ESO DET CHIP NX"]
-            # Physical active pixels in Y
-            ny_data2 = self.header["ESO DET CHIP NY"]
-            m = np.ones((self.ny, self.nx), dtype=int)
+            # Physical active pixels in X, Y
+            nx_data = self.header["ESO DET CHIP NX"]
+            ny_data = self.header["ESO DET CHIP NY"]
 
             for i in range(4):
-                try:
-                    n = i + 1
-                    key = "ESO DET OUT%i" % n
-                    # Output data pixels in X
-                    nx = self.header["%s NX" % key]
-                    # Output data pixels in Y
-                    ny = self.header["%s NY" % key]
-                    try:
-                        # Output prescan pixels in X
-                        prscx = self.header["%s PRSCX" % key]
-                    except:
-                        prscx = OVERSCAN
-                    try:
-                        # Output prescan pixels in Y
-                        prscy = self.header["%s PRSCY" % key]
-                    except:
-                        prscy = OVERSCAN
-                    # X location of output
-                    x = self.header["%s X" % key]
-                    # Y location of output
-                    y = self.header["%s Y" % key]
-                    if x < nx_data2 // 2:
-                        i1 = x - 1 + prscx
-                        i2 = i1 + nx
-                    else:
-                        i2 = nx_data - prscx
-                        i1 = i2 - nx
-                    if y < ny_data2 // 2:
-                        j1 = y - 1 + prscy
-                        j2 = j1 + ny
-                    else:
-                        j2 = ny_data - prscy
-                        j1 = j2 - ny
-                    m[j1:j2, i1:i2] *= 0
-                except:
-                    break
+                # Output data pixels in X, Y
+                key = "ESO DET OUT%i" % (i + 1)
+                nx = self.header["%s NX" % key]
+                ny = self.header["%s NY" % key]
+
+                # Output prescan pixels in X, Y
+                prscx = self.header.get("%s PRSCX" % key, OVERSCAN)
+                prscy = self.header.get("%s PRSCY" % key, OVERSCAN)
+
+                # X, Y location of output
+                x = self.header["%s X" % key]
+                y = self.header["%s Y" % key]
+
+                if x < nx_data // 2:
+                    i1 = x - 1 + prscx
+                    i2 = i1 + nx
+                else:
+                    i2 = self.nx - prscx
+                    i1 = i2 - nx
+
+                if y < ny_data // 2:
+                    j1 = y - 1 + prscy
+                    j2 = j1 + ny
+                else:
+                    j2 = self.ny - prscy
+                    j1 = j2 - ny
+
+                mask[j1:j2, i1:i2] = False
         except:
             pass
-        return np.ma.make_mask(m)
+        return mask
 
-    def trimmed(self):
+    def trimmed(self, copy=True):
         """Return a masked array containing only reference to the valid
         pixels.
         """
-        return np.ma.MaskedArray(self.data, mask=self.mask, copy=True)
+        return np.ma.MaskedArray(self.data, mask=self.mask, copy=copy)
 
-    def overscan(self):
+    def overscan(self, copy=True):
         """Return a masked array containing only reference to the overscanned
         pixels.
         """
-        return np.ma.MaskedArray(self.data,
-                                 mask=np.logical_not(self.mask),
-                                 copy=True)
+        return np.ma.MaskedArray(self.data, mask=~self.mask, copy=copy)
 
     def get_image(self, det_out=None, bias=False):
         """Return an Image object.
@@ -169,21 +156,18 @@ class Channel(object):
         ----------
         det_out : int in [1,4]
             Number of output detector. If None, all image is returned.
-        bias    : boolean
+        bias : boolean
             If True, median value of the overscanned pixels is subtracted.
 
         Returns
         -------
         out : `~mpdaf.obj.Image`
+
         """
         wcs = WCS(self.header)
-        ima = Image(wcs=wcs, data=self.data.__copy__(), dtype=None)
+        ima = Image(wcs=wcs, data=self.data, dtype=None)
 
         if det_out is not None:
-            # length of data in X
-            nx_data = self.header["NAXIS1"]
-            # length of data in Y
-            ny_data = self.header["NAXIS2"]
             # Physical active pixels in X
             nx_data2 = self.header["ESO DET CHIP NX"]
             # Physical active pixels in Y
@@ -205,23 +189,19 @@ class Channel(object):
                 i1 = x - 1
                 i2 = i1 + nx + 2 * prscx
             else:
-                i2 = nx_data
+                i2 = self.nx
                 i1 = i2 - nx - 2 * prscx
             if y < ny_data2 // 2:
                 j1 = y - 1
                 j2 = j1 + ny + 2 * prscy
             else:
-                j2 = ny_data
+                j2 = self.ny
                 j1 = j2 - ny - 2 * prscy
             ima = ima[j1:j2, i1:i2]
             if bias:
                 ima = ima - self.get_bias_level(det_out)
 
         if det_out is None and bias:
-            # length of data in X
-            nx_data = self.header["NAXIS1"]
-            # length of data in Y
-            ny_data = self.header["NAXIS2"]
             # Physical active pixels in X
             nx_data2 = self.header["ESO DET CHIP NX"]
             # Physical active pixels in Y
@@ -244,13 +224,13 @@ class Channel(object):
                     i1 = x - 1
                     i2 = i1 + nx + 2 * prscx
                 else:
-                    i2 = nx_data
+                    i2 = self.nx
                     i1 = i2 - nx - 2 * prscx
                 if y < ny_data2 // 2:
                     j1 = y - 1
                     j2 = j1 + ny + 2 * prscy
                 else:
-                    j2 = ny_data
+                    j2 = self.ny
                     j1 = j2 - ny - 2 * prscy
                 ima[j1:j2, i1:i2] = ima[j1:j2, i1:i2] - self.get_bias_level(det)
 
@@ -417,10 +397,7 @@ class Channel(object):
         -------
         out : `~mpdaf.obj.Image`
         """
-        wcs = WCS(fits.Header(self.header))
-        ima = Image(wcs=wcs, data=self.data, dtype=None)
-        ima.data = np.ma.MaskedArray(self.data.__copy__(),
-                                     mask=self.mask, copy=True)
+        ima = Image(wcs=WCS(self.header), data=self.trimmed(), copy=False)
 
         if det_out is not None:
             # length of data in X
@@ -473,11 +450,7 @@ class Channel(object):
         -------
         out : `~mpdaf.obj.Image`
         """
-        wcs = WCS(fits.Header(self.header))
-        ima = Image(wcs=wcs, data=self.data, dtype=None)
-        ima.data = np.ma.MaskedArray(self.data.__copy__(),
-                                     mask=np.logical_not(self.mask),
-                                     copy=True)
+        ima = Image(wcs=WCS(self.header), data=self.overscan(), copy=False)
 
         if det_out is not None:
             # length of data in X
@@ -552,25 +525,24 @@ class RawFile(object):
         self.ny = 0
         self.next = 0
 
-        hdulist = fits.open(self.filename)
-        self.primary_header = hdulist[0].header
-        for hdu in hdulist[1:]:
-            extname = hdu.header["EXTNAME"]
-            exttype = hdu.header["XTENSION"]
-            if exttype == 'IMAGE' and hdu.header["NAXIS"] != 0:
-                nx = hdu.header["NAXIS1"]
-                ny = hdu.header["NAXIS2"]
-                if self.nx == 0:
-                    self.nx = nx
-                    self.ny = ny
-                if nx != self.nx and ny != self.ny:
-                    self._logger.warning(
-                        'image extensions %s not considered '
-                        '(different sizes)', extname)
-                else:
-                    self.channels[extname] = None
-        self.next = len(self.channels)
-        hdulist.close()
+        with fits.open(self.filename) as hdulist:
+            self.primary_header = hdulist[0].header
+            for hdu in hdulist[1:]:
+                extname = hdu.header["EXTNAME"]
+                exttype = hdu.header["XTENSION"]
+                if exttype == 'IMAGE' and hdu.header["NAXIS"] != 0:
+                    nx = hdu.header["NAXIS1"]
+                    ny = hdu.header["NAXIS2"]
+                    if self.nx == 0:
+                        self.nx = nx
+                        self.ny = ny
+                    if nx != self.nx and ny != self.ny:
+                        self._logger.warning(
+                            'image extensions %s not considered '
+                            '(different sizes)', extname)
+                    else:
+                        self.channels[extname] = None
+            self.next = len(self.channels)
 
     def info(self):
         """Print information."""
@@ -604,10 +576,9 @@ class RawFile(object):
         -------
         out : `mpdaf.drs.Channel`
         """
-        if self.channels[extname] is not None:
-            return self.channels[extname]
-        else:
-            return Channel(extname, self.filename)
+        if self.channels[extname] is None:
+            self.channels[extname] = Channel(extname, self.filename)
+        return self.channels[extname]
 
     def __len__(self):
         """Return the number of extensions."""
@@ -625,13 +596,11 @@ class RawFile(object):
         -------
         out : `mpdaf.drs.Channel`
         """
-        extname = "CHAN%02d" % key
-        if self.channels[extname] is None:
-            self.channels[extname] = Channel(extname, self.filename)
-        return self.channels[extname]
+        return self.get_channel("CHAN%02d" % key)
 
     def plot(self, title=None, channels="all", area=None, scale='linear',
-             vmin=None, vmax=None, zscale=False, colorbar=None, **kargs):
+             vmin=None, vmax=None, zscale=False, colorbar=None, figsize=None,
+             **kwargs):
         """Plot the raw images.
 
         Parameters
@@ -657,48 +626,41 @@ class RawFile(object):
             using the IRAF zscale algorithm.
         colorbar : str
             If 'h'/'v', a horizontal/vertical colorbar is added.
-        kargs : dict
-            kargs can be used to set additional Artist properties.
+        figsize: tuple
+            width, height of the figure.
+        kwargs : dict
+            Additional options passed to ``Image.plot``.
 
         """
-        fig = plt.figure()
+        fig = plt.figure(figsize=figsize)
         fig.subplots_adjust(wspace=0.02, hspace=0.01)
+
         if title is not None:
             plt.title(title)
+
         if channels == "all":
-            for name in self.channels.keys():
-                chan = self.get_channel(name)
-                ima = chan.get_trimmed_image(det_out=None, bias=False)
-                if area is not None:
-                    ima = ima[area[0]:area[1], area[2]:area[3]]
-                ima = ima.rebin(6)
-                ichan = int(name[-2:])
-                fig.add_subplot(4, 6, ichan)
-                ima.plot(None, scale, vmin, vmax, zscale, colorbar, **kargs)
-                plt.axis('off')
-                plt.text(ima.shape[0] - 30, ima.shape[1] - 30, '%i' % ichan,
-                         style='italic',
-                         bbox={'facecolor': 'red', 'alpha': 0.2, 'pad': 10})
+            channels = self.channels.keys()
+
+        nchan = len(channels)
+        nrows = int(np.sqrt(nchan))
+        if nchan % nrows == 0:
+            ncols = nchan // nrows
         else:
-            nchan = len(channels)
-            nrows = int(np.sqrt(nchan))
-            if nchan % nrows == 0:
-                ncols = nchan // nrows
-            else:
-                ncols = int(nchan // nrows) + 1
-            for i, name in enumerate(channels):
-                chan = self.get_channel(name)
-                ima = chan.get_trimmed_image(det_out=None, bias=False)
-                if area is not None:
-                    ima = ima[area[0]:area[1], area[2]:area[3]]
-                ima = ima.rebin(6)
-                ichan = int(name[-2:])
-                fig.add_subplot(nrows, ncols, i + 1)
-                ima.plot(None, scale, vmin, vmax, zscale, colorbar, **kargs)
-                plt.axis('off')
-                plt.text(ima.shape[0] - 30, ima.shape[1] - 30, '%i' % ichan,
-                         style='italic',
-                         bbox={'facecolor': 'red', 'alpha': 0.2, 'pad': 10})
+            ncols = int(nchan // nrows) + 1
+
+        for i, name in enumerate(channels):
+            chan = self.get_channel(name)
+            ima = chan.get_trimmed_image(det_out=None, bias=False)
+            if area is not None:
+                ima = ima[area[0]:area[1], area[2]:area[3]]
+            ima = ima.rebin(6)
+            ichan = int(name[-2:])
+            fig.add_subplot(nrows, ncols, i + 1)
+            ima.plot(None, scale, vmin, vmax, zscale, colorbar, **kwargs)
+            plt.axis('off')
+            plt.text(ima.shape[0] - 30, ima.shape[1] - 30, '%i' % ichan,
+                     style='italic',
+                     bbox={'facecolor': 'red', 'alpha': 0.2, 'pad': 10})
 
     def reconstruct_white_image(self, mask=None):
         """Reconstructs the white image of the FOV using a mask file.

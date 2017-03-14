@@ -32,10 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import absolute_import
 
-import numpy
+import numpy as np
 import pytest
 from os.path import join, exists
 from mpdaf.drs import RawFile
+from numpy.testing import assert_array_equal
 
 from ...tests.utils import DATADIR
 
@@ -56,11 +57,31 @@ def rawobj():
 
 
 @pytest.mark.skipif(not SUPP_FILES_PATH, reason="Missing test data (raw.fits)")
-def test_raw_init(rawobj):
+def test_raw(rawobj):
+    assert rawobj.get_keywords('ORIGIN') == 'CRAL-INM'
+    assert rawobj.get_channels_extname_list() == ['CHAN02', 'CHAN01']
+    assert len(rawobj) == 2
+    assert rawobj.get_channel('CHAN01') is rawobj[1]
+    assert rawobj[2] is rawobj.get_channel('CHAN02')
+
+
+@pytest.mark.skipif(not SUPP_FILES_PATH, reason="Missing test data (raw.fits)")
+def test_channel(rawobj):
     """Raw objects: tests initialization"""
     chan1 = rawobj.get_channel("CHAN01")
-    shape = numpy.shape(chan1.data)
-    assert shape == (rawobj.ny, rawobj.nx)
+    assert chan1.data.shape == (rawobj.ny, rawobj.nx)
+    assert chan1.data.shape == chan1.mask.shape
+    assert np.count_nonzero(chan1.mask) > 0
+
+    assert_array_equal(chan1.trimmed().mask, chan1.mask)
+    assert_array_equal(chan1.overscan().mask, ~chan1.mask)
+
+    im = chan1.get_image()
+    assert im.shape == (chan1.ny, chan1.nx)
+
+    assert [chan1.get_bias_level(x) for x in range(1, 5)] == \
+        [1498.0, 1499.0, 1499.0, 1500.0]
+    # ima = chan.get_trimmed_image(det_out=None, bias=False)
 
 
 @pytest.mark.skipif(not SUPP_FILES_PATH, reason="Missing test data (raw.fits)")
