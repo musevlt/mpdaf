@@ -89,11 +89,7 @@ class Channel(object):
             self.header = hdr = hdulist[extname].header
             self.nx = hdr["NAXIS1"]
             self.ny = hdr["NAXIS2"]
-            try:
-                self.data = hdulist[extname].data
-            except:
-                self._logger.warning("extension %s not loaded" % extname)
-                self.data = None
+            self.data = hdulist[extname].data
 
         self.mask = self._init_mask()
 
@@ -232,8 +228,8 @@ class Channel(object):
         work = self.trimmed()
 
         if bias:
-            det_out = [det_out] if isinstance(det_out, int) else range(1, 5)
-            for det in range(1, 5):
+            det_list = [det_out] if isinstance(det_out, int) else range(1, 5)
+            for det in det_list:
                 sy, sx = self._get_detector_indices(det, with_prescan=True)
                 ksel = np.where(self.mask[sy, sx] == True)
                 bias_level = np.median(work.data[sy, sx][ksel])

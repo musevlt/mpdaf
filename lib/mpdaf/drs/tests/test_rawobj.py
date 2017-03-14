@@ -76,12 +76,26 @@ def test_channel(rawobj):
     assert_array_equal(chan1.trimmed().mask, chan1.mask)
     assert_array_equal(chan1.overscan().mask, ~chan1.mask)
 
-    im = chan1.get_image()
+    im = chan1.get_image(bias=True)
     assert im.shape == (chan1.ny, chan1.nx)
+
+    im = chan1.get_image(det_out=1, bias=True)
+    assert im.shape == (2056 + 64, 2048 + 64)
+
+    with pytest.raises(ValueError):
+        im = chan1.get_image(det_out=5)
 
     assert [chan1.get_bias_level(x) for x in range(1, 5)] == \
         [1498.0, 1499.0, 1499.0, 1500.0]
-    # ima = chan.get_trimmed_image(det_out=None, bias=False)
+
+    im = chan1.get_trimmed_image(det_out=1, bias=False)
+    assert im.shape == (2056, 2048)
+
+    im = chan1.get_trimmed_image(bias=True)
+    assert im.shape == (chan1.ny - 64*2, chan1.nx - 64*2)
+
+    im = chan1.get_image_mask_overscan(det_out=1)
+    assert im.shape == (2056 + 64, 2048 + 64)
 
 
 @pytest.mark.skipif(not SUPP_FILES_PATH, reason="Missing test data (raw.fits)")
