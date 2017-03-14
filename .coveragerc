@@ -14,6 +14,9 @@ exclude_lines =
     pragma: no cover
     def __repr__
     def info
+    def plot
+    def _plot
+    def _onclick
     raise AssertionError
     raise NotImplementedError
     if __name__ == .__main__.:
