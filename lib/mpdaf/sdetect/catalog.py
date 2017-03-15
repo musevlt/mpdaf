@@ -585,14 +585,14 @@ class Catalog(Table):
 
         Parameters
         ----------
-        wcs    : `~mpdaf.obj.WCS`
-                 Image WCS
-        ra     : str
-                 Name of the column that contains RA values in degrees.
-        dec    : str
-                 Name of the column that contains DEC values in degrees.
+        wcs : `~mpdaf.obj.WCS`
+            Image WCS
+        ra : str
+            Name of the column that contains RA values in degrees.
+        dec : str
+            Name of the column that contains DEC values in degrees.
         margin : int
-                 Margin from the edges.
+            Margin from the edges (pixels).
 
         Returns
         -------
