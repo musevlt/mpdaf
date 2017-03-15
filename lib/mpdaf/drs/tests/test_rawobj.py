@@ -58,8 +58,9 @@ def rawobj():
 
 @pytest.mark.skipif(not SUPP_FILES_PATH, reason="Missing test data (raw.fits)")
 def test_raw(rawobj):
+    """Raw objects: tests initialization"""
     assert rawobj.get_keywords('ORIGIN') == 'CRAL-INM'
-    assert rawobj.get_channels_extname_list() == ['CHAN02', 'CHAN01']
+    assert set(rawobj.get_channels_extname_list()) == {'CHAN02', 'CHAN01'}
     assert len(rawobj) == 2
     assert rawobj.get_channel('CHAN01') is rawobj[1]
     assert rawobj[2] is rawobj.get_channel('CHAN02')
@@ -67,7 +68,6 @@ def test_raw(rawobj):
 
 @pytest.mark.skipif(not SUPP_FILES_PATH, reason="Missing test data (raw.fits)")
 def test_channel(rawobj):
-    """Raw objects: tests initialization"""
     chan1 = rawobj.get_channel("CHAN01")
     assert chan1.data.shape == (rawobj.ny, rawobj.nx)
     assert chan1.data.shape == chan1.mask.shape
