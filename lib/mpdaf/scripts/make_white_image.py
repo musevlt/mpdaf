@@ -36,12 +36,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import absolute_import, print_function
 
 import argparse
+import sys
 from mpdaf.obj import Cube
 from time import time
 
 
 def make_white_image(inputfile, outputfile, verbose=False):
     t0 = time()
+    if outputfile is None:
+        outputfile = inputfile.replace('DATACUBE', 'IMAGE')
+    if outputfile == inputfile:
+        sys.exit('Input and output files are identical')
+
     print('Creating white light image {}'.format(outputfile))
     cube = Cube(inputfile)
     if verbose:
@@ -53,15 +59,16 @@ def make_white_image(inputfile, outputfile, verbose=False):
         print('Execution time {:.3f} seconds.'.format(time() - t0))
 
 
-def main():
+def main(args=None):
     parser = argparse.ArgumentParser(
         description='Make a white-light image from a cube, by computing the '
                     'mean for each pixel along the spectral axis.')
     parser.add_argument('input_cube', help='Input cube (FITS file).')
-    parser.add_argument('output_image', help='Output image (FITS file).')
+    parser.add_argument('output_image', nargs='?',
+                        help='Output image (FITS file).')
     parser.add_argument('--verbose', '-v', action='store_true',
                         help='verbose flag')
-    args = parser.parse_args()
+    args = parser.parse_args(args=args)
     make_white_image(args.input_cube, args.output_image, verbose=args.verbose)
 
 

@@ -32,15 +32,25 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import os
+import pytest
+import shutil
 from ..make_white_image import main
 from ...tests.utils import get_data_file
 
 
-def test_make_white_image(tmpdir, monkeypatch):
+def test_make_white_image(tmpdir):
     cube = get_data_file('sdetect', 'minicube.fits')
     out = str(tmpdir.join('image.fits'))
-
-    monkeypatch.setattr('sys.argv', ['make_white_image', '-v', cube, out])
-    main()
-
+    main(['-v', cube, out])
     assert os.path.isfile(out)
+
+
+def test_make_white_image2(tmpdir):
+    src = get_data_file('sdetect', 'minicube.fits')
+    with pytest.raises(SystemExit):
+        main(['-v', src])
+
+    cube = str(tmpdir.join('DATACUBE.fits'))
+    shutil.copy(src, cube)
+    main(['-v', cube])
+    assert os.path.isfile(str(tmpdir.join('IMAGE.fits')))
