@@ -65,6 +65,11 @@ def test_raw(rawobj):
     assert rawobj.get_channel('CHAN01') is rawobj[1]
     assert rawobj[2] is rawobj.get_channel('CHAN02')
 
+    im = rawobj.reconstruct_white_image()
+    assert im.shape == (288, 300)
+    assert_array_equal(np.where(im.data.data.sum(axis=1))[0],
+                       np.arange(264, 288))
+
 
 @pytest.mark.skipif(not SUPP_FILES_PATH, reason="Missing test data (raw.fits)")
 def test_channel(rawobj):

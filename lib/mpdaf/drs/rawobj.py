@@ -37,10 +37,10 @@ from __future__ import absolute_import, print_function, division
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
-import os.path
+import os
 
 from astropy.io import fits
-from scipy import integrate
+from scipy.integrate import quad
 from six.moves import range
 
 from ..obj import Image, WCS
@@ -408,7 +408,7 @@ class RawFile(object):
         title : str
             Figure title (None by default).
         channels : list or 'all'
-            list of channel names. All by default.
+            List of channel names. All by default.
         area : list
             list of pixels ``[pmin,pmax,qmin,qmax]`` to zoom.
         scale : str
@@ -462,14 +462,18 @@ class RawFile(object):
                      style='italic',
                      bbox={'facecolor': 'red', 'alpha': 0.2, 'pad': 10})
 
-    def reconstruct_white_image(self, mask=None):
+    def reconstruct_white_image(self, mask=None, channels="all"):
         """Reconstructs the white image of the FOV using a mask file.
 
         Parameters
         ----------
         mask : str
-            mumdatMask_1x1.fits filename used for this reconstruction
-            (if None, the last file stored in mpdaf is used).
+            Mask used to extract the data for each slice. Must be a FITS file
+            with one extension per channel, and extension names which match the
+            ones from the raw file. Defaults to ``PAE_July2013.fits.gz`` which
+            comes with Mpdaf.
+        channels : list or 'all'
+            List of channel names. All by default.
 
         Returns
         -------
@@ -477,13 +481,16 @@ class RawFile(object):
 
         """
         if mask is None:
-            path = os.path.dirname(__file__)
-            mask = path + '/mumdatMask_1x1/PAE_July2013.fits.gz'
-        raw_mask = RawFile(mask)
+            mask = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                'mumdatMask_1x1', 'PAE_July2013.fits.gz')
 
+        if channels == "all":
+            channels = self.get_channels_extname_list()
+
+        raw_mask = RawFile(mask)
         white_ima = np.zeros((12 * 24, 300))
 
-        for chan in self.get_channels_extname_list():
+        for chan in channels:
             ifu = int(chan[-2:])
             mask_chan = raw_mask.get_channel(chan)
             ima = self.get_channel(chan).get_trimmed_image(bias=True).data.data
@@ -491,14 +498,14 @@ class RawFile(object):
             ima *= mask
             spe = ima.sum(axis=0)
             data = np.empty((48, NB_SPEC_PER_SLICE))
+            mhdr = mask_chan.header
+
             for sli in range(1, 49):
-                xstart = mask_chan.header['HIERARCH ESO DET '
-                                          'SLICE%d XSTART' % sli] - OVERSCAN
-                xend = mask_chan.header['HIERARCH ESO DET '
-                                        'SLICE%d XEND' % sli] - OVERSCAN
-                if xstart > (mask_chan.header["ESO DET CHIP NX"] / 2.0):
+                xstart = mhdr['ESO DET SLICE%d XSTART' % sli] - OVERSCAN
+                xend = mhdr['ESO DET SLICE%d XEND' % sli] - OVERSCAN
+                if xstart > (mhdr["ESO DET CHIP NX"] / 2.0):
                     xstart -= 2 * OVERSCAN
-                if xend > (mask_chan.header["ESO DET CHIP NX"] / 2.0):
+                if xend > (mhdr["ESO DET CHIP NX"] / 2.0):
                     xend -= 2 * OVERSCAN
 
                 spe_slice = spe[xstart:xend + 1]
@@ -510,7 +517,8 @@ class RawFile(object):
                 elif n == NB_SPEC_PER_SLICE:
                     spe_slice_75pix = spe_slice
                 else:
-                    spe_slice_75pix = np.empty(NB_SPEC_PER_SLICE, dtype=np.float)
+                    spe_slice_75pix = np.empty(NB_SPEC_PER_SLICE,
+                                               dtype=np.float)
 
                 f = lambda x: spe_slice[int(x + 0.5)]
                 pix = np.arange(NB_SPEC_PER_SLICE + 1, dtype=np.float)
@@ -518,8 +526,8 @@ class RawFile(object):
                 x = pix * new_step - 0.5 * new_step
 
                 for i in range(NB_SPEC_PER_SLICE):
-                    spe_slice_75pix[i] = integrate.quad(f, x[i], x[i + 1],
-                                                        full_output=1)[0] / new_step
+                    spe_slice_75pix[i] = quad(f, x[i], x[i + 1],
+                                              full_output=1)[0] / new_step
 
                 data[sli - 1, :] = spe_slice_75pix
 
@@ -561,27 +569,23 @@ class RawFile(object):
         mask_raw = RawFile(self.mask_file)
         chan = 'CHAN%02d' % ifu
         mask_chan = mask_raw.get_channel(chan)
+        mhdr = mask_chan.header
 
-        self.x1 = mask_chan.header['HIERARCH ESO DET SLICE1 XSTART'] \
-            - OVERSCAN
-        self.x2 = mask_chan.header['HIERARCH ESO DET SLICE48 XEND'] \
-            - 2 * OVERSCAN
+        self.x1 = mhdr['ESO DET SLICE1 XSTART'] - OVERSCAN
+        self.x2 = mhdr['ESO DET SLICE48 XEND'] - 2 * OVERSCAN
 
-        xstart = mask_chan.header['HIERARCH ESO DET '
-                                  'SLICE%d XSTART' % sli] - OVERSCAN
-        xend = mask_chan.header['HIERARCH ESO DET '
-                                'SLICE%d XEND' % sli] - OVERSCAN
-        if xstart > (mask_chan.header["ESO DET CHIP NX"] / 2.0):
+        xstart = mhdr['ESO DET SLICE%d XSTART' % sli] - OVERSCAN
+        xend = mhdr['ESO DET SLICE%d XEND' % sli] - OVERSCAN
+        if xstart > (mhdr["ESO DET CHIP NX"] / 2.0):
             xstart -= 2 * OVERSCAN
-        if xend > (mask_chan.header["ESO DET CHIP NX"] / 2.0):
+        if xend > (mhdr["ESO DET CHIP NX"] / 2.0):
             xend -= 2 * OVERSCAN
-        ystart = mask_chan.header['HIERARCH ESO DET '
-                                  'SLICE%d YSTART' % sli] - OVERSCAN
-        yend = mask_chan.header['HIERARCH ESO DET '
-                                'SLICE%d YEND' % sli] - OVERSCAN
-        if ystart > (mask_chan.header["ESO DET CHIP NY"] / 2.0):
+
+        ystart = mhdr['ESO DET SLICE%d YSTART' % sli] - OVERSCAN
+        yend = mhdr['ESO DET SLICE%d YEND' % sli] - OVERSCAN
+        if ystart > (mhdr["ESO DET CHIP NY"] / 2.0):
             ystart -= 2 * OVERSCAN
-        if yend > (mask_chan.header["ESO DET CHIP NY"] / 2.0):
+        if yend > (mhdr["ESO DET CHIP NY"] / 2.0):
             yend -= 2 * OVERSCAN
 
         plt.plot(np.arange(xstart, xend + 1),
@@ -634,22 +638,29 @@ class RawFile(object):
                     self._plot_ifu_slice_on_white_image(self.plotted_chan,
                                                         sli)
 
-    def plot_white_image(self, mask=None):
+    def plot_white_image(self, mask=None, channels="all"):
         """Reconstructs the white image of the FOV using a mask file and plots
         this image.
 
         Parameters
         ----------
         mask : str
-            mumdatMask_1x1.fits filename used for this reconstruction
-            (if None, the last file stored in mpdaf is used).
+            Mask used to extract the data for each slice. Must be a FITS file
+            with one extension per channel, and extension names which match the
+            ones from the raw file. Defaults to ``PAE_July2013.fits.gz`` which
+            comes with Mpdaf.
+        channels : list or 'all'
+            List of channel names. All by default.
 
         """
         if mask is None:
-            path = os.path.dirname(__file__)
-            self.mask_file = path + '/mumdatMask_1x1/PAE_July2013.fits.gz'
+            mask = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                'mumdatMask_1x1', 'PAE_July2013.fits.gz')
+
+        self.mask_file = mask
         # create image
-        self.whiteima = self.reconstruct_white_image(self.mask_file)
+        self.whiteima = self.reconstruct_white_image(self.mask_file,
+                                                     channels=channels)
         # highlighted ifu
         selected_ifu = 12
         # plot white image
