@@ -32,10 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import absolute_import
 
-import numpy
+import numpy as np
 import pytest
 from os.path import join, exists
 from mpdaf.drs import RawFile
+from numpy.testing import assert_array_equal
 
 from ...tests.utils import DATADIR
 
@@ -56,11 +57,50 @@ def rawobj():
 
 
 @pytest.mark.skipif(not SUPP_FILES_PATH, reason="Missing test data (raw.fits)")
-def test_raw_init(rawobj):
+def test_raw(rawobj):
     """Raw objects: tests initialization"""
+    assert rawobj.get_keywords('ORIGIN') == 'CRAL-INM'
+    assert set(rawobj.get_channels_extname_list()) == {'CHAN02', 'CHAN01'}
+    assert len(rawobj) == 2
+    assert rawobj.get_channel('CHAN01') is rawobj[1]
+    assert rawobj[2] is rawobj.get_channel('CHAN02')
+
+    im = rawobj.reconstruct_white_image()
+    assert im.shape == (288, 300)
+    assert_array_equal(np.where(im.data.data.sum(axis=1))[0],
+                       np.arange(264, 288))
+
+
+@pytest.mark.skipif(not SUPP_FILES_PATH, reason="Missing test data (raw.fits)")
+def test_channel(rawobj):
     chan1 = rawobj.get_channel("CHAN01")
-    shape = numpy.shape(chan1.data)
-    assert shape == (rawobj.ny, rawobj.nx)
+    assert chan1.data.shape == (rawobj.ny, rawobj.nx)
+    assert chan1.data.shape == chan1.mask.shape
+    assert np.count_nonzero(chan1.mask) > 0
+
+    assert_array_equal(chan1.trimmed().mask, chan1.mask)
+    assert_array_equal(chan1.overscan().mask, ~chan1.mask)
+
+    im = chan1.get_image(bias=True)
+    assert im.shape == (chan1.ny, chan1.nx)
+
+    im = chan1.get_image(det_out=1, bias=True)
+    assert im.shape == (2056 + 64, 2048 + 64)
+
+    with pytest.raises(ValueError):
+        im = chan1.get_image(det_out=5)
+
+    assert [chan1.get_bias_level(x) for x in range(1, 5)] == \
+        [1498.0, 1499.0, 1499.0, 1500.0]
+
+    im = chan1.get_trimmed_image(det_out=1, bias=False)
+    assert im.shape == (2056, 2048)
+
+    im = chan1.get_trimmed_image(bias=True)
+    assert im.shape == (chan1.ny - 64*2, chan1.nx - 64*2)
+
+    im = chan1.get_image_mask_overscan(det_out=1)
+    assert im.shape == (2056 + 64, 2048 + 64)
 
 
 @pytest.mark.skipif(not SUPP_FILES_PATH, reason="Missing test data (raw.fits)")
