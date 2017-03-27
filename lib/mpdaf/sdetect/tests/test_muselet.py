@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import absolute_import, division, print_function
 
+import os
 import pytest
 from mpdaf.sdetect import muselet, Catalog
 
@@ -44,11 +45,12 @@ def test_muselet_fast(tmpdir, minicube):
     cube = minicube[1800:2000, :, :]
     cube.write(filename, savemask='nan')
     print('Working directory:', outdir)
-    cont, single, raw = muselet(filename, nbcube=False, del_sex=True,
+    cont, single, raw = muselet(filename, nbcube=True, del_sex=True,
                                 workdir=outdir)
     assert len(cont) == 1
     assert len(single) == 7
     assert len(raw) == 22
+    assert os.path.isfile(str(tmpdir.join('NB_cube.fits')))
 
     cont.write('cont', path=str(tmpdir), fmt='working')
     single.write('sing', path=str(tmpdir), fmt='working')
@@ -66,11 +68,13 @@ def test_muselet_full(tmpdir, minicube):
     """test MUSELET"""
     outdir = str(tmpdir)
     print('Working directory:', outdir)
-    cont, single, raw = muselet(minicube.filename, nbcube=False, del_sex=True,
+    cont, single, raw = muselet(minicube.filename, nbcube=True, del_sex=True,
                                 workdir=outdir)
     assert len(cont) == 1
     assert len(single) == 8
     assert len(raw) == 39
+    assert os.path.isfile(str(tmpdir.join(
+        'NB_' + os.path.basename(minicube.filename))))
 
     cont.write('cont', path=str(tmpdir), fmt='working')
     single.write('sing', path=str(tmpdir), fmt='working')

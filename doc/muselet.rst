@@ -52,13 +52,13 @@ MUSELET takes as an input a MUSE DATACUBE (fits format), and works in 3 steps:
   2 columns (name and wavelength) and can be adjusted to one's needs.
 
 The code will produce:
-  - a `mpdaf.sdetect.SourceList` containing continuum emission lines,
-  - a `mpdaf.sdetect.SourceList` containing isolated emission lines,
-  - a `mpdaf.sdetect.SourceList` that stores all detected sources before the merging procedure.
+  - a `~mpdaf.sdetect.SourceList` containing continuum emission lines,
+  - a `~mpdaf.sdetect.SourceList` containing isolated emission lines,
+  - a `~mpdaf.sdetect.SourceList` that stores all detected sources before the
+    merging procedure.
 
 Requirements:
 
-- MPDAF (v 1.1.17)
 - SExtractor ("sex" binary file in your $PATH).
 
 Tutorials
@@ -70,19 +70,21 @@ MUSELET is run through the following commands in MPDAF::
   >>> cont, sing, raw = muselet('DATACUBE.fits')
 
 Optionally, one can provide the starting step (2 or 3) in order to only redo
-one part of the script::
+one part of the script. For instance, assuming the narrow-band images are
+already created::
 
-  >>> cont, sing, raw = muselet('DATACUBE.fits',step=2) #will assume the narrow-band images are already created
+  >>> cont, sing, raw = muselet('DATACUBE.fits',step=2)
 
 Optionally, one can provide the size of the continuum region to subtract on
 each side of the narrow-band images::
 
-  >>> cont, sing, raw = muselet('DATACUBE.fits',delta=15) #only 15 wavelength planes in continuum estimate
+  >>> # only 15 wavelength planes in continuum estimate
+  >>> cont, sing, raw = muselet('DATACUBE.fits',delta=15)
 
 The method `mpdaf.sdetect.SourceList.write` could be used to save all
 sources and the corresponding catalog  as FITS files::
 
-  >>> cont.write(path='cont', fmt='working')
+  >>> cont.write('cont.fits', path='cont', fmt='working')
 
 Is is also possible to create a `mpdaf.sdetect.Catalog` object and save
 it as an ascii file::
