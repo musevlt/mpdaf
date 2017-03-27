@@ -204,7 +204,8 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
 
     if nbcube:
         outnbcubename = 'NB_' + os.path.basename(cubename)
-        write_fits_to(outnbcubename, outnbcube, data_header, overwrite=True)
+        write_fits_to(outnbcubename, outnbcube, header=data_header,
+                      overwrite=True)
 
 
 def step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta):
