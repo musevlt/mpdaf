@@ -44,7 +44,7 @@ from astropy.coordinates import Angle
 from astropy.io import fits
 from six.moves import range
 
-from .objs import is_float, is_int
+from .objs import is_float, is_int, UnitArray
 from ..tools import fix_unit_read
 
 __all__ = ('deg2sexa', 'sexa2deg', 'deg2hms', 'hms2deg', 'deg2dms', 'dms2deg',
@@ -688,19 +688,20 @@ class WCS(object):
             raise IOError('invalid input coordinates for sky2pix')
 
         if unit is not None:
-            x[:, 1] = (x[:, 1] * unit).to(self.unit).value
-            x[:, 0] = (x[:, 0] * unit).to(self.unit).value
+            x[:, 1] = UnitArray(x[:, 1], unit, self.unit)
+            x[:, 0] = UnitArray(x[:, 0], unit, self.unit)
 
         # Tell world2pix to convert the world coordinates to
         # zero-relative array indexes.
-
         ax, ay = self.wcs.wcs_world2pix(x[:, 1], x[:, 0], 0)
         res = np.array([ay, ax]).T
 
         if nearest:
-            res = (res + 0.5).astype(int)
+            res += 0.5
+            res = res.astype(int)
             if self.naxis1 != 0 and self.naxis2 != 0:
-                np.clip(res, (0, 0), (self.naxis2 - 1, self.naxis1 - 1), out=res)
+                np.clip(res, (0, 0), (self.naxis2 - 1, self.naxis1 - 1),
+                        out=res)
         return res
 
     def pix2sky(self, x, unit=None):
@@ -728,11 +729,10 @@ class WCS(object):
 
         # Tell world2pix to treat the pixel indexes as zero relative
         # array indexes.
-
         ra, dec = self.wcs.wcs_pix2world(x[:, 1], x[:, 0], 0)
         if unit is not None:
-            ra = (ra * self.unit).to(unit).value
-            dec = (dec * self.unit).to(unit).value
+            ra = UnitArray(ra, self.unit, unit)
+            dec = UnitArray(dec, self.unit, unit)
 
         return np.array([dec, ra]).T
 
