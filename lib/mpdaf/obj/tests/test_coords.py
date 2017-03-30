@@ -62,6 +62,7 @@ class TestWCS(object):
         wcs = WCS(h[1].header, frame=frame, equinox=equinox)
         assert wcs.wcs.wcs.equinox == 2000.0
         assert wcs.wcs.wcs.radesys == 'FK5'
+        assert wcs.is_deg()
 
     def test_copy(self):
         """WCS class: tests copy"""
@@ -108,6 +109,7 @@ class TestWCS(object):
         assert_array_equal(wcs.get_step(), [1.0, 1.0])
         assert_array_equal(wcs.get_start(), [0.0, 0.0])
         assert_array_equal(wcs.get_end(), [4.0, 5.0])
+        assert_array_equal(wcs.get_range(), [0.0, 0.0, 4.0, 5.0])
 
         wcs2 = WCS(crval=(0, 0), shape=(5, 6))
         assert_array_equal(wcs2.get_step(), [1.0, 1.0])
@@ -117,8 +119,13 @@ class TestWCS(object):
         wcs2.set_step([0.5, 2.5])
         assert_array_equal(wcs2.get_step(), [0.5, 2.5])
 
-        wcs2.set_crval2(-2, unit=2 * u.pix)
-        assert_array_equal(wcs2.get_crval2(), -4.0)
+        assert wcs2.get_crval1() == 0.0
+        assert wcs2.get_crval2() == 0.0
+
+        wcs2.set_crval1(-2, unit=2*u.pix)
+        assert wcs2.get_crval1(unit=2*u.pix) == -2.0
+        wcs2.set_crval2(-2, unit=2*u.pix)
+        assert wcs2.get_crval2(unit=2*u.pix) == -2.0
 
 
 class TestWaveCoord(object):
@@ -155,10 +162,19 @@ class TestWaveCoord(object):
 
     def test_get(self):
         """WaveCoord class: testing getters"""
-        wave = WaveCoord(crval=0, cunit=u.nm, shape=10)
+        wave = WaveCoord(crval=0, crpix=1, cunit=u.nm, shape=10)
         assert wave.get_step(unit=u.nm) == 1.0
         assert wave.get_start(unit=u.nm) == 0.0
         assert wave.get_end(unit=u.nm) == 9.0
+
+        wave.set_crval(2, unit=2*u.nm)
+        assert wave.get_crval() == 4.0
+        wave.set_crpix(2)
+        assert wave.get_crpix() == 2.0
+        wave.set_step(2)
+        assert wave.get_step() == 2.0
+        wave.set_step(2, unit=2*u.nm)
+        assert wave.get_step() == 4.0
 
     def test_rebin(self):
         """WCS class: testing rebin method"""
