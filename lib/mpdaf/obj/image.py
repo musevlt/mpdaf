@@ -1786,7 +1786,7 @@ class Image(ArithmeticMixin, DataArray):
         ----------
         unit : `astropy.units.Unit`
             Unit of the returned moments (arcseconds by default).
-            If None, moments will be in pixels
+            If None, moments will be in pixels.
 
         Returns
         -------
@@ -1889,13 +1889,9 @@ class Image(ArithmeticMixin, DataArray):
                 pmax, qmax = pos_max
         else:
             if pos_min is not None:
-                pixcrd = self.wcs.sky2pix(pos_min, unit=unit_center)
-                pmin = pixcrd[0][0]
-                qmin = pixcrd[0][1]
+                pmin, qmin = self.wcs.sky2pix(pos_min, unit=unit_center)[0]
             if pos_max is not None:
-                pixcrd = self.wcs.sky2pix(pos_max, unit=unit_center)
-                pmax = pixcrd[0][0]
-                qmax = pixcrd[0][1]
+                pmax, qmax = self.wcs.sky2pix(pos_max, unit=unit_center)[0]
             if pmin > pmax:
                 pmin, pmax = pmax, pmin
             if qmin > qmax:
@@ -1909,7 +1905,7 @@ class Image(ArithmeticMixin, DataArray):
         if N == 0:
             raise ValueError('empty sub-image')
         data = ima.data.compressed()
-        p, q = np.where(ima.data.mask == False)
+        p, q = np.where(ima._mask == False)
 
         # weight
         if ima.var is not None and weight:
@@ -2247,42 +2243,23 @@ class Image(ArithmeticMixin, DataArray):
         out : `mpdaf.obj.Moffat2D`
 
         """
+        pmin, qmin = 0, 0
+        pmax, qmax = self.shape
+
         if unit_center is None:
-            if pos_min is None:
-                pmin = 0
-                qmin = 0
-            else:
-                pmin = pos_min[0]
-                qmin = pos_min[1]
-            if pos_max is None:
-                pmax = self.shape[0]
-                qmax = self.shape[1]
-            else:
-                pmax = pos_max[0]
-                qmax = pos_max[1]
+            if pos_min is not None:
+                pmin, qmin = pos_min
+            if pos_max is not None:
+                pmax, qmax = pos_max
         else:
-            if pos_min is None:
-                pmin = 0
-                qmin = 0
-            else:
-                pixcrd = self.wcs.sky2pix(pos_min, unit=unit_center)
-                pmin = pixcrd[0][0]
-                qmin = pixcrd[0][1]
-            if pos_max is None:
-                pmax = self.shape[0]
-                qmax = self.shape[1]
-            else:
-                pixcrd = self.wcs.sky2pix(pos_max, unit=unit_center)
-                pmax = pixcrd[0][0]
-                qmax = pixcrd[0][1]
+            if pos_min is not None:
+                pmin, qmin = self.wcs.sky2pix(pos_min, unit=unit_center)[0]
+            if pos_max is not None:
+                pmax, qmax = self.wcs.sky2pix(pos_max, unit=unit_center)[0]
             if pmin > pmax:
-                a = pmax
-                pmax = pmin
-                pmin = a
+                pmin, pmax = pmax, pmin
             if qmin > qmax:
-                a = qmax
-                qmax = qmin
-                qmin = a
+                qmin, qmax = qmax, qmin
 
         pmin = max(0, pmin)
         qmin = max(0, qmin)
@@ -2673,7 +2650,8 @@ class Image(ArithmeticMixin, DataArray):
         return moffat
 
     def rebin(self, factor, margin='center', inplace=False):
-        """Combine neighboring pixels to reduce the size of an image by integer factors along each axis.
+        """Combine neighboring pixels to reduce the size of an image by
+        integer factors along each axis.
 
         Each output pixel is the mean of n pixels, where n is the
         product of the reduction factors in the factor argument.

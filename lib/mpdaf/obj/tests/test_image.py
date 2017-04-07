@@ -210,21 +210,26 @@ def test_gauss(circular, fwhm, flux, factor, weight, fit_back, cont, center,
 
 
 @pytest.mark.parametrize('circular', (False, ))  # FIXME: FAIL with True !
+@pytest.mark.parametrize('fwhm', (None, ))  # (3., 3.)))
+@pytest.mark.parametrize('flux', (None, ))  # 10))
 @pytest.mark.parametrize('fit_n,n', ((True, 2.0), ))  # FIXME: FAIL : (False, 1.6))) !
 @pytest.mark.parametrize('fit_back,cont', ((True, 0), (False, 8.24)))
 @pytest.mark.parametrize('center,pos_min,pos_max',
                          ((None, None, None), ((45, 45), (40, 40), (60, 60))))
-def test_moffat(circular, fit_n, n, fit_back, cont, center, pos_min, pos_max):
+def test_moffat(circular, fwhm, flux, fit_n, n, fit_back, cont, center,
+                pos_min, pos_max):
     """Image class: testing Moffat fit"""
     params = dict(flux=12.3, fwhm=(1.8, 1.8), n=1.6, cont=8.24,
                   center=(50., 50.))
-    ima = moffat_image(wcs=WCS(crval=(0, 0)), shape=(101, 101), rot=0.,
-                       unit_center=u.pix, unit_fwhm=u.pix, **params)
+    ima = moffat_image(wcs=WCS(cdelt=(1., 1.), crval=(0, 0)),
+                       shape=(101, 101), rot=0., unit_center=u.pix,
+                       unit_fwhm=u.pix, **params)
 
     moffat = ima.moffat_fit(fit_back=fit_back, cont=cont, verbose=True,
                             unit_center=None, unit_fwhm=None, full_output=True,
                             center=center, pos_min=pos_min, pos_max=pos_max,
-                            fit_n=fit_n, n=n, circular=circular)
+                            fit_n=fit_n, n=n, circular=circular, fwhm=fwhm,
+                            flux=flux)
     assert isinstance(moffat.ima, Image)
     for param, value in params.items():
         if np.isscalar(value):
