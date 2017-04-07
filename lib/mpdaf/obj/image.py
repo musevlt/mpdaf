@@ -1871,9 +1871,9 @@ class Image(ArithmeticMixin, DataArray):
         verbose : bool
             If True, the Gaussian parameters are printed at the end of the
             method.
-        full_output : int
-            non-zero to return a `mpdaf.obj.Gauss2D` object containing
-            the gauss image
+        full_output : bool
+            True-zero to return a `mpdaf.obj.Gauss2D` object containing
+            the gauss image.
 
         Returns
         -------
@@ -2179,8 +2179,9 @@ class Image(ArithmeticMixin, DataArray):
 
         if verbose:
             gauss.print_param()
-        if full_output != 0:
-            ima = gauss_image(shape=self.shape, wcs=self.wcs, gauss=gauss)
+        if full_output:
+            ima = gauss_image(shape=self.shape, wcs=self.wcs, gauss=gauss,
+                              unit_center=unit_center, unit_fwhm=unit_fwhm)
             gauss.ima = ima
         return gauss
 
@@ -2239,9 +2240,9 @@ class Image(ArithmeticMixin, DataArray):
             Degrees by default (use None for coordinates in pixels).
         unit_fwhm : `astropy.units.Unit`
             FWHM unit. Arcseconds by default (use None for radius in pixels)
-        full_output : int
-            non-zero to return a `mpdaf.obj.Moffat2D`
-            object containing the moffat image
+        full_output : bool
+            True to return a `mpdaf.obj.Moffat2D` object containing the
+            moffat image.
         fit_n : bool
             False: n value is fixed,
             True: n value is a fit parameter.
@@ -2674,8 +2675,9 @@ class Image(ArithmeticMixin, DataArray):
 
         if verbose:
             moffat.print_param()
-        if full_output != 0:
-            ima = moffat_image(shape=self.shape, wcs=self.wcs, moffat=moffat)
+        if full_output:
+            ima = moffat_image(shape=self.shape, wcs=self.wcs, moffat=moffat,
+                               unit_center=unit_center, unit_fwhm=unit_fwhm)
             moffat.ima = ima
         return moffat
 

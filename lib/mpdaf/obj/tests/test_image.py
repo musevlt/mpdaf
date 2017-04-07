@@ -36,12 +36,14 @@ from __future__ import absolute_import, division
 
 import astropy.units as u
 import numpy as np
+import pytest
 import scipy.ndimage as ndi
 import six
 
 from mpdaf.obj import Image, WCS, gauss_image, moffat_image
 from numpy.testing import (assert_array_equal, assert_allclose,
-                           assert_almost_equal, assert_equal)
+                           assert_almost_equal, assert_equal,
+                           assert_array_almost_equal)
 
 from ...tests.utils import (assert_image_equal, generate_image, generate_cube,
                             assert_masked_allclose)
@@ -172,39 +174,49 @@ def test_truncate(image):
     assert_image_equal(image, shape=(2, 3), start=(0, 1), end=(1, 3))
 
 
-def test_gauss():
+@pytest.mark.parametrize('circular', (False, ))  # FAIL with True !
+@pytest.mark.parametrize('fit_back,cont', ((True, 0), (False, 2.0)))
+@pytest.mark.parametrize('center,pos_min,pos_max',
+                         ((None, None, None), ((18, 15), (15, 12), (24, 20))))
+def test_gauss(circular, fit_back, cont, center, pos_min, pos_max):
     """Image class: testing Gaussian fit"""
     wcs = WCS(cdelt=(0.2, 0.3), crval=(8.5, 12), shape=(40, 30))
     ima = gauss_image(wcs=wcs, fwhm=(2, 1), factor=1, rot=60, cont=2.0,
                       unit_center=u.pix, unit_fwhm=u.pix)
     # ima2 = gauss_image(wcs=wcs,width=(1,2),factor=2, rot = 60)
-    gauss = ima.gauss_fit(cont=2.0, fit_back=False, verbose=False,
-                          unit_center=None, unit_fwhm=None)
-    assert_almost_equal(gauss.center[0], 19.5)
-    assert_almost_equal(gauss.center[1], 14.5)
+    gauss = ima.gauss_fit(fit_back=fit_back, cont=cont, verbose=True,
+                          center=center, pos_min=pos_min, pos_max=pos_max,
+                          unit_center=None, unit_fwhm=None, circular=circular,
+                          full_output=True)
+    assert isinstance(gauss.ima, Image)
+    assert_array_almost_equal(gauss.center, (19.5, 14.5))
     assert_almost_equal(gauss.flux, 1)
-    ima += 10.3
-    gauss2 = ima.gauss_fit(cont=2.0 + 10.3, fit_back=True, verbose=False,
-                           unit_center=None, unit_fwhm=None)
-    assert_almost_equal(gauss2.center[0], 19.5)
-    assert_almost_equal(gauss2.center[1], 14.5)
-    assert_almost_equal(gauss2.flux, 1)
-    assert_almost_equal(gauss2.cont, 12.3)
+    assert_almost_equal(gauss.cont, 2)
+    assert_almost_equal(gauss.rot, 60)
 
 
-def test_moffat():
+@pytest.mark.parametrize('circular', (False, ))  # FAIL with True !
+@pytest.mark.parametrize('fit_n,n', ((True, 2.0), ))  # FAIL : (False, 1.6))) !
+@pytest.mark.parametrize('fit_back,cont', ((True, 0), (False, 8.24)))
+@pytest.mark.parametrize('center,pos_min,pos_max',
+                         ((None, None, None), ((45, 45), (40, 40), (60, 60))))
+def test_moffat(circular, fit_n, n, fit_back, cont, center, pos_min, pos_max):
     """Image class: testing Moffat fit"""
-    ima = moffat_image(wcs=WCS(crval=(0, 0)), flux=12.3, fwhm=(1.8, 1.8),
-                       n=1.6, rot=0., cont=8.24, unit_center=u.pix,
-                       unit_fwhm=u.pix)
-    moffat = ima.moffat_fit(fit_back=True, verbose=False, unit_center=None,
-                            unit_fwhm=None)
-    assert_almost_equal(moffat.center[0], 50.)
-    assert_almost_equal(moffat.center[1], 50.)
-    assert_almost_equal(moffat.flux, 12.3)
-    assert_almost_equal(moffat.fwhm[0], 1.8)
-    assert_almost_equal(moffat.n, 1.6)
-    assert_almost_equal(moffat.cont, 8.24)
+    params = dict(flux=12.3, fwhm=(1.8, 1.8), n=1.6, cont=8.24,
+                  center=(50., 50.))
+    ima = moffat_image(wcs=WCS(crval=(0, 0)), shape=(101, 101), rot=0.,
+                       unit_center=u.pix, unit_fwhm=u.pix, **params)
+
+    moffat = ima.moffat_fit(fit_back=fit_back, cont=cont, verbose=True,
+                            unit_center=None, unit_fwhm=None, full_output=True,
+                            center=center, pos_min=pos_min, pos_max=pos_max,
+                            fit_n=fit_n, n=n, circular=circular)
+    assert isinstance(moffat.ima, Image)
+    for param, value in params.items():
+        if np.isscalar(value):
+            assert_almost_equal(getattr(moffat, param), value)
+        else:
+            assert_array_almost_equal(getattr(moffat, param), value)
 
 
 def test_mask():
