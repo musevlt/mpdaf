@@ -236,25 +236,19 @@ def image_angle_from_cd(cd, unit=u.deg):
     """
 
     # Get the angular increments of pixels along the Y and X axes
-    # of the image.
-
     step = axis_increments_from_cd(cd)
 
     # Get the determinant of the coordinate transformation matrix.
-
     cddet = np.linalg.det(cd)
 
-    # The angle of a northward vector from the origin can be
-    # calculated by first using the inverse of the CD matrix to
-    # calculate the equivalent vector in pixel indexes, then
-    # calculating the angle of this vector to the Y axis of
-    # the image array.
-
+    # The angle of a northward vector from the origin can be calculated by
+    # first using the inverse of the CD matrix to calculate the equivalent
+    # vector in pixel indexes, then calculating the angle of this vector to the
+    # Y axis of the image array.
     north = np.arctan2(-cd[0, 1] * step[1] / cddet,
                        cd[0, 0] * step[0] / cddet)
 
     # Return the angle with the specified units.
-
     return (north * u.rad).to(unit).value
 
 
@@ -1107,13 +1101,7 @@ class WCS(object):
             celestial north from the Y-axis.
 
         """
-
-        # Get the coordinate transformation matrix.
-
         cd = self.get_cd()
-
-        # Return the angle configured by the CD matrix.
-
         return image_angle_from_cd(cd, unit)
 
     def get_cd(self):
@@ -1253,7 +1241,6 @@ class WCS(object):
            The unit to use for coordinate angles.
 
         """
-
         if self.wcs.wcs.cunit[0] != self.wcs.wcs.cunit[1]:
             self._logger.warning('different units on x- and y-axes')
         return self.wcs.wcs.cunit[0]
@@ -1283,8 +1270,7 @@ class WCS(object):
         # coordinate transformation. Once one of these has been
         # established by reading in a FITS header, it can't reliably
         # be changed by configuring one of the other methods, so
-        # record the specified CD matrix in the currently established
-        # format.
+        # record the specified CD matrix in the currently established format.
 
         if self.wcs.wcs.has_pc():      # PC matrix + CDELT
             self.wcs.wcs.pc = cd
@@ -1316,7 +1302,6 @@ class WCS(object):
             The index of the reference pixel along the X axis.
 
         """
-
         self.wcs.wcs.crpix[0] = x
         self.wcs.wcs.set()
 
@@ -1391,43 +1376,25 @@ class WCS(object):
 
         Parameters
         ----------
-        step : numpy.ndarray
+        step : array-like
            (h,w). These are the desired angular height and width of pixels
-           along the Y and X axes of the image. These should
-           either be in the unit specified by the 'unit' input parameter,
-           or, if unit=None, in the unit specified by the self.unit
-           property.
+           along the Y and X axes of the image. These should either be in the
+           unit specified by the 'unit' input parameter, or, if unit=None, in
+           the unit specified by the self.unit property.
         unit : `astropy.units.Unit`
             The angular units of the specified increments.
 
         """
-
-        # Ensure that the height and width are stored in a numpy
-        # array, and that they are both positive.
-
         step = abs(np.asarray(step))
-
-        # Convert the height and width to the internal units of the wcs object.
-
         if unit is not None:
             step = (step * unit).to(self.unit).value
 
-        # Get the current values of the pixel height and pixel width.
-
         old_step = self.get_step()
-
-        # Calculate the ratio of the new increments to the old one.
-
         ratio = step / old_step
-
-        # Get the current CD matrix.
-
         cd = self.get_cd()
 
-        # Scaling the 1st column of the CD matrix, scales the
-        # X-axis pixel sizes. Scaling the 2nd column scales the
-        # Y-axis pixel sizes.
-
+        # Scaling the 1st column of the CD matrix, scales the X-axis pixel
+        # sizes. Scaling the 2nd column scales the Y-axis pixel sizes.
         self.set_cd(np.dot(cd, np.array([[ratio[1], 0.0],
                                          [0.0, ratio[0]]])))
 
@@ -1457,33 +1424,16 @@ class WCS(object):
             The angular units of the specified increments.
 
         """
-
-        # Ensure that the increments are stored in a numpy array.
-
         increments = np.asarray(increments)
-
-        # Convert the increments to the internal units of the wcs
-        # object.
-
         if unit is not None:
             increments = (increments * unit).to(self.unit).value
 
-        # Get the current CD matrix.
-
         cd = self.get_cd()
-
-        # Get the current values of the increments.
-
         old_increments = axis_increments_from_cd(cd)
-
-        # Calculate the ratio of the new increments to the old one.
-
         ratio = increments / old_increments
 
-        # Scaling the 1st column of the CD matrix, scales the
-        # X-axis pixel sizes. Scaling the 2nd column scales the
-        # Y-axis pixel sizes.
-
+        # Scaling the 1st column of the CD matrix, scales the X-axis pixel
+        # sizes. Scaling the 2nd column scales the Y-axis pixel sizes.
         self.set_cd(np.dot(cd, np.array([[ratio[1], 0.0],
                                          [0.0, ratio[0]]])))
 
@@ -1502,13 +1452,9 @@ class WCS(object):
         out : WCS
 
         """
-
-        # Make the changes to a copy of the current WCS object.
-
         res = self.copy()
 
         # Record the increased pixel sizes.
-
         res.set_step(self.get_step() * np.asarray(factor))
 
         # Compute the new coordinate reference pixel, noting that for
@@ -1519,12 +1465,10 @@ class WCS(object):
         # corresponds to (crpix-0.5)/factor new pixel widths from the
         # start of the first pixel, so this has a pixel index of
         # (oldcrpix-0.5)/factor+0.5 in the rebinned array.
-
         res.wcs.wcs.crpix[0] = (res.wcs.wcs.crpix[0] - 0.5) / factor[1] + 0.5
         res.wcs.wcs.crpix[1] = (res.wcs.wcs.crpix[1] - 0.5) / factor[0] + 0.5
 
         # Record the new dimensions of the image.
-
         res.naxis1 = res.naxis1 // factor[1]
         res.naxis2 = res.naxis2 // factor[0]
         res.wcs.wcs.set()
