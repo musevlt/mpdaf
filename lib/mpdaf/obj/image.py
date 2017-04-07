@@ -1836,8 +1836,7 @@ class Image(ArithmeticMixin, DataArray):
             True.  If None, peak value is estimated.
         fwhm : (float,float)
             Initial gaussian fwhm (fwhm_y,fwhm_x). If None, they are estimated.
-            The unit is given by the unit_fwhm parameter (arcseconds by
-            default).
+            The unit is given by ``unit_fwhm`` (arcseconds by default).
         circular : bool
             True: circular gaussian, False: elliptical gaussian
         cont : float
@@ -1933,10 +1932,8 @@ class Image(ArithmeticMixin, DataArray):
             width = ima.moments(unit=None)
             fwhm = width * gaussian_sigma_to_fwhm
         else:
-            if unit_fwhm is not None:
-                fwhm = np.array(fwhm)
-                fwhm = fwhm / self.wcs.get_step(unit=unit_fwhm)
-            width = np.array(fwhm) * gaussian_fwhm_to_sigma
+            fwhm = np.asarray(fwhm) / self.wcs.get_step(unit=unit_fwhm)
+            width = fwhm * gaussian_fwhm_to_sigma
 
         # initial gaussian integrated flux
         if flux is None:
@@ -2165,17 +2162,12 @@ class Image(ArithmeticMixin, DataArray):
             center = (p_peak, q_peak)
             err_center = (err_p_peak, err_q_peak)
 
-        if unit_fwhm is not None:
-            step = self.wcs.get_step(unit=unit_fwhm)
-            fwhm = np.array([p_fwhm, q_fwhm]) * step
-            err_fwhm = np.array([err_p_fwhm, err_q_fwhm]) * step
-        else:
-            fwhm = (p_fwhm, q_fwhm)
-            err_fwhm = (err_p_fwhm, err_q_fwhm)
+        step = self.wcs.get_step(unit=unit_fwhm)
+        fwhm = np.array([p_fwhm, q_fwhm]) * step
+        err_fwhm = np.array([err_p_fwhm, err_q_fwhm]) * step
 
-        gauss = Gauss2D(center, flux, fwhm, cont, rot,
-                        peak, err_center, err_flux, err_fwhm,
-                        err_cont, err_rot, err_peak)
+        gauss = Gauss2D(center, flux, fwhm, cont, rot, peak, err_center,
+                        err_flux, err_fwhm, err_cont, err_rot, err_peak)
 
         if verbose:
             gauss.print_param()
@@ -2329,10 +2321,9 @@ class Image(ArithmeticMixin, DataArray):
             width = ima.moments(unit=None)
             fwhm = width * gaussian_sigma_to_fwhm
         else:
+            fwhm = np.asarray(fwhm)
             if unit_fwhm is not None:
-                fwhm = np.array(fwhm) / self.wcs.get_step(unit=unit_fwhm)
-            else:
-                fwhm = np.array(fwhm)
+                fwhm = fwhm / self.wcs.get_step(unit=unit_fwhm)
 
         a = fwhm[0] / (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
         e = fwhm[0] / fwhm[1]
