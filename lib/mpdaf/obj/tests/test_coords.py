@@ -57,9 +57,9 @@ class TestWCS(object):
 
     def test_from_hdr2(self):
         """WCS class: testing constructor 2 """
-        h = fits.open(get_data_file('sdetect', 'a478hst-cutout.fits'))
-        frame, equinox = determine_refframe(h[0].header)
-        wcs = WCS(h[1].header, frame=frame, equinox=equinox)
+        with fits.open(get_data_file('sdetect', 'a478hst-cutout.fits')) as h:
+            frame, equinox = determine_refframe(h[0].header)
+            wcs = WCS(h[1].header, frame=frame, equinox=equinox)
         assert wcs.wcs.wcs.equinox == 2000.0
         assert wcs.wcs.wcs.radesys == 'FK5'
         assert wcs.is_deg()
@@ -102,6 +102,14 @@ class TestWCS(object):
         assert_allclose(sky, ref2, rtol=1e-4)
         assert_allclose(wcs.sky2pix(wcs.pix2sky(pix2)), pix2)
         assert_allclose(wcs.sky2pix(sky, nearest=True), pixint)
+
+    def test_rot(self):
+        """WCS class: testing constructor 2 """
+        h = fits.getheader(get_data_file('obj', 'IMAGE-HDFS-1.34.fits'), ext=1)
+        wcs = WCS(h)
+        assert wcs.get_rot() == 0
+        wcs.rotate(90)
+        assert wcs.get_rot() == 90
 
     def test_get(self):
         """WCS class: testing getters"""

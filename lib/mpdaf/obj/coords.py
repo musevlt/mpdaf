@@ -1077,15 +1077,15 @@ class WCS(object):
         return self.pix2sky([self.naxis2 - 1, self.naxis1 - 1], unit=unit)[0]
 
     def get_rot(self, unit=u.deg):
-        """Return the rotation angle of the image, defined such that a
-        rotation angle of zero aligns north along the positive Y axis,
-        and a positive rotation angle rotates north away from the Y
-        axis, in the sense of a rotation from north to east.
+        """Return the rotation angle of the image.
 
-        Note that the rotation angle is defined in a flat
-        map-projection of the sky. It is what would be seen if
-        the pixels of the image were drawn with their pixel
-        widths scaled by the angular pixel increments returned
+        The angle is defined such that a rotation angle of zero aligns north
+        along the positive Y axis, and a positive rotation angle rotates north
+        away from the Y axis, in the sense of a rotation from north to east.
+
+        Note that the rotation angle is defined in a flat map-projection of the
+        sky. It is what would be seen if the pixels of the image were drawn
+        with their pixel widths scaled by the angular pixel increments returned
         by the get_axis_increments() method.
 
         Parameters
@@ -1436,6 +1436,35 @@ class WCS(object):
         # sizes. Scaling the 2nd column scales the Y-axis pixel sizes.
         self.set_cd(np.dot(cd, np.array([[ratio[1], 0.0],
                                          [0.0, ratio[0]]])))
+
+    def rotate(self, theta):
+        """Rotate WCS coordinates to new orientation given by theta.
+
+        Analog to ``astropy.wcs.WCS.rotateCD``, which is deprecated since
+        version 1.3 (see https://github.com/astropy/astropy/issues/5175).
+
+        Parameters
+        ----------
+        theta : float
+            Rotation in degree.
+
+        """
+        theta = np.deg2rad(theta)
+        sinq = np.sin(theta)
+        cosq = np.cos(theta)
+        mrot = np.array([[cosq, -sinq],
+                         [sinq, cosq]])
+
+        if self.wcs.wcs.has_cd():    # CD matrix
+            newcd = np.dot(mrot, self.wcs.wcs.cd)
+            self.wcs.wcs.cd = newcd
+            self.wcs.wcs.set()
+        elif self.wcs.wcs.has_pc():      # PC matrix + CDELT
+            newpc = np.dot(mrot, self.wcs.wcs.get_pc())
+            self.wcs.wcs.pc = newpc
+            self.wcs.wcs.set()
+        else:
+            raise TypeError("Unsupported wcs type (need CD or PC matrix)")
 
     def rebin(self, factor):
         """Rebin to a new coordinate system.
