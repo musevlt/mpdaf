@@ -1812,6 +1812,63 @@ class Image(ArithmeticMixin, DataArray):
             mom *= self.wcs.get_step(unit=unit)
         return mom
 
+    def _prepare_fit_parameters(self, pos_min, pos_max, weight=True,
+                                center=None, unit_center=u.deg,
+                                fwhm=None, unit_fwhm=u.arcsec):
+        pmin, qmin = 0, 0
+        pmax, qmax = self.shape
+
+        if unit_center is None:
+            if pos_min is not None:
+                pmin, qmin = pos_min
+            if pos_max is not None:
+                pmax, qmax = pos_max
+        else:
+            if pos_min is not None:
+                pmin, qmin = self.wcs.sky2pix(pos_min, unit=unit_center)[0]
+            if pos_max is not None:
+                pmax, qmax = self.wcs.sky2pix(pos_max, unit=unit_center)[0]
+            if pmin > pmax:
+                pmin, pmax = pmax, pmin
+            if qmin > qmax:
+                qmin, qmax = qmax, qmin
+
+        pmin = max(0, pmin)
+        qmin = max(0, qmin)
+        ima = self[pmin:pmax, qmin:qmax]
+
+        N = ima.data.count()
+        if N == 0:
+            raise ValueError('empty sub-image')
+        data = ima.data.compressed()
+        p, q = np.where(ima._mask == False)
+
+        # weight
+        if ima.var is not None and weight:
+            wght = 1.0 / np.sqrt(np.abs(ima.var[p, q].filled(np.inf)))
+        else:
+            wght = np.ones(N)
+
+        # initial gaussian peak position
+        if center is None:
+            imax = data.argmax()
+            center = np.array([p[imax], q[imax]])
+        elif unit_center is not None:
+            center = ima.wcs.sky2pix(center, unit=unit_center)[0]
+        else:
+            center = np.array(center)
+            center[0] -= pmin
+            center[1] -= qmin
+
+        # initial moment value
+        if fwhm is None:
+            width = ima.moments(unit=None)
+            fwhm = width * gaussian_sigma_to_fwhm
+        else:
+            fwhm = np.asarray(fwhm) / self.wcs.get_step(unit=unit_fwhm)
+
+        return ima, pmin, pmax, qmin, qmax, data, wght, p, q, center, fwhm
+
     def gauss_fit(self, pos_min=None, pos_max=None, center=None, flux=None,
                   fwhm=None, circular=False, cont=0, fit_back=True, rot=0,
                   peak=False, factor=1, weight=True, plot=False,
@@ -1879,57 +1936,11 @@ class Image(ArithmeticMixin, DataArray):
         out : `mpdaf.obj.Gauss2D`
 
         """
-        pmin, qmin = 0, 0
-        pmax, qmax = self.shape
-
-        if unit_center is None:
-            if pos_min is not None:
-                pmin, qmin = pos_min
-            if pos_max is not None:
-                pmax, qmax = pos_max
-        else:
-            if pos_min is not None:
-                pmin, qmin = self.wcs.sky2pix(pos_min, unit=unit_center)[0]
-            if pos_max is not None:
-                pmax, qmax = self.wcs.sky2pix(pos_max, unit=unit_center)[0]
-            if pmin > pmax:
-                pmin, pmax = pmax, pmin
-            if qmin > qmax:
-                qmin, qmax = qmax, qmin
-
-        pmin = max(0, pmin)
-        qmin = max(0, qmin)
-        ima = self[pmin:pmax, qmin:qmax]
-
-        N = ima.data.count()
-        if N == 0:
-            raise ValueError('empty sub-image')
-        data = ima.data.compressed()
-        p, q = np.where(ima._mask == False)
-
-        # weight
-        if ima.var is not None and weight:
-            wght = 1.0 / np.sqrt(np.abs(ima.var[p, q].filled(np.inf)))
-        else:
-            wght = np.ones(N)
-
-        # initial gaussian peak position
-        if center is None:
-            center = np.array(np.unravel_index(ima.data.argmax(), ima.shape))
-        elif unit_center is not None:
-            center = ima.wcs.sky2pix(center, unit=unit_center)[0]
-        else:
-            center = np.array(center)
-            center[0] -= pmin
-            center[1] -= qmin
-
-        # initial moment value
-        if fwhm is None:
-            width = ima.moments(unit=None)
-            fwhm = width * gaussian_sigma_to_fwhm
-        else:
-            fwhm = np.asarray(fwhm) / self.wcs.get_step(unit=unit_fwhm)
-            width = fwhm * gaussian_fwhm_to_sigma
+        ima, pmin, pmax, qmin, qmax, data, wght, p, q, center, fwhm = \
+            self._prepare_fit_parameters(
+                pos_min, pos_max, weight=weight,
+                center=center, unit_center=unit_center,
+                fwhm=fwhm, unit_fwhm=unit_fwhm)
 
         # initial gaussian integrated flux
         if flux is None:
@@ -1937,6 +1948,8 @@ class Image(ArithmeticMixin, DataArray):
         elif peak is True:
             peak = flux - cont
 
+        N = len(p)
+        width = fwhm * gaussian_fwhm_to_sigma
         flux = peak * np.sqrt(2 * np.pi * (width[0] ** 2)) \
             * np.sqrt(2 * np.pi * (width[1] ** 2))
 
@@ -2243,64 +2256,11 @@ class Image(ArithmeticMixin, DataArray):
         out : `mpdaf.obj.Moffat2D`
 
         """
-        pmin, qmin = 0, 0
-        pmax, qmax = self.shape
-
-        if unit_center is None:
-            if pos_min is not None:
-                pmin, qmin = pos_min
-            if pos_max is not None:
-                pmax, qmax = pos_max
-        else:
-            if pos_min is not None:
-                pmin, qmin = self.wcs.sky2pix(pos_min, unit=unit_center)[0]
-            if pos_max is not None:
-                pmax, qmax = self.wcs.sky2pix(pos_max, unit=unit_center)[0]
-            if pmin > pmax:
-                pmin, pmax = pmax, pmin
-            if qmin > qmax:
-                qmin, qmax = qmax, qmin
-
-        pmin = max(0, pmin)
-        qmin = max(0, qmin)
-        ima = self[pmin:pmax, qmin:qmax]
-
-        ksel = np.where(ima._mask == False)
-        N = np.shape(ksel[0])[0]
-        if N == 0:
-            raise ValueError('empty sub-image')
-        pixcrd = np.empty((np.shape(ksel[0])[0], 2))
-        p = ksel[0]
-        q = ksel[1]
-        data = ima._data[ksel]
-
-        # weight
-        if ima.var is not None and weight:
-            wght = 1.0 / np.sqrt(np.abs(ima.var[ksel]))
-            np.ma.fix_invalid(wght, copy=False, fill_value=0)
-        else:
-            wght = np.ones(np.shape(ksel[0])[0])
-
-        # initial peak position
-        if center is None:
-            imax = data.argmax()
-            center = np.array([p[imax], q[imax]])
-        else:
-            if unit_center is not None:
-                center = ima.wcs.sky2pix(center, unit=unit_center)[0]
-            else:
-                center = np.array(center)
-                center[0] -= pmin
-                center[1] -= qmin
-
-        # initial width value
-        if fwhm is None:
-            width = ima.moments(unit=None)
-            fwhm = width * gaussian_sigma_to_fwhm
-        else:
-            fwhm = np.asarray(fwhm)
-            if unit_fwhm is not None:
-                fwhm = fwhm / self.wcs.get_step(unit=unit_fwhm)
+        ima, pmin, pmax, qmin, qmax, data, wght, p, q, center, fwhm = \
+            self._prepare_fit_parameters(
+                pos_min, pos_max, weight=weight,
+                center=center, unit_center=unit_center,
+                fwhm=fwhm, unit_fwhm=unit_fwhm)
 
         a = fwhm[0] / (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
         e = fwhm[0] / fwhm[1]
