@@ -2262,6 +2262,7 @@ class Image(ArithmeticMixin, DataArray):
                 center=center, unit_center=unit_center,
                 fwhm=fwhm, unit_fwhm=unit_fwhm)
 
+        N = len(p)
         a = fwhm[0] / (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
         e = fwhm[0] / fwhm[1]
 
@@ -2273,52 +2274,52 @@ class Image(ArithmeticMixin, DataArray):
         else:
             I = flux * (n - 1) / (np.pi * a * a * e)
 
+        def moffat(c, x, y, amplitude, x_0, y_0, alpha, beta, e):
+            """Two dimensional Moffat model function"""
+            rr_gg = ((x - x_0 / alpha) ** 2 + (y - y_0 / alpha / e) ** 2)
+            return c + amplitude * (1 + rr_gg) ** (-beta)
+
+        # def ellpt_moffat(c, x, y, amplitude, x_0, y_0, alpha, beta, e, theta):
+        #     """Two dimensional elliptical Moffat model function"""
+        #     cost = np.cos(theta)
+        #     sint = np.sin(theta)
+        #     xdiff = x - x_0
+        #     ydiff = y - y_0
+        #     rr_gg = (((xdiff * cost - ydiff * sint) / alpha) ** 2 +
+        #              ((xdiff * sint + ydiff * cost) / alpha / e) ** 2)
+        #     return c + amplitude * (1 + rr_gg) ** (-beta)
+
         if circular:
             rot = None
             if not fit_back:
-                # 2d moffat function
                 if fit_n:
-                    moffatfit = lambda v, p, q: \
-                        cont + v[0] * (1 + ((p - v[1]) / v[3]) ** 2
-                                       + ((q - v[2]) / v[3]) ** 2) ** (-v[4])
-                    # inital guesses
+                    moffatfit = lambda v, p, q: moffat(
+                        cont, p, q, v[0], v[1], v[2], v[3], v[4], 1)
                     v0 = [I, center[0], center[1], a, n]
                 else:
-                    moffatfit = lambda v, p, q: \
-                        cont + v[0] * (1 + ((p - v[1]) / v[3]) ** 2
-                                       + ((q - v[2]) / v[3]) ** 2) ** (-n)
-                    # inital guesses
+                    moffatfit = lambda v, p, q: moffat(
+                        cont, p, q, v[0], v[1], v[2], v[3], n, 1)
                     v0 = [I, center[0], center[1], a]
             else:
                 # 2d moffat function
                 if fit_n:
-                    moffatfit = lambda v, p, q: \
-                        v[5] + v[0] * (1 + ((p - v[1]) / v[3]) ** 2
-                                       + ((q - v[2]) / v[3]) ** 2) ** (-v[4])
-                    # inital guesses
+                    moffatfit = lambda v, p, q: moffat(
+                        v[6], p, q, v[0], v[1], v[2], v[3], v[4], 1)
                     v0 = [I, center[0], center[1], a, n, cont]
                 else:
-                    moffatfit = lambda v, p, q: \
-                        v[4] + v[0] * (1 + ((p - v[1]) / v[3]) ** 2
-                                       + ((q - v[2]) / v[3]) ** 2) ** (-n)
-                    # inital guesses
+                    moffatfit = lambda v, p, q: moffat(
+                        v[6], p, q, v[0], v[1], v[2], v[3], n, 1)
                     v0 = [I, center[0], center[1], a, cont]
         else:
             if not fit_back:
                 if rot is None:
                     if fit_n:
-                        # 2d moffat function
-                        moffatfit = lambda v, p, q: \
-                            cont + v[0] * (1 + ((p - v[1]) / v[3]) ** 2
-                                           + ((q - v[2]) / v[3] / v[5]) ** 2) ** (-v[4])
-                        # inital guesses
+                        moffatfit = lambda v, p, q: moffat(
+                            cont, p, q, v[0], v[1], v[2], v[3], v[4], v[5])
                         v0 = [I, center[0], center[1], a, n, e]
                     else:
-                        # 2d moffat function
-                        moffatfit = lambda v, p, q: \
-                            cont + v[0] * (1 + ((p - v[1]) / v[3]) ** 2
-                                           + ((q - v[2]) / v[3] / v[4]) ** 2) ** (-n)
-                        # inital guesses
+                        moffatfit = lambda v, p, q: moffat(
+                            cont, p, q, v[0], v[1], v[2], v[3], n, v[5])
                         v0 = [I, center[0], center[1], a, e]
                 else:
                     # rotation angle in rad
@@ -2344,18 +2345,12 @@ class Image(ArithmeticMixin, DataArray):
             else:
                 if rot is None:
                     if fit_n:
-                        # 2d moffat function
-                        moffatfit = lambda v, p, q: v[6] + v[0] \
-                            * (1 + ((p - v[1]) / v[3]) ** 2
-                               + ((q - v[2]) / v[3] / v[5]) ** 2) ** (-v[4])
-                        # inital guesses
+                        moffatfit = lambda v, p, q: moffat(
+                            v[6], p, q, v[0], v[1], v[2], v[3], v[4], v[5])
                         v0 = [I, center[0], center[1], a, n, e, cont]
                     else:
-                        # 2d moffat function
-                        moffatfit = lambda v, p, q: v[5] + v[0] \
-                            * (1 + ((p - v[1]) / v[3]) ** 2
-                               + ((q - v[2]) / v[3] / v[4]) ** 2) ** (-n)
-                        # inital guesses
+                        moffatfit = lambda v, p, q: moffat(
+                            v[5], p, q, v[0], v[1], v[2], v[3], n, v[4])
                         v0 = [I, center[0], center[1], a, e, cont]
                 else:
                     # rotation angle in rad
@@ -2446,63 +2441,44 @@ class Image(ArithmeticMixin, DataArray):
             self._ax.contour(qq, pp, ff, 5)
 
         # Moffat2D object in pixels
-        I = v[0]
-        p_peak = v[1]
-        q_peak = v[2]
+        I, p_peak, q_peak = v[:3]
         a = np.abs(v[3])
+        v = list(v[4:])
+
+        if fit_back:
+            # If present, cont is always the last parameter
+            cont = v.pop()
+
         if fit_n:
-            n = v[4]
-            if circular:
-                rot = 0
-                fwhm[0] = a * (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
-                fwhm[1] = fwhm[0]
-                if fit_back:
-                    cont = v[5]
-            else:
-                e = np.abs(v[5])
-                if e<1:
-                    fwhm[0] = a * (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
-                    fwhm[1] = fwhm[0] * e
-                else:
-                    fwhm[1] = a * (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
-                    fwhm[0] = fwhm[1] * e
+            n = v[0]
+            if not circular:
+                e = np.abs(v[1])
                 if rot is None:
                     rot = 0
-                    if fit_back:
-                        cont = v[6]
-                else:
-                    if e<1:
-                        rot = (v[5] * 180.0 / np.pi) % 180
-                    else:
-                        rot = (v[5] * 180.0 / np.pi + 90) % 180
-                    if fit_back:
-                        cont = v[7]
         else:
-            if circular:
-                rot = 0
-                fwhm[0] = a * (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
-                fwhm[1] = fwhm[0]
-                if fit_back:
-                    cont = v[4]
-            else:
-                e = np.abs(v[4])
-                if e<1:
-                    fwhm[0] = a * (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
-                    fwhm[1] = fwhm[0] * e
-                else:
-                    fwhm[1] = a * (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
-                    fwhm[0] = fwhm[1] * e
+            if not circular:
+                e = np.abs(v[0])
                 if rot is None:
                     rot = 0
-                    if fit_back:
-                        cont = v[5]
+
+        if circular:
+            rot = 0
+            fwhm[0] = a * (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
+            fwhm[1] = fwhm[0]
+        else:
+            if e < 1:
+                fwhm[0] = a * (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
+                fwhm[1] = fwhm[0] * e
+            else:
+                fwhm[1] = a * (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
+                fwhm[0] = fwhm[1] * e
+            if rot is None:
+                rot = 0
+            else:
+                if e < 1:
+                    rot = (v[1] * 180.0 / np.pi) % 180
                 else:
-                    if e<1:
-                        rot = (v[5] * 180.0 / np.pi) % 180
-                    else:
-                        rot = (v[5] * 180.0 / np.pi + 90) % 180
-                    if fit_back:
-                        cont = v[6]
+                    rot = (v[1] * 180.0 / np.pi + 90) % 180
 
         flux = I / (n - 1) * (np.pi * a * a * e)
 
@@ -2597,17 +2573,17 @@ class Image(ArithmeticMixin, DataArray):
             fwhm = fwhm * step0
             err_fwhm = err_fwhm * step0
 
-        moffat = Moffat2D(center, flux, fwhm, cont, n,
+        result = Moffat2D(center, flux, fwhm, cont, n,
                           rot, I, err_center, err_flux, err_fwhm,
                           err_cont, err_n, err_rot, err_I)
 
         if verbose:
-            moffat.print_param()
+            result.print_param()
         if full_output:
-            ima = moffat_image(shape=self.shape, wcs=self.wcs, moffat=moffat,
+            ima = moffat_image(shape=self.shape, wcs=self.wcs, moffat=result,
                                unit_center=unit_center, unit_fwhm=unit_fwhm)
-            moffat.ima = ima
-        return moffat
+            result.ima = ima
+        return result
 
     def rebin(self, factor, margin='center', inplace=False):
         """Combine neighboring pixels to reduce the size of an image by
