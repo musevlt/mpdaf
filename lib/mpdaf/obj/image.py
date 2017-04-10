@@ -2190,7 +2190,7 @@ class Image(ArithmeticMixin, DataArray):
                    flux=None, n=2.0, circular=False, cont=0, fit_back=True,
                    rot=0, peak=False, factor=1, weight=True, plot=False,
                    unit_center=u.deg, unit_fwhm=u.arcsec,
-                   verbose=True, full_output=0, fit_n=True, maxiter=100):
+                   verbose=True, full_output=0, fit_n=True, maxiter=0):
         """Perform moffat fit on image.
 
         Parameters
@@ -2304,11 +2304,11 @@ class Image(ArithmeticMixin, DataArray):
                 # 2d moffat function
                 if fit_n:
                     moffatfit = lambda v, p, q: moffat(
-                        v[6], p, q, v[0], v[1], v[2], v[3], v[4], 1)
+                        v[5], p, q, v[0], v[1], v[2], v[3], v[4], 1)
                     v0 = [I, center[0], center[1], a, n, cont]
                 else:
                     moffatfit = lambda v, p, q: moffat(
-                        v[6], p, q, v[0], v[1], v[2], v[3], n, 1)
+                        v[4], p, q, v[0], v[1], v[2], v[3], n, 1)
                     v0 = [I, center[0], center[1], a, cont]
         else:
             if not fit_back:
@@ -2391,13 +2391,13 @@ class Image(ArithmeticMixin, DataArray):
                 leastsq(e_moffat_fit, v0[:], args=(pixcrd[:, 0], pixcrd[:, 1],
                                                    data, wght),
                         maxfev=maxiter, full_output=1)
-            while np.abs(v[1] - v0[1]) > 0.1 or np.abs(v[2] - v0[2]) > 0.1 \
-                    or np.abs(v[3] - v0[3]) > 0.1:
-                v0 = v
-                v, covar, info, mesg, success = \
-                    leastsq(e_moffat_fit, v0[:],
-                            args=(pixcrd[:, 0], pixcrd[:, 1],
-                                  data, wght), maxfev=maxiter, full_output=1)
+            # while np.abs(v[1] - v0[1]) > 0.1 or np.abs(v[2] - v0[2]) > 0.1 \
+            #         or np.abs(v[3] - v0[3]) > 0.1:
+            #     v0 = v
+            #     v, covar, info, mesg, success = \
+            #         leastsq(e_moffat_fit, v0[:],
+            #                 args=(pixcrd[:, 0], pixcrd[:, 1],
+            #                       data, wght), maxfev=maxiter, full_output=1)
         else:
             e_moffat_fit = lambda v, p, q, data, w: \
                 w * (moffatfit(v, p, q) - data)
@@ -2405,13 +2405,13 @@ class Image(ArithmeticMixin, DataArray):
                 leastsq(e_moffat_fit, v0[:],
                         args=(p, q, data, wght),
                         maxfev=maxiter, full_output=1)
-            while np.abs(v[1] - v0[1]) > 0.1 or np.abs(v[2] - v0[2]) > 0.1 \
-                    or np.abs(v[3] - v0[3]) > 0.1:
-                v0 = v
-                v, covar, info, mesg, success = \
-                    leastsq(e_moffat_fit, v0[:],
-                            args=(p, q, data, wght),
-                            maxfev=maxiter, full_output=1)
+            # while np.abs(v[1] - v0[1]) > 0.1 or np.abs(v[2] - v0[2]) > 0.1 \
+            #         or np.abs(v[3] - v0[3]) > 0.1:
+            #     v0 = v
+            #     v, covar, info, mesg, success = \
+            #         leastsq(e_moffat_fit, v0[:],
+            #                 args=(p, q, data, wght),
+            #                 maxfev=maxiter, full_output=1)
 
         if success != 1:
             self._logger.info(mesg)
@@ -2420,8 +2420,8 @@ class Image(ArithmeticMixin, DataArray):
         chisq = sum(info["fvec"] * info["fvec"])
         dof = len(info["fvec"]) - len(v)
         if covar is not None:
-            err = np.array([np.sqrt(np.abs(covar[i, i]))
-                            * np.sqrt(np.abs(chisq / dof))
+            err = np.array([np.sqrt(np.abs(covar[i, i])) *
+                            np.sqrt(np.abs(chisq / dof))
                             for i in range(len(v))])
         else:
             err = np.zeros_like(v)
@@ -2431,7 +2431,6 @@ class Image(ArithmeticMixin, DataArray):
         v[1] += int(pmin)
         v[2] += int(qmin)
 
-        # plot
         if plot:
             pp = np.arange(pmin, pmax, float(pmax - pmin) / 100)
             qq = np.arange(qmin, qmax, float(qmax - qmin) / 100)
@@ -2445,47 +2444,37 @@ class Image(ArithmeticMixin, DataArray):
         a = np.abs(v[3])
         v = list(v[4:])
 
+        # v0 = [I, center[0], center[1], a, n, e, rot, cont]
         if fit_back:
             # If present, cont is always the last parameter
             cont = v.pop()
 
         if fit_n:
-            n = v[0]
-            if not circular:
-                e = np.abs(v[1])
-                if rot is None:
-                    rot = 0
-        else:
-            if not circular:
-                e = np.abs(v[0])
-                if rot is None:
-                    rot = 0
+            n = v.pop(0)
+
+        _fwhm = a * (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
 
         if circular:
             rot = 0
-            fwhm[0] = a * (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
-            fwhm[1] = fwhm[0]
+            fwhm = (_fwhm, _fwhm)
         else:
+            e = v.pop(0)
             if e < 1:
-                fwhm[0] = a * (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
-                fwhm[1] = fwhm[0] * e
+                fwhm = (_fwhm, _fwhm * e)
             else:
-                fwhm[1] = a * (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
-                fwhm[0] = fwhm[1] * e
+                fwhm = (_fwhm * e, _fwhm)
             if rot is None:
                 rot = 0
             else:
                 if e < 1:
-                    rot = (v[1] * 180.0 / np.pi) % 180
+                    rot = (v[0] * 180.0 / np.pi) % 180
                 else:
-                    rot = (v[1] * 180.0 / np.pi + 90) % 180
+                    rot = (v[0] * 180.0 / np.pi + 90) % 180
 
         flux = I / (n - 1) * (np.pi * a * a * e)
 
         if err is not None:
-            err_I = err[0]
-            err_p_peak = err[1]
-            err_q_peak = err[2]
+            err_I, err_p_peak, err_q_peak = err[:3]
             err_a = err[3]
             if fit_n:
                 err_n = err[4]
@@ -2565,6 +2554,8 @@ class Image(ArithmeticMixin, DataArray):
             center = self.wcs.pix2sky([p_peak, q_peak], unit=unit_center)[0]
             err_center = np.array([err_p_peak, err_q_peak]) * \
                 self.wcs.get_step(unit=unit_center)
+
+        fwhm = np.array(fwhm)
 
         if unit_fwhm is not None:
             step0 = self.wcs.get_step(unit=unit_fwhm)[0]
