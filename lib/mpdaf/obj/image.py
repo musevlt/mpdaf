@@ -2516,7 +2516,7 @@ class Image(ArithmeticMixin, DataArray):
                 ff[i, :] = moffatfit(v, pp[i], qq[:])
             self._ax.contour(qq, pp, ff, 5)
 
-        # Gauss2D object in pixels
+        # Moffat2D object in pixels
         I = v[0]
         p_peak = v[1]
         q_peak = v[2]
@@ -2524,39 +2524,56 @@ class Image(ArithmeticMixin, DataArray):
         if fit_n:
             n = v[4]
             if circular:
-                e = 1
                 rot = 0
+                fwhm[0] = a * (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
+                fwhm[1] = fwhm[0]
                 if fit_back:
                     cont = v[5]
             else:
                 e = np.abs(v[5])
+                if e<1:
+                    fwhm[0] = a * (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
+                    fwhm[1] = fwhm[0] * e
+                else:
+                    fwhm[1] = a * (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
+                    fwhm[0] = fwhm[1] * e
                 if rot is None:
                     rot = 0
                     if fit_back:
                         cont = v[6]
                 else:
-                    rot = (v[6] * 180.0 / np.pi) % 180
+                    if e<1:
+                        rot = (v[5] * 180.0 / np.pi) % 180
+                    else:
+                        rot = (v[5] * 180.0 / np.pi + 90) % 180
                     if fit_back:
                         cont = v[7]
         else:
             if circular:
-                e = 1
                 rot = 0
+                fwhm[0] = a * (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
+                fwhm[1] = fwhm[0]
                 if fit_back:
                     cont = v[4]
             else:
                 e = np.abs(v[4])
+                if e<1:
+                    fwhm[0] = a * (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
+                    fwhm[1] = fwhm[0] * e
+                else:
+                    fwhm[1] = a * (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
+                    fwhm[0] = fwhm[1] * e
                 if rot is None:
                     rot = 0
                     if fit_back:
                         cont = v[5]
                 else:
-                    rot = (v[5] * 180.0 / np.pi) % 180
+                    if e<1:
+                        rot = (v[5] * 180.0 / np.pi) % 180
+                    else:
+                        rot = (v[5] * 180.0 / np.pi + 90) % 180
                     if fit_back:
                         cont = v[6]
-
-        fwhm[0] = a * (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
-        fwhm[1] = fwhm[0] / e
 
         flux = I / (n - 1) * (np.pi * a * a * e)
 
@@ -4517,7 +4534,7 @@ def moffat_image(shape=(101, 101), wcs=None, factor=1, moffat=None,
 
     fwhm = np.array(fwhm)
     a = fwhm[0] / (2 * np.sqrt(2 ** (1.0 / n) - 1.0))
-    e = fwhm[0] / fwhm[1]
+    e = fwhm[1] / fwhm[0]
 
     if unit_fwhm is not None:
         a = a / wcs.get_step(unit=unit_fwhm)[0]
