@@ -1872,7 +1872,7 @@ class Image(ArithmeticMixin, DataArray):
     def gauss_fit(self, pos_min=None, pos_max=None, center=None, flux=None,
                   fwhm=None, circular=False, cont=0, fit_back=True, rot=0,
                   peak=False, factor=1, weight=True, plot=False,
-                  unit_center=u.deg, unit_fwhm=u.arcsec, maxiter=100,
+                  unit_center=u.deg, unit_fwhm=u.arcsec, maxiter=0,
                   verbose=True, full_output=0):
         """Perform Gaussian fit on image.
 
@@ -2276,7 +2276,7 @@ class Image(ArithmeticMixin, DataArray):
 
         def moffat(c, x, y, amplitude, x_0, y_0, alpha, beta, e):
             """Two dimensional Moffat model function"""
-            rr_gg = ((x - x_0 / alpha) ** 2 + (y - y_0 / alpha / e) ** 2)
+            rr_gg = (((x - x_0) / alpha) ** 2 + ((y - y_0) / alpha / e) ** 2)
             return c + amplitude * (1 + rr_gg) ** (-beta)
 
         # def ellpt_moffat(c, x, y, amplitude, x_0, y_0, alpha, beta, e, theta):
@@ -2391,13 +2391,6 @@ class Image(ArithmeticMixin, DataArray):
                 leastsq(e_moffat_fit, v0[:], args=(pixcrd[:, 0], pixcrd[:, 1],
                                                    data, wght),
                         maxfev=maxiter, full_output=1)
-            # while np.abs(v[1] - v0[1]) > 0.1 or np.abs(v[2] - v0[2]) > 0.1 \
-            #         or np.abs(v[3] - v0[3]) > 0.1:
-            #     v0 = v
-            #     v, covar, info, mesg, success = \
-            #         leastsq(e_moffat_fit, v0[:],
-            #                 args=(pixcrd[:, 0], pixcrd[:, 1],
-            #                       data, wght), maxfev=maxiter, full_output=1)
         else:
             e_moffat_fit = lambda v, p, q, data, w: \
                 w * (moffatfit(v, p, q) - data)
@@ -2405,13 +2398,6 @@ class Image(ArithmeticMixin, DataArray):
                 leastsq(e_moffat_fit, v0[:],
                         args=(p, q, data, wght),
                         maxfev=maxiter, full_output=1)
-            # while np.abs(v[1] - v0[1]) > 0.1 or np.abs(v[2] - v0[2]) > 0.1 \
-            #         or np.abs(v[3] - v0[3]) > 0.1:
-            #     v0 = v
-            #     v, covar, info, mesg, success = \
-            #         leastsq(e_moffat_fit, v0[:],
-            #                 args=(p, q, data, wght),
-            #                 maxfev=maxiter, full_output=1)
 
         if success != 1:
             self._logger.info(mesg)
@@ -2485,6 +2471,8 @@ class Image(ArithmeticMixin, DataArray):
                     err_fwhm = np.array([err_fwhm, err_fwhm])
                     if fit_back:
                         err_cont = err[5]
+                    else:
+                        err_cont = 0
                     err_flux = err_I * err_n * err_a * err_a
                 else:
                     err_e = err[5]
@@ -2514,6 +2502,8 @@ class Image(ArithmeticMixin, DataArray):
                     err_fwhm = np.array([err_fwhm, err_fwhm])
                     if fit_back:
                         err_cont = err[4]
+                    else:
+                        err_cont = 0
                     err_flux = err_I * err_n * err_a * err_a
                 else:
                     err_e = err[4]

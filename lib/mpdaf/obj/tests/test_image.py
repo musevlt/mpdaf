@@ -173,8 +173,6 @@ def test_truncate(image):
     image.truncate(0, 1, 1, 3, unit=image.wcs.unit, inplace=True)
     assert_image_equal(image, shape=(2, 3), start=(0, 1), end=(1, 3))
 
-
-@pytest.mark.parametrize('circular', (False, ))  # FIXME: FAIL with True !
 @pytest.mark.parametrize('fwhm', (None, (3., 3.)))
 @pytest.mark.parametrize('flux', (None, 10))
 @pytest.mark.parametrize('factor', (1, 2))
@@ -182,7 +180,7 @@ def test_truncate(image):
 @pytest.mark.parametrize('fit_back,cont', ((True, 0), (False, 2.0)))
 @pytest.mark.parametrize('center,pos_min,pos_max',
                          ((None, None, None), ((18, 15), (15, 12), (24, 20))))
-def test_gauss(circular, fwhm, flux, factor, weight, fit_back, cont, center,
+def test_gauss(fwhm, flux, factor, weight, fit_back, cont, center,
                pos_min, pos_max):
     """Image class: testing Gaussian fit"""
     params = dict(fwhm=(2, 1), rot=60, cont=2.0, flux=5.)
@@ -193,7 +191,7 @@ def test_gauss(circular, fwhm, flux, factor, weight, fit_back, cont, center,
     gauss = ima.gauss_fit(fit_back=fit_back, cont=cont, verbose=True,
                           center=center, pos_min=pos_min, pos_max=pos_max,
                           factor=factor, fwhm=fwhm, flux=flux, weight=weight,
-                          unit_center=None, unit_fwhm=None, circular=circular,
+                          unit_center=None, unit_fwhm=None, circular=False,
                           full_output=True, maxiter=200)
     assert isinstance(gauss.ima, Image)
     if factor == 1:
@@ -207,16 +205,48 @@ def test_gauss(circular, fwhm, flux, factor, weight, fit_back, cont, center,
             assert_almost_equal(getattr(gauss, param), value)
         else:
             assert_array_almost_equal(getattr(gauss, param), value)
+            
+@pytest.mark.parametrize('fwhm', (None, (3., 3.)))
+@pytest.mark.parametrize('flux', (None, 10))
+@pytest.mark.parametrize('factor', (1, 2))
+@pytest.mark.parametrize('weight', (True, False))
+@pytest.mark.parametrize('fit_back,cont', ((True, 0), (False, 2.0)))
+@pytest.mark.parametrize('center,pos_min,pos_max',
+                         ((None, None, None), ((18, 15), (15, 12), (24, 20))))
+def test_gauss_circular(fwhm, flux, factor, weight, fit_back, cont, center,
+               pos_min, pos_max):
+    """Image class: testing Gaussian fit"""
+    params = dict(fwhm=(2, 2), cont=2.0, flux=5.)
+    wcs = WCS(cdelt=(0.2, 0.2), crval=(8.5, 12), shape=(40, 30))
+    ima = gauss_image(wcs=wcs, factor=factor, unit_center=u.pix,
+                      unit_fwhm=u.pix, **params)
+    ima._var = np.ones_like(ima._data)
+    gauss = ima.gauss_fit(fit_back=fit_back, cont=cont, verbose=True,
+                          center=center, pos_min=pos_min, pos_max=pos_max,
+                          factor=factor, fwhm=fwhm, flux=flux, weight=weight,
+                          unit_center=None, unit_fwhm=None, circular=True,
+                          full_output=True, maxiter=200)
+    assert isinstance(gauss.ima, Image)
+    if factor == 1:
+        assert_array_almost_equal(gauss.center, (19.5, 14.5))
+    else:
+        # FIXME: This must be fixed, when factor=2 center is wrong
+        assert_array_almost_equal(gauss.center, (19.5, 14.5))
+
+    for param, value in params.items():
+        if np.isscalar(value):
+            assert_almost_equal(getattr(gauss, param), value, 2)
+        else:
+            assert_array_almost_equal(getattr(gauss, param), value, 2)
 
 
-@pytest.mark.parametrize('circular', (False, ))  # FIXME: FAIL with True !
-@pytest.mark.parametrize('fwhm', (None, ))  # (3., 3.)))
-@pytest.mark.parametrize('flux', (None, ))  # 10))
-@pytest.mark.parametrize('fit_n,n', ((True, 2.0), ))  # FIXME: FAIL : (False, 1.6))) !
+@pytest.mark.parametrize('fwhm', (None, (3., 3.)))
+@pytest.mark.parametrize('flux', (None,)) # 12.3))
+@pytest.mark.parametrize('fit_n,n', ((True, 2.0), (False, 1.6)))
 @pytest.mark.parametrize('fit_back,cont', ((True, 0), (False, 8.24)))
 @pytest.mark.parametrize('center,pos_min,pos_max',
-                         ((None, None, None), ((45, 45), (40, 40), (60, 60))))
-def test_moffat(circular, fwhm, flux, fit_n, n, fit_back, cont, center,
+                         ((None, None, None), ((49, 51), (40, 40), (60, 60))))
+def test_moffat_circular(fwhm, flux, fit_n, n, fit_back, cont, center,
                 pos_min, pos_max):
     """Image class: testing Moffat fit"""
     params = dict(flux=12.3, fwhm=(1.8, 1.8), n=1.6, cont=8.24,
@@ -228,14 +258,41 @@ def test_moffat(circular, fwhm, flux, fit_n, n, fit_back, cont, center,
     moffat = ima.moffat_fit(fit_back=fit_back, cont=cont, verbose=True,
                             unit_center=None, unit_fwhm=None, full_output=True,
                             center=center, pos_min=pos_min, pos_max=pos_max,
-                            fit_n=fit_n, n=n, circular=circular, fwhm=fwhm,
+                            fit_n=fit_n, n=n, circular=True, fwhm=fwhm,
                             flux=flux)
     assert isinstance(moffat.ima, Image)
     for param, value in params.items():
         if np.isscalar(value):
-            assert_almost_equal(getattr(moffat, param), value)
+            assert_almost_equal(getattr(moffat, param), value, 2)
         else:
-            assert_array_almost_equal(getattr(moffat, param), value)
+            assert_array_almost_equal(getattr(moffat, param), value, 2)
+
+@pytest.mark.parametrize('fwhm', (None, (3., 3.)))
+@pytest.mark.parametrize('flux', (None, )) #10))
+@pytest.mark.parametrize('fit_n,n', ((True, 2.0), (False, 1.6)))
+@pytest.mark.parametrize('fit_back,cont', ((True, 0), (False, 8.24)))
+@pytest.mark.parametrize('center,pos_min,pos_max',
+                         ((None, None, None), ((49, 51), (40, 40), (60, 60))))
+def test_moffat(fwhm, flux, fit_n, n, fit_back, cont, center,
+                pos_min, pos_max):
+    """Image class: testing Moffat fit"""
+    params = dict(flux=12.3, fwhm=(2.8, 2.1), n=1.6, cont=8.24,
+                  center=(50., 50.), rot=30)
+    ima = moffat_image(wcs=WCS(cdelt=(1., 1.), crval=(0, 0)),
+                       shape=(101, 101), unit_center=u.pix,
+                       unit_fwhm=u.pix, **params)
+
+    moffat = ima.moffat_fit(fit_back=fit_back, cont=cont, verbose=True,
+                            unit_center=None, unit_fwhm=None, full_output=True,
+                            center=center, pos_min=pos_min, pos_max=pos_max,
+                            fit_n=fit_n, n=n, circular=False, fwhm=fwhm,
+                            flux=flux)
+    assert isinstance(moffat.ima, Image)
+    for param, value in params.items():
+        if np.isscalar(value):
+            assert_almost_equal(getattr(moffat, param), value, 2)
+        else:
+            assert_array_almost_equal(getattr(moffat, param), value, 2)
 
 
 def test_mask():
