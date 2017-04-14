@@ -431,6 +431,24 @@ def test_median():
 
     with pytest.raises(ValueError):
         m = cube1.median(axis=-1)
+        
+def test_max():
+    """Cube class: testing max method"""
+    cube1 = generate_cube(data=1., wave=WaveCoord(crval=1))
+    ind = np.arange(10)
+    maximum = np.amax(ind)
+    cube1.data = (ind[:, np.newaxis, np.newaxis] *
+                  np.ones((6, 5))[np.newaxis, :, :])
+
+    m = cube1.max()
+    assert m == maximum
+    m = cube1.max(axis=0)
+    assert m[3, 3] == maximum
+    m = cube1.max(axis=(1, 2))
+    assert_array_equal(m.data, ind)
+
+    with pytest.raises(ValueError):
+        m = cube1.max(axis=-1)
 
 
 def test_rebin():

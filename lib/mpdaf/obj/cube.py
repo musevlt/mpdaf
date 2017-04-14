@@ -1076,6 +1076,42 @@ class Cube(ArithmeticMixin, DataArray):
                                          copy=False)
         else:
             raise ValueError('Invalid axis argument')
+        
+    def max(self, axis=None):
+        """Return the maximum over a given axis.
+
+        Beware that if the pixels of the cube have associated variances, these
+        are discarded by this function, because there is no way to estimate the
+        effects of a maximum on the variance.
+
+        Parameters
+        ----------
+        axis : None or int or tuple of ints
+            The axis or axes along which the maximum is computed.
+
+            The default (axis = None) computes the maximum over all the
+            dimensions of the cube and returns a float.
+
+            axis = 0 computes the maximum over the wavelength dimension and
+            returns an image.
+
+            axis = (1,2) computes the maximum over the (X,Y) axes and
+            returns a spectrum.
+
+        """
+        if axis is None:
+            return np.ma.amax(self.data)
+        elif axis == 0:
+            # return an image
+            data = np.ma.amax(self.data, axis)
+            return Image.new_from_obj(self, data=data, var=False, copy=False)
+        elif axis == (1, 2):
+            # return a spectrum
+            data = np.ma.amax(np.ma.amax(self.data, axis=1), axis=1)
+            return Spectrum.new_from_obj(self, data=data, var=False,
+                                         copy=False)
+        else:
+            raise ValueError('Invalid axis argument')
 
     def truncate(self, coord, mask=True, unit_wave=u.angstrom, unit_wcs=u.deg):
         """Return a sub-cube bounded by specified wavelength and spatial
