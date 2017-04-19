@@ -194,13 +194,6 @@ class Spectrum(ArithmeticMixin, DataArray):
     _ndim_required = 1
     _has_wave = True
 
-    def __init__(self, filename=None, ext=None, unit=u.dimensionless_unscaled,
-                 data=None, var=None, wave=None, copy=True, dtype=None,
-                 **kwargs):
-        super(Spectrum, self).__init__(
-            filename=filename, ext=ext, wave=wave, unit=unit, data=data,
-            var=var, copy=copy, dtype=dtype, **kwargs)
-
     def subspec(self, lmin, lmax=None, unit=u.angstrom):
         """Return the flux at a given wavelength, or the sub-spectrum
         of a specified wavelength range.
@@ -337,8 +330,9 @@ class Spectrum(ArithmeticMixin, DataArray):
             The wavelength units of lmin and lmax. If None, lmin and
             lmax are assumed to be pixel indexes.
         inside : bool
-            If inside is True, pixels inside the range [lmin,lmax] are masked.
-            If inside is False, pixels outside the range [lmin,lmax] are masked.
+            If True, pixels inside the range [lmin,lmax] are masked.
+            If False, pixels outside the range [lmin,lmax] are masked.
+
         """
         if self.wave is None:
             raise ValueError('Operation forbidden without world coordinates '
@@ -350,7 +344,8 @@ class Spectrum(ArithmeticMixin, DataArray):
                 if unit is None:
                     pix_min = max(0, int(lmin + 0.5))
                 else:
-                    pix_min = max(0, self.wave.pixel(lmin, nearest=True, unit=unit))
+                    pix_min = max(0, self.wave.pixel(lmin, nearest=True,
+                                                     unit=unit))
             if lmax is None:
                 pix_max = self.shape[0]
             else:
@@ -358,7 +353,8 @@ class Spectrum(ArithmeticMixin, DataArray):
                     pix_max = min(self.shape[0], int(lmax + 0.5))
                 else:
                     pix_max = min(self.shape[0],
-                                  self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
+                                  self.wave.pixel(lmax, nearest=True,
+                                                  unit=unit) + 1)
 
             if inside:
                 self.data[pix_min:pix_max] = np.ma.masked
@@ -566,7 +562,6 @@ class Spectrum(ArithmeticMixin, DataArray):
             is equivalent to specifying self.wave.unit.
 
         """
-
         # Convert the attenuation from dB to a linear scale factor.
         gcut = 10.0**(-atten / 20.0)
 
@@ -576,7 +571,8 @@ class Spectrum(ArithmeticMixin, DataArray):
         # Calculate the standard deviation of a Gaussian whose Fourier
         # transform drops from unity at the center to gcut at the Nyquist
         # folding frequency.
-        sigma = 0.5 / np.pi / nyquist_folding_freq * np.sqrt(-2.0 * np.log(gcut))
+        sigma = (0.5 / np.pi / nyquist_folding_freq *
+                 np.sqrt(-2.0 * np.log(gcut)))
 
         # Convert the standard deviation from wavelength units to input pixels.
         sigma /= self.get_step(unit=unit)
@@ -592,8 +588,9 @@ class Spectrum(ArithmeticMixin, DataArray):
         # fftconvolve requires that the kernel be no larger than the array
         # that it is convolving, so reduce the size of the kernel array if
         # needed. Be careful to choose an odd sized array.
-        if gshape > self.shape[0]:
-            gshape = self.shape[0] if self.shape[0] % 2 != 0 else (self.shape[0] - 1)
+        n = self.shape[0]
+        if gshape > n:
+            gshape = n if n % 2 != 0 else (n - 1)
 
         # Sample the gaussian filter symmetrically around the central pixel.
         gx = np.arange(gshape, dtype=float) - gshape // 2
@@ -910,7 +907,7 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         Returns
         -------
-        out : `astropy.units.quantity.Quantity`, `astropy.units.quantity.Quantity`
+        out : `astropy.units.Quantity`, `astropy.units.Quantity`
             The result of the integration and its error, expressed as
             a floating point number with accompanying units. The integrated
             value and its physical units can be extracted using the .value and
@@ -919,7 +916,6 @@ class Spectrum(ArithmeticMixin, DataArray):
             returned objected.
 
         """
-
         # Get the index of the first pixel within the wavelength range,
         # and the minimum wavelength of the integration.
         if lmin is None:
@@ -1674,8 +1670,11 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         # 1d gaussian function
         # p[0]: flux 1, p[1]:center 1, p[2]: fwhm, p[3] = peak 2
-        gaussfit = lambda p, x: cont0 + p[0] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) * np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2)) \
-                                      + p[3] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) * np.exp(-(x - (p[1] * wratio)) ** 2 / (2 * p[2] ** 2))
+        gaussfit = lambda p, x: cont0 + \
+            p[0] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) * \
+            np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2)) + \
+            p[3] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) * \
+            np.exp(-(x - (p[1] * wratio)) ** 2 / (2 * p[2] ** 2))
 
         # 1d gaussian fit
         if spec.var is not None and weight:
@@ -1829,7 +1828,8 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         # continuum value
         if cont is None:
-            cont0 = ((fmax - fmin) * lpeak + lmax * fmin - lmin * fmax) / (lmax - lmin)
+            cont0 = ((fmax - fmin) * lpeak + lmax * fmin -
+                     lmin * fmax) / (lmax - lmin)
         else:
             cont0 = cont
 
@@ -1880,7 +1880,8 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         # Minimize the sum of squares
         v, covar, info, mesg, success = leastsq(
-            e_asym_fit, v0[:], args=(l, data, wght), maxfev=100000, full_output=1)
+            e_asym_fit, v0[:], args=(l, data, wght), maxfev=100000,
+            full_output=1)
 
         # calculate the errors from the estimated covariance matrix
         chisq = sum(info["fvec"] * info["fvec"])
