@@ -41,6 +41,7 @@ import numpy as np
 import types
 
 import astropy.units as u
+from astropy.stats import gaussian_sigma_to_fwhm, gaussian_fwhm_to_sigma
 from os.path import join, abspath, dirname
 from scipy import interpolate, signal
 from scipy.optimize import leastsq
@@ -1425,7 +1426,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             except:
                 lpeak2 = l[data.argmin()]
                 fwhm = spec.fwhm(lpeak2, cont0, spline, unit=unit)
-        sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
+        sigma = fwhm * gaussian_fwhm_to_sigma
 
         # initial gaussian integrated flux
         if flux is None:
@@ -1487,13 +1488,13 @@ class Spectrum(ArithmeticMixin, DataArray):
         flux = v[0]
         lpeak = v[1]
         sigma = np.abs(v[2])
-        fwhm = sigma * 2 * np.sqrt(2 * np.log(2))
+        fwhm = sigma * gaussian_sigma_to_fwhm
         peak = flux / np.sqrt(2 * np.pi * (sigma ** 2))
         if err is not None:
             err_flux = err[0]
             err_lpeak = err[1]
             err_sigma = err[2]
-            err_fwhm = err_sigma * 2 * np.sqrt(2 * np.log(2))
+            err_fwhm = err_sigma * gaussian_sigma_to_fwhm
             err_peak = np.abs(1. / np.sqrt(2 * np.pi) *
                               (err_flux * sigma - flux * err_sigma) /
                               sigma / sigma)
@@ -1530,7 +1531,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             + p[0] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) \
             * np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2))
 
-        sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
+        sigma = fwhm * gaussian_fwhm_to_sigma
 
         if peak is True:
             flux = flux * np.sqrt(2 * np.pi * (sigma ** 2))
@@ -1653,7 +1654,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             except:
                 lpeak_1 = l[data.argmin()]
                 fwhm = spec.fwhm(lpeak_1, cont0, spline, unit=unit)
-        sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
+        sigma = fwhm * gaussian_fwhm_to_sigma
 
         # initial gaussian integrated flux
         if flux_1 is None:
@@ -1714,7 +1715,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         lpeak_1 = v[1]
         lpeak_2 = lpeak_1 * wratio
         sigma = np.abs(v[2])
-        fwhm = sigma * 2 * np.sqrt(2 * np.log(2))
+        fwhm = sigma * gaussian_sigma_to_fwhm
         peak_1 = flux_1 / np.sqrt(2 * np.pi * (sigma ** 2))
         peak_2 = flux_2 / np.sqrt(2 * np.pi * (sigma ** 2))
         if err is not None:
@@ -1723,7 +1724,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             err_lpeak_1 = err[1]
             err_lpeak_2 = err[1] * wratio
             err_sigma = err[2]
-            err_fwhm = err_sigma * 2 * np.sqrt(2 * np.log(2))
+            err_fwhm = err_sigma * gaussian_sigma_to_fwhm
             err_peak_1 = np.abs(1. / np.sqrt(2 * np.pi) *
                                 (err_flux_1 * sigma - flux_1 * err_sigma) /
                                 sigma / sigma)
@@ -1839,7 +1840,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             except:
                 lpeak = l[data.argmin()]
                 fwhm = spec.fwhm(lpeak, cont0, spline, unit=unit)
-        sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
+        sigma = fwhm * gaussian_fwhm_to_sigma
 
         # initial gaussian integrated flux
         if flux is None:
@@ -1903,8 +1904,8 @@ class Spectrum(ArithmeticMixin, DataArray):
         flux_right = 0.5 * v[0]
         flux_left = flux_right * sigma_left / sigma_right
         flux = flux_right + flux_left
-        fwhm_right = sigma_right * 2 * np.sqrt(2 * np.log(2))
-        fwhm_left = sigma_left * 2 * np.sqrt(2 * np.log(2))
+        fwhm_right = sigma_right * gaussian_sigma_to_fwhm
+        fwhm_left = sigma_left * gaussian_sigma_to_fwhm
         lpeak = v[1]
         peak = flux_right / np.sqrt(2 * np.pi * sigma_right ** 2)
         if err is not None:
@@ -1912,8 +1913,8 @@ class Spectrum(ArithmeticMixin, DataArray):
             err_lpeak = err[1]
             err_sigma_right = err[2]
             err_sigma_left = err[3]
-            err_fwhm_right = err_sigma_right * 2 * np.sqrt(2 * np.log(2))
-            err_fwhm_left = err_sigma_left * 2 * np.sqrt(2 * np.log(2))
+            err_fwhm_right = err_sigma_right * gaussian_sigma_to_fwhm
+            err_fwhm_left = err_sigma_left * gaussian_sigma_to_fwhm
             err_peak = np.abs(
                 1. / np.sqrt(2 * np.pi) *
                 (err_flux * sigma_right - flux * err_sigma_right) /
@@ -1961,8 +1962,8 @@ class Spectrum(ArithmeticMixin, DataArray):
             cont + p[0] * p[3] / p[2] / np.sqrt(2 * np.pi) / p[3] *
             np.exp(-(x - p[1]) ** 2 / (2. * p[3] ** 2))
         )
-        sigma_left = fwhm_left / (2. * np.sqrt(2. * np.log(2.0)))
-        sigma_right = fwhm_right / (2. * np.sqrt(2. * np.log(2.0)))
+        sigma_left = fwhm_left * gaussian_fwhm_to_sigma
+        sigma_right = fwhm_right * gaussian_fwhm_to_sigma
 
 #         if peak is True:
 #             right_norm = flux * np.sqrt(2. * np.pi * sigma_right ** 2)
@@ -2071,7 +2072,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             except:
                 lpeak = l[data.argmin()]
                 fwhm = spec.fwhm(lpeak, cont0, spline, unit=unit)
-        sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
+        sigma = fwhm * gaussian_fwhm_to_sigma
 
         # initial gaussian integrated flux
         if flux is None:
@@ -2129,13 +2130,13 @@ class Spectrum(ArithmeticMixin, DataArray):
         # return a Gauss1D object
         flux = np.abs(v[0])
         sigma = np.abs(v[1])
-        fwhm = sigma * 2 * np.sqrt(2 * np.log(2))
+        fwhm = sigma * gaussian_sigma_to_fwhm
         peak = flux / np.sqrt(2 * np.pi * (sigma ** 2))
         if err is not None:
             err_flux = np.abs(err[0])
             err_lpeak = 0
             err_sigma = err[1]
-            err_fwhm = err_sigma * 2 * np.sqrt(2 * np.log(2))
+            err_fwhm = err_sigma * gaussian_sigma_to_fwhm
             err_peak = np.abs(1. / np.sqrt(2 * np.pi) *
                               (err_flux * sigma - flux * err_sigma) /
                               sigma / sigma)
@@ -2366,7 +2367,7 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         res = self if inplace else self.copy()
 
-        sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
+        sigma = fwhm * gaussian_fwhm_to_sigma
         if unit is None:
             s = sigma
         else:
