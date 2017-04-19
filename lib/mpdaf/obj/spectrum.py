@@ -1393,7 +1393,6 @@ class Spectrum(ArithmeticMixin, DataArray):
             fmax = self.mean(lmax[0], lmax[1], unit=unit)[0]
             lmax = (lmax[0] + lmax[1]) / 2.
 
-        # spec = self.truncate(lmin, lmax)
         spec = self.subspec(lmin, lmax, unit=unit)
         data = spec._interp_data(spline)
         if unit is None:
@@ -2051,7 +2050,6 @@ class Spectrum(ArithmeticMixin, DataArray):
             fmax = self.mean(lmax[0], lmax[1])[0]
             lmax = (lmax[0] + lmax[1]) / 2.
 
-        # spec = self.truncate(lmin, lmax)
         spec = self.subspec(lmin, lmax, unit=unit)
         data = spec._interp_data(spline)
         l = spec.wave.coord(unit=unit)
@@ -2580,7 +2578,7 @@ class Spectrum(ArithmeticMixin, DataArray):
 
     @deprecated('log_plot method is deprecated in favor of plot')
     def log_plot(self, **kwargs):
-        """DEPRECATED: See `~mpdaf.obj.Spectrum.log_plot` instead."""
+        """DEPRECATED: Use `~mpdaf.obj.Spectrum.plot` with stretch='log'."""
         self.plot(stretch='log', **kwargs)
 
     def _on_move(self, event):
