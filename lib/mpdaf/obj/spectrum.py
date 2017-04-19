@@ -1554,8 +1554,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             wave = self.wave.coord(unit=unit)[imin:imax]
         v = [flux, lpeak, sigma]
 
-        self.data[imin:imax] = self.data[imin:imax] \
-            + gauss(v, wave)
+        self.data[imin:imax] += gauss(v, wave)
 
     def gauss_dfit(self, lmin, lmax, wratio, lpeak_1=None,
                    flux_1=None, fratio=1., fwhm=None, cont=None,
@@ -2567,7 +2566,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             ax.set_ylabel(res.unit)
 
         if lmin is None and lmax is None:
-            ax.set_xlim(*self.wave.get_range())
+            ax.set_xlim(*self.wave.get_range(unit=unit))
 
         # Arrange for cursor motion events to display corresponding
         # coordinates and values below the plot.

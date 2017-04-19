@@ -39,6 +39,7 @@ import numpy as np
 
 from astropy import units as u
 from astropy.io import fits
+from mpdaf.log import setup_logging
 from mpdaf.obj import Spectrum, Image, Cube, WCS, WaveCoord
 from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_almost_equal, assert_allclose)
@@ -176,20 +177,28 @@ def test_spectrum_methods(spec_var, spec_novar):
     assert_almost_equal(spec_var.get_range()[1], 7184.289, 2)
 
 
-def test_gauss_fit():
+@pytest.mark.parametrize('cont', (5, None))
+def test_gauss_fit(capsys, cont):
     """Spectrum class: testing Gaussian fit"""
-    wave = WaveCoord(crpix=1, cdelt=0.3, crval=400, cunit=u.nm, shape=10)
-    data = np.zeros(600)
-    spem = Spectrum(data=data * 2.3, wave=wave)
+    contval = cont or 0
+    wave = WaveCoord(crpix=1, cdelt=0.3, crval=400, cunit=u.nm)
+    spem = Spectrum(data=np.zeros(600) + contval, wave=wave)
     spem.add_gaussian(5000, 1200, 20, unit=u.angstrom)
+
+    setup_logging()
     gauss = spem.gauss_fit(lmin=(4500, 4800), lmax=(5200, 6000), lpeak=5000,
-                           unit=u.angstrom)
+                           cont=cont, unit=u.angstrom)
+    gauss.print_param()
+    out, err = capsys.readouterr()
+    assert '[INFO] Gaussian center = 5000 ' in err
+
     assert_almost_equal(gauss.lpeak, 5000, 2)
     assert_almost_equal(gauss.flux, 1200, 2)
     assert_almost_equal(gauss.fwhm, 20, 2)
-    assert_almost_equal(spem.fwhm(gauss.lpeak), 20, 0)
+    assert_almost_equal(spem.fwhm(gauss.lpeak, cont=contval), 20, 0)
+
     gauss = spem.line_gauss_fit(lmin=(4500, 4800), lmax=(5200, 6000),
-                                lpeak=5000, unit=u.angstrom)
+                                lpeak=5000, cont=cont, unit=u.angstrom)
     assert_almost_equal(gauss.flux, 1200, 2)
     assert_almost_equal(gauss.fwhm, 20, 2)
     assert_almost_equal(spem.fwhm(gauss.lpeak), 20, 0)
