@@ -4016,7 +4016,7 @@ class Image(ArithmeticMixin, DataArray):
         if title is not None:
             ax.set_title(title)
 
-        def _format_coord(x, y):
+        def _format_coord(x, y):  # pragma: no cover
             """Tell the interactive plotting window how to display the sky
             coordinates and pixel values of an image.
 

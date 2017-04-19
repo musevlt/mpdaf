@@ -2566,7 +2566,7 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         # Arrange for cursor motion events to display corresponding
         # coordinates and values below the plot.
-        def _on_move(event):
+        def _on_move(event):  # pragma: no cover
             """print xc,yc,k,lbda and data in the figure toolbar."""
             if event.inaxes is not None:
                 xc, yc = event.xdata, event.ydata
