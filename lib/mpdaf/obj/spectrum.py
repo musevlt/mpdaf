@@ -442,7 +442,7 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         """
         lbda = self.wave.coord()
-        d = np.pad(self.data.compressed(), 1, 'edge')
+        data = np.pad(self.data.compressed(), 1, 'edge')
         w = np.concatenate(([self.get_start() - 0.5 * self.get_step()],
                             np.compress(~self._mask, lbda),
                             [self.get_end() + 0.5 * self.get_step()]))
@@ -461,10 +461,10 @@ class Spectrum(ArithmeticMixin, DataArray):
                 weight[-1] = weight[-2]
             else:
                 weight = None
-            tck = interpolate.splrep(w, d, w=weight)
+            tck = interpolate.splrep(w, data, w=weight)
             return interpolate.splev(wavelengths, tck, der=0)
         else:
-            f = interpolate.interp1d(w, d)
+            f = interpolate.interp1d(w, data)
             return f(wavelengths)
 
     def _interp_data(self, spline=False):
@@ -1399,18 +1399,17 @@ class Spectrum(ArithmeticMixin, DataArray):
             l = np.arange(self.shape, dtype=float)
         else:
             l = spec.wave.coord(unit=unit)
-        d = data
 
         lmin = l[0]
         lmax = l[-1]
         if fmin is None:
-            fmin = d[0]
+            fmin = data[0]
         if fmax is None:
-            fmax = d[-1]
+            fmax = data[-1]
 
         # initial gaussian peak position
         if lpeak is None:
-            lpeak = l[d.argmax()]
+            lpeak = l[data.argmax()]
 
         # continuum value
         if cont is None:
@@ -1424,7 +1423,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             try:
                 fwhm = spec.fwhm(lpeak, cont0, spline, unit=unit)
             except:
-                lpeak2 = l[d.argmin()]
+                lpeak2 = l[data.argmin()]
                 fwhm = spec.fwhm(lpeak2, cont0, spline, unit=unit)
         sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
 
@@ -1434,7 +1433,7 @@ class Spectrum(ArithmeticMixin, DataArray):
                 pixel = int(lpeak + 0.5)
             else:
                 pixel = spec.wave.pixel(lpeak, nearest=True, unit=unit)
-            peak = d[pixel] - cont0
+            peak = data[pixel] - cont0
             flux = peak * np.sqrt(2 * np.pi * (sigma ** 2))
         elif peak is True:
             peak = flux - cont0
@@ -1465,7 +1464,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         v0 = [flux, lpeak, sigma]
         # Minimize the sum of squares
         v, covar, info, mesg, success = leastsq(e_gauss_fit, v0[:],
-                                                args=(l, d, wght),
+                                                args=(l, data, wght),
                                                 maxfev=100000, full_output=1)
 
         # calculate the errors from the estimated covariance matrix
@@ -1628,18 +1627,17 @@ class Spectrum(ArithmeticMixin, DataArray):
             l = np.arange(self.shape, dtype=float)
         else:
             l = spec.wave.coord(unit=unit)
-        d = data
 
         lmin = l[0]
         lmax = l[-1]
         if fmin is None:
-            fmin = d[0]
+            fmin = data[0]
         if fmax is None:
-            fmax = d[-1]
+            fmax = data[-1]
 
         # initial gaussian peak position
         if lpeak_1 is None:
-            lpeak_1 = l[d.argmax()]
+            lpeak_1 = l[data.argmax()]
 
         # continuum value
         if cont is None:
@@ -1653,7 +1651,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             try:
                 fwhm = spec.fwhm(lpeak_1, cont0, spline, unit=unit)
             except:
-                lpeak_1 = l[d.argmin()]
+                lpeak_1 = l[data.argmin()]
                 fwhm = spec.fwhm(lpeak_1, cont0, spline, unit=unit)
         sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
 
@@ -1663,7 +1661,7 @@ class Spectrum(ArithmeticMixin, DataArray):
                 pixel = int(lpeak_1 + 0.5)
             else:
                 pixel = spec.wave.pixel(lpeak_1, nearest=True, unit=unit)
-            peak_1 = d[pixel] - cont0
+            peak_1 = data[pixel] - cont0
             flux_1 = peak_1 * np.sqrt(2 * np.pi * (sigma ** 2))
         elif peak is True:
             peak_1 = flux_1 - cont0
@@ -1691,7 +1689,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         v0 = [flux_1, lpeak_1, sigma, flux_2]
         # Minimize the sum of squares
         v, covar, info, mesg, success = leastsq(
-            e_gauss_fit, v0[:], args=(l, d, wght), maxfev=100000,
+            e_gauss_fit, v0[:], args=(l, data, wght), maxfev=100000,
             full_output=1)
 
         # calculate the errors from the estimated covariance matrix
@@ -1816,18 +1814,17 @@ class Spectrum(ArithmeticMixin, DataArray):
             l = np.arange(self.shape, dtype=float)
         else:
             l = spec.wave.coord(unit=unit)
-        d = data
 
         lmin = l[0]
         lmax = l[-1]
         if fmin is None:
-            fmin = d[0]
+            fmin = data[0]
         if fmax is None:
-            fmax = d[-1]
+            fmax = data[-1]
 
         # initial gaussian peak position
         if lpeak is None:
-            lpeak = l[d.argmax()]
+            lpeak = l[data.argmax()]
 
         # continuum value
         if cont is None:
@@ -1840,7 +1837,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             try:
                 fwhm = spec.fwhm(lpeak, cont0, spline, unit=unit)
             except:
-                lpeak = l[d.argmin()]
+                lpeak = l[data.argmin()]
                 fwhm = spec.fwhm(lpeak, cont0, spline, unit=unit)
         sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
 
@@ -1850,7 +1847,7 @@ class Spectrum(ArithmeticMixin, DataArray):
                 pixel = int(lpeak + 0.5)
             else:
                 pixel = spec.wave.pixel(lpeak, nearest=True, unit=unit)
-            peak = d[pixel] - cont0
+            peak = data[pixel] - cont0
             flux = peak * np.sqrt(2 * np.pi * (sigma ** 2))
         elif peak is True:
             peak = flux - cont0
@@ -1882,7 +1879,7 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         # Minimize the sum of squares
         v, covar, info, mesg, success = leastsq(
-            e_asym_fit, v0[:], args=(l, d, wght), maxfev=100000, full_output=1)
+            e_asym_fit, v0[:], args=(l, data, wght), maxfev=100000, full_output=1)
 
         # calculate the errors from the estimated covariance matrix
         chisq = sum(info["fvec"] * info["fvec"])
@@ -2052,14 +2049,13 @@ class Spectrum(ArithmeticMixin, DataArray):
         spec = self.subspec(lmin, lmax, unit=unit)
         data = spec._interp_data(spline)
         l = spec.wave.coord(unit=unit)
-        d = data
 
         lmin = l[0]
         lmax = l[-1]
         if fmin is None:
-            fmin = d[0]
+            fmin = data[0]
         if fmax is None:
-            fmax = d[-1]
+            fmax = data[-1]
 
         # continuum value
         if cont is None:
@@ -2073,14 +2069,14 @@ class Spectrum(ArithmeticMixin, DataArray):
             try:
                 fwhm = spec.fwhm(lpeak, cont0, spline, unit=unit)
             except:
-                lpeak = l[d.argmin()]
+                lpeak = l[data.argmin()]
                 fwhm = spec.fwhm(lpeak, cont0, spline, unit=unit)
         sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
 
         # initial gaussian integrated flux
         if flux is None:
             pixel = spec.wave.pixel(lpeak, nearest=True, unit=unit)
-            peak = d[pixel] - cont0
+            peak = data[pixel] - cont0
             flux = peak * np.sqrt(2 * np.pi * (sigma ** 2))
         elif peak is True:
             peak = flux - cont0
@@ -2111,7 +2107,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         v0 = [flux, sigma]
         # Minimize the sum of squares
         v, covar, info, mesg, success = leastsq(e_gauss_fit, v0[:],
-                                                args=(l, d, wght),
+                                                args=(l, data, wght),
                                                 maxfev=100000, full_output=1)
 
         # calculate the errors from the estimated covariance matrix
@@ -2377,9 +2373,9 @@ class Spectrum(ArithmeticMixin, DataArray):
             s = sigma / res.get_step(unit=unit)
         n = nsig * int(s + 0.5)
         n = int(n / 2) * 2
-        d = np.arange(-n, n + 1)
-        kernel = special.erf((1 + 2 * d) / (2 * np.sqrt(2) * s)) \
-            + special.erf((1 - 2 * d) / (2 * np.sqrt(2) * s))
+        data = np.arange(-n, n + 1)
+        kernel = special.erf((1 + 2 * data) / (2 * np.sqrt(2) * s)) \
+            + special.erf((1 - 2 * data) / (2 * np.sqrt(2) * s))
         kernel /= kernel.sum()
 
         res._data = signal.correlate(res._data, kernel, mode='same')
@@ -2570,28 +2566,27 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         # Arrange for cursor motion events to display corresponding
         # coordinates and values below the plot.
-        self._fig = plt.get_current_fig_manager()
+        def _on_move(event):
+            """print xc,yc,k,lbda and data in the figure toolbar."""
+            if event.inaxes is not None:
+                xc, yc = event.xdata, event.ydata
+                try:
+                    i = self.wave.pixel(xc, nearest=True, unit=unit)
+                    x = self.wave.coord(i, unit=self._unit)
+                    event.canvas.toolbar.set_message(
+                        'xc= %g yc=%g k=%d lbda=%g data=%g' %
+                        (xc, yc, i, x, self._data[i]))
+                except Exception:
+                    pass
+
         self._unit = unit
-        plt.connect('motion_notify_event', self._on_move)
+        plt.connect('motion_notify_event', _on_move)
         self._plot_id = len(ax.lines) - 1
 
     @deprecated('log_plot method is deprecated in favor of plot')
     def log_plot(self, **kwargs):
         """DEPRECATED: Use `~mpdaf.obj.Spectrum.plot` with stretch='log'."""
         self.plot(stretch='log', **kwargs)
-
-    def _on_move(self, event):
-        """print xc,yc,k,lbda and data in the figure toolbar."""
-        if event.inaxes is not None:
-            xc, yc = event.xdata, event.ydata
-            try:
-                i = self.wave.pixel(xc, True)
-                x = self.wave.coord(i, unit=self._unit)
-                val = self.data.data[i]
-                s = 'xc= %g yc=%g k=%d lbda=%g data=%g' % (xc, yc, i, x, val)
-                self._fig.toolbar.set_message(s)
-            except:
-                pass
 
     @deprecated('rebin_mean method is deprecated in favor of rebin')
     def rebin_mean(self, factor, margin='center'):
