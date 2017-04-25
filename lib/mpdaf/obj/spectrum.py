@@ -2455,3 +2455,16 @@ class Spectrum(ArithmeticMixin, DataArray):
         self._unit = unit
         plt.connect('motion_notify_event', _on_move)
         self._plot_id = len(ax.lines) - 1
+
+    def to_spectrum1d(self, unit_wave=u.angstrom):
+        from astropy.nddata import StdDevUncertainty
+        try:
+            from specutils import Spectrum1D
+        except ImportError:
+            self._logger.error('specutils package not found')
+            raise
+
+        flux = u.Quantity(self._data, unit=self.unit, copy=False)
+        std = StdDevUncertainty(np.sqrt(self._var), unit=self.unit, copy=False)
+        return Spectrum1D(flux=flux, uncertainty=std, mask=self._mask,
+                          wcs=self.wave.wcs, copy=False)
