@@ -55,10 +55,17 @@ __all__ = ('CubeList', 'CubeMosaic')
 KEYWORDS_TO_COPY = (
     'ORIGIN', 'TELESCOP', 'INSTRUME', 'RA', 'DEC', 'EQUINOX', 'RADECSYS',
     'EXPTIME', 'MJD-OBS', 'DATE-OBS', 'PI-COI', 'OBSERVER', 'OBJECT',
-    'ESO INS DROT POSANG', 'ESO INS MODE', 'ESO DET READ CURID',
-    'ESO INS TEMP11 VAL', 'ESO OBS ID', 'ESO OBS NAME', 'ESO OBS START',
-    'ESO TEL AIRM END', 'ESO TEL AIRM START', 'ESO TEL AMBI FWHM END',
-    'ESO TEL AMBI FWHM START'
+    'HIERARCH ESO INS DROT POSANG',
+    'HIERARCH ESO INS MODE',
+    'HIERARCH ESO DET READ CURID',
+    'HIERARCH ESO INS TEMP11 VAL',
+    'HIERARCH ESO OBS ID',
+    'HIERARCH ESO OBS NAME',
+    'HIERARCH ESO OBS START',
+    'HIERARCH ESO TEL AIRM END',
+    'HIERARCH ESO TEL AIRM START',
+    'HIERARCH ESO TEL AMBI FWHM END',
+    'HIERARCH ESO TEL AMBI FWHM START'
 )
 
 
@@ -166,7 +173,7 @@ def _pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
                 starr.fill(np.nan)
                 for i, f in enumerate(stat):
                     x, y, x2, y2 = pos[i]
-                    starr[x:x2, y:y2, i] = f[l, :, :][0] * scales[i]**2
+                    starr[x:x2, y:y2, i] = f[l, :, :][0] * scales[i] ** 2
 
             sigma_clip(arr, starr, cube, vardata, expmap, rejmap, valid_pix,
                        select_pix, l, nmax, nclip_low, nclip_up, nstop,
@@ -374,15 +381,13 @@ class CubeList(object):
 
     def save_combined_cube(self, data, var=None, method='', keywords=None,
                            expnb=None, unit=None, header=None):
-        self._logger.info('Creating combined cube object')
-
         if data.ndim != 3:
             data = data.reshape(self.shape)
         if var is not None and var.ndim != 3:
             var = var.reshape(self.shape)
 
         c = Cube(wcs=self.wcs, wave=self.wave, data=data, var=var, copy=False,
-                 dtype=data.dtype, unit=unit or self.unit, mask=np.ma.nomask)
+                 dtype=data.dtype, unit=unit or self.unit)
 
         hdr = c.primary_header
         copy_keywords(self.cubes[0].primary_header, hdr, KEYWORDS_TO_COPY)
