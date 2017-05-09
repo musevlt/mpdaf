@@ -47,7 +47,7 @@ from scipy import interpolate, signal
 from scipy.optimize import leastsq
 from six.moves import range
 
-from . import ABmag_filters
+from . import ABmag_filters, wavelet1D
 from .arithmetic import ArithmeticMixin
 from .data import DataArray
 from .objs import flux2mag
@@ -1257,6 +1257,35 @@ class Spectrum(ArithmeticMixin, DataArray):
         vflux2 = (vflux * self.unit).to(unit)
         err_flux2 = (err_flux * self.unit).to(unit)
         return flux2mag(vflux2.value, err_flux2.value, l0)
+    
+    def wavelet_filter(self, levels=3, sigmaCutoff=5.0, epsilon=0.05, inplace=True):
+        """Perform a wavelength filtering on the spectrum in 1 dimension
+        
+        v1.0, copyright Markus Rexroth, EPFL, 2016
+        https://arxiv.org/pdf/1703.09239.pdf
+        
+        Parameters
+        ----------
+        levels : int
+                 Highest  scale level
+        sigmaCutoff : float
+                      Cleaning threshold
+                      By default 5 for a 5 sigma cleaning in wavelet space.
+        epsilon : int in ]0,1[
+                  Residual criterion used to perform the cleaning
+        inplace : bool
+            If False, return a filtered copy of the spectrum (the default).
+            If True, filter the original spectrum in-place, and return that.
+
+        Returns
+        -------
+        out : Spectrum
+        """
+        res = self if inplace else self.copy()
+        deNoisedSignal = wavelet1D.cleanSignal(self._data, np.sqrt(self._var), levels, sigmaCutoff=sigmaCutoff, epsilon=epsilon)
+        res._data = deNoisedSignal
+        res._var = None
+        return res
 
     def truncate(self, lmin=None, lmax=None, unit=u.angstrom):
         """Truncate the wavelength range of a spectrum in-place.
