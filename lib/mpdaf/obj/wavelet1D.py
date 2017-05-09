@@ -42,7 +42,7 @@ def test_levels(signal, levels):
 							     # is wider than the signal range itself, which has to be avoided. Thus h_length + (2**level -1)*(h_length-1) > signalSize 
 							     # must be avoided (the second term = number of 0s in h array)
         levels = int(numpy.floor(numpy.log2((signalSize-1.0)/(h_length-1.0))))
-        print("\nAttention: The chosen number of levels exceeds the number allowed (sampling condition)."
+        raise IOError("\nAttention: The chosen number of levels exceeds the number allowed (sampling condition)."
               + " Thus it was automatically set to the maximum number allowed = " + str(levels) + "\n")
     return levels
 
@@ -134,7 +134,7 @@ def cleanSignal(signal, noise, levels, sigmaCutoff = 5.0, epsilon = 0.05):
     levels = test_levels(signal, levels)
 
     diracSignal = [0.0 for x in range(signalSize)]
-    diracSignal[signalSize/2] = 1.0 		# We have a dirac function, 0 everywhere except 1 in the central pixel (pixel value = integral over signal in area 
+    diracSignal[signalSize//2] = 1.0 		# We have a dirac function, 0 everywhere except 1 in the central pixel (pixel value = integral over signal in area 
     diracSignal = numpy.array(diracSignal)	# of pixel = 1 for a dirac function)
     dirac_coefficients = wavelet_transform(diracSignal, levels) # We calculate the wavelet coefficients. We do not need the coefficients for the "smoothing function", thus
     dirac_coefficients = dirac_coefficients[0:dirac_coefficients.shape[0]-1] # we delete the last array (.shape[0] gives us the number of arrays)
@@ -210,7 +210,7 @@ def test(stdDev=5.0, random='yes', levels=3, sigmaCutoff=5.0, epsilon=0.05):
         -0.58867364,  -1.41797943,  -3.36680655,  -7.25776942,
          1.70606578,   2.10790981,   0.12066381,  -0.16763699])
     else:
-        print "Error: random keyword must be yes or no!"
+        raise IOError("Error: random keyword must be yes or no!")
     stdDevList = [stdDev for x in range(-20,20)]
     signal_final = signal + noise
     wavelet_signal = wavelet_transform(signal_final,levels)
