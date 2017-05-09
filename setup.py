@@ -217,7 +217,8 @@ setup(
     cmdclass=cmdclass,
     entry_points={
         'console_scripts': [
-            'make_white_image = mpdaf.scripts.make_white_image:main'
+            'make_white_image = mpdaf.scripts.make_white_image:main',
+            'extract_cube_fieldsMap = mpdaf.scripts.extract_cube_fieldsMap:main'
         ],
     },
     scripts=['lib/mpdaf/scripts/topcat_show_ds9'],
