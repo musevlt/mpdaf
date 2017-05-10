@@ -41,6 +41,7 @@ import numpy as np
 import types
 
 import astropy.units as u
+from astropy.stats import gaussian_sigma_to_fwhm, gaussian_fwhm_to_sigma
 from os.path import join, abspath, dirname
 from scipy import interpolate, signal
 from scipy.optimize import leastsq
@@ -193,13 +194,6 @@ class Spectrum(ArithmeticMixin, DataArray):
     _ndim_required = 1
     _has_wave = True
 
-    def __init__(self, filename=None, ext=None, unit=u.dimensionless_unscaled,
-                 data=None, var=None, wave=None, copy=True, dtype=None,
-                 **kwargs):
-        super(Spectrum, self).__init__(
-            filename=filename, ext=ext, wave=wave, unit=unit, data=data,
-            var=var, copy=copy, dtype=dtype, **kwargs)
-
     def subspec(self, lmin, lmax=None, unit=u.angstrom):
         """Return the flux at a given wavelength, or the sub-spectrum
         of a specified wavelength range.
@@ -336,8 +330,9 @@ class Spectrum(ArithmeticMixin, DataArray):
             The wavelength units of lmin and lmax. If None, lmin and
             lmax are assumed to be pixel indexes.
         inside : bool
-            If inside is True, pixels inside the range [lmin,lmax] are masked.
-            If inside is False, pixels outside the range [lmin,lmax] are masked.
+            If True, pixels inside the range [lmin,lmax] are masked.
+            If False, pixels outside the range [lmin,lmax] are masked.
+
         """
         if self.wave is None:
             raise ValueError('Operation forbidden without world coordinates '
@@ -349,7 +344,8 @@ class Spectrum(ArithmeticMixin, DataArray):
                 if unit is None:
                     pix_min = max(0, int(lmin + 0.5))
                 else:
-                    pix_min = max(0, self.wave.pixel(lmin, nearest=True, unit=unit))
+                    pix_min = max(0, self.wave.pixel(lmin, nearest=True,
+                                                     unit=unit))
             if lmax is None:
                 pix_max = self.shape[0]
             else:
@@ -357,7 +353,8 @@ class Spectrum(ArithmeticMixin, DataArray):
                     pix_max = min(self.shape[0], int(lmax + 0.5))
                 else:
                     pix_max = min(self.shape[0],
-                                  self.wave.pixel(lmax, nearest=True, unit=unit) + 1)
+                                  self.wave.pixel(lmax, nearest=True,
+                                                  unit=unit) + 1)
 
             if inside:
                 self.data[pix_min:pix_max] = np.ma.masked
@@ -442,7 +439,7 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         """
         lbda = self.wave.coord()
-        d = np.pad(self.data.compressed(), 1, 'edge')
+        data = np.pad(self.data.compressed(), 1, 'edge')
         w = np.concatenate(([self.get_start() - 0.5 * self.get_step()],
                             np.compress(~self._mask, lbda),
                             [self.get_end() + 0.5 * self.get_step()]))
@@ -461,10 +458,10 @@ class Spectrum(ArithmeticMixin, DataArray):
                 weight[-1] = weight[-2]
             else:
                 weight = None
-            tck = interpolate.splrep(w, d, w=weight)
+            tck = interpolate.splrep(w, data, w=weight)
             return interpolate.splev(wavelengths, tck, der=0)
         else:
-            f = interpolate.interp1d(w, d)
+            f = interpolate.interp1d(w, data)
             return f(wavelengths)
 
     def _interp_data(self, spline=False):
@@ -565,7 +562,6 @@ class Spectrum(ArithmeticMixin, DataArray):
             is equivalent to specifying self.wave.unit.
 
         """
-
         # Convert the attenuation from dB to a linear scale factor.
         gcut = 10.0**(-atten / 20.0)
 
@@ -575,7 +571,8 @@ class Spectrum(ArithmeticMixin, DataArray):
         # Calculate the standard deviation of a Gaussian whose Fourier
         # transform drops from unity at the center to gcut at the Nyquist
         # folding frequency.
-        sigma = 0.5 / np.pi / nyquist_folding_freq * np.sqrt(-2.0 * np.log(gcut))
+        sigma = (0.5 / np.pi / nyquist_folding_freq *
+                 np.sqrt(-2.0 * np.log(gcut)))
 
         # Convert the standard deviation from wavelength units to input pixels.
         sigma /= self.get_step(unit=unit)
@@ -591,8 +588,9 @@ class Spectrum(ArithmeticMixin, DataArray):
         # fftconvolve requires that the kernel be no larger than the array
         # that it is convolving, so reduce the size of the kernel array if
         # needed. Be careful to choose an odd sized array.
-        if gshape > self.shape[0]:
-            gshape = self.shape[0] if self.shape[0] % 2 != 0 else (self.shape[0] - 1)
+        n = self.shape[0]
+        if gshape > n:
+            gshape = n if n % 2 != 0 else (n - 1)
 
         # Sample the gaussian filter symmetrically around the central pixel.
         gx = np.arange(gshape, dtype=float) - gshape // 2
@@ -909,7 +907,7 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         Returns
         -------
-        out : `astropy.units.quantity.Quantity`, `astropy.units.quantity.Quantity`
+        out : `astropy.units.Quantity`, `astropy.units.Quantity`
             The result of the integration and its error, expressed as
             a floating point number with accompanying units. The integrated
             value and its physical units can be extracted using the .value and
@@ -918,7 +916,6 @@ class Spectrum(ArithmeticMixin, DataArray):
             returned objected.
 
         """
-
         # Get the index of the first pixel within the wavelength range,
         # and the minimum wavelength of the integration.
         if lmin is None:
@@ -1336,7 +1333,8 @@ class Spectrum(ArithmeticMixin, DataArray):
 
     def gauss_fit(self, lmin, lmax, lpeak=None, flux=None, fwhm=None,
                   cont=None, peak=False, spline=False, weight=True,
-                  plot=False, plot_factor=10, unit=u.angstrom):
+                  plot=False, plot_factor=10, unit=u.angstrom,
+                  fix_lpeak=False):
         """Perform a Gaussian fit.
 
         Uses `scipy.optimize.leastsq` to minimize the sum of squares.
@@ -1393,25 +1391,23 @@ class Spectrum(ArithmeticMixin, DataArray):
             fmax = self.mean(lmax[0], lmax[1], unit=unit)[0]
             lmax = (lmax[0] + lmax[1]) / 2.
 
-        # spec = self.truncate(lmin, lmax)
         spec = self.subspec(lmin, lmax, unit=unit)
         data = spec._interp_data(spline)
         if unit is None:
             l = np.arange(self.shape, dtype=float)
         else:
             l = spec.wave.coord(unit=unit)
-        d = data
 
         lmin = l[0]
         lmax = l[-1]
         if fmin is None:
-            fmin = d[0]
+            fmin = data[0]
         if fmax is None:
-            fmax = d[-1]
+            fmax = data[-1]
 
         # initial gaussian peak position
         if lpeak is None:
-            lpeak = l[d.argmax()]
+            lpeak = l[data.argmax()]
 
         # continuum value
         if cont is None:
@@ -1425,9 +1421,9 @@ class Spectrum(ArithmeticMixin, DataArray):
             try:
                 fwhm = spec.fwhm(lpeak, cont0, spline, unit=unit)
             except:
-                lpeak2 = l[d.argmin()]
+                lpeak2 = l[data.argmin()]
                 fwhm = spec.fwhm(lpeak2, cont0, spline, unit=unit)
-        sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
+        sigma = fwhm * gaussian_fwhm_to_sigma
 
         # initial gaussian integrated flux
         if flux is None:
@@ -1435,7 +1431,7 @@ class Spectrum(ArithmeticMixin, DataArray):
                 pixel = int(lpeak + 0.5)
             else:
                 pixel = spec.wave.pixel(lpeak, nearest=True, unit=unit)
-            peak = d[pixel] - cont0
+            peak = data[pixel] - cont0
             flux = peak * np.sqrt(2 * np.pi * (sigma ** 2))
         elif peak is True:
             peak = flux - cont0
@@ -1443,30 +1439,45 @@ class Spectrum(ArithmeticMixin, DataArray):
         else:
             pass
 
-        # 1d gaussian function
-        if cont is None:
-            gaussfit = lambda p, x: \
-                ((fmax - fmin) * x + lmax * fmin - lmin * fmax) \
-                / (lmax - lmin) + p[0] \
-                * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) \
-                * np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2))
+        # 1d gaussian function: p = (ampl, sigma, center)
+        if fix_lpeak:
+            if cont is None:
+                gaussfit = lambda p, x: \
+                    ((fmax - fmin) * x + lmax * fmin - lmin * fmax) \
+                    / (lmax - lmin) + np.abs(p[0]) \
+                    * (1 / np.sqrt(2 * np.pi * (p[1] ** 2))) \
+                    * np.exp(-(x - lpeak) ** 2 / (2 * p[1] ** 2))
+            else:
+                gaussfit = lambda p, x: \
+                    cont + p[0] * (1 / np.sqrt(2 * np.pi * (p[1] ** 2))) \
+                    * np.exp(-(x - lpeak) ** 2 / (2 * p[1] ** 2))
         else:
-            gaussfit = lambda p, x: \
-                cont + p[0] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) \
-                * np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2))
-        # 1d Gaussian fit
+            if cont is None:
+                gaussfit = lambda p, x: \
+                    ((fmax - fmin) * x + lmax * fmin - lmin * fmax) \
+                    / (lmax - lmin) + p[0] \
+                    * (1 / np.sqrt(2 * np.pi * (p[1] ** 2))) \
+                    * np.exp(-(x - p[2]) ** 2 / (2 * p[1] ** 2))
+            else:
+                gaussfit = lambda p, x: \
+                    cont + p[0] * (1 / np.sqrt(2 * np.pi * (p[1] ** 2))) \
+                    * np.exp(-(x - p[2]) ** 2 / (2 * p[1] ** 2))
+
         if spec.var is not None and weight:
             wght = 1.0 / np.sqrt(np.abs(spec.var))
             np.ma.fix_invalid(wght, copy=False, fill_value=0)
         else:
             wght = np.ones(spec.shape)
-        e_gauss_fit = lambda p, x, y, w: w * (gaussfit(p, x) - y)
 
         # inital guesses for Gaussian Fit
-        v0 = [flux, lpeak, sigma]
+        v0 = [flux, sigma]
+        if not fix_lpeak:
+            v0.append(lpeak)
+
         # Minimize the sum of squares
+        e_gauss_fit = lambda p, x, y, w: w * (gaussfit(p, x) - y)
         v, covar, info, mesg, success = leastsq(e_gauss_fit, v0[:],
-                                                args=(l, d, wght),
+                                                args=(l, data, wght),
                                                 maxfev=100000, full_output=1)
 
         # calculate the errors from the estimated covariance matrix
@@ -1477,34 +1488,30 @@ class Spectrum(ArithmeticMixin, DataArray):
                             np.sqrt(np.abs(chisq / dof))
                             for i in range(len(v))])
         else:
-            err = None
+            err = [np.nan] * len(v)
 
-        # plot
         if plot:
             xxx = np.arange(l[0], l[-1], (l[1] - l[0]) / plot_factor)
             ccc = gaussfit(v, xxx)
             plt.plot(xxx, ccc, 'r--')
 
         # return a Gauss1D object
-        flux = v[0]
-        lpeak = v[1]
-        sigma = np.abs(v[2])
-        fwhm = sigma * 2 * np.sqrt(2 * np.log(2))
-        peak = flux / np.sqrt(2 * np.pi * (sigma ** 2))
-        if err is not None:
-            err_flux = err[0]
-            err_lpeak = err[1]
-            err_sigma = err[2]
-            err_fwhm = err_sigma * 2 * np.sqrt(2 * np.log(2))
-            err_peak = np.abs(1. / np.sqrt(2 * np.pi) *
-                              (err_flux * sigma - flux * err_sigma) /
-                              sigma / sigma)
+        v = list(v)
+        err = list(err)
+        if not fix_lpeak:
+            lpeak = v.pop()
+            err_lpeak = err.pop()
         else:
-            err_flux = np.NAN
-            err_lpeak = np.NAN
-            err_sigma = np.NAN
-            err_fwhm = np.NAN
-            err_peak = np.NAN
+            err_lpeak = 0
+        flux, sigma = v
+        fwhm = sigma * gaussian_sigma_to_fwhm
+        peak = flux / np.sqrt(2 * np.pi * (sigma ** 2))
+
+        err_flux, err_sigma = err
+        err_fwhm = err_sigma * gaussian_sigma_to_fwhm
+        err_peak = np.abs(1. / np.sqrt(2 * np.pi) *
+                          (err_flux * sigma - flux * err_sigma) /
+                          sigma / sigma)
 
         return Gauss1D(lpeak, peak, flux, fwhm, cont0, err_lpeak,
                        err_peak, err_flux, err_fwhm, chisq, dof)
@@ -1532,7 +1539,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             + p[0] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) \
             * np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2))
 
-        sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
+        sigma = fwhm * gaussian_fwhm_to_sigma
 
         if peak is True:
             flux = flux * np.sqrt(2 * np.pi * (sigma ** 2))
@@ -1555,8 +1562,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             wave = self.wave.coord(unit=unit)[imin:imax]
         v = [flux, lpeak, sigma]
 
-        self.data[imin:imax] = self.data[imin:imax] \
-            + gauss(v, wave)
+        self.data[imin:imax] += gauss(v, wave)
 
     def gauss_dfit(self, lmin, lmax, wratio, lpeak_1=None,
                    flux_1=None, fratio=1., fwhm=None, cont=None,
@@ -1630,18 +1636,17 @@ class Spectrum(ArithmeticMixin, DataArray):
             l = np.arange(self.shape, dtype=float)
         else:
             l = spec.wave.coord(unit=unit)
-        d = data
 
         lmin = l[0]
         lmax = l[-1]
         if fmin is None:
-            fmin = d[0]
+            fmin = data[0]
         if fmax is None:
-            fmax = d[-1]
+            fmax = data[-1]
 
         # initial gaussian peak position
         if lpeak_1 is None:
-            lpeak_1 = l[d.argmax()]
+            lpeak_1 = l[data.argmax()]
 
         # continuum value
         if cont is None:
@@ -1655,9 +1660,9 @@ class Spectrum(ArithmeticMixin, DataArray):
             try:
                 fwhm = spec.fwhm(lpeak_1, cont0, spline, unit=unit)
             except:
-                lpeak_1 = l[d.argmin()]
+                lpeak_1 = l[data.argmin()]
                 fwhm = spec.fwhm(lpeak_1, cont0, spline, unit=unit)
-        sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
+        sigma = fwhm * gaussian_fwhm_to_sigma
 
         # initial gaussian integrated flux
         if flux_1 is None:
@@ -1665,7 +1670,7 @@ class Spectrum(ArithmeticMixin, DataArray):
                 pixel = int(lpeak_1 + 0.5)
             else:
                 pixel = spec.wave.pixel(lpeak_1, nearest=True, unit=unit)
-            peak_1 = d[pixel] - cont0
+            peak_1 = data[pixel] - cont0
             flux_1 = peak_1 * np.sqrt(2 * np.pi * (sigma ** 2))
         elif peak is True:
             peak_1 = flux_1 - cont0
@@ -1677,8 +1682,11 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         # 1d gaussian function
         # p[0]: flux 1, p[1]:center 1, p[2]: fwhm, p[3] = peak 2
-        gaussfit = lambda p, x: cont0 + p[0] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) * np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2)) \
-                                      + p[3] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) * np.exp(-(x - (p[1] * wratio)) ** 2 / (2 * p[2] ** 2))
+        gaussfit = lambda p, x: cont0 + \
+            p[0] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) * \
+            np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2)) + \
+            p[3] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) * \
+            np.exp(-(x - (p[1] * wratio)) ** 2 / (2 * p[2] ** 2))
 
         # 1d gaussian fit
         if spec.var is not None and weight:
@@ -1693,7 +1701,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         v0 = [flux_1, lpeak_1, sigma, flux_2]
         # Minimize the sum of squares
         v, covar, info, mesg, success = leastsq(
-            e_gauss_fit, v0[:], args=(l, d, wght), maxfev=100000,
+            e_gauss_fit, v0[:], args=(l, data, wght), maxfev=100000,
             full_output=1)
 
         # calculate the errors from the estimated covariance matrix
@@ -1718,7 +1726,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         lpeak_1 = v[1]
         lpeak_2 = lpeak_1 * wratio
         sigma = np.abs(v[2])
-        fwhm = sigma * 2 * np.sqrt(2 * np.log(2))
+        fwhm = sigma * gaussian_sigma_to_fwhm
         peak_1 = flux_1 / np.sqrt(2 * np.pi * (sigma ** 2))
         peak_2 = flux_2 / np.sqrt(2 * np.pi * (sigma ** 2))
         if err is not None:
@@ -1727,7 +1735,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             err_lpeak_1 = err[1]
             err_lpeak_2 = err[1] * wratio
             err_sigma = err[2]
-            err_fwhm = err_sigma * 2 * np.sqrt(2 * np.log(2))
+            err_fwhm = err_sigma * gaussian_sigma_to_fwhm
             err_peak_1 = np.abs(1. / np.sqrt(2 * np.pi) *
                                 (err_flux_1 * sigma - flux_1 * err_sigma) /
                                 sigma / sigma)
@@ -1818,22 +1826,22 @@ class Spectrum(ArithmeticMixin, DataArray):
             l = np.arange(self.shape, dtype=float)
         else:
             l = spec.wave.coord(unit=unit)
-        d = data
 
         lmin = l[0]
         lmax = l[-1]
         if fmin is None:
-            fmin = d[0]
+            fmin = data[0]
         if fmax is None:
-            fmax = d[-1]
+            fmax = data[-1]
 
         # initial gaussian peak position
         if lpeak is None:
-            lpeak = l[d.argmax()]
+            lpeak = l[data.argmax()]
 
         # continuum value
         if cont is None:
-            cont0 = ((fmax - fmin) * lpeak + lmax * fmin - lmin * fmax) / (lmax - lmin)
+            cont0 = ((fmax - fmin) * lpeak + lmax * fmin -
+                     lmin * fmax) / (lmax - lmin)
         else:
             cont0 = cont
 
@@ -1842,9 +1850,9 @@ class Spectrum(ArithmeticMixin, DataArray):
             try:
                 fwhm = spec.fwhm(lpeak, cont0, spline, unit=unit)
             except:
-                lpeak = l[d.argmin()]
+                lpeak = l[data.argmin()]
                 fwhm = spec.fwhm(lpeak, cont0, spline, unit=unit)
-        sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
+        sigma = fwhm * gaussian_fwhm_to_sigma
 
         # initial gaussian integrated flux
         if flux is None:
@@ -1852,7 +1860,7 @@ class Spectrum(ArithmeticMixin, DataArray):
                 pixel = int(lpeak + 0.5)
             else:
                 pixel = spec.wave.pixel(lpeak, nearest=True, unit=unit)
-            peak = d[pixel] - cont0
+            peak = data[pixel] - cont0
             flux = peak * np.sqrt(2 * np.pi * (sigma ** 2))
         elif peak is True:
             peak = flux - cont0
@@ -1884,7 +1892,8 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         # Minimize the sum of squares
         v, covar, info, mesg, success = leastsq(
-            e_asym_fit, v0[:], args=(l, d, wght), maxfev=100000, full_output=1)
+            e_asym_fit, v0[:], args=(l, data, wght), maxfev=100000,
+            full_output=1)
 
         # calculate the errors from the estimated covariance matrix
         chisq = sum(info["fvec"] * info["fvec"])
@@ -1908,8 +1917,8 @@ class Spectrum(ArithmeticMixin, DataArray):
         flux_right = 0.5 * v[0]
         flux_left = flux_right * sigma_left / sigma_right
         flux = flux_right + flux_left
-        fwhm_right = sigma_right * 2 * np.sqrt(2 * np.log(2))
-        fwhm_left = sigma_left * 2 * np.sqrt(2 * np.log(2))
+        fwhm_right = sigma_right * gaussian_sigma_to_fwhm
+        fwhm_left = sigma_left * gaussian_sigma_to_fwhm
         lpeak = v[1]
         peak = flux_right / np.sqrt(2 * np.pi * sigma_right ** 2)
         if err is not None:
@@ -1917,8 +1926,8 @@ class Spectrum(ArithmeticMixin, DataArray):
             err_lpeak = err[1]
             err_sigma_right = err[2]
             err_sigma_left = err[3]
-            err_fwhm_right = err_sigma_right * 2 * np.sqrt(2 * np.log(2))
-            err_fwhm_left = err_sigma_left * 2 * np.sqrt(2 * np.log(2))
+            err_fwhm_right = err_sigma_right * gaussian_sigma_to_fwhm
+            err_fwhm_left = err_sigma_left * gaussian_sigma_to_fwhm
             err_peak = np.abs(
                 1. / np.sqrt(2 * np.pi) *
                 (err_flux * sigma_right - flux * err_sigma_right) /
@@ -1966,8 +1975,8 @@ class Spectrum(ArithmeticMixin, DataArray):
             cont + p[0] * p[3] / p[2] / np.sqrt(2 * np.pi) / p[3] *
             np.exp(-(x - p[1]) ** 2 / (2. * p[3] ** 2))
         )
-        sigma_left = fwhm_left / (2. * np.sqrt(2. * np.log(2.0)))
-        sigma_right = fwhm_right / (2. * np.sqrt(2. * np.log(2.0)))
+        sigma_left = fwhm_left * gaussian_fwhm_to_sigma
+        sigma_right = fwhm_right * gaussian_fwhm_to_sigma
 
 #         if peak is True:
 #             right_norm = flux * np.sqrt(2. * np.pi * sigma_right ** 2)
@@ -1993,168 +2002,10 @@ class Spectrum(ArithmeticMixin, DataArray):
         v = [flux, lpeak, sigma_right, sigma_left]
         self.data[imin:imax] = self.data[imin:imax] + asym_gauss(v, wave)
 
-    def line_gauss_fit(self, lpeak, lmin, lmax, flux=None, fwhm=None,
-                       cont=None, peak=False, spline=False, weight=True,
-                       plot=False, plot_factor=10, unit=u.angstrom):
-        """Perform a Gaussian fit on a line (fixed Gaussian center).
-
-        Uses `scipy.optimize.leastsq` to minimize the sum of squares.
-
-        Parameters
-        ----------
-        lmin : float or (float,float)
-            Minimum wavelength value or wavelength range
-            used to initialize the gaussian left value.
-        lmax : float or (float,float)
-            Maximum wavelength or wavelength range
-            used to initialize the gaussian right value.
-        lpeak : float
-            Input gaussian center, if None it is estimated
-            with the wavelength corresponding to the maximum value
-            in [max(lmin), min(lmax)]
-        flux : float
-            Integrated gaussian flux or gaussian peak value if peak is True.
-        fwhm : float
-            Input gaussian fwhm, if None it is estimated.
-        peak : bool
-            If true, flux contains the gaussian peak value .
-        cont : float
-            Continuum value, if None it is estimated
-            by the line through points (max(lmin),mean(data[lmin]))
-            and (min(lmax),mean(data[lmax])).
-        spline : bool
-            Linear/spline interpolation to interpolate masked values.
-        weight : bool
-            If weight is True, the weight is computed as the inverse of
-            variance.
-        plot : bool
-            If True, the Gaussian is plotted.
-        plot_factor : double
-            oversampling factor for the overplotted fit
-
-        Returns
-        -------
-        out : `mpdaf.obj.Gauss1D`
-        """
-        # truncate the spectrum and compute right and left gaussian values
-        if np.isscalar(lmin):
-            fmin = None
-        else:
-            lmin = np.array(lmin, dtype=float)
-            fmin = self.mean(lmin[0], lmin[1])[0]
-            lmin = (lmin[0] + lmin[1]) / 2.
-
-        if np.isscalar(lmax):
-            fmax = None
-        else:
-            lmax = np.array(lmax, dtype=float)
-            fmax = self.mean(lmax[0], lmax[1])[0]
-            lmax = (lmax[0] + lmax[1]) / 2.
-
-        # spec = self.truncate(lmin, lmax)
-        spec = self.subspec(lmin, lmax, unit=unit)
-        data = spec._interp_data(spline)
-        l = spec.wave.coord(unit=unit)
-        d = data
-
-        lmin = l[0]
-        lmax = l[-1]
-        if fmin is None:
-            fmin = d[0]
-        if fmax is None:
-            fmax = d[-1]
-
-        # continuum value
-        if cont is None:
-            cont0 = ((fmax - fmin) * lpeak + lmax * fmin -
-                     lmin * fmax) / (lmax - lmin)
-        else:
-            cont0 = cont
-
-        # initial sigma value
-        if fwhm is None:
-            try:
-                fwhm = spec.fwhm(lpeak, cont0, spline, unit=unit)
-            except:
-                lpeak = l[d.argmin()]
-                fwhm = spec.fwhm(lpeak, cont0, spline, unit=unit)
-        sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
-
-        # initial gaussian integrated flux
-        if flux is None:
-            pixel = spec.wave.pixel(lpeak, nearest=True, unit=unit)
-            peak = d[pixel] - cont0
-            flux = peak * np.sqrt(2 * np.pi * (sigma ** 2))
-        elif peak is True:
-            peak = flux - cont0
-            flux = peak * np.sqrt(2 * np.pi * (sigma ** 2))
-        else:
-            pass
-
-        # 1d gaussian function
-        if cont is None:
-            gaussfit = lambda p, x: \
-                ((fmax - fmin) * x + lmax * fmin - lmin * fmax) \
-                / (lmax - lmin) + np.abs(p[0]) \
-                * (1 / np.sqrt(2 * np.pi * (p[1] ** 2))) \
-                * np.exp(-(x - lpeak) ** 2 / (2 * p[1] ** 2))
-        else:
-            gaussfit = lambda p, x: \
-                cont + np.abs(p[0]) * (1 / np.sqrt(2 * np.pi * (p[1] ** 2))) \
-                * np.exp(-(x - lpeak) ** 2 / (2 * p[1] ** 2))
-        # 1d Gaussian fit
-        if spec.var is not None and weight:
-            wght = 1.0 / np.sqrt(np.abs(spec.var))
-            np.ma.fix_invalid(wght, copy=False, fill_value=0)
-        else:
-            wght = np.ones(spec.shape)
-        e_gauss_fit = lambda p, x, y, w: w * (gaussfit(p, x) - y)
-
-        # inital guesses for Gaussian Fit
-        v0 = [flux, sigma]
-        # Minimize the sum of squares
-        v, covar, info, mesg, success = leastsq(e_gauss_fit, v0[:],
-                                                args=(l, d, wght),
-                                                maxfev=100000, full_output=1)
-
-        # calculate the errors from the estimated covariance matrix
-        chisq = sum(info["fvec"] * info["fvec"])
-        dof = len(info["fvec"]) - len(v)
-        if covar is not None:
-            err = np.array([np.sqrt(np.abs(covar[i, i])) *
-                            np.sqrt(np.abs(chisq / dof))
-                            for i in range(len(v))])
-        else:
-            err = None
-
-        # plot
-        if plot:
-            xxx = np.arange(l[0], l[-1], (l[1] - l[0]) / plot_factor)
-            ccc = gaussfit(v, xxx)
-            plt.plot(xxx, ccc, 'r--')
-
-        # return a Gauss1D object
-        flux = np.abs(v[0])
-        sigma = np.abs(v[1])
-        fwhm = sigma * 2 * np.sqrt(2 * np.log(2))
-        peak = flux / np.sqrt(2 * np.pi * (sigma ** 2))
-        if err is not None:
-            err_flux = np.abs(err[0])
-            err_lpeak = 0
-            err_sigma = err[1]
-            err_fwhm = err_sigma * 2 * np.sqrt(2 * np.log(2))
-            err_peak = np.abs(1. / np.sqrt(2 * np.pi) *
-                              (err_flux * sigma - flux * err_sigma) /
-                              sigma / sigma)
-        else:
-            err_flux = np.NAN
-            err_lpeak = np.NAN
-            err_sigma = np.NAN
-            err_fwhm = np.NAN
-            err_peak = np.NAN
-
-        return Gauss1D(lpeak, peak, flux, fwhm, cont0, err_lpeak,
-                       err_peak, err_flux, err_fwhm, chisq, dof)
+    @deprecated('deprecated in favor of gauss_fit with fix_lpeak=True')
+    def line_gauss_fit(self, *args, **kwargs):
+        kwargs['fix_lpeak'] = True
+        return self.gauss_fit(*args, **kwargs)
 
     def median_filter(self, kernel_size=1., spline=False, unit=u.angstrom,
                       inplace=False):
@@ -2373,16 +2224,16 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         res = self if inplace else self.copy()
 
-        sigma = fwhm / (2. * np.sqrt(2. * np.log(2.0)))
+        sigma = fwhm * gaussian_fwhm_to_sigma
         if unit is None:
             s = sigma
         else:
             s = sigma / res.get_step(unit=unit)
         n = nsig * int(s + 0.5)
         n = int(n / 2) * 2
-        d = np.arange(-n, n + 1)
-        kernel = special.erf((1 + 2 * d) / (2 * np.sqrt(2) * s)) \
-            + special.erf((1 - 2 * d) / (2 * np.sqrt(2) * s))
+        data = np.arange(-n, n + 1)
+        kernel = special.erf((1 + 2 * data) / (2 * np.sqrt(2) * s)) \
+            + special.erf((1 - 2 * data) / (2 * np.sqrt(2) * s))
         kernel /= kernel.sum()
 
         res._data = signal.correlate(res._data, kernel, mode='same')
@@ -2569,32 +2420,31 @@ class Spectrum(ArithmeticMixin, DataArray):
             ax.set_ylabel(res.unit)
 
         if lmin is None and lmax is None:
-            ax.set_xlim(*self.wave.get_range())
+            ax.set_xlim(*self.wave.get_range(unit=unit))
 
         # Arrange for cursor motion events to display corresponding
         # coordinates and values below the plot.
-        self._fig = plt.get_current_fig_manager()
+        def _on_move(event):  # pragma: no cover
+            """print xc,yc,k,lbda and data in the figure toolbar."""
+            if event.inaxes is not None:
+                xc, yc = event.xdata, event.ydata
+                try:
+                    i = self.wave.pixel(xc, nearest=True, unit=unit)
+                    x = self.wave.coord(i, unit=self._unit)
+                    event.canvas.toolbar.set_message(
+                        'xc= %g yc=%g k=%d lbda=%g data=%g' %
+                        (xc, yc, i, x, self._data[i]))
+                except Exception:
+                    pass
+
         self._unit = unit
-        plt.connect('motion_notify_event', self._on_move)
+        plt.connect('motion_notify_event', _on_move)
         self._plot_id = len(ax.lines) - 1
 
     @deprecated('log_plot method is deprecated in favor of plot')
     def log_plot(self, **kwargs):
-        """DEPRECATED: See `~mpdaf.obj.Spectrum.log_plot` instead."""
+        """DEPRECATED: Use `~mpdaf.obj.Spectrum.plot` with stretch='log'."""
         self.plot(stretch='log', **kwargs)
-
-    def _on_move(self, event):
-        """print xc,yc,k,lbda and data in the figure toolbar."""
-        if event.inaxes is not None:
-            xc, yc = event.xdata, event.ydata
-            try:
-                i = self.wave.pixel(xc, True)
-                x = self.wave.coord(i, unit=self._unit)
-                val = self.data.data[i]
-                s = 'xc= %g yc=%g k=%d lbda=%g data=%g' % (xc, yc, i, x, val)
-                self._fig.toolbar.set_message(s)
-            except:
-                pass
 
     @deprecated('rebin_mean method is deprecated in favor of rebin')
     def rebin_mean(self, factor, margin='center'):
