@@ -1258,11 +1258,13 @@ class Spectrum(ArithmeticMixin, DataArray):
         err_flux2 = (err_flux * self.unit).to(unit)
         return flux2mag(vflux2.value, err_flux2.value, l0)
     
-    def wavelet_filter(self, levels=3, sigmaCutoff=5.0, epsilon=0.05, inplace=True):
-        """Perform a wavelength filtering on the spectrum in 1 dimension
+    def wavelet_filter(self, levels=9, sigmaCutoff=5.0, epsilon=0.05, inplace=True):
+        """Perform a wavelet filtering on the spectrum in 1 dimension
         
         v1.0, copyright Markus Rexroth, EPFL, 2016
         https://arxiv.org/pdf/1703.09239.pdf
+        Paper: https://arxiv.org/pdf/1703.09239.pdf
+        Funding: ERC Advanced Grant LIDA, Swiss National Science Foundation, ERC Starting Grant 336736-CALENDS
         
         Parameters
         ----------
@@ -1271,7 +1273,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         sigmaCutoff : float
                       Cleaning threshold
                       By default 5 for a 5 sigma cleaning in wavelet space.
-        epsilon : int in ]0,1[
+        epsilon : float in ]0,1[
                   Residual criterion used to perform the cleaning
         inplace : bool
             If False, return a filtered copy of the spectrum (the default).
