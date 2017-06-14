@@ -47,7 +47,7 @@ from astropy.io import fits
 from matplotlib.path import Path
 from numpy import ma
 from six.moves import range, zip
-from scipy import integrate, interpolate, signal, ndimage
+from scipy import integrate, interpolate, signal, ndimage as ndi
 
 from .arithmetic import ArithmeticMixin
 from .coords import WCS, WaveCoord
@@ -1076,7 +1076,7 @@ class Cube(ArithmeticMixin, DataArray):
                                          copy=False)
         else:
             raise ValueError('Invalid axis argument')
-        
+
     def max(self, axis=None):
         """Return the maximum over a given axis.
 
@@ -2353,23 +2353,25 @@ class Cube(ArithmeticMixin, DataArray):
 
         """
         return self._convolve(signal.fftconvolve, other=other, inplace=inplace)
-    
+
     def spatial_erosion(self, npixels, inplace=False):
-        """Remove n pixels around the masked white image
-        
+        """Remove n pixels around the masked white image.
+
         Parameters
         ----------
         npixels : integer
-                  Erosion width in pixels 
+            Erosion width in pixels
         inplace : bool
             If False (the default), return the results in a new Cube.
             If True, record the result in self and return that.
+
         """
         # Change the input cube or change a copy of it?
         res = self if inplace else self.copy()
-        
-        white = self.sum(axis=0) 
-        res._mask = np.resize(~ndimage.morphology.binary_erosion(white._data, mask=~white._mask, iterations=npixels), self.shape)
+        white = self.sum(axis=0)
+        mask = ~ndi.binary_erosion(white._data, mask=~white._mask,
+                                   iterations=npixels)
+        res._mask = np.resize(mask, self.shape)
         return res
 
     @deprecated('get_lambda method is deprecated, use select_lambda instead')
