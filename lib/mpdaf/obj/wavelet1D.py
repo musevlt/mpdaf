@@ -16,9 +16,7 @@
 # (e.g. Gaussian emission lines). For anisotropic signals, it might
 # be better to pick another scaling function.
 
-
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.ndimage import convolve1d
 
 # See book by Starck
@@ -32,18 +30,43 @@ def test_levels(signal, levels):
     signal = np.asarray(signal)
     h_length = len(H_COEFFICIENTS_LIST)
     signalSize = signal.size
-    if levels > np.log2((signalSize - 1.0) / (h_length - 1.0)):
+    max_level = np.log2((signalSize - 1.0) / (h_length - 1.0))
+    if levels > max_level:
         # If the (level+1)-th h array is larger than the signal array, the
         # final smoothing function for level number of wavelets is wider than
         # the signal range itself, which has to be avoided. Thus h_length
         # + (2**level -1)*(h_length-1) > signalSize must be avoided (the second
         # term = number of 0s in h array)
-        levels = int(np.floor(np.log2((signalSize - 1.0) / (h_length - 1.0))))
+        levels = int(np.floor(max_level))
         raise IOError("Attention: The chosen number of levels exceeds the "
                       "number allowed (sampling condition). Thus it was "
                       "automatically set to the maximum number allowed = {}"
                       .format(levels))
     return levels
+
+
+def get_h_coefficients(levels):
+    """Build the list of h coefficient arrays.
+
+    The spacing between the values is 2**i_level -1 (see Starck book).
+
+    """
+    h_length = len(H_COEFFICIENTS_LIST)
+    h_coefficients = []
+    for i in range(levels):
+        # Array long enough to store the spacing and the values
+        max_length = ((2**i) - 1) * (h_length - 1) + h_length
+        h_array = np.zeros(max_length)
+        counter = 0
+        for index in range(len(h_array)):
+            # Now we enter the values and ensure that the spacing between them
+            # is correct
+            if index % (2**i) == 0:
+                h_array[index] = H_COEFFICIENTS_LIST[counter]
+                counter += 1
+        h_coefficients.append(h_array)
+
+    return h_coefficients
 
 
 def wavelet_transform(signal, levels):
@@ -52,86 +75,54 @@ def wavelet_transform(signal, levels):
     levels: the number of wavelet levels we use.
 
     """
-    signal = np.asarray(signal)
+    signal = np.asarray(signal, dtype=float)
     signal[np.isnan(signal)] = 0.0
 
-    # Test if the chosen levels are too many for our signal (sampling
-    # condition)
+    # Test if the chosen levels are too many for our signal
     levels = test_levels(signal, levels)
 
-    wavelet_coefficients = []
-    h_length = len(H_COEFFICIENTS_LIST)
-    # We build the list of h coefficient arrays. The spacing between the
-    # values is 2**i_level -1 (see Starck book)
-    h_coefficients = []
-    for i in range(0, levels):
-        # Array long enough to store the spacing and the values
-        h_array = [0 for index in range(((2**i) - 1) * (h_length - 1) + h_length)]
-        counter = 0
-        for index in range(len(h_array)):
-            # Now we enter the values and ensure that the spacing between them
-            # is correct
-            if index % (2**i) == 0:
-                h_array[index] = H_COEFFICIENTS_LIST[counter]
-                counter += 1
-        h_coefficients.append(np.array(h_array))
+    h_coefficients = get_h_coefficients(levels)
 
     # We need "levels" (e.g. 10) wavelet coefficient arrays
-    for i in range(0, levels):
+    wavelet_coefficients = []
+    for i in range(levels):
         # Depending on the level, we have different h arrays for convolution.
-        # We need *1.0 to convert to float
-        signal_convolved = convolve1d(signal * 1.0, h_coefficients[i] * 1.0,
-                                      mode='wrap')
-        signal_convolved_2 = convolve1d(signal_convolved * 1.0,
-                                        h_coefficients[i] * 1.0, mode='wrap')
+        convolved = convolve1d(signal, h_coefficients[i], mode='wrap')
+        convolved_2 = convolve1d(convolved, h_coefficients[i], mode='wrap')
         # Calculate the wavelet coefficients and add them to list
-        wavelet_coefficients.append(signal - signal_convolved_2)
+        wavelet_coefficients.append(signal - convolved_2)
         # Overwrite signal with convolved signal for the next iteration
-        signal = signal_convolved
+        signal = convolved
 
     # Get the coefficients for the scaling function
-    scaling_coefficients = signal_convolved
+    scaling_coefficients = convolved
     # Merge all coefficients into 1 list
-    waveletTransform_coefficients = wavelet_coefficients
-    waveletTransform_coefficients.append(scaling_coefficients)
-    return np.array(waveletTransform_coefficients)
+    wavelet_coefficients.append(scaling_coefficients)
+    return np.array(wavelet_coefficients)
 
 
-def wavelet_backTransform(waveletTransform_coefficients):
+def wavelet_backTransform(coefficients):
     """Transform from wavelet to real space."""
     # We have array number = levels + 1 (due to the smoothing coefficients)
-    levels = np.array(waveletTransform_coefficients).shape[0] - 1
-    h_length = len(H_COEFFICIENTS_LIST)
-    # We build the list of h coefficient arrays. The spacing between the
-    # values is 2**i_level -1 (see Starck book)
-    h_coefficients = []
-    for i in range(0, levels):
-        # Array long enough to store the spacing and the values
-        h_array = [0 for index in range(((2**i) - 1) * (h_length - 1) + h_length)]
-        counter = 0
-        for index in range(len(h_array)):
-            # Now we enter the values and ensure that the spacing between them
-            # is correct
-            if index % (2**i) == 0:
-                h_array[index] = H_COEFFICIENTS_LIST[counter]
-                counter += 1
-        h_coefficients.append(np.array(h_array))
+    coefficients = np.asarray(coefficients, dtype=float)
+    levels = coefficients.shape[0] - 1
+
+    h_coefficients = get_h_coefficients(levels)
 
     # We convolve each wavelet and the smoothing function with the
     # corresponding h array to re-transform into image space.
     # We have to go in reverse order.
 
     # Initialize the coefficients for the convolution
-    temporary_signal = waveletTransform_coefficients[levels]
-    for i in range(0, levels):
+    signal = coefficients[levels]
+    for i in range(levels):
         # levels-1 because python begins counting at 0
-        signal_convolved = convolve1d(temporary_signal * 1.0,
-                                      h_coefficients[levels - 1 - i] * 1.0,
+        signal_convolved = convolve1d(signal, h_coefficients[levels - 1 - i],
                                       mode='wrap')
         # We add the corresponding coefficients for the next convolution
-        temporary_signal = signal_convolved + waveletTransform_coefficients[levels - 1 - i]
-    signal = temporary_signal
-    return np.array(signal)
+        signal = signal_convolved + coefficients[levels - 1 - i]
+
+    return signal
 
 
 def cleanSignal(signal, noise, levels, sigmaCutoff=5.0, epsilon=0.05):
@@ -139,95 +130,81 @@ def cleanSignal(signal, noise, levels, sigmaCutoff=5.0, epsilon=0.05):
     and wavelets epsilon is the iteration-stop parameter for extracting signal
     from the residual signal.
     """
-    signal = np.asarray(signal)
-    noise = np.asarray(noise)
+    signal = np.asarray(signal, dtype=float)
+    noise = np.asarray(noise, dtype=float)
 
     # If we have missing values, set the signal to 0 and the noise to 100000
     # standard deviations to downweigh the signal
     nans = np.isnan(signal) & np.isnan(noise)
     if nans.any():
         signal = 0.0
+        # FIXME: use Inf instead ?
         noise = 100000.0 * np.std(signal)
 
     sigmaCutoff = float(sigmaCutoff)
     epsilon = float(epsilon)
     signalSize = signal.size
 
-    # Test if the chosen levels are too many for our signal (sampling
-    # condition)
+    # Test if the chosen levels are too many for our signal
     levels = test_levels(signal, levels)
 
     # We have a dirac function, 0 everywhere except 1 in the central pixel
     # (pixel value = integral over signal in area of pixel = 1 for a dirac
     # function)
-    diracSignal = [0.0 for x in range(signalSize)]
+    diracSignal = np.zeros(signalSize)
     diracSignal[signalSize // 2] = 1.0
-    diracSignal = np.array(diracSignal)
 
     # We calculate the wavelet coefficients. We do not need the coefficients
     # for the "smoothing function", thus we delete the last array (.shape[0]
     # gives us the number of arrays)
-    dirac_coefficients = wavelet_transform(diracSignal, levels)
-    dirac_coefficients = dirac_coefficients[0:dirac_coefficients.shape[0] - 1]
+    dirac_coefficients = wavelet_transform(diracSignal, levels)[:-1]
 
-    # We calculate the wavelet coefficients for the noise (= 1 sigma**2)
-    variance_coefficients = []
-    for i, array in enumerate(dirac_coefficients):
-        # We convolve the squared array elements to obtain the variance
-        variance_array = convolve1d(dirac_coefficients[i]**2.0, noise**2.0,
-                                    mode='wrap')
-        variance_coefficients.append(variance_array)
+    # We calculate the wavelet coefficients for the noise (= 1 sigma**2):
+    # convolve each row to obtain the variance
+    variance_coefficients = convolve1d(dirac_coefficients**2.0, noise**2.0,
+                                       mode='wrap')
 
     # Get standard deviation array of arrays
-    noise_coefficients = np.array(variance_coefficients)**(1 / 2.0)
+    noise_coef = variance_coefficients**(1 / 2.0)
 
     # Create the multiresolution support
-    signal_coefficients = wavelet_transform(signal, levels)
-    # The support is 0 for every non-significant wavelet and 1 for every
-    # significant wavelet/smoothing function coefficient
-    M_support = np.zeros((levels + 1, signalSize))
-    for i, array in enumerate(noise_coefficients):
-        for j, element in enumerate(array):
-            if i == 0:
-                # If the coefficient is less than (x+1)*sigma detection, we
-                # consider it as noise. We increase the threshold for
-                # i = 0 = high frequencies, as typically noise has high
-                # frequencies and signal has lower frequencies
-                if np.abs(signal_coefficients[i, j]) < np.abs((sigmaCutoff + 1.0) * element):
-                    M_support[i, j] = 0.0
-                else:
-                    M_support[i, j] = 1.0
-            else:
-                if np.abs(signal_coefficients[i, j]) < np.abs(sigmaCutoff * element):
-                    M_support[i, j] = 0.0
-                else:
-                    M_support[i, j] = 1.0
+    signal_coef = np.abs(wavelet_transform(signal, levels))
 
-    # The smoothing function coefficients are always all significant
-    M_support[levels, :] = 1.0
+    # The support is 0 for every non-significant wavelet and 1 for every
+    # significant wavelet/smoothing function coefficient.  If the coefficient
+    # is less than (x+1)*sigma detection, we consider it as noise. We increase
+    # the threshold for i = 0 = high frequencies, as typically noise has high
+    # frequencies and signal has lower frequencies.
+    M_support = np.vstack([
+        signal_coef[0] >= ((sigmaCutoff + 1.0) * noise_coef[0]),
+        signal_coef[1:-1] >= (sigmaCutoff * noise_coef[1:]),
+        # Last row: smoothing function coefficients are always all significant
+        np.ones(signalSize, dtype=bool)
+    ])
 
     # Do the cleaning
-    cleaned_signal = np.zeros(signalSize)  # Initialize clean signal
-    residual_signal_sigma_old = 0.0		# Initialize the standard deviation of the residual signal
-    residual_signal = signal			# Initialize the residual signal
+
+    cleaned_signal = np.zeros(signalSize)
+    # Initialize the standard deviation of the residual signal
+    residual_signal_sigma_old = 0.0
+    # Initialize the residual signal
+    residual_signal = signal
     residual_signal_sigma = np.std(residual_signal)
 
     # We can still extract signal from the residual. We do this here after the
     # first iteration until the epsilon condition is false and add it to the
     # already extracted signal
 
-    while np.abs((residual_signal_sigma_old - residual_signal_sigma) / residual_signal_sigma) > epsilon:
+    while np.abs((residual_signal_sigma_old - residual_signal_sigma) /
+                 residual_signal_sigma) > epsilon:
         # We continue to extract until the standard deviation doesn't change
         # too much
         residual_coefficients = wavelet_transform(residual_signal, levels)
 
         # We clean the non-significant wavelets
-        for i, array in enumerate(residual_coefficients):
-            for j, element in enumerate(array):
-                if M_support[i, j] == 0:
-                    residual_coefficients[i, j] = 0.0
+        residual_coefficients[~M_support] = 0.0
 
-        cleaned_signal = cleaned_signal + wavelet_backTransform(residual_coefficients)
+        cleaned_signal += wavelet_backTransform(residual_coefficients)
         residual_signal = signal - cleaned_signal
         residual_signal_sigma_old = residual_signal_sigma
         residual_signal_sigma = np.std(residual_signal)
@@ -264,6 +241,7 @@ def test(stdDev=5.0, random='yes', levels=3, sigmaCutoff=5.0, epsilon=0.05):
     deNoisedSignal = cleanSignal(signal_final, stdDevList, levels,
                                  sigmaCutoff=sigmaCutoff, epsilon=epsilon)
 
+    import matplotlib.pyplot as plt
     plt.plot(x, signal_final, color='blue', label='signal+noise')
     plt.plot(x, reconstructed, 'r--', label='reconstructed')
     plt.plot(x, signal, 'b--', label='signal')
