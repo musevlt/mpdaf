@@ -75,7 +75,7 @@ def wavelet_transform(signal, levels):
     levels: the number of wavelet levels we use.
 
     """
-    signal = np.asarray(signal, dtype=float)
+    signal = np.array(signal, dtype=float)
     signal[np.isnan(signal)] = 0.0
 
     # Test if the chosen levels are too many for our signal
@@ -104,7 +104,7 @@ def wavelet_transform(signal, levels):
 def wavelet_backTransform(coefficients):
     """Transform from wavelet to real space."""
     # We have array number = levels + 1 (due to the smoothing coefficients)
-    coefficients = np.asarray(coefficients, dtype=float)
+    coefficients = np.array(coefficients, dtype=float)
     levels = coefficients.shape[0] - 1
 
     h_coefficients = get_h_coefficients(levels)
@@ -130,16 +130,15 @@ def cleanSignal(signal, noise, levels, sigmaCutoff=5.0, epsilon=0.05):
     and wavelets epsilon is the iteration-stop parameter for extracting signal
     from the residual signal.
     """
-    signal = np.asarray(signal, dtype=float)
-    noise = np.asarray(noise, dtype=float)
+    signal = np.array(signal, dtype=float)
+    noise = np.array(noise, dtype=float)
 
     # If we have missing values, set the signal to 0 and the noise to 100000
     # standard deviations to downweigh the signal
     nans = np.isnan(signal) & np.isnan(noise)
     if nans.any():
-        signal = 0.0
-        # FIXME: use Inf instead ?
-        noise = 100000.0 * np.std(signal)
+        signal[nans] = 0.0
+        noise[nans] = np.inf
 
     sigmaCutoff = float(sigmaCutoff)
     epsilon = float(epsilon)
@@ -233,19 +232,19 @@ def test(stdDev=5.0, random='yes', levels=3, sigmaCutoff=5.0, epsilon=0.05):
                           -0.58867364, -1.41797943, -3.36680655, -7.25776942,
                           1.70606578, 2.10790981, 0.12066381, -0.16763699])
     else:
-        raise IOError("Error: random keyword must be yes or no!")
-    stdDevList = [stdDev for _ in range(-20, 20)]
+        raise ValueError("Error: random keyword must be yes or no!")
+
+    stddevlist = stdDev * np.ones_like(x)
     signal_final = signal + noise
     wavelet_signal = wavelet_transform(signal_final, levels)
     reconstructed = wavelet_backTransform(wavelet_signal)
-    deNoisedSignal = cleanSignal(signal_final, stdDevList, levels,
-                                 sigmaCutoff=sigmaCutoff, epsilon=epsilon)
+    denoised = cleanSignal(signal_final, stddevlist, levels,
+                           sigmaCutoff=sigmaCutoff, epsilon=epsilon)
 
     import matplotlib.pyplot as plt
     plt.plot(x, signal_final, color='blue', label='signal+noise')
     plt.plot(x, reconstructed, 'r--', label='reconstructed')
     plt.plot(x, signal, 'b--', label='signal')
-    plt.plot(x, deNoisedSignal, color='black', ls='dashed', label='denoised')
-    plt.plot(x, signal_final - deNoisedSignal, 'gray', label='residual')
-    plt.plot(x, signal - reconstructed, 'k--', label='residual')
+    plt.plot(x, denoised, color='black', ls='dashed', label='denoised')
+    plt.plot(x, signal - denoised, 'k--', label='residual')
     plt.legend()
