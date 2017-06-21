@@ -173,13 +173,15 @@ def test_truncate(image):
     image.truncate(0, 1, 1, 3, unit=image.wcs.unit, inplace=True)
     assert_image_equal(image, shape=(2, 3), start=(0, 1), end=(1, 3))
 
+
 @pytest.mark.parametrize('fwhm', (None, (3., 3.)))
 @pytest.mark.parametrize('flux', (None, 10))
 @pytest.mark.parametrize('factor', (1, 2))
 @pytest.mark.parametrize('weight', (True, False))
 @pytest.mark.parametrize('fit_back,cont', ((True, 0), (False, 2.0)))
 @pytest.mark.parametrize('center,pos_min,pos_max',
-                         ((None, None, None), ((18, 15), (15, 12), (24, 20))))
+                         ((None, None, None),
+                          ((18., 15.), (15., 12), (24, 20))))
 def test_gauss(fwhm, flux, factor, weight, fit_back, cont, center,
                pos_min, pos_max):
     """Image class: testing Gaussian fit"""
@@ -205,16 +207,18 @@ def test_gauss(fwhm, flux, factor, weight, fit_back, cont, center,
             assert_almost_equal(getattr(gauss, param), value)
         else:
             assert_array_almost_equal(getattr(gauss, param), value)
-            
+
+
 @pytest.mark.parametrize('fwhm', (None, (3., 3.)))
 @pytest.mark.parametrize('flux', (None, 10))
 @pytest.mark.parametrize('factor', (1, 2))
 @pytest.mark.parametrize('weight', (True, False))
 @pytest.mark.parametrize('fit_back,cont', ((True, 0), (False, 2.0)))
 @pytest.mark.parametrize('center,pos_min,pos_max',
-                         ((None, None, None), ((18, 15), (15, 12), (24, 20))))
+                         ((None, None, None),
+                          ((18, 15), (15, 12.), (24, 20))))
 def test_gauss_circular(fwhm, flux, factor, weight, fit_back, cont, center,
-               pos_min, pos_max):
+                        pos_min, pos_max):
     """Image class: testing Gaussian fit"""
     params = dict(fwhm=(2, 2), cont=2.0, flux=5.)
     wcs = WCS(cdelt=(0.2, 0.2), crval=(8.5, 12), shape=(40, 30))
@@ -241,13 +245,14 @@ def test_gauss_circular(fwhm, flux, factor, weight, fit_back, cont, center,
 
 
 @pytest.mark.parametrize('fwhm', (None, (3., 3.)))
-@pytest.mark.parametrize('flux', (None,)) # 12.3))
+@pytest.mark.parametrize('flux', (None,))  # 12.3))
 @pytest.mark.parametrize('fit_n,n', ((True, 2.0), (False, 1.6)))
 @pytest.mark.parametrize('fit_back,cont', ((True, 0), (False, 8.24)))
 @pytest.mark.parametrize('center,pos_min,pos_max',
-                         ((None, None, None), ((49, 51), (40, 40), (60, 60))))
+                         ((None, None, None),
+                          ((49, 51), (40., 40.), (60, 60))))
 def test_moffat_circular(fwhm, flux, fit_n, n, fit_back, cont, center,
-                pos_min, pos_max):
+                         pos_min, pos_max):
     """Image class: testing Moffat fit"""
     params = dict(flux=12.3, fwhm=(1.8, 1.8), n=1.6, cont=8.24,
                   center=(50., 50.))
@@ -267,12 +272,14 @@ def test_moffat_circular(fwhm, flux, fit_n, n, fit_back, cont, center,
         else:
             assert_array_almost_equal(getattr(moffat, param), value, 2)
 
+
 @pytest.mark.parametrize('fwhm', (None, (3., 3.)))
-@pytest.mark.parametrize('flux', (None, )) #10))
+@pytest.mark.parametrize('flux', (None, ))  # 10))
 @pytest.mark.parametrize('fit_n,n', ((True, 2.0), (False, 1.6)))
 @pytest.mark.parametrize('fit_back,cont', ((True, 0), (False, 8.24)))
 @pytest.mark.parametrize('center,pos_min,pos_max',
-                         ((None, None, None), ((49, 51), (40, 40), (60, 60))))
+                         ((None, None, None),
+                          ((49., 51.), (40, 40), (60., 60.))))
 def test_moffat(fwhm, flux, fit_n, n, fit_back, cont, center,
                 pos_min, pos_max):
     """Image class: testing Moffat fit"""
@@ -522,13 +529,17 @@ def test_ee():
     image1 = Image(data=data, wcs=wcs)
     image1.mask_region((2, 2), (1.5, 1.5), inside=False, unit_center=None,
                        unit_radius=None)
+
     assert image1.ee() == 9 * 2
+    assert image1.ee(frac=True) == 1.0
     ee = image1.ee(center=(2, 2), unit_center=None, radius=1, unit_radius=None)
     assert ee == 4 * 2
+
     r, eer = image1.eer_curve(center=(2, 2), unit_center=None,
                               unit_radius=None, cont=0)
     assert r[1] == 1.0
     assert eer[1] == 1.0
+
     size = image1.ee_size(center=(2, 2), unit_center=None, unit_size=None,
                           cont=0)
     assert_almost_equal(size[0], 1.775)
