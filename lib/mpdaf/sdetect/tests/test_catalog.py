@@ -52,11 +52,17 @@ def test_catalog():
     assert cat['Z'][1] is np.ma.masked
 
 
-@pytest.mark.parametrize('fmt,ncols', (('default', 45),
-                                       ('working', 43)))
+@pytest.mark.parametrize('fmt,ncols', (('default', 48),
+                                       ('working', 46)))
 def test_from_sources(source1, source2, fmt, ncols):
     source1.CUBE_V = '0.1'
     source2.CUBE_V = '0.2'
+    source1.UCUSTOM = (1000, 'some custom keyword u.Angstrom')
+    source2.UCUSTOM = (2000, 'some custom keyword u.Angstrom')
+    source1.FCUSTOM = (1000, 'some custom keyword %.2f')
+    source2.FCUSTOM = (2000, 'some custom keyword %.2f')
+    source1.UFCUSTOM = (1000.1234, 'some custom keyword u.Angstrom %.2f')
+    source2.UFCUSTOM = (2000.1234, 'some custom keyword u.Angstrom %.2f')
     lines1 = source1.lines['LINE'].data.copy()
     lines2 = source2.lines['LINE'].data.copy()
     cat = Catalog.from_sources([source1, source2], fmt=fmt)

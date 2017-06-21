@@ -56,6 +56,12 @@ INVALID = {
     type(False): -9999, np.bool_: -9999
 }
 
+# List of required keywords and their type
+MANDATORY_KEYS = ['ID', 'RA', 'DEC', 'FROM', 'FROM_V', 'CUBE', 'CUBE_V']
+MANDATORY_TYPES = [np.int, np.float64, np.float64, str, str, str, str]
+# List of exluded keywords
+EXCLUDED_CARDS = {'SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE', 'AUTHOR'}
+
 
 class Catalog(Table):
 
@@ -117,80 +123,49 @@ class Catalog(Table):
         ###############################################
 
         # union of all headers keywords without mandatory FITS keywords
-        h = sources[0].header
+        d = {}
+        for source in sources:
+            d.update({k: (type(v), com) for k, v, com in source.header.cards})
 
-        d = dict(list(zip(list(h.keys()), [(type(c[1]), c[2]) for c in h.cards])))
-        for source in sources[1:]:
-            h = source.header
-            d.update(dict(list(zip(list(h.keys()), [(type(c[1]), c[2]) for c in h.cards]))))
+        keys = set(d.keys()) - EXCLUDED_CARDS
 
-        keys = set(d.keys())
-        excluded_cards = {'SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
-                          'AUTHOR'}
-        keys = keys - excluded_cards
+        if 'CUBE_V' not in keys:
+            logger.warning('CUBE_V keyword in missing. It will be soon '
+                           'mandatory and its absecne will return an error')
+            d['CUBE_V'] = (str, 'datacube version')
 
-        d = {key: value for key, value in d.items() if key in keys}
-        names_hdr = list(d.keys())
-        tuple_hdr = list(d.values())
-        # sort mandatory keywords
-        index = names_hdr.index('ID')
-        names_hdr.insert(0, names_hdr.pop(index))
-        tuple_hdr.insert(0, tuple_hdr.pop(index))
-        index = names_hdr.index('RA')
-        names_hdr.insert(1, names_hdr.pop(index))
-        tuple_hdr.insert(1, tuple_hdr.pop(index))
-        index = names_hdr.index('DEC')
-        names_hdr.insert(2, names_hdr.pop(index))
-        tuple_hdr.insert(2, tuple_hdr.pop(index))
-        index = names_hdr.index('FROM')
-        names_hdr.insert(3, names_hdr.pop(index))
-        tuple_hdr.insert(3, tuple_hdr.pop(index))
-        index = names_hdr.index('FROM_V')
-        names_hdr.insert(4, names_hdr.pop(index))
-        tuple_hdr.insert(4, tuple_hdr.pop(index))
-        index = names_hdr.index('CUBE')
-        names_hdr.insert(5, names_hdr.pop(index))
-        tuple_hdr.insert(5, tuple_hdr.pop(index))
-        if 'CUBE_V' in names_hdr:
-            index = names_hdr.index('CUBE_V')
-            names_hdr.insert(6, names_hdr.pop(index))
-            tuple_hdr.insert(6, tuple_hdr.pop(index))
-        else:
-            logger.warning('CUBE_V keyword in missing. It will be soon mandatory and its absence will return an error')
-            names_hdr.insert(6, '')
-            tuple_hdr.insert(6, (type('1'), 'datacube version'))
+        names_hdr = MANDATORY_KEYS + list(keys - set(MANDATORY_KEYS))
+        tuple_hdr = [d[k] for k in names_hdr]
+        dtype_hdr = (MANDATORY_TYPES +
+                     [c[0] for c in tuple_hdr[len(MANDATORY_TYPES):]])
 
-        dtype_hdr = [c[0] for c in tuple_hdr]
-        # type of mandatory keywords
-        dtype_hdr[0] = np.int
-        dtype_hdr[1] = np.float64
-        dtype_hdr[2] = np.float64
-        dtype_hdr[3] = type('1')
-        dtype_hdr[4] = type('1')
-        dtype_hdr[5] = type('1')
-        dtype_hdr[6] = type('1')
+        desc_hdr = [c[:c.find('u.')] if c.find('u.') != -1
+                    else c[:c.find('%')] if c.find('%') != -1
+                    else c for _, c in tuple_hdr]
+        unit_hdr = [c[c.find('u.'):].split()[0][2:]
+                    if c.find('u.') != -1 else None for _, c in tuple_hdr]
+        format_hdr = [c[c.find('%'):].split()[0]
+                      if c.find('%') != -1 else None for _, c in tuple_hdr]
 
-        desc_hdr = [c[1][:c[1].find('u.')] if c[1].find('u.') != -1 else c[1][:c[1].find('%')] if c[1].find('%') != -1 else c[1] for c in tuple_hdr]
-        unit_hdr = [c[1][c[1].find('u.'):].split()[0][2:] if c[1].find('u.') != -1 else None for c in tuple_hdr]
-        format_hdr = [c[1][c[1].find('%'):].split()[0] if c[1].find('%') != -1 else None for c in tuple_hdr]
+        has_mag = any(source.mag for source in sources)
+        has_z = any(source.z for source in sources)
 
         # magnitudes
-        lmag = [len(source.mag) for source in sources if source.mag is not None]
-        if len(lmag) != 0:
-            names_mag = list(set(np.concatenate([source.mag['BAND'].data for source in sources
-                                                 if source.mag is not None])))
+        if has_mag:
+            names_mag = list(set(np.concatenate(
+                [s.mag['BAND'].data for s in sources if s.mag is not None])))
             names_mag += ['%s_ERR' % mag for mag in names_mag]
             names_mag.sort()
         else:
             names_mag = []
 
         # redshifts
-        lz = [len(source.z) for source in sources if source.z is not None]
-        if len(lz) != 0:
-            names_z = list(set(np.concatenate([source.z['Z_DESC'].data for source in sources
-                                               if source.z is not None])))
+        if has_z:
+            names_z = list(set(np.concatenate([
+                s.z['Z_DESC'].data for s in sources if s.z is not None])))
             names_z = ['Z_%s' % z for z in names_z]
-            colnames = list(set(np.concatenate([source.z.colnames for source in sources if source.z is not None])))
+            colnames = list(set(np.concatenate([
+                s.z.colnames for s in sources if s.z is not None])))
             if 'Z_ERR' in colnames:
                 names_err = ['%s_ERR' % z for z in names_z]
             else:
@@ -209,7 +184,8 @@ class Catalog(Table):
             names_z = []
 
         # lines
-        llines = [len(source.lines) for source in sources if source.lines is not None]
+        llines = [len(source.lines) for source in sources
+                  if source.lines is not None]
         if len(llines) == 0:
             names_lines = []
             dtype_lines = []
@@ -220,7 +196,8 @@ class Catalog(Table):
                 d = {}
                 unit = {}
                 for source in sources:
-                    if source.lines is not None and 'LINE' in source.lines.colnames:
+                    if source.lines is not None and \
+                            'LINE' in source.lines.colnames:
                         colnames = source.lines.colnames
                         colnames.remove('LINE')
 
@@ -229,17 +206,24 @@ class Catalog(Table):
                             unit[col] = source.lines[col].unit
 
                         for line in source.lines['LINE'].data:
-                            if line != None:
+                            if line is not None:
                                 try:
                                     float(line)
-                                    logger.warning('source %d: line labeled \"%s\" not loaded' % (source.ID, line))
+                                    logger.warning(
+                                        'source %d: line labeled \"%s\" not '
+                                        'loaded', source.ID, line)
                                 except:
-                                    names_lines += ['%s_%s' % (line.replace('_', ''), col) for col in colnames]
+                                    names_lines += [
+                                        '%s_%s' % (line.replace('_', ''), col)
+                                        for col in colnames
+                                    ]
 
                 names_lines = list(set(np.concatenate([names_lines])))
                 names_lines.sort()
-                dtype_lines = [d['_'.join(name.split('_')[1:])] for name in names_lines]
-                units_lines = [unit['_'.join(name.split('_')[1:])] for name in names_lines]
+                dtype_lines = [d['_'.join(name.split('_')[1:])]
+                               for name in names_lines]
+                units_lines = [unit['_'.join(name.split('_')[1:])]
+                               for name in names_lines]
             elif fmt == 'working':
                 lmax = max(llines)
                 d = {}
@@ -257,11 +241,13 @@ class Catalog(Table):
                     names_lines = []
                     inames_lines = sorted(d)
                     for i in range(1, lmax + 1):
-                        names_lines += [col + '%03d' % i for col in inames_lines]
+                        names_lines += [col + '%03d' % i
+                                        for col in inames_lines]
                     dtype_lines = [d[key] for key in sorted(d)] * lmax
                     units_lines = [unit[key] for key in sorted(d)] * lmax
             else:
-                raise IOError('Catalog creation: invalid format. It must be default or working.')
+                raise IOError('Catalog creation: invalid format. It must be '
+                              'default or working.')
 
         ###############################################
         # Set the data row by row                     #
@@ -275,7 +261,8 @@ class Catalog(Table):
             row = []
             for key, typ in zip(names_hdr, dtype_hdr):
                 if typ == type('1'):
-                    row += [('%s' % h[key]).replace('\n', ' ') if key in keys else INVALID[typ]]
+                    row += [('%s' % h[key]).replace('\n', ' ')
+                            if key in keys else INVALID[typ]]
                 else:
                     k = [h[key] if key in keys else INVALID[typ]]
                     if type(k[0]) == type('1'):
@@ -283,7 +270,7 @@ class Catalog(Table):
                     row += k
 
             # magnitudes
-            if len(lmag) != 0:
+            if has_mag:
                 if source.mag is None:
                     row += [np.nan for key in names_mag]
                 else:
@@ -297,7 +284,7 @@ class Catalog(Table):
                             row += [np.nan]
 
             # redshifts
-            if len(lz) != 0:
+            if has_z:
                 if source.z is None:
                     row += [np.nan for key in names_z]
                 else:
@@ -323,7 +310,10 @@ class Catalog(Table):
                 else:
                     if fmt == 'default':
                         if 'LINE' not in source.lines.colnames:
-                            logger.warning('source %d:LINE column not present in LINE table. LINE information will be not loaded with the default format.' % source.ID)
+                            logger.warning(
+                                'source %d:LINE column not present in LINE '
+                                'table. LINE information will be not loaded '
+                                'with the default format.', source.ID)
                             for typ in dtype_lines:
                                 row += [INVALID[typ.type]]
                         else:
@@ -343,7 +333,9 @@ class Catalog(Table):
                     elif fmt == 'working':
                         keys = source.lines.colnames
                         if lmax == 1:
-                            row += [source.lines[key][0] if key in keys else INVALID[typ.type] for key, typ in zip(names_lines, dtype_lines)]
+                            row += [source.lines[key][0] if key in keys
+                                    else INVALID[typ.type]
+                                    for key, typ in zip(names_lines, dtype_lines)]
                         else:
                             try:
                                 subtab1 = source.lines[source.lines['LINE'] != ""]
@@ -366,10 +358,10 @@ class Catalog(Table):
         dtype = dtype_hdr
 
         # magnitudes
-        if len(lmag) != 0:
+        if has_mag:
             dtype += ['f8' for i in range(len(names_mag))]
         # redshifts
-        if len(lz) != 0:
+        if has_z:
             dtype += ['f8' for i in range(len(names_z))]
         # lines
         if len(llines) != 0:
@@ -479,7 +471,7 @@ class Catalog(Table):
             except KeyboardInterrupt:
                 return
             except Exception as inst:
-                logger.warning('source %s not loaded (%s)' % (f, inst))
+                logger.warning('source %s not loaded (%s)', f, inst)
             sys.stdout.write("\r\x1b[K %i%%" % (100 * len(filenames) / n))
             sys.stdout.flush()
 
