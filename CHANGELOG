@@ -1,18 +1,65 @@
 v2.3.dev (**/**/2017)
 ---------------------
 
+- New function to create a PSF cube in `~mpdaf.MUSE.create_psf_cube`.
+
+- Update the ``mpdaf.drs.rawobj`` module.
+
+- New ``extract_cube_fieldsMap`` script.
+
+WCS
+~~~
+
+- Avoid useless unit conversions in ``pix2sky`` and ``sky2pix``.
+
+- Add back the ``WCS.rotate`` method.
+
+Spectrum
+~~~~~~~~
+
+- Fix ``Spectrum.plot`` when unit is not angstrom.
+
+- Add wavelength filtering, thanks to Markus Rexroth (EPFL):
+  `~mpdaf.obj.Spectrum.wavelet_filter`.
+
+Image
+~~~~~
+
+- Fix ``align_with_image`` which was modifying the input data.
+
+- Several bugfixes for Gaussian and Moffat fits.
+
+Cube
+~~~~
+
+- Add `~mpdaf.obj.Cube.max`, `~mpdaf.obj.Cube.spatial_erosion`.
+
+CubeList
+~~~~~~~~
+
+- Avoid warnings with HIERARCH keywords
+
+- Mask NaNs in the output cube, useful when creating the white-image after.
+
 Sources
 ~~~~~~~
 
 - Fix removal of extension with the optimized source writing. [!87]
 
-- Add an overwrite parameter to ``Source.write``. [#485]
+- Add an overwrite parameter to `~mpdaf.sdetect.Source.write`. [#485]
 
 - Fix text truncated in source history.
 
-- Rework spectra extraction and allow to extract spectra from a list of
-  apertures (``Source.extract_spectra``).
+- New optimal extraction algorithm for "CCD spectroscopy", Horne, K. 1986.
 
+- Allow to set the order for the spline interpolation in
+  `~mpdaf.sdetect.Source.add_image`.
+
+Pixtable
+~~~~~~~~
+
+- Bugfix for `~mpdaf.drs.PixTable.selfcalibrate`: make sure that we have enough
+  pixels with a flux in each slice.
 
 v2.2 (24/01/2017)
 -----------------
