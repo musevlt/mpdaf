@@ -1825,16 +1825,20 @@ class Image(ArithmeticMixin, DataArray):
                 pmax, qmax = pos_max
         else:
             if pos_min is not None:
-                pmin, qmin = self.wcs.sky2pix(pos_min, unit=unit_center)[0]
+                pmin, qmin = self.wcs.sky2pix(pos_min, unit=unit_center,
+                                              nearest=True)[0]
             if pos_max is not None:
-                pmax, qmax = self.wcs.sky2pix(pos_max, unit=unit_center)[0]
+                pmax, qmax = self.wcs.sky2pix(pos_max, unit=unit_center,
+                                              nearest=True)[0]
             if pmin > pmax:
                 pmin, pmax = pmax, pmin
             if qmin > qmax:
                 qmin, qmax = qmax, qmin
 
-        pmin = max(0, pmin)
-        qmin = max(0, qmin)
+        pmin = int(max(0, pmin))
+        qmin = int(max(0, qmin))
+        pmax = int(pmax)
+        qmax = int(qmax)
         ima = self[pmin:pmax, qmin:qmax]
 
         N = ima.data.count()
@@ -1944,7 +1948,7 @@ class Image(ArithmeticMixin, DataArray):
 
         # initial gaussian integrated flux
         if flux is None:
-            peak = ima._data[center[0], center[1]] - cont
+            peak = ima._data[int(center[0]), int(center[1])] - cont
         elif peak is True:
             peak = flux - cont
 
@@ -2268,7 +2272,7 @@ class Image(ArithmeticMixin, DataArray):
 
         # initial gaussian integrated flux
         if flux is None:
-            I = ima.data.data[center[0], center[1]] - cont
+            I = ima.data.data[int(center[0]), int(center[1])] - cont
         elif peak is True:
             I = flux - cont
         else:
