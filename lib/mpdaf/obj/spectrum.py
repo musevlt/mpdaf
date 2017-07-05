@@ -1259,7 +1259,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         return flux2mag(vflux2.value, err_flux2.value, l0)
 
     def wavelet_filter(self, levels=9, sigmaCutoff=5.0, epsilon=0.05,
-                       inplace=True):
+                       inplace=False):
         """Perform a wavelet filtering on the spectrum in 1 dimension.
 
         Code contributed by Markus Rexroth (EPFL, 2016), and used in
