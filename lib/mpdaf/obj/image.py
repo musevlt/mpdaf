@@ -3587,8 +3587,8 @@ class Image(ArithmeticMixin, DataArray):
             pixcrd = self.wcs.sky2pix([coord[0], coord[1]], unit=unit)[0]
         else:
             pixcrd = coord
-        if pixcrd[0] >= 0 and pixcrd[0] < self.shape[0] \
-                and pixcrd[1] >= 0 and pixcrd[1] < self.shape[1]:
+        if (pixcrd >= -self.wcs.get_step(unit=unit)/100).all() and \
+            (pixcrd < self.shape[1]+self.wcs.get_step(unit=unit)/100).all():
             return True
         else:
             return False
