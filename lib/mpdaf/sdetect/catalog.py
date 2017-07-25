@@ -550,7 +550,11 @@ class Catalog(Table):
             id1match = np.delete(id1match, to_remove)
             d2match = np.delete(d2match, to_remove)
         match1 = self[id1match]
+        #for name in match1.colnames:
+        #    match1.remove_indices(name)
         match2 = cat2[id2match]
+        #for name in match2.colnames:
+        #    match2.remove_indices(name)
         match = hstack([match1, match2], join_type='exact')
         match.add_column(Column(data=d2match.to(u.arcsec), name='Distance',
                                 dtype=float))
