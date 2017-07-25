@@ -593,8 +593,8 @@ class Catalog(Table):
         """
         arr = np.vstack([self[dec].data, self[ra].data]).T
         cen = wcs.sky2pix(arr, unit=u.deg).T
-        sel = ((cen[0] > margin) & (cen[0] < wcs.naxis1 - margin) &
-               (cen[1] > margin) & (cen[1] < wcs.naxis2 - margin))
+        sel = ((cen[0] > margin) & (cen[0] < wcs.naxis2 - margin) &
+               (cen[1] > margin) & (cen[1] < wcs.naxis1 - margin))
         return self[sel]
 
     def edgedist(self, wcs, ra='RA', dec='DEC'):
@@ -615,7 +615,7 @@ class Catalog(Table):
         out : `numpy.array` in arcsec units
 
         """
-        dim = np.array([wcs.naxis1, wcs.naxis2])
+        dim = np.array([wcs.naxis2, wcs.naxis1])
         pix = wcs.sky2pix(np.array([self[dec], self[ra]]).T, unit=u.deg)
         dist = np.hstack([pix, dim - pix]).min(axis=1)
         step = wcs.get_step()[0] * u.deg
