@@ -814,9 +814,9 @@ class Image(ArithmeticMixin, DataArray):
         if size[0] <= 0 or size[1] <= 0:
             raise ValueError('Size must be positive')
 
-        # Require the center to be within the parent image.
-        if not self.inside(center, unit_center):
-            raise ValueError('The center must be within the image')
+#         # Require the center to be within the parent image.
+#         if not self.inside(center, unit_center):
+#             raise ValueError('The center must be within the image')
 
         # Convert the center position from world-coordinates to pixel indexes.
         center = np.asarray(center)
