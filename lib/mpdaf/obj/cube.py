@@ -1855,21 +1855,13 @@ class Cube(ArithmeticMixin, DataArray):
 
         """
 
-        # Where needed, convert the wavelengths and sensitivities
-        # sequences into numpy arrays.
-
         wavelengths = np.asarray(wavelengths, dtype=float)
         sensitivities = np.asarray(sensitivities, dtype=float)
-
-        # The sensitivities and wavelengths arrays must be one
-        # dimensional and have the same length.
 
         if (wavelengths.ndim != 1 or sensitivities.ndim != 1 or
                 len(wavelengths) != len(sensitivities)):
             raise ValueError('The wavelengths and sensititivies arguments'
                              ' should be 1D arrays of equal length')
-
-        # Convert the array of wavelengths to floating point pixel indexes.
 
         if unit_wave is None:
             pixels = wavelengths.copy()
@@ -1878,7 +1870,6 @@ class Cube(ArithmeticMixin, DataArray):
 
         # Get the integer indexes of the pixels that contain the above
         # floating point pixel indexes.
-
         indexes = np.rint(pixels).astype(int)
 
         # If there is no overlap between the bandpass filter curve
@@ -1892,12 +1883,10 @@ class Cube(ArithmeticMixin, DataArray):
         # by the wavelength axis of the cube. If the overlap is
         # incomplete, emit a warning, then truncate the bandpass curve
         # to the edge of the wavelength range of the cube.
-
         if indexes[0] < 0 or indexes[-1] >= self.shape[0]:
 
             # Work out the start and stop indexes of the slice needed
             # to truncate the arrays of the bandpass filter curve.
-
             if indexes[0] < 0:
                 start = np.searchsorted(indexes, 0, 'left')
             else:
@@ -1908,11 +1897,9 @@ class Cube(ArithmeticMixin, DataArray):
                 stop = indexes.shape[0]
 
             # Integrate the overal bandpass filter curve.
-
             total = integrate.trapz(sensitivities, wavelengths)
 
             # Also integrate over just the truncated parts of the curve.
-
             lost = 0.0
             if start > 0:
                 s = slice(0, start)
@@ -1923,17 +1910,14 @@ class Cube(ArithmeticMixin, DataArray):
 
             # Compute the fraction of the integrated bandpass response
             # that has been truncated.
-
             lossage = lost / total
 
             # Truncate the bandpass filter curve.
-
             indexes = indexes[start:stop]
             pixels = pixels[start:stop]
             sensitivities = sensitivities[start:stop]
 
             # Report the loss if it is over 0.5%.
-
             if lossage > 0.005:
                 self._logger.warning(
                     "%.2g%% of the integrated " % (lossage * 100.0) +
@@ -1941,12 +1925,10 @@ class Cube(ArithmeticMixin, DataArray):
 
         # Get the range of indexes along the wavelength axis that
         # encompass the filter bandpass within the cube.
-
         kmin = indexes[0]
         kmax = indexes[-1]
 
         # Obtain an interpolator of the bandpass curve.
-
         spline = interpolate.interp1d(x=pixels, y=sensitivities,
                                       kind=interpolation)
 
@@ -1956,40 +1938,32 @@ class Cube(ArithmeticMixin, DataArray):
         # Integer pixel indexes refer to the centers of pixels,
         # so for integer pixel index k, we need to integrate from
         # k-0.5 to k+0.5.
-
         w = np.empty((kmax + 1 - kmin))
         for k in range(kmin + 1, kmax):
             w[k - kmin], err = integrate.quad(spline, k - 0.5, k + 0.5)
 
         # Start the integration of the weight of the first channel
         # from the lower limit of the bandpass.
-
         w[0], err = integrate.quad(spline, pixels[0], kmin + 0.5)
 
         # End the integration of the weight of the final channel
         # at the upper limit of the bandpass.
-
         w[-1], err = integrate.quad(spline, kmax - 0.5, pixels[-1])
 
         # Normalize the weights.
-
         w /= w.sum()
 
         # Create a sub-cube of the selected channels.
-
         subcube = self[kmin:kmax + 1, :, :]
 
         # To accomodate masked pixels, create a cube of the above
         # weights, but with masked pixels given zero weight.
-
         if subcube._mask is ma.nomask:
             wcube = w[:, np.newaxis, np.newaxis] * np.ones(subcube.shape)
         else:
             wcube = w[:, np.newaxis, np.newaxis] * ~subcube._mask
 
-        # Get an image which is the sum of the weights along the spectral
-        # axis.
-
+        # Get an image which is the sum of the weights along the spectral axis.
         wsum = wcube.sum(axis=0)
 
         # The output image is the weighted mean of the selected
@@ -1997,13 +1971,11 @@ class Cube(ArithmeticMixin, DataArray):
         # calculation over spectral channels, k.
         #
         #  mean = sum(weights[k] * data[k]) / sum(weights[k]
-
         data = np.ma.sum(subcube.data * wcube, axis=0) / wsum
 
         # The variance of a weighted means is:
         #
         #  var = sum(weights[k]**2 * var[k]) / (sum(weights[k]))**2
-
         if subcube._var is not None:
             var = np.ma.sum(subcube.var * wcube**2, axis=0) / wsum**2
         else:

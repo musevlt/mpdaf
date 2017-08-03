@@ -44,7 +44,7 @@ from astropy.coordinates import Angle
 from astropy.io import fits
 from six.moves import range
 
-from .objs import is_float, is_int, UnitArray
+from .objs import UnitArray
 from ..tools import fix_unit_read
 
 __all__ = ('deg2sexa', 'sexa2deg', 'deg2hms', 'hms2deg', 'deg2dms', 'dms2deg',
@@ -622,7 +622,7 @@ class WCS(object):
                 'step:(%0.3f",%0.3f") rot:%0.1f deg frame:%s',
                 dec, ra, sizey, sizex, dy, dx, self.get_rot(),
                 self.wcs.wcs.radesys)
-        except:
+        except Exception:
             # FIXME: when is that useful ?
             pixcrd = [[0, 0], [self.naxis2 - 1, self.naxis1 - 1]]
             pixsky = self.pix2sky(pixcrd)
@@ -904,11 +904,6 @@ class WCS(object):
            or in the unit specified by the self.unit property.
 
         """
-
-        # Get the FITS coordinate conversion matrix.
-
-        cd = self.get_cd()
-
         # The pixel dimensions are determined as follows. First note
         # that the coordinate transformation matrix looks as follows:
         #
@@ -942,14 +937,11 @@ class WCS(object):
         #
         # Calculate the width and height of the pixels as described above.
 
+        cd = self.get_cd()
         dx = np.sqrt(cd[0, 0]**2 + cd[1, 0]**2)
         dy = np.sqrt(cd[0, 1]**2 + cd[1, 1]**2)
 
-        # Place the height and width in an array.
-
         steps = np.array([dy, dx])
-
-        # Convert to a requested angular unit?
 
         if unit is not None:
             steps = (steps * self.unit).to(unit).value
@@ -985,16 +977,9 @@ class WCS(object):
            or in the unit specified by the self.unit property.
 
         """
-
-        # Get the FITS coordinate conversion matrix.
-
-        cd = self.get_cd()
-
         # Get the axis increments that are configured by the CD matrix.
-
+        cd = self.get_cd()
         increments = axis_increments_from_cd(cd)
-
-        # Convert to the requested angular units?
 
         if unit is not None:
             increments = (increments * self.unit).to(unit).value
@@ -1512,7 +1497,7 @@ class WCS(object):
         """
         try:
             return self.wcs.wcs.ctype[0] not in ('LINEAR', 'PIXEL')
-        except:
+        except Exception:
             return True
 
     def to_cube_header(self, wave):
@@ -1567,7 +1552,7 @@ class WaveCoord(object):
             try:
                 n = hdr['NAXIS']
                 self.shape = hdr['NAXIS%d' % n]
-            except:
+            except KeyError:
                 n = hdr['WCSAXES']
 
             axis = 1 if n == 1 else 3
@@ -1575,8 +1560,6 @@ class WaveCoord(object):
             # not convert the values.
             self.unit = u.Unit(fix_unit_read(hdr.pop('CUNIT%d' % axis)))
             self.wcs = _wcs_from_header(hdr).sub([axis])
-            if shape is not None:
-                self.shape = shape
         else:
             self.unit = u.Unit(cunit)
             self.wcs = pywcs.WCS(naxis=1)
@@ -1588,8 +1571,6 @@ class WaveCoord(object):
 
     def copy(self):
         """Copie WaveCoord object in a new one and returns it."""
-        # remove the  UnitsWarning: The unit 'Angstrom' has been deprecated in
-        # the FITS standard.
         out = WaveCoord(shape=self.shape, cunit=self.unit)
         out.wcs = self.wcs.deepcopy()
         return out
@@ -1647,10 +1628,9 @@ class WaveCoord(object):
 
         if pixel is None:
             pixelarr = np.arange(self.shape, dtype=float)
-        elif is_float(pixel) or is_int(pixel):
-            pixelarr = np.ones(1) * pixel
         else:
-            pixelarr = np.asarray(pixel)
+            pixelarr = np.atleast_1d(pixel)
+
         res = self.wcs.wcs_pix2world(pixelarr, 0)[0]
         if unit is not None:
             res = (res * self.unit).to(unit).value
@@ -1676,10 +1656,9 @@ class WaveCoord(object):
         out : float or integer
 
         """
-
-        lbdarr = np.asarray([lbda] if np.isscalar(lbda) else lbda)
+        lbdarr = np.atleast_1d(lbda)
         if unit is not None:
-            lbdarr = (lbdarr * unit).to(self.unit).value
+            lbdarr = UnitArray(lbdarr, unit, self.unit)
         pix = self.wcs.wcs_world2pix(lbdarr, 0)[0]
         if nearest:
             pix = (pix + 0.5).astype(int)
@@ -1771,14 +1750,11 @@ class WaveCoord(object):
         res = self.copy()
         res.wcs.wcs.crpix[0] = 1.0
         res.wcs.wcs.crval[0] = start
-        try:
+        if self.wcs.wcs.has_cd():
             res.wcs.wcs.cd[0][0] = step
-        except:
-            try:
-                res.wcs.wcs.cdelt[0] = 1.0
-                res.wcs.wcs.pc[0][0] = step
-            except:
-                raise IOError('No standard WCS')
+        else:
+            res.wcs.wcs.cdelt[0] = 1.0
+            res.wcs.wcs.pc[0][0] = step
         res.wcs.wcs.set()
         res.shape = int(np.ceil((self.shape * cdelt - start + old_start) /
                                 step))
@@ -1799,13 +1775,10 @@ class WaveCoord(object):
         """
         old_cdelt = self.get_step()
 
-        try:
+        if self.wcs.wcs.has_cd():
             self.wcs.wcs.cd = self.wcs.wcs.cd * factor
-        except:
-            try:
-                self.wcs.wcs.cdelt = self.wcs.wcs.cdelt * factor
-            except:
-                raise Exception("problem in wcs rebinning")
+        else:
+            self.wcs.wcs.cdelt = self.wcs.wcs.cdelt * factor
         self.wcs.wcs.set()
         cdelt = self.get_step()
 
