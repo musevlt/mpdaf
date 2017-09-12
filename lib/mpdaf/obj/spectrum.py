@@ -1184,11 +1184,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             lbda, thr = np.loadtxt(join(DATADIR, filenames[name]),
                                    dtype=float, delimiter=' ',
                                    unpack=True)
-            lmin = np.min(lbda)
-            lmax = np.max(lbda)
-            l0 = np.sum(lbda * thr) / np.sum(thr)
-            tck = interpolate.splrep(lbda, thr, k=3)
-            return self._filter(l0, lmin, lmax, tck)
+            return self.abmag_filter(lbda, thr)
 
     def abmag_filter(self, lbda, eff):
         """Compute AB magnitude using array filter.
@@ -1205,17 +1201,15 @@ class Spectrum(ArithmeticMixin, DataArray):
         out : float, float
               Magnitude value and its error
         """
-        lbda = np.array(lbda)
-        eff = np.array(eff)
+        lbda = np.asarray(lbda)
+        eff = np.asarray(eff)
         if np.shape(lbda) != np.shape(eff):
             raise TypeError('lbda and eff inputs have not the same size.')
         l0 = np.average(lbda, weights=eff)
         lmin = lbda[0]
         lmax = lbda[-1]
-        if np.shape(lbda)[0] > 3:
-            tck = interpolate.splrep(lbda, eff, k=min(np.shape(lbda)[0], 3))
-        else:
-            tck = interpolate.splrep(lbda, eff, k=1)
+        k = 3 if lbda.shape[0] > 3 else 1
+        tck = interpolate.splrep(lbda, eff, k=k)
         return self._filter(l0, lmin, lmax, tck)
 
     def _filter(self, l0, lmin, lmax, tck):
