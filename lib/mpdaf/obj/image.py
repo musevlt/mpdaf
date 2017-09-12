@@ -3588,7 +3588,7 @@ class Image(ArithmeticMixin, DataArray):
         else:
             pixcrd = coord
         if (pixcrd >= -self.wcs.get_step(unit=unit)/100).all() and \
-            (pixcrd < self.shape[1]+self.wcs.get_step(unit=unit)/100).all():
+            (pixcrd < self.shape + self.wcs.get_step(unit=unit)/100).all():
             return True
         else:
             return False
