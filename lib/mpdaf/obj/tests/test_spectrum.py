@@ -1,5 +1,5 @@
 """
-Copyright (c) 2010-2016 CNRS / Centre de Recherche Astrophysique de Lyon
+Copyright (c) 2010-2017 CNRS / Centre de Recherche Astrophysique de Lyon
 Copyright (c) 2016-2017 Simon Conseil <simon.conseil@univ-lyon1.fr>
 Copyright (c)      2016 Martin Shepherd <martin.shepherd@univ-lyon1.fr>
 Copyright (c)      2016 Laure Piqueras <laure.piqueras@univ-lyon1.fr>
