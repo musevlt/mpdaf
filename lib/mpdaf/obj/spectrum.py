@@ -246,11 +246,6 @@ class Spectrum(ArithmeticMixin, DataArray):
         else:
             return self[pix_min:pix_max]
 
-    @deprecated('get_lambda method is deprecated in favor of subspec')
-    def get_lambda(self, lmin, lmax=None, unit=u.angstrom):
-        """DEPRECATED: See `~mpdaf.obj.Spectrum.subspec` instead."""
-        return self.subspec(lmin, lmax=lmax, unit=unit)
-
     def get_step(self, unit=None):
         """Return the wavelength step size.
 
@@ -2469,18 +2464,3 @@ class Spectrum(ArithmeticMixin, DataArray):
         self._unit = unit
         plt.connect('motion_notify_event', _on_move)
         self._plot_id = len(ax.lines) - 1
-
-    @deprecated('log_plot method is deprecated in favor of plot')
-    def log_plot(self, **kwargs):
-        """DEPRECATED: Use `~mpdaf.obj.Spectrum.plot` with stretch='log'."""
-        self.plot(stretch='log', **kwargs)
-
-    @deprecated('rebin_mean method is deprecated in favor of rebin')
-    def rebin_mean(self, factor, margin='center'):
-        """DEPRECATED: See `~mpdaf.obj.Spectrum.rebin` instead."""
-        return self.rebin(factor, margin)
-
-    @deprecated('rebin_median method is deprecated in favor of rebin')
-    def rebin_median(self, factor, margin='center'):
-        """DEPRECATED: See `~mpdaf.obj.Spectrum.rebin` instead."""
-        return self.rebin(factor, margin)

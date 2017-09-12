@@ -44,27 +44,8 @@ from numpy import ma
 from mpdaf.obj import DataArray, WaveCoord, WCS, Cube
 from numpy.testing import assert_array_equal, assert_allclose
 
-from mpdaf.tools import MpdafWarning
 from ...tests.utils import (generate_image, generate_cube, generate_spectrum,
                             assert_masked_allclose, get_data_file)
-
-
-def test_deprecated_warnings(spectrum):
-    """DataArray class: Testing warnings for deprecated methods"""
-    with warnings.catch_warnings(record=True) as w:
-        # Cause all warnings to always be triggered.
-        warnings.simplefilter("always")
-        spectrum.get_lambda(0)
-        assert len(w) == 1
-        assert issubclass(w[-1].category, MpdafWarning)
-        assert "deprecated" in str(w[-1].message)
-
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        spectrum.resize()
-        assert len(w) == 1
-        assert issubclass(w[-1].category, MpdafWarning)
-        assert "deprecated" in str(w[-1].message)
 
 
 def test_fits_img():

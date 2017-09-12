@@ -57,7 +57,6 @@ from .arithmetic import ArithmeticMixin
 from .coords import WCS
 from .data import DataArray
 from .objs import is_int, is_number, bounding_box, UnitMaskedArray
-from ..tools import deprecated
 
 __all__ = ('Gauss2D', 'Moffat2D', 'Image', 'gauss_image', 'moffat_image',
            'SpatialFrequencyLimits')
@@ -2623,16 +2622,6 @@ class Image(ArithmeticMixin, DataArray):
         res.update_spatial_fmax(0.5 / res.wcs.get_step())
 
         return res
-
-    @deprecated('rebin_mean method is deprecated: use rebin instead')
-    def rebin_mean(self, factor, margin='center'):
-        """DEPRECATED: See `~mpdaf.obj.Image.rebin` instead."""
-        return self.rebin(factor, margin)
-
-    @deprecated('rebin_median method is deprecated: use rebin instead')
-    def rebin_median(self, factor, margin='center'):
-        """DEPRECATED: See `~mpdaf.obj.Image.rebin` instead."""
-        return self.rebin(factor, margin)
 
     def resample(self, newdim, newstart, newstep, flux=False,
                  order=1, interp='no', unit_start=u.deg, unit_step=u.arcsec,
