@@ -13,11 +13,8 @@ py34:
 astropy10:
   script: tox -v -e astropy10
 
-astropy11:
-  script: tox -v -e astropy11
-
-astropy12:
-  script: tox -v -e astropy12
+astropy13:
+  script: tox -v -e astropy13
 
 check-setup:
   script: tox -v -e check
