@@ -1,5 +1,5 @@
-v2.3.dev (**/**/2017)
----------------------
+2.3 (13/09/2017)
+----------------
 
 - New function to create a PSF cube in `~mpdaf.MUSE.create_psf_cube`.
 
@@ -29,6 +29,10 @@ Image
 
 - Several bugfixes for Gaussian and Moffat fits.
 
+- Margin of 1/100th of pixel added in `~mpdaf.obj.Image.inside`.
+
+- Allow to set the center outside the parent image in `~mpdaf.obj.Image.subimage`.
+
 Cube
 ~~~~
 
@@ -54,6 +58,12 @@ Sources
 
 - Allow to set the order for the spline interpolation in
   `~mpdaf.sdetect.Source.add_image`.
+  
+  
+Catalog
+~~~~~~~
+
+- Correct bug (naxis inversion) in catalog.select and catalog.edgedist
 
 Pixtable
 ~~~~~~~~
