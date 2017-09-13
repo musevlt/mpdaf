@@ -1,5 +1,5 @@
 """
-Copyright (c) 2010-2016 CNRS / Centre de Recherche Astrophysique de Lyon
+Copyright (c) 2010-2017 CNRS / Centre de Recherche Astrophysique de Lyon
 Copyright (c) 2015-2017 Simon Conseil <simon.conseil@univ-lyon1.fr>
 Copyright (c) 2015-2016 Laure Piqueras <laure.piqueras@univ-lyon1.fr>
 Copyright (c)      2016 Martin Shepherd <martin.shepherd@univ-lyon1.fr>
@@ -46,9 +46,8 @@ from numpy import ma
 
 from .coords import WCS, WaveCoord, determine_refframe
 from .objs import UnitMaskedArray, UnitArray, is_int
-from ..tools import (MpdafUnitsWarning, deprecated, fix_unit_read,
-                     is_valid_fits_file, copy_header, read_slice_from_fits,
-                     write_hdulist_to)
+from ..tools import (MpdafUnitsWarning, fix_unit_read, is_valid_fits_file,
+                     copy_header, read_slice_from_fits, write_hdulist_to)
 
 __all__ = ('DataArray', )
 
@@ -1218,11 +1217,6 @@ class DataArray(object):
                                      'attribute set to None', exc_info=True)
 
         return item
-
-    @deprecated('The resize method is deprecated. Please use crop instead.')
-    def resize(self):
-        """DEPRECATED: See ``crop`` instead."""
-        return self.crop()
 
     def set_wcs(self, wcs=None, wave=None):
         """Set the world coordinates (spatial and/or spectral where pertinent).

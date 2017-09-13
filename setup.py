@@ -206,7 +206,7 @@ setup(
     url='https://git-cral.univ-lyon1.fr/MUSE/mpdaf',
     install_requires=['numpy', 'scipy', 'matplotlib', 'astropy>=1.0', 'six'],
     extras_require={
-        'all':  ['numexpr', 'fitsio'],
+        'all': ['numexpr', 'fitsio'],
     },
     tests_require=['pytest'],
     package_dir={'': 'lib'},
@@ -218,7 +218,6 @@ setup(
     entry_points={
         'console_scripts': [
             'make_white_image = mpdaf.scripts.make_white_image:main',
-            'extract_cube_fieldsMap = mpdaf.scripts.extract_cube_fieldsMap:main'
         ],
     },
     scripts=['lib/mpdaf/scripts/topcat_show_ds9'],

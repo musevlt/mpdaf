@@ -1,6 +1,6 @@
 """
-Copyright (c) 2010-2016 CNRS / Centre de Recherche Astrophysique de Lyon
-Copyright (c) 2012-2016 Laure Piqueras <laure.piqueras@univ-lyon1.fr>
+Copyright (c) 2010-2017 CNRS / Centre de Recherche Astrophysique de Lyon
+Copyright (c) 2012-2017 Laure Piqueras <laure.piqueras@univ-lyon1.fr>
 Copyright (c) 2014-2017 Simon Conseil <simon.conseil@univ-lyon1.fr>
 Copyright (c)      2016 Martin Shepherd <martin.shepherd@univ-lyon1.fr>
 Copyright (c)      2016 Roland Bacon <roland.bacon@univ-lyon1.fr>
@@ -55,7 +55,7 @@ from .data import DataArray
 from .image import Image
 from .objs import bounding_box, is_number
 from .spectrum import Spectrum
-from ..tools import deprecated, add_mpdaf_method_keywords
+from ..tools import add_mpdaf_method_keywords
 
 __all__ = ('iter_spe', 'iter_ima', 'Cube')
 
@@ -2345,21 +2345,6 @@ class Cube(ArithmeticMixin, DataArray):
                                    iterations=npixels)
         res._mask = np.resize(mask, self.shape)
         return res
-
-    @deprecated('get_lambda method is deprecated, use select_lambda instead')
-    def get_lambda(self, lbda_min, lbda_max=None, unit_wave=u.angstrom):
-        """DEPRECATED: See `~mpdaf.obj.Cube.select_lambda` instead."""
-        return self.select_lambda(lbda_min, lbda_max, unit_wave=unit_wave)
-
-    @deprecated('rebin_mean method is deprecated, use rebin instead')
-    def rebin_mean(self, factor, margin='center'):
-        """DEPRECATED: See `~mpdaf.obj.Cube.rebin` instead."""
-        return self.rebin(factor, margin)
-
-    @deprecated('rebin_median method is deprecated, use rebin instead')
-    def rebin_median(self, factor, margin='center'):
-        """DEPRECATED: See `~mpdaf.obj.Cube.rebin` instead."""
-        return self.rebin(factor, margin)
 
 
 def _is_method(func, cls):
