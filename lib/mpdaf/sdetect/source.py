@@ -768,11 +768,10 @@ class Source(object):
         info = self._logger.info
         excluded_cards = {'SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
                           'AUTHOR'}
-        keys = set(self.header.keys())
-        keys = keys - excluded_cards
-
-        for key in keys:
-            info(self.header.cards[key])
+        
+        for key in self.header.keys():
+            if key not in excluded_cards:
+                info(self.header.cards[key])
 
         for attr in (self.spectra, self.images, self.cubes, self.tables):
             info(repr(attr))
