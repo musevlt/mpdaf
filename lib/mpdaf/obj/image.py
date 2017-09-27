@@ -3911,6 +3911,8 @@ class Image(ArithmeticMixin, DataArray):
             If 'h', a horizontal colorbar is drawn above the image.
             If 'v', a vertical colorbar is drawn to the right of the image.
             If None (the default), no colorbar is drawn.
+        var : bool
+              If true variance array is shown in place of data array
         ax : matplotlib.axes.Axes
             An optional Axes instance in which to draw the image,
             or None to have one created using ``matplotlib.pyplot.gca()``.
@@ -3979,7 +3981,11 @@ class Image(ArithmeticMixin, DataArray):
             norm = ImageNormalize(vmin=vmin, vmax=vmax, stretch=stretch())
 
             # Display the image.
-            cax = ax.imshow(self.data, interpolation='nearest',
+            if var:
+                cax = ax.imshow(self.var, interpolation='nearest',
+                            origin='lower', norm=norm, **kwargs)
+            else:
+                cax = ax.imshow(self.data, interpolation='nearest',
                             origin='lower', norm=norm, **kwargs)
 
             # Create a colorbar
