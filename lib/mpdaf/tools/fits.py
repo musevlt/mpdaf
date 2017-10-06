@@ -50,7 +50,7 @@ __all__ = ('add_mpdaf_method_keywords', 'add_mpdaf_keywords_to_file',
            'fix_unit_read', 'fix_unit_write', 'copy_header', 'copy_keywords',
            'is_valid_fits_file', 'read_slice_from_fits')
 
-FITS_EXTENSIONS = ("fits", "fits.gz")
+FITS_EXTENSIONS = ("fits", "fits.gz", "fits.fz")
 
 
 def add_mpdaf_method_keywords(header, method, params, values, comments):
