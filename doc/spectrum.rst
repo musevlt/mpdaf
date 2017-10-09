@@ -276,9 +276,8 @@ estimated as follows:
 
   In [8]: Hbeta.flux/Hbeta.cont
 
-If the wavelength of the line is already known, `line_gauss_fit
-<mpdaf.obj.Spectrum.line_gauss_fit>` can perform an better Gaussian fit on the
-line by fixing the Gaussian center:
+If the wavelength of the line is already known, using `fix_lpeak=True` can
+perform an better Gaussian fit on the line by fixing the Gaussian center:
 
 .. ipython::
 
@@ -287,7 +286,7 @@ line by fixing the Gaussian center:
   In [6]: specline.plot(lmin=8090,lmax=8210, unit=u.angstrom, title = 'Hbeta line')
 
   @savefig Spectrum_specline2.png width=4in
-  In [7]: Hbeta2 = specline.line_gauss_fit(lmin=8090,lmax=8210, lpeak=Hbeta.lpeak, unit=u.angstrom, plot=True)
+  In [7]: Hbeta2 = specline.gauss_fit(lmin=8090,lmax=8210, lpeak=Hbeta.lpeak, unit=u.angstrom, plot=True, fix_lpeak=True)
 
   In [8]: Hbeta2.print_param()
 
