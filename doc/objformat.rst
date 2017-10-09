@@ -99,7 +99,7 @@ returns a sub-cube, as demonstrated in the following example:
 
   In [2]: cube.info()
 
-  In [2]: cube[3000:4000,10:20,25:40].info()
+  In [2]: cube[3000:,10:20,25:40].info()
 
 Likewise, `Cube[k,:,:] <mpdaf.obj.Cube.__getitem__>` returns an Image, as
 demonstrated below:
