@@ -1,4 +1,6 @@
 before_script:
+  - export PATH="$HOME/.local/bin:$PATH"
+  - which pip
   - which tox
 
 coverage-clean:
