@@ -3937,18 +3937,23 @@ class Image(ArithmeticMixin, DataArray):
         xunit = yunit = 'pixel'
         xlabel = 'q (%s)' % xunit
         ylabel = 'p (%s)' % yunit
+        
+        if var:
+            data_plot = self.var
+        else:
+            data_plot = self.data
 
         # If either axis has just one pixel, plot it as a line-graph.
         if self.shape[1] == 1:
             # Plot a column as a line-graph
             yaxis = np.arange(self.shape[0], dtype=np.float)
-            ax.plot(yaxis, self.data)
+            ax.plot(yaxis, data_plot)
             xlabel = 'p (%s)' % yunit
             ylabel = self.unit
         elif self.shape[0] == 1:
             # Plot a row as a line-graph
             xaxis = np.arange(self.shape[1], dtype=np.float)
-            ax.plot(xaxis, self.data)
+            ax.plot(xaxis, data_plot)
             ylabel = self.unit
         else:
             # Plot a 2D image.
@@ -3958,10 +3963,10 @@ class Image(ArithmeticMixin, DataArray):
             # Choose vmin and vmax automatically?
             if zscale:
                 from ..tools.astropycompat import zscale as plt_zscale
-                if self.data.dtype == np.float64:
-                    vmin, vmax = plt_zscale(self.data.filled(np.nan))
+                if data_plot.dtype == np.float64:
+                    vmin, vmax = plt_zscale(data_plot.filled(np.nan))
                 else:
-                    vmin, vmax = plt_zscale(self.data.filled(0))
+                    vmin, vmax = plt_zscale(data_plot.filled(0))
 
             # How are values between vmin and vmax mapped to corresponding
             # positions along the colorbar?
@@ -3981,11 +3986,7 @@ class Image(ArithmeticMixin, DataArray):
             norm = ImageNormalize(vmin=vmin, vmax=vmax, stretch=stretch())
 
             # Display the image.
-            if var:
-                cax = ax.imshow(self.var, interpolation='nearest',
-                            origin='lower', norm=norm, **kwargs)
-            else:
-                cax = ax.imshow(self.data, interpolation='nearest',
+            cax = ax.imshow(data_plot, interpolation='nearest',
                             origin='lower', norm=norm, **kwargs)
 
             # Create a colorbar
@@ -4041,7 +4042,7 @@ class Image(ArithmeticMixin, DataArray):
             if (self.wcs is not None and row >= 0 and row < self.shape[0] and
                     col >= 0 and col < self.shape[1]):
                 yc, xc = self.wcs.pix2sky([row, col], unit=self._unit)[0]
-                val = self.data.data[row, col]
+                val = data_plot.data[row, col]
                 return 'y= %g x=%g p=%i q=%i data=%g' % (yc, xc, row, col, val)
             else:
                 return 'x=%1.4f, y=%1.4f' % (x, y)
