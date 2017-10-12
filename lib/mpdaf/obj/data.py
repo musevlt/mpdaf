@@ -1488,10 +1488,7 @@ class DataArray(object):
         if np.any(np.asarray(other.shape) > np.asarray(self.shape)):
             raise IOError('The other array must be no larger than self')
 
-        if not isinstance(other, DataArray):
-            kernel = other
-        else:
-            kernel = other.data
+        kernel = other.data if isinstance(other, DataArray) else other
 
         # Replace any masked pixels in the convolution kernel with zeros.
         if isinstance(kernel, ma.MaskedArray) and ma.count_masked(kernel) > 0:
