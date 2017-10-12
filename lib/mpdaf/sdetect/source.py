@@ -42,7 +42,7 @@ import datetime
 import glob
 import logging
 import numpy as np
-import os.path
+import os
 import re
 import six
 import shutil
@@ -469,16 +469,16 @@ class Source(object):
 
     """This class contains a Source object.
 
-    Attributes
+    Parameters
     ----------
     header : `astropy.io.fits.Header`
-        FITS header instance
+        FITS header instance.
     lines : `astropy.table.Table`
-        List of lines
+        List of lines.
     mag : `astropy.table.Table`
-        List of magnitudes
+        List of magnitudes.
     z : `astropy.table.Table`
-        List of redshifts
+        List of redshifts.
     spectra : dict
         Spectra dictionary, keys give origin of spectra (``'tot'`` for total
         spectrum, TBC). Values are `~mpdaf.obj.Spectrum` objects.
@@ -486,22 +486,22 @@ class Source(object):
         Images dictionary, keys give filter names (``'MUSE_WHITE'`` for white
         image, TBC). Values are `~mpdaf.obj.Image` objects.
     cubes : dict
-        Cubes dictionary, keys give a description of the cube.
-        Values are `~mpdaf.obj.Cube` objects.
+        Dictionary containing small data cubes.  Keys gives a description
+        of the cube.  Values are `~mpdaf.obj.Cube` objects.
     tables : dict
-        Tables dictionary, keys give a description of each table.
-        Values are `astropy.table.Table` objects.
-    mask_invalid : bool
-        Mask invalid values in tables, defaults to True. This can also be done
-        later with the ``masked_invalid`` method.
-    filename : str
-        File name of the source.
+        Dictionary containing tables.  Keys give a description of each
+        table.  Values are `astropy.table.Table` objects.
+    mask_invalid: bool
+        If True (default), iterate on all columns of all tables to mask
+        invalid values (Inf, NaN, and -9999).
+    default_size: float
+        Default size for image extraction, in arcseconds.
 
     """
 
     def __init__(self, header, lines=None, mag=None, z=None, spectra=None,
                  images=None, cubes=None, tables=None, mask_invalid=True,
-                 filename=None):
+                 filename=None, default_size=None):
 
         kwargs = locals()
 
@@ -513,6 +513,7 @@ class Source(object):
 
         self._logger = logging.getLogger(__name__)
         self._filename = filename
+        self._default_size = default_size
         self.header = header
         if 'SRC_V' not in self.header.keys():
             self.header['SRC_V'] = ''
@@ -537,9 +538,10 @@ class Source(object):
 
     @classmethod
     def from_data(cls, ID, ra, dec, origin, proba=None, confid=None,
-                  extras=None, lines=None, mag=None, z=None, spectra=None,
-                  images=None, cubes=None, tables=None, mask_invalid=True):
+                  extras=None, **kwargs):
         """Source constructor from a list of data.
+
+        Additional parameters are passed to the `Source` constructor.
 
         Parameters
         ----------
@@ -560,29 +562,7 @@ class Source(object):
         confid : int
             Expert confidence index
         extras : dict{key: value} or dict{key: (value, comment)}
-            Extra keywords
-        lines : `astropy.table.Table`
-            List of lines
-        mag : `astropy.table.Table`
-            List of magnitudes.
-        z : `astropy.table.Table`
-            List of redshifts
-        spectra : dict
-            Dictionary containing spectra. Keys gives the origin of the
-            spectrum ('tot' for total spectrum, TBC). Values are
-            `~mpdaf.obj.Spectrum` objects.
-        images : dict
-            Dictionary containing images.  Keys gives the filter ('MUSE_WHITE'
-            for white image, TBC). Values are `~mpdaf.obj.Image` object.
-        cubes : dict
-            Dictionary containing small data cubes.  Keys gives a description
-            of the cube.  Values are `~mpdaf.obj.Cube` objects.
-        tables : dict
-            Dictionary containing tables.  Keys give a description of each
-            table.  Values are `astropy.table.Table` objects.
-        mask_invalid: bool
-            If True (default), iterate on all columns of all tables to mask
-            invalid values (Inf, NaN, and -9999).
+            Extra header keywords
 
         """
         header = pyfits.Header()
@@ -600,8 +580,7 @@ class Source(object):
         if extras is not None:
             header.update(extras)
 
-        return cls(header, lines, mag, z, spectra, images, cubes, tables,
-                   mask_invalid=mask_invalid, filename=None)
+        return cls(header, filename=None, **kwargs)
 
     @classmethod
     def from_file(cls, filename, ext=None, mask_invalid=True):
@@ -694,6 +673,27 @@ class Source(object):
                    mask_invalid=mask_invalid,
                    filename=os.path.abspath(filename))
 
+    @property
+    def default_size(self):
+        """Default size image extraction, in arcseconds.
+
+        If not set, the size from the white-light image (MUSE_WHITE) is used.
+
+        """
+        if self._default_size is None:
+            try:
+                im = self.images['MUSE_WHITE']
+            except KeyError:
+                raise ValueError('Size of the image is required')
+            else:
+                self._default_size = (im.shape[0] *
+                                      im.wcs.get_step(unit=u.arcsec)[0])
+        return self._default_size
+
+    @default_size.setter
+    def default_size(self, size):
+        self._default_size = size
+
     def write(self, filename, overwrite=True):
         """Write the source object in a FITS file.
 
@@ -768,7 +768,7 @@ class Source(object):
         info = self._logger.info
         excluded_cards = {'SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
                           'AUTHOR'}
-        
+
         for key in self.header.keys():
             if key not in excluded_cards:
                 info(self.header.cards[key])
@@ -791,8 +791,8 @@ class Source(object):
     def __setattr__(self, item, value):
         """Map attributes to values."""
         if item in ('header', 'lines', 'mag', 'z', 'cubes', 'images',
-                    'spectra', 'tables', '_logger', '_filename'):
-            # return dict.__setattr__(self, item, value)
+                    'spectra', 'tables', '_logger', '_filename',
+                    '_default_size'):
             super(Source, self).__setattr__(item, value)
         else:
             self.header[item] = value
@@ -1075,24 +1075,12 @@ class Source(object):
 
         """
         if size is None:
-            try:
-                white_ima = self.images['MUSE_WHITE']
-            except KeyError:
-                raise ValueError('Size of the image is required')
-            if white_ima.wcs.sameStep(image.wcs):
-                size = white_ima.shape[0]
-                if unit_size is not None:
-                    minsize /= image.wcs.get_step(unit=unit_size)[0]
-                    unit_size = None
-            else:
-                size = (white_ima.wcs.get_step(unit=u.arcsec)[0] *
-                        white_ima.shape[0])
-                if unit_size is None:
-                    minsize *= image.wcs.get_step(unit=u.arcsec)[0]
-                else:
-                    if unit_size != u.arcsec:
-                        minsize = (minsize * unit_size).to(u.arcsec).value
-                unit_size = u.arcsec
+            size = self.default_size
+            if unit_size is None:
+                minsize *= image.wcs.get_step(unit=u.arcsec)[0]
+            elif unit_size != u.arcsec:
+                minsize = (minsize * unit_size).to(u.arcsec).value
+            unit_size = u.arcsec
 
         center = (self.dec, self.ra)
         kwargs = dict(minsize=minsize, unit_center=u.deg, unit_size=unit_size)
@@ -1148,17 +1136,8 @@ class Source(object):
 
         """
         if size is None:
-            try:
-                white_ima = self.images['MUSE_WHITE']
-            except KeyError:
-                raise ValueError('Size of the image is required')
-
-            if white_ima.wcs.sameStep(cube.wcs):
-                size = white_ima.shape[0]
-                unit_size = None
-            else:
-                size = white_ima.wcs.get_step(unit=u.arcsec)[0] * white_ima.shape[0]
-                unit_size = u.arcsec
+            size = self.default_size
+            unit_size = u.arcsec
 
         self.cubes[name] = cube.subcube(
             center=(self.dec, self.ra), size=size, lbda=lbda,
@@ -1343,17 +1322,8 @@ class Source(object):
             return
 
         if size is None:
-            try:
-                white = self.images['MUSE_WHITE']
-            except:
-                raise IOError('Size of the image is required')
-
-            if white.wcs.sameStep(cube.wcs):
-                size = white.shape[0]
-                unit_size = None
-            else:
-                size = white.wcs.get_step(unit=u.arcsec)[0] * white.shape[0]
-                unit_size = u.arcsec
+            size = self.default_size
+            unit_size = u.arcsec
 
         subcub = cube.subcube(center=(self.dec, self.ra), size=size,
                               unit_center=u.deg, unit_size=unit_size)
@@ -1423,25 +1393,11 @@ class Source(object):
 
         """
         if size is None:
-            try:
-                white_ima = self.images['MUSE_WHITE']
-            except:
-                raise IOError('Size of the image (in arcsec) is required')
-            if white_ima.wcs.sameStep(cube.wcs):
-                size = white_ima.shape[0]
-                unit_size = None
-            else:
-                size = white_ima.wcs.get_step(unit=u.arcsec)[0] * white_ima.shape[0]
-                unit_size = u.arcsec
+            size = self.default_size
+            unit_size = u.arcsec
 
         l1 = lbda - width / 2.0
         l2 = lbda + width / 2.0
-
-        lmin, lmax = cube.wave.get_range(unit=u.angstrom)
-        if l1 < lmin:
-            l1 = lmin
-        if l2 > lmax:
-            l2 = lmax
 
         subcub = cube.subcube(center=(self.dec, self.ra), size=size,
                               unit_center=u.deg, unit_size=unit_size)
