@@ -1161,6 +1161,9 @@ class Source(object):
             unit of the size value (arcseconds by default)
             If None, size is in pixels
         """
+        if (self.default_size is not None and size is not None and
+                self.default_size != size):
+            raise ValueError('size does not match the default one')
         subcub = cube.subcube(center=(self.dec, self.ra), size=size,
                               unit_center=u.deg, unit_size=unit_size)
         self.images['MUSE_WHITE'] = subcub.mean(axis=0)
