@@ -792,7 +792,7 @@ class Source(object):
         """Map attributes to values."""
         if item in ('header', 'lines', 'mag', 'z', 'cubes', 'images',
                     'spectra', 'tables', '_logger', '_filename',
-                    '_default_size'):
+                    '_default_size', 'default_size'):
             super(Source, self).__setattr__(item, value)
         else:
             self.header[item] = value
@@ -1108,7 +1108,7 @@ class Source(object):
         else:
             self.images[name] = subima
 
-    def add_cube(self, cube, name, size=None, lbda=None,
+    def add_cube(self, cube, name, size=None, lbda=None, add_white=False,
                  unit_size=u.arcsec, unit_wave=u.angstrom):
         """Extract a cube centered on the source center and append it to the
         cubes dictionary.
@@ -1127,6 +1127,8 @@ class Source(object):
             extension is taken if it exists.
         lbda : (float, float) or None
             If not None, tuple giving the wavelength range.
+        add_white : bool
+            Add white image from the extracted cube.
         unit_size : `astropy.units.Unit`
             Unit of the size value (arcseconds by default). If None, size is
             in pixels.
@@ -1139,9 +1141,17 @@ class Source(object):
             size = self.default_size
             unit_size = u.arcsec
 
-        self.cubes[name] = cube.subcube(
-            center=(self.dec, self.ra), size=size, lbda=lbda,
-            unit_center=u.deg, unit_size=unit_size, unit_wave=unit_wave)
+        subcub = cube.subcube(center=(self.dec, self.ra), size=size,
+                              unit_center=u.deg, unit_size=unit_size)
+
+        if add_white:
+            self.images['MUSE_WHITE'] = subcub.mean(axis=0)
+
+        if lbda is not None:
+            subcub = subcub.select_lambda(lbda[0], lbda_max=lbda[1],
+                                          unit_wave=unit_wave)
+
+        self.cubes[name] = subcub
 
     def add_white_image(self, cube, size=5, unit_size=u.arcsec):
         """Compute the white images from the MUSE data cube and appends it to
@@ -1161,8 +1171,8 @@ class Source(object):
             unit of the size value (arcseconds by default)
             If None, size is in pixels
         """
-        if (self.default_size is not None and size is not None and
-                self.default_size != size):
+        if (self._default_size is not None and size is not None and
+                self._default_size != size):
             raise ValueError('size does not match the default one')
         subcub = cube.subcube(center=(self.dec, self.ra), size=size,
                               unit_center=u.deg, unit_size=unit_size)

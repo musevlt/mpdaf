@@ -57,11 +57,16 @@ def test_init():
 def test_from_data():
     src = Source.from_data(ID=1, ra=63.35592651367188, dec=10.46536922454834,
                            origin=('test', 'v0', 'minicube.fits', 'v0'),
-                           proba=1.0, confid=2, extras={'FOO': 'BAR'})
+                           proba=1.0, confid=2, extras={'FOO': 'BAR'},
+                           default_size=10)
 
     assert src.DPROBA == 1.0
     assert src.CONFID == 2
     assert src.FOO == 'BAR'
+
+    assert src.default_size == 10
+    src.default_size = 24.12
+    assert src.default_size == 24.12
 
     src.test = 24.12
     assert src.test == 24.12
@@ -240,6 +245,13 @@ def test_add_cube(source2, minicube, tmpdir):
     src.write(filename)
     src = Source.from_file(filename)
     assert src.images['MUSE_WHITE'].shape == (20, 20)
+
+    source3 = Source.from_data(source2.ID, source2.RA, source2.DEC,
+                               (source2.FROM, source2.FROM_V, '', ''),
+                               default_size=source2.default_size)
+    source3.add_cube(minicube, 'TEST1', lbda=lbda, add_white=True)
+    assert_array_equal(source3.images['MUSE_WHITE'].data,
+                       source2.images['MUSE_WHITE'].data)
 
 
 def test_add_image(source2, a478hst, a370II):
