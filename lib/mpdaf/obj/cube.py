@@ -2343,7 +2343,7 @@ class Cube(ArithmeticMixin, DataArray):
         white = self.sum(axis=0)
         mask = ~ndi.binary_erosion(white._data, mask=~white._mask,
                                    iterations=npixels)
-        res._mask = np.resize(mask, self.shape)
+        res._mask = (np.resize(mask, self.shape) | self._mask)
         return res
 
 
