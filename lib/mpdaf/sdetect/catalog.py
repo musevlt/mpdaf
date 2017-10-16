@@ -622,9 +622,7 @@ class Catalog(Table):
         dim = np.array([wcs.naxis2, wcs.naxis1])
         pix = wcs.sky2pix(np.array([self[dec], self[ra]]).T, unit=u.deg)
         dist = np.hstack([pix, dim - pix]).min(axis=1)
-        step = wcs.get_step()[0] * u.deg
-        dist *= step.to(u.arcsec)
-        return dist
+        return dist * wcs.get_step(unit=u.arcsec)[0]
 
     def plot_symb(self, ax, wcs, ra='RA', dec='DEC',
                   symb=0.4, col='k', alpha=1.0, **kwargs):
