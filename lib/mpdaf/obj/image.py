@@ -50,7 +50,6 @@ from scipy import interpolate, signal
 from scipy import ndimage as ndi
 from scipy.ndimage.interpolation import affine_transform
 from scipy.optimize import leastsq
-from scipy.stats import threshold
 from six.moves import range, zip
 
 from .arithmetic import ArithmeticMixin
@@ -3368,10 +3367,10 @@ class Image(ArithmeticMixin, DataArray):
         # correlation, so remove most of the noisy background by
         # zeroing all values that are less than nsigma standard
         # deviations above the mean.
-        sdata = threshold(sdata,
-                          threshmin=sdata.mean() + nsigma * sdata.std())
-        rdata = threshold(rdata,
-                          threshmin=rdata.mean() + nsigma * rdata.std())
+        mask = (sdata < sdata.mean() + nsigma * sdata.std()).filled(False)
+        sdata[mask] = 0
+        mask = (rdata < rdata.mean() + nsigma * rdata.std()).filled(False)
+        rdata[mask] = 0
 
         # Sometimes a bright artefact or a bright star with
         # appreciable proper motion biases the correlation. To avoid
