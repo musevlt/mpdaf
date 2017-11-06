@@ -770,6 +770,9 @@ def test_align_with_image(hdfs_muse_image, hdfs_hst_image):
     assert im.wcs.isEqual(muse.wcs)
     assert im.shape == muse.shape
 
+    dy, dx = im.estimate_coordinate_offset(muse)
+    assert_almost_equal((dy, dx), (0.15, -0.11), 2)
+
     sy, sx = im.crop()
     corners = muse.wcs.sky2pix(hst.wcs.pix2sky([[0, 0], hst.shape]),
                                nearest=True).T

@@ -3367,9 +3367,9 @@ class Image(ArithmeticMixin, DataArray):
         # correlation, so remove most of the noisy background by
         # zeroing all values that are less than nsigma standard
         # deviations above the mean.
-        mask = (sdata < sdata.mean() + nsigma * sdata.std()).filled(False)
+        mask = sdata < sdata.mean() + nsigma * sdata.std()
         sdata[mask] = 0
-        mask = (rdata < rdata.mean() + nsigma * rdata.std()).filled(False)
+        mask = rdata < rdata.mean() + nsigma * rdata.std()
         rdata[mask] = 0
 
         # Sometimes a bright artefact or a bright star with
@@ -3936,7 +3936,7 @@ class Image(ArithmeticMixin, DataArray):
         xunit = yunit = 'pixel'
         xlabel = 'q (%s)' % xunit
         ylabel = 'p (%s)' % yunit
-        
+
         if var:
             data_plot = self.var
         else:
