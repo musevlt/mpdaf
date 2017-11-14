@@ -72,9 +72,6 @@ class Catalog(Table):
     def __init__(self, *args, **kwargs):
         super(Catalog, self).__init__(*args, **kwargs)
         self._logger = logging.getLogger(__name__)
-        for name in ('ra', 'dec', 'z'):
-            if name in self.colnames:
-                self.rename_column(name, name.upper())
         if self.masked:
             self.masked_invalid()
 

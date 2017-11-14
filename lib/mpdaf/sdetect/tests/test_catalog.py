@@ -47,7 +47,7 @@ def test_catalog():
     print(cat)
     assert len(cat) == 2
     assert cat.masked
-    assert cat.colnames == ['ID', 'RA', 'DEC', 'Z', 'flag']
+    assert cat.colnames == ['ID', 'ra', 'dec', 'z', 'flag']
     assert cat['flag'][0] is np.ma.masked
     assert cat['Z'][1] is np.ma.masked
 
