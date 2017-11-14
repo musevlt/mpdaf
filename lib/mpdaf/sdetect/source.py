@@ -841,7 +841,7 @@ class Source(object):
         could also be used to update a simple Source attribute that is saved in
         the pyfits header.
 
-        Equivalent to self.key = (value, comment)
+        Equivalent to ``self.key = (value, comment)``.
 
         Parameters
         ----------
@@ -852,9 +852,10 @@ class Source(object):
         desc : str
             Attribute description
         unit : `astropy.units.Unit`
-               Attribute units
+            Attribute units
         fmt : str
-              Attribute format ('.2f' for example)
+            Attribute format ('.2f' for example)
+
         """
         if desc is None:
             desc = ''
@@ -1487,8 +1488,8 @@ class Source(object):
         mask_creation(self, maps)
 
     def find_sky_mask(self, seg_tags, sky_mask='MASK_SKY'):
-        """Loop over all segmentation images and use the region where no object is
-        detected in any segmentation map as our sky image.
+        """Loop over all segmentation images and use the region where no object
+        is detected in any segmentation map as our sky image.
 
         Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl)
 
@@ -1504,7 +1505,7 @@ class Source(object):
         mask = np.ones(shape, dtype=np.bool)
         for key in seg_tags:
             im = self.images[key]
-            if im.shape[0] == shape[0] and im.shape[1] == shape[1]:
+            if im.shape == shape:
                 mask &= (~np.asarray(im.data, dtype=bool))
             else:
                 raise IOError('segmentation maps have not the same dimensions')
@@ -1531,7 +1532,7 @@ class Source(object):
         yc, xc = wcs.sky2pix((self.DEC, self.RA), unit=u.deg)[0]
         maps = {}
         for tag in seg_tags:
-            if tag[0:4] == 'SEG_':
+            if tag[:4] == 'SEG_':
                 maps[tag[4:]] = self.images[tag].data.data
             else:
                 maps[tag] = self.images[tag].data.data
