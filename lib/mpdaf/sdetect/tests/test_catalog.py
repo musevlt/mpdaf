@@ -49,7 +49,7 @@ def test_catalog():
     assert cat.masked
     assert cat.colnames == ['ID', 'ra', 'dec', 'z', 'flag']
     assert cat['flag'][0] is np.ma.masked
-    assert cat['Z'][1] is np.ma.masked
+    assert cat['z'][1] is np.ma.masked
 
 
 @pytest.mark.parametrize('fmt,ncols', (('default', 48),
