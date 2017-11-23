@@ -62,8 +62,8 @@ def test_fits_img():
 
     # Force dtype to float
     data = DataArray(filename=testimg, dtype=float)
-    assert data.dtype == np.float
-    assert data.data.dtype == np.float
+    assert data.dtype == float
+    assert data.data.dtype == float
 
 
 def test_fits_spectrum():
@@ -215,13 +215,13 @@ def test_clone_with_data():
     # Define a couple of functions to be used to fill the data and
     # variance arrays of the cloned cube.
 
-    def data_fn(shape, dtype=np.float):
+    def data_fn(shape, dtype=float):
         n = np.asarray(shape, dtype=int).prod()
         data = np.arange(n, dtype=dtype).reshape(shape) * 0.25
         mask = np.arange(n, dtype=int).reshape(shape) % 5 == 0
         return ma.array(data, mask=mask)
 
-    def var_fn(shape, dtype=np.float):
+    def var_fn(shape, dtype=float):
         n = np.asarray(shape, dtype=int).prod()
         var = np.arange(n, dtype=dtype).reshape(shape) * 0.5
         mask = np.arange(n, dtype=int).reshape(shape) % 2 == 0

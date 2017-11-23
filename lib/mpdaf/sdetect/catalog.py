@@ -58,7 +58,7 @@ INVALID = {
 
 # List of required keywords and their type
 MANDATORY_KEYS = ['ID', 'RA', 'DEC', 'FROM', 'FROM_V', 'CUBE', 'CUBE_V']
-MANDATORY_TYPES = [np.int, np.float64, np.float64, str, str, str, str]
+MANDATORY_TYPES = [int, np.float64, np.float64, str, str, str, str]
 # List of exluded keywords
 EXCLUDED_CARDS = {'SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE', 'AUTHOR'}
 

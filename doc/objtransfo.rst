@@ -125,7 +125,7 @@ center of pixel [0,0]:
   @savefig Obj_transfo6.png width=3.5in
   In [3]: ima.plot(zscale=True)
 
-  In [4]: newdim = (np.array(ima.shape)/4.5).astype(np.int)
+  In [4]: newdim = (np.array(ima.shape)/4.5).astype(int)
 
   In [18]: import astropy.units as u
 

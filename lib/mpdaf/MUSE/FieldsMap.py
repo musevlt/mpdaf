@@ -146,7 +146,7 @@ class FieldsMap(object):
         # compute the mask for each field
         fmaps = []
         for i in range(1, self.nfields + 1):
-            fmaps.append(self.get_field_mask(i).astype(np.int))
+            fmaps.append(self.get_field_mask(i).astype(int))
 
         several = (np.sum(fmaps, axis=0) > 1)
 
@@ -158,7 +158,7 @@ class FieldsMap(object):
             # pixels just in this field
             pd = list(ksel[0])
             qd = list(ksel[1])
-            z = m[ksel].astype(np.float)
+            z = m[ksel].astype(float)
             wmap = griddata((pd, qd), z, (p, q), method='linear')
             w.append(wmap)
             if s is None:

@@ -1007,7 +1007,7 @@ class Image(ArithmeticMixin, DataArray):
             corners = np.array(
                 [[0, 0, self.shape[0] - 1, self.shape[0] - 1],  # Y indexes
                  [0, self.shape[1] - 1, 0, self.shape[1] - 1]],  # X indexes
-                dtype=np.float)
+                dtype=float)
             pix = np.dot(old2new, (corners - oldcrpix))
 
             # Get the ranges of indexes occupied by the input image in the
@@ -1038,9 +1038,9 @@ class Image(ArithmeticMixin, DataArray):
             # If no pivot pixel has been specified, substitute the
             # central pixel of the input image.
             if pivot is None:
-                pivot = np.asarray(self.shape, dtype=np.float) / 2.0
+                pivot = np.asarray(self.shape, dtype=float) / 2.0
             else:
-                pivot = np.asarray(pivot, dtype=np.float)
+                pivot = np.asarray(pivot, dtype=float)
 
             # Convert the pivot indexes to a column vector.
             pivot = pivot[np.newaxis, :].T
@@ -1081,7 +1081,7 @@ class Image(ArithmeticMixin, DataArray):
         # the pixels of the input image surrounding that point.
         newdata = affine_transform(newdata, matrix=new2old,
                                    offset=offset.flatten(), cval=0.0,
-                                   output_shape=newdims, output=np.float,
+                                   output_shape=newdims, output=float,
                                    order=order, prefilter=prefilter)
 
         # Zero the current data array and then fill its masked pixels
@@ -1095,7 +1095,7 @@ class Image(ArithmeticMixin, DataArray):
         # that we end up flagging them too.
         newmask = affine_transform(newmask, matrix=new2old,
                                    offset=offset.flatten(), cval=1.0,
-                                   output_shape=newdims, output=np.float,
+                                   output_shape=newdims, output=float,
                                    order=order, prefilter=prefilter)
 
         # Create a new boolean mask in which all pixels that had an
@@ -1111,7 +1111,7 @@ class Image(ArithmeticMixin, DataArray):
         if self._var is not None:
             newvar = affine_transform(self._var, matrix=new2old,
                                       offset=offset.flatten(), cval=0.0,
-                                      output_shape=newdims, output=np.float,
+                                      output_shape=newdims, output=float,
                                       order=order, prefilter=prefilter)
         else:
             newvar = None
@@ -1523,12 +1523,12 @@ class Image(ArithmeticMixin, DataArray):
             ima = self[imin:imax, jmin:jmax]
 
             if circular:
-                xaxis = np.arange(ima.shape[0], dtype=np.float) \
+                xaxis = np.arange(ima.shape[0], dtype=float) \
                     - ima.shape[0] / 2.
-                yaxis = np.arange(ima.shape[1], dtype=np.float) \
+                yaxis = np.arange(ima.shape[1], dtype=float) \
                     - ima.shape[1] / 2.
-                gridx = np.empty(ima.shape, dtype=np.float)
-                gridy = np.empty(ima.shape, dtype=np.float)
+                gridx = np.empty(ima.shape, dtype=float)
+                gridy = np.empty(ima.shape, dtype=float)
                 for j in range(ima.shape[1]):
                     gridx[:, j] = xaxis
                 for i in range(ima.shape[0]):
@@ -2930,7 +2930,7 @@ class Image(ArithmeticMixin, DataArray):
         # Create a shape that has the same dimension for both axes?
         if is_int(newdim):
             newdim = (newdim, newdim)
-        newdim = np.asarray(newdim, dtype=np.int)
+        newdim = np.asarray(newdim, dtype=int)
 
         if refpos is None and refpix is None:
             # If neither refpos nor refpix have values, substitute values
@@ -2947,13 +2947,13 @@ class Image(ArithmeticMixin, DataArray):
             # If necessary convert refpos to a numpy array and convert
             # it's units to the current WCS units.
             if unit_pos is not None:
-                refpos = (np.asarray(refpos, dtype=np.float) *
+                refpos = (np.asarray(refpos, dtype=float) *
                           unit_pos).to(self.wcs.unit).value
             else:
-                refpos = np.asarray(refpos, dtype=np.float)
+                refpos = np.asarray(refpos, dtype=float)
 
             # If necessary convert refpix to a floating point numpy array.
-            refpix = np.asarray(refpix, dtype=np.float)
+            refpix = np.asarray(refpix, dtype=float)
         else:
             # Complain if just one of refpos and refpix is None.
             raise ValueError('The refpos and refpix arguments should both be '
@@ -2972,10 +2972,10 @@ class Image(ArithmeticMixin, DataArray):
         # Ensure that newinc is an array of values that have the
         # same units as the WCS object.
         if unit_inc is not None:
-            newinc = (np.asarray(newinc, dtype=np.float) *
+            newinc = (np.asarray(newinc, dtype=float) *
                       unit_inc).to(self.wcs.unit).value
         else:
-            newinc = np.asarray(newinc, dtype=np.float)
+            newinc = np.asarray(newinc, dtype=float)
 
         # Get a copy of the data array with masked values filled.
         data = self._prepare_data(interp)
@@ -3045,11 +3045,11 @@ class Image(ArithmeticMixin, DataArray):
 
         # Create a floating point version of the mask in which masked
         # elements are 1.0 and unmasked elements are 0.0.
-        mask = self._mask.astype(np.float)
+        mask = self._mask.astype(float)
 
         # Resample the floating point version of the mask array.
         mask = affine_transform(mask, new2old, offset.flatten(), cval=1.0,
-                                output_shape=newdim, output=np.float)
+                                output_shape=newdim, output=float)
 
         # Create new boolean mask in which all pixels that had an
         # integrated contribution of more than 'cutoff' originally
@@ -3945,13 +3945,13 @@ class Image(ArithmeticMixin, DataArray):
         # If either axis has just one pixel, plot it as a line-graph.
         if self.shape[1] == 1:
             # Plot a column as a line-graph
-            yaxis = np.arange(self.shape[0], dtype=np.float)
+            yaxis = np.arange(self.shape[0], dtype=float)
             ax.plot(yaxis, data_plot)
             xlabel = 'p (%s)' % yunit
             ylabel = self.unit
         elif self.shape[0] == 1:
             # Plot a row as a line-graph
-            xaxis = np.arange(self.shape[1], dtype=np.float)
+            xaxis = np.arange(self.shape[1], dtype=float)
             ax.plot(xaxis, data_plot)
             ylabel = self.unit
         else:
@@ -4535,12 +4535,12 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
     # Convert oldstep into a numpy array of two float elements.
     if is_number(oldstep):
         oldstep = (oldstep, oldstep)
-    oldstep = abs(np.asarray(oldstep, dtype=np.float))
+    oldstep = abs(np.asarray(oldstep, dtype=float))
 
     # Convert newstep into a numpy array of two float elements.
     if is_number(newstep):
         newstep = (newstep, newstep)
-    newstep = abs(np.asarray(newstep, dtype=np.float))
+    newstep = abs(np.asarray(newstep, dtype=float))
 
     # If no band-limits have been specified, substitute the
     # band-limits dictated by the current sampling interval.
@@ -4717,7 +4717,7 @@ class SpatialFrequencyLimits(object):
 
     def __init__(self, fmax, rot):
         # Store the Y and X axes of the band-limiting ellipse.
-        self.fmax = np.array(fmax, dtype=np.float, copy=True)
+        self.fmax = np.array(fmax, dtype=float, copy=True)
 
         # Record the rotation angle in degrees of the ellipse, after
         # wrapping the angle into the range -180 to 180, to make it
@@ -4767,7 +4767,7 @@ class SpatialFrequencyLimits(object):
         xmax = xs * np.cos(t_xmax) * cos_psi - ys * np.sin(t_xmax) * sin_psi
         ymax = xs * np.cos(t_ymax) * sin_psi + ys * np.sin(t_ymax) * cos_psi
 
-        return np.array([ymax, xmax], dtype=np.float)
+        return np.array([ymax, xmax], dtype=float)
 
     def ellipse_locus(self, t, rot):
         """Return the Y,X coordinates of the band-limiting ellipse
@@ -4807,4 +4807,4 @@ class SpatialFrequencyLimits(object):
         x = xs * cos_t * cos_psi - ys * sin_t * sin_psi
         y = xs * cos_t * sin_psi + ys * sin_t * cos_psi
 
-        return np.array([y, x], dtype=np.float)
+        return np.array([y, x], dtype=float)
