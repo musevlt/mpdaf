@@ -602,7 +602,7 @@ class PixTable(object):
                     else:
                         column = self.hdulist[1].data.field(name)[ksel]
 
-                if np.issubdtype(column.dtype, np.float):
+                if np.issubdtype(column.dtype, float):
                     # Ensure that float values are converted to double
                     column = column.astype(float)
                 return column

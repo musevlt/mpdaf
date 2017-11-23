@@ -202,7 +202,7 @@ def intersection(seg):
 def findSkyMask(images):
     """Loop over all segmentation images and use the region where no object is
     detected in any segmentation map as our sky image."""
-    mask = np.ones(images[0].shape, dtype=np.bool)
+    mask = np.ones(images[0].shape, dtype=bool)
     for im in images:
         mask &= (~np.asarray(im, dtype=bool))
     return mask

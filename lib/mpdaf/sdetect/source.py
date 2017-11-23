@@ -1268,7 +1268,7 @@ class Source(object):
         self.header['FSFMODE'] = FSF_mode
         self.header['FSF%02dBET' % nf] = np.around(beta, decimals=2)
         self.header['FSF%02dFWA' % nf] = np.around(a, decimals=3)
-        self.header['FSF%02dFWB' % nf] = np.float('%.3e' % b)
+        self.header['FSF%02dFWB' % nf] = float('%.3e' % b)
 
     def add_narrow_band_images(self, cube, z_desc, eml=None, size=None,
                                unit_size=u.arcsec, width=8, is_sum=False,
@@ -1502,7 +1502,7 @@ class Source(object):
         """
         shape = self.images[seg_tags[0]].shape
         wcs = self.images[seg_tags[0]].wcs
-        mask = np.ones(shape, dtype=np.bool)
+        mask = np.ones(shape, dtype=bool)
         for key in seg_tags:
             im = self.images[key]
             if im.shape == shape:

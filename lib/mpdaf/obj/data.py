@@ -984,7 +984,7 @@ class DataArray(object):
         if savemask == 'nan' and ma.count_masked(data) > 0:
             # NaNs can be used only for float arrays, so we raise an exception
             # if there are masked values in a non-float array.
-            if not np.issubdtype(data.dtype, np.float):
+            if not np.issubdtype(data.dtype, float):
                 raise ValueError('The .data array contains masked values but '
                                  'its type does not allow replacement with '
                                  'NaNs. You can either fill the array with '

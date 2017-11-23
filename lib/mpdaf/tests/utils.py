@@ -133,7 +133,7 @@ def _generate_test_data(data=2.3, var=1.0, mask=None, shape=None, unit=u.ct,
     if data is None:
         if ndim == 1:
             # Special case for spectra ...
-            data = np.arange(shape[0], dtype=np.float)
+            data = np.arange(shape[0], dtype=float)
             data[0] = 0.5
     elif np.isscalar(data):
         data = data * np.ones(shape, dtype=type(data))

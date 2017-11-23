@@ -664,7 +664,7 @@ def test_dtype():
     wcs = WCS(cdelt=(0.2, 0.3), crval=(8.5, 12), shape=(40, 30), deg=True)
     data = np.zeros((40, 30))
     data[19, 14] = 1
-    ima = Image(wcs=wcs, data=data, dtype=np.int)
+    ima = Image(wcs=wcs, data=data, dtype=int)
     ima2 = ima.fftconvolve_gauss(center=None, flux=1., fwhm=(20000., 10000.),
                                  peak=False, rot=60., factor=1,
                                  unit_center=u.deg, unit_fwhm=u.arcsec)

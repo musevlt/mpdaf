@@ -705,7 +705,7 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
         logger.error("muselet - len(fw) != 5")
 
     try:
-        fw = np.array(fw, dtype=np.float)
+        fw = np.array(fw, dtype=float)
     except:
         logger.error('muselet - fw is not an array of float')
 

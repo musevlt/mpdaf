@@ -164,7 +164,7 @@ class TestWaveCoord(object):
                            unit=u.nm)
         np.testing.assert_array_equal(pixel, wave2)
 
-        pix = np.arange(wave.shape, dtype=np.float)
+        pix = np.arange(wave.shape, dtype=float)
         np.testing.assert_allclose(wave.pixel(wave.coord(unit=u.nm),
                                               unit=u.nm), pix)
 
