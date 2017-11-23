@@ -1,6 +1,35 @@
 2.4dev
 ------
 
+- Compatibility with Scipy 1.0 (removal of ``scipy.stat.threshold``).
+
+- Add compressed FITS files (``.fits.fz``) to the supported extensions.
+
+Image
+~~~~~
+
+- Add a ``var`` option to plot the variance extension with ``.plot()``.
+
+Cube
+~~~~
+
+- Fix bug in ``cube.spatial_erosion``.
+
+Sources
+~~~~~~~
+
+- Keep the original order of the header keywords in ``.info()``.
+
+- Allow to set the size of a source without needing the white image.
+
+- New option to add the white image directly within ``add_cube``.
+
+Catalog
+~~~~~~~
+
+- Fix unit conversion in ``Catalog.edgedist``.
+
+- Avoid forcing the ra/dec column names to uppercase.
 
 2.3 (13/09/2017)
 ----------------
@@ -62,8 +91,7 @@ Sources
 
 - Allow to set the order for the spline interpolation in
   `~mpdaf.sdetect.Source.add_image`.
-  
-  
+
 Catalog
 ~~~~~~~
 
