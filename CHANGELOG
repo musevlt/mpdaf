@@ -1,5 +1,5 @@
-2.4dev
-------
+2.4 (24/11/2017)
+----------------
 
 - Compatibility with Scipy 1.0 (removal of ``scipy.stat.threshold``).
 
