@@ -1302,108 +1302,8 @@ class Cube(ArithmeticMixin, DataArray):
         out : np.array(dtype=object) for all others cases.
 
         """
-        from mpdaf import CPU
-
-        # Determine the number of processes:
-        # - default: all CPUs except one.
-        # - mdaf.CPU
-        # - cpu_count parameter
-        cpu_count = multiprocessing.cpu_count() - 1
-        if CPU > 0 and CPU < cpu_count:
-            cpu_count = CPU
-        if cpu is not None and cpu < cpu_count:
-            cpu_count = cpu
-
-        pool = multiprocessing.Pool(processes=cpu_count)
-
-        # If the provided function is an Spectrum method, get its name
-        if _is_method(f, Spectrum):
-            f = f.__name__
-
-        # There will be one task per spectrum
-        processlist = [((p, q), f, self[:, p, q], kargs)
-                       for p, q in np.ndindex(self.shape[1:])]
-
-        # Start passing tasks to the worker processes. The return
-        # value is an iterator that will hereafter return a new value
-        # each time that a worker process finishes one task.
-        results = pool.imap_unordered(_process_spe, processlist)
-
-        # Tell the worker pool that no more tasks will be passed to it.
-        pool.close()
-
-        # How many spectra are there to be processed as individual tasks?
-        ntasks = len(processlist)
-
-        # Report what is being done.
-        if verbose:
-            self._logger.info('loop_spe_multiprocessing (%s): %i tasks',
-                              f, ntasks)
-            reporter = _MultiprocessReporter(ntask=ntasks)
-
-        # Wait for the results from each task and collect them into the
-        # appropriate object. If verbose is True, also emit a progress
-        # report every few seconds.
-        init = True
-        while True:
-            try:
-                # Wait for the next result. When verbose=True, interrupt
-                # this wait every few seconds to allow a progress-report
-                # to be written to the user's terminal.
-                if verbose:
-                    (p, q), out = results.next(timeout=reporter.countdown())
-                    reporter.note_completed_task()
-                else:
-                    (p, q), out = results.next()
-
-                if isinstance(out, Spectrum):
-                    # If the function returns spectra, make a cube
-                    if init:
-                        cshape = (out.shape[0], self.shape[1], self.shape[2])
-                        result = Cube(
-                            wcs=self.wcs,
-                            wave=out.wave,
-                            data=np.zeros(cshape),
-                            unit=out.unit,
-                            data_header=self.data_header.copy(),
-                            primary_header=self.primary_header.copy()
-                        )
-                        if self.var is None:
-                            result._var = np.zeros(cshape)
-                        init = False
-
-                    result[:, p, q] = out
-
-                elif is_number(out):
-                    # If it returns numbers, assemble these into an image.
-                    if init:
-                        result = Image(wcs=self.wcs, unit=self.unit,
-                                       data=np.zeros(self.shape[1:],
-                                                     dtype=type(out)))
-                        init = False
-                    result[p, q] = out
-
-                else:
-                    # If the function returns anything else, make a numpy array
-                    if init:
-                        result = np.empty(self.shape[1:], dtype=type(out))
-                        init = False
-                    result[p, q] = out
-
-            # Is it time for a new report to be made to the terminal?
-            except multiprocessing.TimeoutError:
-                pass
-
-            # Have we now processed the last of the images?
-            except StopIteration:
-                break
-
-            # If the time for the next report has been reached, report
-            # the progress through the tasks to the terminal.
-            if verbose:
-                reporter.report_if_needed()
-
-        return result
+        return _loop_multiprocessing(self, f, 'spe', cpu=cpu,
+                                     verbose=verbose, **kargs)
 
     def loop_ima_multiprocessing(self, f, cpu=None, verbose=True, **kargs):
         """Use multiple processes to run a function on each image of a cube.
@@ -1459,108 +1359,8 @@ class Cube(ArithmeticMixin, DataArray):
         out : np.array(dtype=object) for all others cases.
 
         """
-        from mpdaf import CPU
-
-        # Determine the number of processes:
-        # - default: all CPUs except one.
-        # - mdaf.CPU
-        # - cpu_count parameter
-        cpu_count = multiprocessing.cpu_count() - 1
-        if CPU > 0 and CPU < cpu_count:
-            cpu_count = CPU
-        if cpu is not None and cpu < cpu_count:
-            cpu_count = cpu
-
-        pool = multiprocessing.Pool(processes=cpu_count)
-
-        # If the provided function is an Image method, get its name
-        if _is_method(f, Image):
-            f = f.__name__
-
-        # There will be one task per image
-        processlist = [(k, f, self[k, :, :], kargs)
-                       for k in range(self.shape[0])]
-
-        # Start passing tasks to the worker processes. The return
-        # value is an iterator that will hereafter return a new value
-        # each time that a worker process finishes one task.
-        results = pool.imap_unordered(_process_ima, processlist)
-
-        # Tell the worker pool that no more tasks will be passed to it.
-        pool.close()
-
-        # How many images are there to be processed as individual tasks?
-        ntasks = len(processlist)
-
-        # Report what is being done.
-        if verbose:
-            self._logger.info('loop_ima_multiprocessing (%s): %i tasks',
-                              f, ntasks)
-            reporter = _MultiprocessReporter(ntask=ntasks)
-
-        # Wait for the results from each task and collect them into the
-        # appropriate object. If verbose is True, also emit a progress
-        # report every few seconds.
-        init = True
-        while True:
-            try:
-                # Wait for the next result. When verbose=True, interrupt
-                # this wait every few seconds to allow a progress-report
-                # to be written to the user's terminal.
-                if verbose:
-                    k, out = results.next(timeout=reporter.countdown())
-                    reporter.note_completed_task()
-                else:
-                    k, out = results.next()
-
-                if isinstance(out, Image):
-                    # If the function returns images, make a cube
-                    if init:
-                        cshape = (self.shape[0], out.shape[0], out.shape[1])
-                        result = Cube(
-                            wcs=out.wcs,
-                            wave=self.wave,
-                            data=np.zeros(cshape),
-                            unit=out.unit,
-                            data_header=self.data_header.copy(),
-                            primary_header=self.primary_header.copy()
-                        )
-                        if self.var is not None:
-                            result._var = np.zeros(cshape)
-                        init = False
-
-                    result[k, :, :] = out
-
-                elif is_number(out):
-                    # If it returns numbers, assemble these into a spectrum.
-                    if init:
-                        result = Spectrum(wave=self.wave, unit=self.unit,
-                                          data=np.zeros(self.shape[0],
-                                                        dtype=type(out)))
-                        init = False
-                    result[k] = out
-
-                else:
-                    # If the function returns anything else, make a numpy array
-                    if init:
-                        result = np.empty(self.shape[0], dtype=type(out))
-                        init = False
-                    result[k] = out
-
-            # Is it time for a new report to be made to the terminal?
-            except multiprocessing.TimeoutError:
-                pass
-
-            # Have we now processed the last of the images?
-            except StopIteration:
-                break
-
-            # If the time for the next report has been reached, report
-            # the progress through the tasks to the terminal.
-            if verbose:
-                reporter.report_if_needed()
-
-        return result
+        return _loop_multiprocessing(self, f, 'ima', cpu=cpu,
+                                     verbose=verbose, **kargs)
 
     def get_image(self, wave, is_sum=False, subtract_off=False, margin=10.,
                   fband=3., unit_wave=u.angstrom):
@@ -2300,35 +2100,145 @@ def _is_method(func, cls):
         return True
 
 
-def _process_spe(arglist):
-    """This function is the function that is executed in worker processes
-    by pool.imap_unordered() to do the work of loop_spe_multiprocessing().
-    """
+def _multiproc_worker(arglist):
+    """Worker process for loop_{spe/ima}_multiprocessing"""
     try:
-        pos, f, spe, kargs = arglist
+        pos, f, obj, kwargs = arglist
         # If the function is an Spectrum method, attach it to the spectrum
         # object that we are processing and execute this.
         if isinstance(f, types.FunctionType):
-            return pos, f(spe, **kargs)
+            return pos, f(obj, **kwargs)
         else:
-            return pos, getattr(spe, f)(**kargs)
+            return pos, getattr(obj, f)(**kwargs)
     except Exception as inst:
-        raise inst.__class__('{}\n The error occurred while processing '
-                             'spectrum [:,{},{}]'.format(str(inst), *pos))
+        raise inst.__class__(
+            '{}\n The error occurred while processing {} {}'
+            .format(str(inst), obj.__class__.__name__, pos))
 
 
-def _process_ima(arglist):
-    """This function is the function that is executed in worker processes
-    by pool.imap_unordered() to do the work of loop_ima_multiprocessing().
-    """
-    try:
-        k, f, obj, kwargs = arglist
-        # If the function is an Image method, attach it to the image
-        # object that we are processing and execute this.
-        if isinstance(f, types.FunctionType):
-            return k, f(obj, **kwargs)
-        else:
-            return k, getattr(obj, f)(**kwargs)
-    except Exception as inst:
-        raise inst.__class__('{}\n The error occurred while processing '
-                             'image [{},:,:]'.format(str(inst), k))
+def _loop_multiprocessing(self, f, loop_type, cpu=None, verbose=True, **kargs):
+    # Determine the number of processes:
+    # - default: all CPUs except one.
+    # - mdaf.CPU
+    # - cpu_count parameter
+    from mpdaf import CPU
+    cpu_count = multiprocessing.cpu_count() - 1
+    if CPU > 0 and CPU < cpu_count:
+        cpu_count = CPU
+    if cpu is not None and cpu < cpu_count:
+        cpu_count = cpu
+
+    pool = multiprocessing.Pool(processes=cpu_count)
+
+    # If the provided function is an Image or Spectru method, get its name
+    if (loop_type == 'ima' and _is_method(f, Image)) or \
+            (loop_type == 'spe' and _is_method(f, Spectrum)):
+        f = f.__name__
+
+    if loop_type == 'ima':
+        # There will be one task per image
+        processlist = [(k, f, self[k, :, :], kargs)
+                       for k in range(self.shape[0])]
+    elif loop_type == 'spe':
+        # There will be one task per spectrum
+        processlist = [((p, q), f, self[:, p, q], kargs)
+                       for p, q in np.ndindex(self.shape[1:])]
+    else:
+        raise ValueError('unsupported way to slice the cube')
+
+    # Start passing tasks to the worker processes. The return
+    # value is an iterator that will hereafter return a new value
+    # each time that a worker process finishes one task.
+    results = pool.imap_unordered(_multiproc_worker, processlist)
+
+    # Tell the worker pool that no more tasks will be passed to it.
+    pool.close()
+
+    # How many images are there to be processed as individual tasks?
+    ntasks = len(processlist)
+
+    # Report what is being done.
+    if verbose:
+        self._logger.info('loop_%s_multiprocessing (%s): %i tasks',
+                          loop_type, f, ntasks)
+        reporter = _MultiprocessReporter(ntask=ntasks)
+
+    # Wait for the results from each task and collect them into the appropriate
+    # object. If verbose, also emit a progress report every few seconds.
+    init = True
+    while True:
+        try:
+            # Wait for the next result. When verbose=True, interrupt
+            # this wait every few seconds to allow a progress-report
+            # to be written to the user's terminal.
+            if verbose:
+                k, out = results.next(timeout=reporter.countdown())
+                reporter.note_completed_task()
+            else:
+                k, out = results.next()
+
+            if isinstance(out, (Image, Spectrum)):
+                # If the function returns images or spectra, make a cube
+                if init:
+                    if loop_type == 'ima':
+                        cshape = (self.shape[0], out.shape[0], out.shape[1])
+                        wcs = out.wcs
+                        wave = self.wave
+                    elif loop_type == 'spe':
+                        cshape = (out.shape[0], self.shape[1], self.shape[2])
+                        wcs = self.wcs
+                        wave = out.wave
+
+                    result = Cube(
+                        wcs=wcs, wave=wave,
+                        data=np.zeros(cshape),
+                        unit=out.unit,
+                        data_header=self.data_header.copy(),
+                        primary_header=self.primary_header.copy()
+                    )
+                    if self.var is not None:
+                        result._var = np.zeros(cshape)
+                    init = False
+
+                if loop_type == 'ima':
+                    result[k, :, :] = out
+                elif loop_type == 'spe':
+                    p, q = k
+                    result[:, p, q] = out
+
+            elif is_number(out):
+                # If it returns numbers, assemble these into a spectrum/image
+                if init:
+                    if loop_type == 'ima':
+                        result = Spectrum(wave=self.wave, unit=self.unit,
+                                          data=np.zeros(self.shape[0],
+                                                        dtype=type(out)))
+                    elif loop_type == 'spe':
+                        result = Image(wcs=self.wcs, unit=self.unit,
+                                       data=np.zeros(self.shape[1:],
+                                                     dtype=type(out)))
+                    init = False
+                result[k] = out
+
+            else:
+                # If the function returns anything else, make a numpy array
+                if init:
+                    if loop_type == 'ima':
+                        result = np.empty(self.shape[0], dtype=type(out))
+                    elif loop_type == 'spe':
+                        result = np.empty(self.shape[1:], dtype=type(out))
+                    init = False
+                result[k] = out
+
+        except multiprocessing.TimeoutError:
+            # Is it time for a new report to be made to the terminal?
+            pass
+        except StopIteration:
+            break
+        if verbose:
+            # If the time for the next report has been reached, report
+            # the progress through the tasks to the terminal.
+            reporter.report_if_needed()
+
+    return result
+
