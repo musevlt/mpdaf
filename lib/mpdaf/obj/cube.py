@@ -46,11 +46,10 @@ import types
 from astropy.io import fits
 from matplotlib.path import Path
 from numpy import ma
-from six.moves import range, zip
+from six.moves import range
 from scipy import integrate, interpolate, signal, ndimage as ndi
 
 from .arithmetic import ArithmeticMixin
-from .coords import WaveCoord
 from .data import DataArray
 from .image import Image
 from .objs import bounding_box, is_number
@@ -138,12 +137,12 @@ def iter_ima(cube, index=False):
         for l in range(cube.shape[0]):
             yield cube[l, :, :]
 
-# A class that is used by loop_ima_multiprocessing and loop_spe_multiprocessing
-# to make periodic completion reports to the terminal while tasks are being
-# performed by external processes.
-
 
 class _MultiprocessReporter(object):
+    """ A class that is used by loop_ima_multiprocessing and
+    loop_spe_multiprocessing to make periodic completion reports to
+    the terminal while tasks are being performed by external processes.
+    """
 
     def __init__(self, ntask, interval=5.0):
         """Prepare to report the progress of a multi-process job.
@@ -210,21 +209,6 @@ class _MultiprocessReporter(object):
     def _update_report_time(self):
         """Calculate the time at which the next report should be made."""
         self.report_time = self.start_time + (self.reports + 1) * self.interval
-
-
-def _print_multiprocessing_progress(processresult, num_tasks):
-    while True:
-        time.sleep(5)
-        completed = processresult._index
-        if completed == num_tasks:
-            output = ""
-            sys.stdout.write("\r\x1b[K" + output.__str__())
-            sys.stdout.flush()
-            break
-        output = "\r Waiting for %i tasks to complete (%i%% done) ..." % (
-            num_tasks - completed, completed / num_tasks * 100.0)
-        sys.stdout.write("\r\x1b[K" + output.__str__())
-        sys.stdout.flush()
 
 
 class Cube(ArithmeticMixin, DataArray):
@@ -2241,4 +2225,3 @@ def _loop_multiprocessing(self, f, loop_type, cpu=None, verbose=True, **kargs):
             reporter.report_if_needed()
 
     return result
-
