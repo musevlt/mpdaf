@@ -50,7 +50,7 @@ from six.moves import range, zip
 from scipy import integrate, interpolate, signal, ndimage as ndi
 
 from .arithmetic import ArithmeticMixin
-from .coords import WCS, WaveCoord
+from .coords import WaveCoord
 from .data import DataArray
 from .image import Image
 from .objs import bounding_box, is_number
@@ -1250,10 +1250,9 @@ class Cube(ArithmeticMixin, DataArray):
     def loop_spe_multiprocessing(self, f, cpu=None, verbose=True, **kargs):
         """Use multiple processes to run a function on each spectrum of a cube.
 
-        The provided function must accept a Spectrum object as its
-        first argument, such as a method function of the Spectrum
-        class. There are three options for the return value of the
-        function.
+        The provided function must accept a Spectrum object as its first
+        argument, such as a method function of the Spectrum class. There are
+        three options for the return value of the function.
 
         1. The return value of the provided function can be another
            Spectrum, in which case loop_spe_multiprocessing() returns
@@ -1305,51 +1304,25 @@ class Cube(ArithmeticMixin, DataArray):
         """
         from mpdaf import CPU
 
-        # Start by assuming that child processes will be created for
-        # all CPUs except one.
+        # Determine the number of processes:
+        # - default: all CPUs except one.
+        # - mdaf.CPU
+        # - cpu_count parameter
         cpu_count = multiprocessing.cpu_count() - 1
-
-        # If mpdaf.CPU has been given a smaller value, limit the available
-        # CPUs to this number.
         if CPU > 0 and CPU < cpu_count:
             cpu_count = CPU
-
-        # If a smaller number of CPUs has been specified, use this number.
         if cpu is not None and cpu < cpu_count:
             cpu_count = cpu
 
-        # Create a pool of cpu_count worker processes.
         pool = multiprocessing.Pool(processes=cpu_count)
 
         # If the provided function is an Spectrum method, get its name
-        # without the object that it is attached to, so that it can be
-        # attached to new Spectrum objects in _process_spe().
         if _is_method(f, Spectrum):
             f = f.__name__
 
-        # Get the attributes that will be passed to the _process_ima()
-        # in the worker processes.
-        data = self._data
-        var = self._var
-        mask = self._mask
-        header = self.wave.to_header()
-        pv, qv = np.meshgrid(list(range(self.shape[1])),
-                             list(range(self.shape[2])),
-                             sparse=False, indexing='ij')
-        pv = pv.ravel()
-        qv = qv.ravel()
-
-        # There will be one task per image of the cube. Assemble a
-        # list of the argument-lists that will be passed to each of
-        # these tasks.
-        if var is None:
-            processlist = [((p, q), f, header, data[:, p, q], mask[:, p, q],
-                            None, self.unit, kargs)
-                           for p, q in zip(pv, qv)]
-        else:
-            processlist = [((p, q), f, header, data[:, p, q], mask[:, p, q],
-                            var[:, p, q], self.unit, kargs)
-                           for p, q in zip(pv, qv)]
+        # There will be one task per spectrum
+        processlist = [((p, q), f, self[:, p, q], kargs)
+                       for p, q in np.ndindex(self.shape[1:])]
 
         # Start passing tasks to the worker processes. The return
         # value is an iterator that will hereafter return a new value
@@ -1378,54 +1351,44 @@ class Cube(ArithmeticMixin, DataArray):
                 # this wait every few seconds to allow a progress-report
                 # to be written to the user's terminal.
                 if verbose:
-                    (p, q), dtype, out = results.next(timeout=reporter.countdown())
+                    (p, q), out = results.next(timeout=reporter.countdown())
                     reporter.note_completed_task()
                 else:
-                    (p, q), dtype, out = results.next()
+                    (p, q), out = results.next()
 
-                # If the function returns spectra, then accumulate a cube
-                # of these spectra.
-                if dtype == 'spectrum':
-                    header, data, mask, var, unit = out
-                    wave = WaveCoord(header, shape=data.shape[0])
-                    spe = Spectrum(wave=wave, unit=unit, data=data, var=var,
-                                   mask=mask, copy=False)
-
+                if isinstance(out, Spectrum):
+                    # If the function returns spectra, make a cube
                     if init:
-                        cshape = (data.shape[0], self.shape[1], self.shape[2])
+                        cshape = (out.shape[0], self.shape[1], self.shape[2])
+                        result = Cube(
+                            wcs=self.wcs,
+                            wave=out.wave,
+                            data=np.zeros(cshape),
+                            unit=out.unit,
+                            data_header=self.data_header.copy(),
+                            primary_header=self.primary_header.copy()
+                        )
                         if self.var is None:
-                            result = Cube(wcs=self.wcs.copy(), wave=wave,
-                                          data=np.zeros(cshape), unit=unit)
-                        else:
-                            result = Cube(wcs=self.wcs.copy(), wave=wave,
-                                          data=np.zeros(cshape),
-                                          var=np.zeros(cshape), unit=unit)
+                            result._var = np.zeros(cshape)
                         init = False
 
-                    result.data_header = self.data_header.copy()
-                    result.primary_header = self.primary_header.copy()
-                    result[:, p, q] = spe
+                    result[:, p, q] = out
 
-                # If the function returns numbers, assemble these into
-                # an image.
-                elif is_number(out[0]):
+                elif is_number(out):
+                    # If it returns numbers, assemble these into an image.
                     if init:
-                        result = Image(wcs=self.wcs.copy(),
-                                       data=np.zeros((self.shape[1],
-                                                      self.shape[2])),
-                                       unit=self.unit)
+                        result = Image(wcs=self.wcs, unit=self.unit,
+                                       data=np.zeros(self.shape[1:],
+                                                     dtype=type(out)))
                         init = False
-                    result[p, q] = out[0]
+                    result[p, q] = out
 
-                # If the function returns anything else, make a numpy
-                # array of them, giving this array the shape of the
-                # images in the cube.
                 else:
+                    # If the function returns anything else, make a numpy array
                     if init:
-                        result = np.empty((self.shape[1], self.shape[2]),
-                                          dtype=type(out[0]))
+                        result = np.empty(self.shape[1:], dtype=type(out))
                         init = False
-                    result[p, q] = out[0]
+                    result[p, q] = out
 
             # Is it time for a new report to be made to the terminal?
             except multiprocessing.TimeoutError:
@@ -1498,46 +1461,25 @@ class Cube(ArithmeticMixin, DataArray):
         """
         from mpdaf import CPU
 
-        # Start by assuming that child processes will be created for
-        # all CPUs except one.
+        # Determine the number of processes:
+        # - default: all CPUs except one.
+        # - mdaf.CPU
+        # - cpu_count parameter
         cpu_count = multiprocessing.cpu_count() - 1
-
-        # If mpdaf.CPU has been given a smaller value, limit the available
-        # CPUs to this number.
         if CPU > 0 and CPU < cpu_count:
             cpu_count = CPU
-
-        # If a smaller number of CPUs has been specified, use this number.
         if cpu is not None and cpu < cpu_count:
             cpu_count = cpu
 
-        # Create a pool of cpu_count worker processes.
         pool = multiprocessing.Pool(processes=cpu_count)
 
         # If the provided function is an Image method, get its name
-        # without the object that it is attached to, so that it can be
-        # attached to new Image objects in _process_ima().
         if _is_method(f, Image):
             f = f.__name__
 
-        # Get the attributes that will be passed to the _process_ima()
-        # in the worker processes.
-        header = self.wcs.to_header()
-        data = self._data
-        mask = self._mask
-        var = self._var
-
-        # There will be one task per image of the cube. Assemble a
-        # list of the argument-lists that will be passed to each of
-        # these tasks.
-        if var is None:
-            processlist = [(k, f, header, data[k, :, :], mask[k, :, :],
-                            None, self.unit, kargs)
-                           for k in range(self.shape[0])]
-        else:
-            processlist = [(k, f, header, data[k, :, :], mask[k, :, :],
-                            var[k, :, :], self.unit, kargs)
-                           for k in range(self.shape[0])]
+        # There will be one task per image
+        processlist = [(k, f, self[k, :, :], kargs)
+                       for k in range(self.shape[0])]
 
         # Start passing tasks to the worker processes. The return
         # value is an iterator that will hereafter return a new value
@@ -1566,50 +1508,44 @@ class Cube(ArithmeticMixin, DataArray):
                 # this wait every few seconds to allow a progress-report
                 # to be written to the user's terminal.
                 if verbose:
-                    k, dtype, out = results.next(timeout=reporter.countdown())
+                    k, out = results.next(timeout=reporter.countdown())
                     reporter.note_completed_task()
                 else:
-                    k, dtype, out = results.next()
+                    k, out = results.next()
 
-                # If the function returns images, then accumulate a cube
-                # of these images.
-                if dtype == 'image':
-                    header, data, mask, var, unit = out
+                if isinstance(out, Image):
+                    # If the function returns images, make a cube
                     if init:
-                        wcs = WCS(header, shape=data.shape)
-                        cshape = (self.shape[0], data.shape[0], data.shape[1])
-                        if self.var is None:
-                            result = Cube(wcs=wcs, wave=self.wave.copy(),
-                                          data=np.zeros(cshape), unit=unit)
-                        else:
-                            result = Cube(wcs=wcs, wave=self.wave.copy(),
-                                          data=np.zeros(cshape),
-                                          var=np.zeros(cshape), unit=unit)
+                        cshape = (self.shape[0], out.shape[0], out.shape[1])
+                        result = Cube(
+                            wcs=out.wcs,
+                            wave=self.wave,
+                            data=np.zeros(cshape),
+                            unit=out.unit,
+                            data_header=self.data_header.copy(),
+                            primary_header=self.primary_header.copy()
+                        )
+                        if self.var is not None:
+                            result._var = np.zeros(cshape)
                         init = False
-                    result._data[k, :, :] = data
-                    result._mask[k, :, :] = mask
-                    if self.var is not None:
-                        result._var[k, :, :] = var
-                    result.data_header = self.data_header.copy()
-                    result.primary_header = self.primary_header.copy()
 
-                # If the function returns numbers, assemble these into
-                # a spectrum.
-                elif is_number(out[0]):
+                    result[k, :, :] = out
+
+                elif is_number(out):
+                    # If it returns numbers, assemble these into a spectrum.
                     if init:
-                        result = Spectrum(wave=self.wave.copy(),
-                                          data=np.zeros(self.shape[0]),
-                                          unit=self.unit)
+                        result = Spectrum(wave=self.wave, unit=self.unit,
+                                          data=np.zeros(self.shape[0],
+                                                        dtype=type(out)))
                         init = False
-                    result[k] = float(out[0])
+                    result[k] = out
 
-                # If the function returns anything else, make a numpy
-                # array of them.
                 else:
+                    # If the function returns anything else, make a numpy array
                     if init:
-                        result = np.empty(self.shape[0], dtype=type(out[0]))
+                        result = np.empty(self.shape[0], dtype=type(out))
                         init = False
-                    result[k] = out[0]
+                    result[k] = out
 
             # Is it time for a new report to be made to the terminal?
             except multiprocessing.TimeoutError:
@@ -2366,65 +2302,33 @@ def _is_method(func, cls):
 
 def _process_spe(arglist):
     """This function is the function that is executed in worker processes
-    by pool.imap_unordered() to do the work of loop_spe_multiprocessing()."""
-
+    by pool.imap_unordered() to do the work of loop_spe_multiprocessing().
+    """
     try:
-        # Expand the argument-list that was passed to pool.imap_unordered().
-        pos, f, header, data, mask, var, unit, kargs = arglist
-
-        # Reconstruct the world coordinate information and the Spectrum object.
-        wave = WaveCoord(header, shape=data.shape[0])
-        spe = Spectrum(wave=wave, unit=unit, data=data, var=var, mask=mask)
-
+        pos, f, spe, kargs = arglist
         # If the function is an Spectrum method, attach it to the spectrum
         # object that we are processing and execute this.
         if isinstance(f, types.FunctionType):
-            out = f(spe, **kargs)
+            return pos, f(spe, **kargs)
         else:
-            out = getattr(spe, f)(**kargs)
-
-        if isinstance(out, Spectrum):
-            return pos, 'spectrum', [
-                out.wave.to_header(), out.data.data,
-                out.data.mask, out.var, out.unit]
-        else:
-            return pos, 'other', [out]
+            return pos, getattr(spe, f)(**kargs)
     except Exception as inst:
-        raise type(inst)(str(inst) +
-                         '\n The error occurred while processing spectrum '
-                         '[:,%i,%i]' % (pos[0], pos[1]))
+        raise inst.__class__('{}\n The error occurred while processing '
+                             'spectrum [:,{},{}]'.format(str(inst), *pos))
 
 
 def _process_ima(arglist):
     """This function is the function that is executed in worker processes
-    by pool.imap_unordered() to do the work of loop_ima_multiprocessing()."""
-
+    by pool.imap_unordered() to do the work of loop_ima_multiprocessing().
+    """
     try:
-
-        # Expand the argument-list that was passed to pool.imap_unordered().
-        k, f, header, data, mask, var, unit, kargs = arglist
-
-        # Reconstruct the world coordinate information and the Image object.
-        wcs = WCS(header, shape=data.shape)
-        obj = Image(wcs=wcs, unit=unit, data=data, var=var, mask=mask)
-
+        k, f, obj, kwargs = arglist
         # If the function is an Image method, attach it to the image
         # object that we are processing and execute this.
         if isinstance(f, types.FunctionType):
-            out = f(obj, **kargs)
+            return k, f(obj, **kwargs)
         else:
-            out = getattr(obj, f)(**kargs)
-
-        if isinstance(out, Image):
-            # f returns an image -> iterator returns a cube
-            return k, 'image', [out.wcs.to_header(), out.data.data,
-                                out.data.mask, out.var, out.unit]
-        elif isinstance(out, Spectrum):
-            return k, 'spectrum', [out.wave.to_header(), out.data.data,
-                                   out.data.mask, out.var, out.unit]
-        else:
-            # f returns dtype -> iterator returns an array of dtype
-            return k, 'other', [out]
+            return k, getattr(obj, f)(**kwargs)
     except Exception as inst:
-        raise type(inst)(str(inst) + '\n The error occurred '
-                         'while processing image [%i,:,:]' % k)
+        raise inst.__class__('{}\n The error occurred while processing '
+                             'image [{},:,:]'.format(str(inst), k))
