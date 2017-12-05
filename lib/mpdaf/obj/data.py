@@ -390,8 +390,13 @@ class DataArray(object):
         return state
 
     def __setstate__(self, state):
+        # set attributes on the object, making sure that _data, _mask and _var
+        # are set last as these are descriptors and need the other attributes
         for slot, value in state.items():
-            setattr(self, slot, value)
+            if slot not in ('_data', '_mask', '_var'):
+                setattr(self, slot, value)
+        for slot in ('_data', '_mask', '_var'):
+            setattr(self, slot, state[slot])
 
         self._logger = logging.getLogger(__name__)
         # Recreate the wcs/wave objects from the fits headers
