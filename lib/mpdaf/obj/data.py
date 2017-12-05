@@ -637,17 +637,16 @@ class DataArray(object):
             which results in the var attribute being assigned None.
 
         """
-        # Update the NAXIS keywords because an object without data relies on
-        # this to get the shape
-        data_header = self.data_header.copy()
-        data_header['NAXIS'] = self.ndim
-        for i in range(1, 4):
-            key = 'NAXIS%d' % i
-            if i > self.ndim:
-                if key in data_header:
-                    data_header.remove(key)
-            else:
-                data_header[key] = self.shape[-i]
+        # Create a new data_header with correct NAXIS keywords because an 
+        # object without data relies on this to get the shape
+        hdr = copy_header(self.data_header, self.get_wcs_header(),
+                          exclude=('CD*', 'PC*', 'CDELT*', 'CRPIX*', 'CRVAL*',
+                                   'CSYER*', 'CTYPE*', 'CUNIT*', 'NAXIS*',
+                                   'RADESYS', 'LATPOLE', 'LONPOLE'),
+                          unit=self.unit)
+        hdr['NAXIS'] = self.ndim
+        for i in range(1, self.ndim + 1):
+            hdr['NAXIS%d' % i] = self.shape[-i]
 
         return self.__class__(
             unit=self.unit, dtype=None, copy=False,
@@ -657,7 +656,7 @@ class DataArray(object):
                                                        dtype=self.dtype),
             wcs=None if self.wcs is None else self.wcs,
             wave=None if self.wave is None else self.wave,
-            data_header=data_header,
+            data_header=hdr,
             primary_header=self.primary_header.copy()
         )
 
