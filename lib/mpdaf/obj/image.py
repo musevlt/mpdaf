@@ -55,7 +55,7 @@ from six.moves import range, zip
 from .arithmetic import ArithmeticMixin
 from .coords import WCS
 from .data import DataArray
-from .objs import is_int, is_number, bounding_box, UnitMaskedArray
+from .objs import is_int, is_number, bounding_box, UnitMaskedArray, UnitArray
 
 __all__ = ('Gauss2D', 'Moffat2D', 'Image', 'gauss_image', 'moffat_image',
            'SpatialFrequencyLimits')
@@ -838,9 +838,15 @@ class Image(ArithmeticMixin, DataArray):
             form="rectangle", center=center, radii=radius,
             shape=self.shape, step=step)
 
-        if (sx.start >= self.shape[1] or sx.stop < 0 or sx.start == sx.stop or
-                sy.start >= self.shape[0] or sy.stop < 0 or sy.start == sy.stop):
-            raise ValueError('Sub-image boundaries are outside the cube')
+        if (sx.start >= self.shape[1] or
+                sx.stop < 0 or
+                sx.start == sx.stop or
+                sy.start >= self.shape[0] or
+                sy.stop < 0 or
+                sy.start == sy.stop):
+            raise ValueError('Sub-image boundaries are outside the cube: '
+                             'center: {}, shape: {}, size: {}'
+                             .format(center, self.shape, size))
 
         # Require that the image be at least minsize x minsize pixels.
         if (sy.stop - sy.start + 1) < minsize[0] or \
@@ -2743,10 +2749,8 @@ class Image(ArithmeticMixin, DataArray):
            The resampled image.
 
         """
-
-        # Convert newstep to the newinc argument used by regrid(),
-        # being careful to preserve the signs of the existing
-        # coordinate increments.
+        # Convert newstep to the newinc argument used by regrid(), being
+        # careful to preserve the signs of the existing coordinate increments.
         step_signs = np.sign(self.get_axis_increments())
         if is_number(newstep):
             newinc = step_signs * abs(newstep)
@@ -2754,17 +2758,9 @@ class Image(ArithmeticMixin, DataArray):
             newinc = step_signs * abs(np.asarray(newstep))
 
         # Convert newstart to the refpos,refpix arguments expected by regrid().
+        refpix = None if newstart is None else [0.0, 0.0]
 
-        if newstart is None:
-            refpos = None
-            refpix = None
-        else:
-            refpos = newstart
-            refpix = [0.0, 0.0]
-
-        # Delegate the resampling task.
-
-        return self.regrid(newdim, refpos, refpix, newinc, flux=flux,
+        return self.regrid(newdim, newstart, refpix, newinc, flux=flux,
                            order=order, interp=interp, unit_pos=unit_start,
                            unit_inc=unit_step, antialias=antialias,
                            inplace=inplace, window=window)
@@ -2926,8 +2922,6 @@ class Image(ArithmeticMixin, DataArray):
             The resampled image is returned.
 
         """
-
-        # Create a shape that has the same dimension for both axes?
         if is_int(newdim):
             newdim = (newdim, newdim)
         newdim = np.asarray(newdim, dtype=int)
@@ -2946,11 +2940,9 @@ class Image(ArithmeticMixin, DataArray):
 
             # If necessary convert refpos to a numpy array and convert
             # it's units to the current WCS units.
+            refpos = np.asarray(refpos, dtype=float)
             if unit_pos is not None:
-                refpos = (np.asarray(refpos, dtype=float) *
-                          unit_pos).to(self.wcs.unit).value
-            else:
-                refpos = np.asarray(refpos, dtype=float)
+                refpos = UnitArray(refpos, unit_pos, self.wcs.unit)
 
             # If necessary convert refpix to a floating point numpy array.
             refpix = np.asarray(refpix, dtype=float)
@@ -2971,11 +2963,9 @@ class Image(ArithmeticMixin, DataArray):
 
         # Ensure that newinc is an array of values that have the
         # same units as the WCS object.
+        newinc = np.asarray(newinc, dtype=float)
         if unit_inc is not None:
-            newinc = (np.asarray(newinc, dtype=float) *
-                      unit_inc).to(self.wcs.unit).value
-        else:
-            newinc = np.asarray(newinc, dtype=float)
+            newinc = UnitArray(newinc, unit_inc, self.wcs.unit)
 
         # Get a copy of the data array with masked values filled.
         data = self._prepare_data(interp)
