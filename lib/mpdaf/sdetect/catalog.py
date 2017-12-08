@@ -645,8 +645,8 @@ class Catalog(Table):
             Symbol color.
         alpha : float
             Symbol transparency
-        kwargs : matplotlib.artist.Artist
-            kwargs can be used to set additional plotting properties.
+        kwargs : dict
+            Additional properties for `matplotlib.patches.Ellipse`.
 
         """
         if isinstance(symb, (list, tuple)) and len(symb) == 3:
@@ -681,14 +681,13 @@ class Catalog(Table):
                 f1 = size / step[0]
                 f2 = f1
                 pa = 0
-            ell = Ellipse((cen[1], cen[0]), 2 * f1, 2 * f2, pa, fill=False)
+            ell = Ellipse((cen[1], cen[0]), 2 * f1, 2 * f2, pa, fill=False,
+                          alpha=alpha, edgecolor=col, clip_box=ax.bbox,
+                          **kwargs)
             ax.add_artist(ell)
-            ell.set_clip_box(ax.bbox)
-            ell.set_alpha(alpha)
-            ell.set_edgecolor(col)
 
-    def plot_id(self, ax, wcs, iden='ID', ra='RA', dec='DEC',
-                symb=0.2, alpha=0.5, col='k', **kwargs):
+    def plot_id(self, ax, wcs, iden='ID', ra='RA', dec='DEC', symb=0.2,
+                alpha=0.5, col='k', ellipse_kwargs=None, **kwargs):
         """This function displays the id of the catalog.
 
         Parameters
@@ -709,8 +708,10 @@ class Catalog(Table):
             Symbol color.
         alpha : float
             Symbol transparency
-        kwargs : matplotlib.artist.Artist
-            kwargs can be used to set additional plotting properties.
+        ellipse_kwargs : dict
+            Additional properties for `matplotlib.patches.Ellipse`.
+        kwargs : dict
+            Additional properties for ``ax.text``.
 
         """
         if ra not in self.colnames:
@@ -720,14 +721,14 @@ class Catalog(Table):
         if iden not in self.colnames:
             raise IOError('column %s not found in catalog' % iden)
 
+        ellipse_kwargs = ellipse_kwargs or {}
         cat = self.select(wcs, ra, dec)
         size = 2 * symb / wcs.get_step(unit=u.arcsec)[0]
         for src in cat:
             cen = wcs.sky2pix([src[dec], src[ra]], unit=u.deg)[0]
             ax.text(cen[1], cen[0] + size, src[iden], ha='center', color=col,
                     **kwargs)
-            ell = Ellipse((cen[1], cen[0]), size, size, 0, fill=False)
+            ell = Ellipse((cen[1], cen[0]), size, size, 0, fill=False,
+                          alpha=alpha, edgecolor=col, clip_box=ax.bbox,
+                          **ellipse_kwargs)
             ax.add_artist(ell)
-            ell.set_clip_box(ax.bbox)
-            ell.set_alpha(alpha)
-            ell.set_edgecolor(col)
