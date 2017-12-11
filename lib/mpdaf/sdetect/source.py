@@ -1179,7 +1179,7 @@ class Source(object):
                               unit_center=u.deg, unit_size=unit_size)
         self.images['MUSE_WHITE'] = subcub.mean(axis=0)
 
-    def add_FSF(self, cube):
+    def add_FSF(self, cube, fieldmap=None):
         """Compute the mean FSF using the FSF keywords presents if the FITS
         header of the mosaic cube.
 
@@ -1202,14 +1202,15 @@ class Source(object):
             a = cube.primary_header['FSF%02dFWA' % nf]
             b = cube.primary_header['FSF%02dFWB' % nf]
         else:
-            # load field map
-            fmap = FieldsMap(cube.filename, extname='FIELDMAP')
+            # load field map, from a dedicated file or from the cube
+            fmap = (FieldsMap(fieldmap) if fieldmap is not None
+                    else FieldsMap(cube.filename, extname='FIELDMAP'))
             # load info from the white image
             try:
                 white = self.images['MUSE_WHITE']
             except:
                 raise IOError('Cannot compute FSF if the MUSE_WHITE image'
-                              'doesn t exist.')
+                              'does not exist.')
             size = white.shape[0]
             center = np.asarray((self.dec, self.ra))
             center = cube.wcs.sky2pix(center, unit=u.deg)[0]
