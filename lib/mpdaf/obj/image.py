@@ -2408,7 +2408,7 @@ class Image(ArithmeticMixin, DataArray):
                         maxfev=maxiter, full_output=1)
 
         if success != 1:
-            self._logger.info(mesg)
+            self._logger.debug(mesg)
 
         # calculate the errors from the estimated covariance matrix
         chisq = sum(info["fvec"] * info["fvec"])

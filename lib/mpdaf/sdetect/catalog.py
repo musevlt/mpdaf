@@ -78,8 +78,8 @@ class Catalog(Table):
     @classmethod
     def read(cls, *args, **kwargs):
         t = super(Catalog, cls).read(*args, **kwargs)
-        if not ASTROPY_LT_1_1 and 'ID' in t.colnames:
-            t.add_index('ID')
+        #if not ASTROPY_LT_1_1 and 'ID' in t.colnames:
+            #t.add_index('ID')
         return t
 
     @classmethod
@@ -377,8 +377,8 @@ class Catalog(Table):
 
         t = cls(rows=data_rows, names=names, masked=True, dtype=dtype)
         # index
-        if not ASTROPY_LT_1_1:
-            t.add_index('ID')
+        #if not ASTROPY_LT_1_1:
+            #t.add_index('ID')
 
         # format
         for name, desc, unit, fmt in zip(names_hdr, desc_hdr, unit_hdr,
