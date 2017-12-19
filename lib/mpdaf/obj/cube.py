@@ -1705,7 +1705,7 @@ class Cube(ArithmeticMixin, DataArray):
 
     def subcube(self, center, size, lbda=None, unit_center=u.deg,
                 unit_size=u.arcsec, unit_wave=u.angstrom):
-        """Extracts a sub-cube around a position.
+        """Extracts a sub-cube around a position and for a wavelength range.
 
         Parameters
         ----------
@@ -1844,10 +1844,10 @@ class Cube(ArithmeticMixin, DataArray):
                     primary_header=fits.Header(self.primary_header),
                     filename=self.filename)
 
-    def subcube_circle_aperture(self, center, radius, unit_center=u.deg,
-                                unit_radius=u.arcsec):
+    def subcube_circle_aperture(self, center, radius, lbda=None, unit_center=u.deg,
+                unit_radius=u.arcsec, unit_wave=u.angstrom):
         """Extract a sub-cube that encloses a circular aperture of
-        a specified radius.
+        a specified radius and for a given wavelength range.
 
         Pixels outside the circle are masked.
 
@@ -1857,6 +1857,8 @@ class Cube(ArithmeticMixin, DataArray):
             The center of the aperture (y,x)
         radius : float
             The radius of the aperture.
+        lbda : (float, float) or None
+            If not None, tuple giving the wavelength range.
         unit_center : `astropy.units.Unit`
             The units of the center coordinates (degrees by default)
             The special value, None, indicates that the center is a
@@ -1865,6 +1867,9 @@ class Cube(ArithmeticMixin, DataArray):
             The units of the radius argument (arcseconds by default)
             The special value, None, indicates that the radius is
             specified in pixels.
+        unit_wave : `astropy.units.Unit`
+            Wavelengths unit (angstrom by default)
+            If None, inputs are in pixels
 
         Returns
         -------
@@ -1872,7 +1877,8 @@ class Cube(ArithmeticMixin, DataArray):
 
         """
         subcub = self.subcube(center, radius * 2, unit_center=unit_center,
-                              unit_size=unit_radius).copy()
+                              lbda=lbda, unit_size=unit_radius,
+                              unit_wave=unit_wave).copy()
         # Mask the region outside the circle. Work on a copy to avoid modifying
         # the original cube.
         center = np.array(subcub.shape[1:]) / 2.0
