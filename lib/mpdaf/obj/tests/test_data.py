@@ -35,6 +35,7 @@ from __future__ import absolute_import, division
 
 import astropy.units as u
 import numpy as np
+import pickle
 import pytest
 import warnings
 
@@ -249,6 +250,27 @@ def test_clone_with_data():
     # references to the same mask array.
     assert cube2.data.mask is cube2.mask
     assert cube2.var.mask is cube2.mask
+
+
+def test_pickle(cube):
+    c = pickle.loads(pickle.dumps(cube))
+    assert cube.wcs.isEqual(c.wcs)
+    assert cube.wave.isEqual(c.wave)
+    assert_array_equal(cube.data, c.data)
+    assert_array_equal(cube.var, c.var)
+    assert list(cube.primary_header.items()) == list(c.primary_header.items())
+    assert list(cube.data_header.items()) == list(c.data_header.items())
+
+
+def test_pickle2(minicube):
+    cube = minicube
+    c = pickle.loads(pickle.dumps(cube))
+    assert cube.wcs.isEqual(c.wcs)
+    assert cube.wave.isEqual(c.wave)
+    assert_array_equal(cube.data, c.data)
+    assert_array_equal(cube.var, c.var)
+    assert list(cube.primary_header.items()) == list(c.primary_header.items())
+    assert list(cube.data_header.items()) == list(c.data_header.items())
 
 
 def test_set_var():

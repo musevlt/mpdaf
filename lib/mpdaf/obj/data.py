@@ -313,8 +313,6 @@ class DataArray(object):
             self.primary_header = hdulist[0].header
             self.data_header = hdr = hdulist[self._data_ext].header
 
-            frame, equinox = determine_refframe(self.primary_header)
-
             try:
                 self.unit = u.Unit(fix_unit_read(hdr['BUNIT']))
             except KeyError:
@@ -327,25 +325,7 @@ class DataArray(object):
             if 'FSCALE' in hdr:
                 self.unit *= u.Unit(hdr['FSCALE'])
 
-            # Is this a derived class like Cube and Image that require
-            # WCS information?
-            if self._has_wcs:
-                try:
-                    self.wcs = WCS(hdr, frame=frame, equinox=equinox)
-                except fits.VerifyError as e:
-                    # Workaround for
-                    # https://github.com/astropy/astropy/issues/887
-                    self._logger.warning(e)
-                    if 'IRAF-B/P' in hdr:
-                        hdr.remove('IRAF-B/P')
-                    self.wcs = WCS(hdr, frame=frame, equinox=equinox)
-
-            # Get the wavelength coordinates.
-            wave_ext = 1 if self._ndim_required == 1 else 3
-            crpix = 'CRPIX{}'.format(wave_ext)
-            crval = 'CRVAL{}'.format(wave_ext)
-            if self._has_wave and crpix in hdr and crval in hdr:
-                self.wave = WaveCoord(hdr)
+            self._compute_wcs_from_header()
 
             if close_hdu:
                 hdulist.close()
@@ -388,6 +368,66 @@ class DataArray(object):
         # parameters, install them.
         self.set_wcs(wcs=kwargs.pop('wcs', None),
                      wave=kwargs.pop('wave', None))
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+
+        # remove un-pickable objects
+        state['_logger'] = None
+        state['wcs'] = None
+        state['wave'] = None
+        if '_spflims' in state and state['_spflims'] is not None:
+            state['_spflims'] = None
+
+        # Try to determine if the object has some wcs/wave information but not
+        # available in the FITS header. In this case we add the wcs info in the
+        # data header.
+        if (self.data_header.get('WCSAXES') is None and
+                ((self._has_wcs and self.wcs is not None) or
+                 (self._has_wave and self.wave is not None))):
+            state['data_header'].update(self.get_wcs_header())
+
+        return state
+
+    def __setstate__(self, state):
+        # set attributes on the object, making sure that _data, _mask and _var
+        # are set last as these are descriptors and need the other attributes.
+        # Also these attributes may bot exists yet if the data is not loaded.
+        for slot, value in state.items():
+            if slot not in ('_data', '_mask', '_var'):
+                setattr(self, slot, value)
+        for slot in ('_data', '_mask', '_var'):
+            if slot in state:
+                setattr(self, slot, state[slot])
+
+        self._logger = logging.getLogger(__name__)
+        # Recreate the wcs/wave objects from the fits headers
+        self._compute_wcs_from_header()
+        # and to get the naxis1/naxis2 right
+        self.set_wcs(wcs=self.wcs, wave=self.wave)
+
+    def _compute_wcs_from_header(self):
+        frame, equinox = determine_refframe(self.primary_header)
+        hdr = self.data_header
+
+        # Is this a derived class like Cube/Image that require WCS information?
+        if self._has_wcs:
+            try:
+                self.wcs = WCS(hdr, frame=frame, equinox=equinox)
+            except fits.VerifyError as e:
+                # Workaround for
+                # https://github.com/astropy/astropy/issues/887
+                self._logger.warning(e)
+                if 'IRAF-B/P' in hdr:
+                    hdr.remove('IRAF-B/P')
+                self.wcs = WCS(hdr, frame=frame, equinox=equinox)
+
+        # Get the wavelength coordinates.
+        wave_ext = 1 if self._ndim_required == 1 else 3
+        crpix = 'CRPIX{}'.format(wave_ext)
+        crval = 'CRVAL{}'.format(wave_ext)
+        if self._has_wave and crpix in hdr and crval in hdr:
+            self.wave = WaveCoord(hdr)
 
     @classmethod
     def new_from_obj(cls, obj, data=None, var=None, copy=False):
@@ -597,17 +637,16 @@ class DataArray(object):
             which results in the var attribute being assigned None.
 
         """
-        # Update the NAXIS keywords because an object without data relies on
-        # this to get the shape
-        data_header = self.data_header.copy()
-        data_header['NAXIS'] = self.ndim
-        for i in range(1, 4):
-            key = 'NAXIS%d' % i
-            if i > self.ndim:
-                if key in data_header:
-                    data_header.remove(key)
-            else:
-                data_header[key] = self.shape[-i]
+        # Create a new data_header with correct NAXIS keywords because an 
+        # object without data relies on this to get the shape
+        hdr = copy_header(self.data_header, self.get_wcs_header(),
+                          exclude=('CD*', 'PC*', 'CDELT*', 'CRPIX*', 'CRVAL*',
+                                   'CSYER*', 'CTYPE*', 'CUNIT*', 'NAXIS*',
+                                   'RADESYS', 'LATPOLE', 'LONPOLE'),
+                          unit=self.unit)
+        hdr['NAXIS'] = self.ndim
+        for i in range(1, self.ndim + 1):
+            hdr['NAXIS%d' % i] = self.shape[-i]
 
         return self.__class__(
             unit=self.unit, dtype=None, copy=False,
@@ -617,7 +656,7 @@ class DataArray(object):
                                                        dtype=self.dtype),
             wcs=None if self.wcs is None else self.wcs,
             wave=None if self.wave is None else self.wave,
-            data_header=data_header,
+            data_header=hdr,
             primary_header=self.primary_header.copy()
         )
 
