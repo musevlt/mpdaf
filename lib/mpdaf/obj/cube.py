@@ -2157,7 +2157,8 @@ class Cube(ArithmeticMixin, DataArray):
 
         """
         subcub = self.subcube(center, radius * 2, unit_center=unit_center,
-                              unit_size=unit_radius).copy()
+                              lbda=lbda, unit_size=unit_radius,
+                              unit_wave=unit_wave).copy()
         # Mask the region outside the circle. Work on a copy to avoid modifying
         # the original cube.
         center = np.array(subcub.shape[1:]) / 2.0
