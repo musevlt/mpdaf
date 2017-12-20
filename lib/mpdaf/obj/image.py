@@ -3830,7 +3830,7 @@ class Image(ArithmeticMixin, DataArray):
 
     def plot(self, title=None, scale='linear', vmin=None, vmax=None,
              zscale=False, colorbar=None, var=False, show_xlabel=True,
-             show_ylabel=True, ax=None, unit=u.deg, **kwargs):
+             show_ylabel=True, ax=None, unit=u.deg, use_wcs=False, **kwargs):
         """Plot the image with axes labeled in pixels.
 
         If either axis has just one pixel, plot a line instead of an image.
@@ -3919,13 +3919,18 @@ class Image(ArithmeticMixin, DataArray):
         -------
         out : matplotlib AxesImage
         """
-        if ax is None:
-            ax = plt.gca()
+        cax = None
+        # Default X and Y axes are labeled in pixels.
+        xlabel = 'q (pixel)'
+        ylabel = 'p (pixel)'
 
-        # The X and Y axes are labeled in pixels.
-        xunit = yunit = 'pixel'
-        xlabel = 'q (%s)' % xunit
-        ylabel = 'p (%s)' % yunit
+        if ax is None:
+            if use_wcs:
+                ax = plt.subplot(projection=self.wcs.wcs)
+                xlabel = 'ra'
+                ylabel = 'dec'
+            else:
+                ax = plt.gca()
 
         if var:
             data_plot = self.var
@@ -3937,12 +3942,13 @@ class Image(ArithmeticMixin, DataArray):
             # Plot a column as a line-graph
             yaxis = np.arange(self.shape[0], dtype=float)
             ax.plot(yaxis, data_plot)
-            xlabel = 'p (%s)' % yunit
+            xlabel = 'p (pixel)'
             ylabel = self.unit
         elif self.shape[0] == 1:
             # Plot a row as a line-graph
             xaxis = np.arange(self.shape[1], dtype=float)
-            ax.plot(xaxis, data_plot)
+            ax.plot(xaxis, data_plot.T)
+            xlabel = 'q (pixel)'
             ylabel = self.unit
         else:
             # Plot a 2D image.
