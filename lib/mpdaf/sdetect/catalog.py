@@ -47,8 +47,6 @@ from astropy import units as u
 from matplotlib.patches import Ellipse
 from six.moves import range, zip
 
-from ..tools.astropycompat import ASTROPY_LT_1_1
-
 INVALID = {
     type(1): -9999, np.int_: -9999, np.int32: -9999,
     type(1.0): np.nan, np.float_: np.nan,
@@ -74,13 +72,6 @@ class Catalog(Table):
         self._logger = logging.getLogger(__name__)
         if self.masked:
             self.masked_invalid()
-
-    @classmethod
-    def read(cls, *args, **kwargs):
-        t = super(Catalog, cls).read(*args, **kwargs)
-        #if not ASTROPY_LT_1_1 and 'ID' in t.colnames:
-            #t.add_index('ID')
-        return t
 
     @classmethod
     def from_sources(cls, sources, fmt='default'):
@@ -376,9 +367,6 @@ class Catalog(Table):
                                names[i], check, dtype[i])
 
         t = cls(rows=data_rows, names=names, masked=True, dtype=dtype)
-        # index
-        #if not ASTROPY_LT_1_1:
-            #t.add_index('ID')
 
         # format
         for name, desc, unit, fmt in zip(names_hdr, desc_hdr, unit_hdr,
