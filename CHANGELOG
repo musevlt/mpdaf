@@ -1,7 +1,19 @@
 2.5 or 3.0 (dev)
 ----------------
 
-Nothing yet.
+- Allow to pass additional Ellipse arguments to ``Catalog.plot_symb``.
+
+- Allow to load fieldmap from a dedicated file (in ``Source.add_FSF``).
+
+- Remove the index that was added by default on the 'ID' column (in
+  ``Catalog``).
+
+- Allow to pickle MPDAF objects (``Cube``, ``Image``, ``Spectrum``,
+  ``Source``). This makes it much easier to use with ``multiprocessing``.
+
+- Allow to specify the wavelength range in ``Cube.subcube_circle_aperture``.
+
+- Add option to plot images with ``wcsaxes``.
 
 2.4 (24/11/2017)
 ----------------
