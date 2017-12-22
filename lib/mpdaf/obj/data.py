@@ -379,6 +379,11 @@ class DataArray(object):
         if '_spflims' in state and state['_spflims'] is not None:
             state['_spflims'] = None
 
+        # Image.plot stores the matplotlib axes on the object, but it is not
+        # pickable. Delete it!
+        if '_ax' in state:
+            del state['_ax']
+
         # Try to determine if the object has some wcs/wave information but not
         # available in the FITS header. In this case we add the wcs info in the
         # data header.
@@ -637,7 +642,7 @@ class DataArray(object):
             which results in the var attribute being assigned None.
 
         """
-        # Create a new data_header with correct NAXIS keywords because an 
+        # Create a new data_header with correct NAXIS keywords because an
         # object without data relies on this to get the shape
         hdr = copy_header(self.data_header, self.get_wcs_header(),
                           exclude=('CD*', 'PC*', 'CDELT*', 'CRPIX*', 'CRVAL*',
