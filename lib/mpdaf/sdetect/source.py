@@ -536,6 +536,17 @@ class Source(object):
         if mask_invalid:
             self.masked_invalid()
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # remove un-pickable objects
+        state['_logger'] = None
+        return state
+
+    def __setstate__(self, state):
+        for slot, value in state.items():
+            setattr(self, slot, value)
+        self._logger = logging.getLogger(__name__)
+
     @classmethod
     def from_data(cls, ID, ra, dec, origin, proba=None, confid=None,
                   extras=None, **kwargs):

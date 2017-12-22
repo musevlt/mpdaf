@@ -36,6 +36,7 @@ from __future__ import absolute_import, division
 import astropy.units as u
 import numpy as np
 import os
+import pickle
 import pytest
 import warnings
 
@@ -55,34 +56,36 @@ def test_init():
 
 
 def test_from_data():
-    src = Source.from_data(ID=1, ra=63.35592651367188, dec=10.46536922454834,
-                           origin=('test', 'v0', 'minicube.fits', 'v0'),
-                           proba=1.0, confid=2, extras={'FOO': 'BAR'},
-                           default_size=10)
+    s1 = Source.from_data(ID=1, ra=63.35592651367188, dec=10.46536922454834,
+                          origin=('test', 'v0', 'minicube.fits', 'v0'),
+                          proba=1.0, confid=2, extras={'FOO': 'BAR'},
+                          default_size=10)
+    s2 = pickle.loads(pickle.dumps(s1))
 
-    assert src.DPROBA == 1.0
-    assert src.CONFID == 2
-    assert src.FOO == 'BAR'
+    for src in (s1, s2):
+        assert src.DPROBA == 1.0
+        assert src.CONFID == 2
+        assert src.FOO == 'BAR'
 
-    assert src.default_size == 10
-    src.default_size = 24.12
-    assert src.default_size == 24.12
+        assert src.default_size == 10
+        src.default_size = 24.12
+        assert src.default_size == 24.12
 
-    src.test = 24.12
-    assert src.test == 24.12
+        src.test = 24.12
+        assert src.test == 24.12
 
-    src.add_attr('test', 'toto')
-    assert src.test == 'toto'
+        src.add_attr('test', 'toto')
+        assert src.test == 'toto'
 
-    src.add_attr('test', 1.2345, desc='my keyword', unit=u.deg, fmt='.2f')
-    assert src.header.comments['TEST'] == 'my keyword u.deg %.2f'
+        src.add_attr('test', 1.2345, desc='my keyword', unit=u.deg, fmt='.2f')
+        assert src.header.comments['TEST'] == 'my keyword u.deg %.2f'
 
-    src.remove_attr('test')
-    with pytest.raises(AttributeError):
-        src.test
+        src.remove_attr('test')
+        with pytest.raises(AttributeError):
+            src.test
 
 
-def test_from_file(tmpdir):
+def test_from_file():
     filename = get_data_file('sdetect', 'sing-0032.fits')
     src = Source.from_file(filename, ext='NB*')
     assert 'NB7317' in src.images
@@ -92,6 +95,31 @@ def test_from_file(tmpdir):
 
     src = Source.from_file(filename, ext='FOO')
     assert 'NB7317' not in src.images
+
+
+@pytest.mark.parametrize('filename', ('sing-0032.fits', 'origin-00026.fits'))
+def test_pickle(filename):
+    filename = get_data_file('sdetect', filename)
+    src = Source.from_file(filename)
+
+    s1 = pickle.loads(pickle.dumps(src))
+
+    # Force loading all extensions
+    for objtype in ('images', 'cubes', 'spectra', 'tables'):
+        for name, obj in getattr(src, objtype).items():
+            print(name, obj)
+
+    s2 = pickle.loads(pickle.dumps(src))
+
+    for s in (s1, s2):
+        assert src.header.tostring() == s.header.tostring()
+        for objtype in ('images', 'cubes', 'spectra', 'tables'):
+            attr_ref = getattr(src, objtype)
+            attr_new = getattr(s, objtype)
+            if attr_ref is None:
+                assert attr_new is None
+            else:
+                assert list(attr_ref.keys()) == list(attr_new.keys())
 
 
 @pytest.mark.skipif(ASTROPY_LT_1_1, reason="requires Astropy 1.1+")
