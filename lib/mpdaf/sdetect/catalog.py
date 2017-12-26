@@ -699,7 +699,7 @@ class Catalog(Table):
                             len(match3d),len(match2d),len(unmatch1),len(unmatch2))              
             return (match3d,match2d,unmatch1,unmatch2) 
         else:
-            self._logger.info('Matched 3D: %d', len(match[match['NLMATCH']>0])))
+            self._logger.info('Matched 3D: %d', len(match[match['NLMATCH']>0]))
             return match
         
     def select(self, wcs, ra='RA', dec='DEC', margin=0):
