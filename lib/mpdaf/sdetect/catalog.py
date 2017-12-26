@@ -42,7 +42,7 @@ import six
 import sys
 
 from astropy.coordinates import SkyCoord
-from astropy.table import Table, Column, hstack, vstack
+from astropy.table import Table, Column, MaskedColumn, hstack, vstack
 from astropy import units as u
 from matplotlib.patches import Ellipse
 from six.moves import range, zip
@@ -478,7 +478,7 @@ class Catalog(Table):
                 pass
 
     def match(self, cat2, radius=1, colc1=('RA', 'DEC'), colc2=('RA', 'DEC'),
-              full_output=True):
+              full_output=True, **kwargs):
         """Match elements of the current catalog with an other (in RA, DEC).
 
         Parameters
@@ -491,6 +491,9 @@ class Catalog(Table):
             ('RA','DEC') name of ra,dec columns of input table
         colc2: tuple
             ('RA','DEC') name of ra,dec columns of cat2
+        full_output: bool
+            output flag 
+        other arguments are passed to astropy match_to_catalog_sky
 
         Returns
         -------
@@ -513,7 +516,7 @@ class Catalog(Table):
                           unit=(u.degree, u.degree))
         coord2 = SkyCoord(cat2[colc2[0]], cat2[colc2[1]],
                           unit=(u.degree, u.degree))
-        id2, d2d, d3d = coord1.match_to_catalog_sky(coord2)
+        id2, d2d, d3d = coord1.match_to_catalog_sky(coord2, **kwargs)
         id1 = np.arange(len(self))
         kmatch = d2d < radius * u.arcsec
         id2match = id2[kmatch]
@@ -559,7 +562,146 @@ class Catalog(Table):
             self._logger.debug('Cat1 Nelt %d Cat2 Nelt %d Matched %d'
                                % (len(self), len(cat2), len(match1)))
             return match
+        
+    def nearest(self, coord, colcoord=('RA', 'DEC'), ksel=1, maxdist=None, **kwargs):
+        """ return the nearest sources with respect to the given coordinate
 
+        Parameters
+        ----------
+        coord: tuple
+           ra,dec in decimal degree, or HH:MM:SS,DD:MM:SS
+        colcoord: tuple of str
+           column names of coordinate: default ('RA','DEC')
+        ksel: int
+           Number of sources to return, default 1 (if None return all sources sorted by distance)
+        maxdist: float
+           Maximum distance to source in arcsec, default None
+
+        Returns
+        -------
+        cat: `astropy.table.Table`
+          the corresponding catalog of matched sources with the additional Distance column (arcsec)
+        """
+        colra,coldec = colcoord
+        cra, cdec = _get_coord(coord[0], coord[1])
+        xcoord = SkyCoord([cra], [cdec], unit=(u.deg, u.deg))
+        src_coords = SkyCoord(self[colra], self[coldec], unit=(u.deg, u.deg))
+        idx, d2d, d3d = src_coords.match_to_catalog_sky(xcoord, **kwargs)
+        dist = d2d.arcsec
+        ksort = dist.argsort()
+        if ksel is not None:
+            ksort = ksort[:ksel]
+        cat = self[ksort]
+        dist = dist[ksort]
+        if maxdist is not None:
+            kmax = dist <= maxdist
+            cat = cat[kmax]
+            dist = dist[kmax]
+        cat['Distance'] = dist
+        cat['Distance'].format = '.2f'
+        return cat    
+
+    def match3Dline(self, cat2, linecolc1, linecolc2, spatial_radius=1, spectral_window=5, 
+                    colc1=('RA', 'DEC'), colc2=('RA', 'DEC'), 
+                    suffix=('_1','_2'),
+                    full_output=True, **kwargs):
+        """3D Match elements of the current catalog with an other using spatial (RA, DEC) and list of spectral lines location.
+
+        Parameters
+        ----------
+        cat2 : `astropy.table.Table`
+            Catalog to match.
+        linecolc1: list of float
+            List of column names containing the wavelengths of the input catalog
+        linecolc2: list of float
+            List of column names containing the wavelengths of the cat2
+        spatial_radius : float
+            Matching radius size in arcsec (default 1).
+        spectral_window : float (default 5)
+            Matching wavelength window in spectral unit (default 5).
+        colc1: tuple
+            ('RA','DEC') name of ra,dec columns of input catalog
+        colc2: tuple
+            ('RA','DEC') name of ra,dec columns of cat2
+        full_output: bool
+            output flag 
+        other arguments are passed to astropy match_to_catalog_sky
+
+
+        Returns
+        -------
+
+        if full_output is True
+
+        out : astropy.Table, astropy.Table, astropy.Table
+             match3d, match2d, nomatch1, nomatch2
+        else
+
+        out : astropy.Table
+              match
+
+        match: table of matched elements in RA,DEC
+        nomatch1: sub-table of non matched elements of the current catalog
+        nomatch2: sub-table of non matched elements of the catalog cat2
+
+        """
+        # rename all catalogs columns with _1 or _2 
+        self._logger.debug('Rename Catalog columns with %s or %s suffix',suffix[0],suffix[1])
+        for name in self.colnames:
+            self.rename_column(name, name+suffix[0])
+        for name in cat2.colnames:
+            cat2.rename_column(name, name+suffix[1])
+        colc1 = (colc1[0]+suffix[0], colc1[1]+suffix[0])
+        linecolc1 = [col+suffix[0] for col in linecolc1]
+        colc2 = (colc2[0]+suffix[1], colc2[1]+suffix[1])
+        linecolc2 = [col+suffix[1] for col in linecolc2]
+        
+        self._logger.debug('Performing spatial match')
+        match,unmatch1,unmatch2 = self.match(cat2, radius=spatial_radius, colc1=colc1, 
+                                             colc2=colc2, full_output=full_output, **kwargs)
+        self._logger.debug('Performing line match')
+        # create matched line colonnes
+        match.add_column(MaskedColumn(length=len(match), name='NLMATCH', dtype='int'), index=1)
+        # reorder columns
+        match.add_column(match['Distance'], index=2, name='DIST')
+        match['DIST'].format = '.2f'
+        match.remove_column('Distance')
+        for col in linecolc1:
+            l = self.colnames.index(col)
+            match.add_columns([MaskedColumn(length=len(match),dtype='bool'),
+                               MaskedColumn(length=len(match), dtype='S30'),
+                               MaskedColumn(length=len(match), dtype='float')],
+                              names=['M_'+col,'L_'+col,'E_'+col], indexes=[l,l,l])       
+            match['E_'+col].format = '.2f'
+            match['M_'+col] = False
+        # perform match for lines
+        for r in match:
+            # Match lines
+            nmatch = 0
+            for c1 in linecolc1:
+                l1 = r[c1]
+                if np.ma.is_masked(l1): continue
+                for c2 in linecolc2:
+                    l2 = r[c2]
+                    if np.ma.is_masked(l2): continue
+                    err = abs(l2-l1)
+                    if err < spectral_window:
+                        nmatch += 1
+                        r['M_'+c1] = True
+                        r['L_'+c1] = c2
+                        r['E_'+c1] = err
+            r['NLMATCH'] = nmatch 
+            
+        if full_output:
+            match3d = match[match['NLMATCH']>0]
+            match2d = match[match['NLMATCH']==0]
+            self._logger.info('Matched 3D: %d Matched 2D: %d Cat1 unmatched: %d Cat2 unmatched: %d',
+                            len(match3d),len(match2d),len(unmatch1),len(unmatch2))              
+            return (match3d,match2d,unmatch1,unmatch2) 
+        else:
+            self._logger.info('Matched 3D: %d', len(match[match['NLMATCH']>0])))
+            return match
+        
     def select(self, wcs, ra='RA', dec='DEC', margin=0):
         """Select all sources from catalog which are inside the given WCS
         and return a new catalog.
@@ -739,3 +881,12 @@ class Catalog(Table):
                           alpha=alpha, edgecolor=col, clip_box=ax.bbox,
                           **ellipse_kwargs)
             ax.add_artist(ell)
+
+def _get_coord(ra, dec):
+    """ translate coordinate from HH:MM:SS to decimal deg"""
+    if isinstance(ra, str) and ':' in ra:
+        c = SkyCoord(ra, dec, unit=(u.hourangle, u.deg))
+        logger.debug('Translating RA,DEC in decimal degre: {}, {}'.format(c.ra.value, c.dec.value))
+        return (c.ra.value, c.dec.value)
+    else:
+        return (ra, dec)
