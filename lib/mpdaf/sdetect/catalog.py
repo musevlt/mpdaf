@@ -647,19 +647,21 @@ class Catalog(Table):
         """
         # rename all catalogs columns with _1 or _2 
         self._logger.debug('Rename Catalog columns with %s or %s suffix',suffix[0],suffix[1])
-        for name in self.colnames:
-            self.rename_column(name, name+suffix[0])
-        for name in cat2.colnames:
-            cat2.rename_column(name, name+suffix[1])
+        tcat1 = self.copy()
+        tcat2 = cat2.copy()
+        for name in tcat1.colnames:
+            tcat1.rename_column(name, name+suffix[0])
+        for name in tcat2.colnames:
+            tcat2.rename_column(name, name+suffix[1])
         colc1 = (colc1[0]+suffix[0], colc1[1]+suffix[0])
         linecolc1 = [col+suffix[0] for col in linecolc1]
         colc2 = (colc2[0]+suffix[1], colc2[1]+suffix[1])
         linecolc2 = [col+suffix[1] for col in linecolc2]
         
         self._logger.debug('Performing spatial match')
-        match,unmatch1,unmatch2 = self.match(cat2, radius=spatial_radius, colc1=colc1, 
+        match,unmatch1,unmatch2 = tcat1.match(tcat2, radius=spatial_radius, colc1=colc1, 
                                              colc2=colc2, full_output=full_output, **kwargs)
-        self._logger.debug('Performing line match')
+        tcat1._logger.debug('Performing line match')
         # create matched line colonnes
         match.add_column(MaskedColumn(length=len(match), name='NLMATCH', dtype='int'), index=1)
         # reorder columns
@@ -667,7 +669,7 @@ class Catalog(Table):
         match['DIST'].format = '.2f'
         match.remove_column('Distance')
         for col in linecolc1:
-            l = self.colnames.index(col)
+            l = tcat1.colnames.index(col)
             match.add_columns([MaskedColumn(length=len(match),dtype='bool'),
                                MaskedColumn(length=len(match), dtype='S30'),
                                MaskedColumn(length=len(match), dtype='float')],
