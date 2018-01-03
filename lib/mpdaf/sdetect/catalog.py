@@ -492,7 +492,7 @@ class Catalog(Table):
         colc2: tuple
             ('RA','DEC') name of ra,dec columns of cat2
         full_output: bool
-            output flag 
+            output flag
         other arguments are passed to astropy match_to_catalog_sky
 
         Returns
@@ -562,7 +562,7 @@ class Catalog(Table):
             self._logger.debug('Cat1 Nelt %d Cat2 Nelt %d Matched %d'
                                % (len(self), len(cat2), len(match1)))
             return match
-        
+
     def nearest(self, coord, colcoord=('RA', 'DEC'), ksel=1, maxdist=None, **kwargs):
         """ return the nearest sources with respect to the given coordinate
 
@@ -599,10 +599,10 @@ class Catalog(Table):
             dist = dist[kmax]
         cat['Distance'] = dist
         cat['Distance'].format = '.2f'
-        return cat    
+        return cat
 
-    def match3Dline(self, cat2, linecolc1, linecolc2, spatial_radius=1, spectral_window=5, 
-                    colc1=('RA', 'DEC'), colc2=('RA', 'DEC'), 
+    def match3Dline(self, cat2, linecolc1, linecolc2, spatial_radius=1, spectral_window=5,
+                    colc1=('RA', 'DEC'), colc2=('RA', 'DEC'),
                     suffix=('_1','_2'),
                     full_output=True, **kwargs):
         """3D Match elements of the current catalog with an other using spatial (RA, DEC) and list of spectral lines location.
@@ -624,7 +624,7 @@ class Catalog(Table):
         colc2: tuple
             ('RA','DEC') name of ra,dec columns of cat2
         full_output: bool
-            output flag 
+            output flag
         other arguments are passed to astropy match_to_catalog_sky
 
 
@@ -645,7 +645,7 @@ class Catalog(Table):
         nomatch2: sub-table of non matched elements of the catalog cat2
 
         """
-        # rename all catalogs columns with _1 or _2 
+        # rename all catalogs columns with _1 or _2
         self._logger.debug('Rename Catalog columns with %s or %s suffix',suffix[0],suffix[1])
         tcat1 = self.copy()
         tcat2 = cat2.copy()
@@ -657,9 +657,9 @@ class Catalog(Table):
         linecolc1 = [col+suffix[0] for col in linecolc1]
         colc2 = (colc2[0]+suffix[1], colc2[1]+suffix[1])
         linecolc2 = [col+suffix[1] for col in linecolc2]
-        
+
         self._logger.debug('Performing spatial match')
-        match,unmatch1,unmatch2 = tcat1.match(tcat2, radius=spatial_radius, colc1=colc1, 
+        match,unmatch1,unmatch2 = tcat1.match(tcat2, radius=spatial_radius, colc1=colc1,
                                              colc2=colc2, full_output=full_output, **kwargs)
         tcat1._logger.debug('Performing line match')
         # create matched line colonnes
@@ -673,7 +673,7 @@ class Catalog(Table):
             match.add_columns([MaskedColumn(length=len(match),dtype='bool'),
                                MaskedColumn(length=len(match), dtype='S30'),
                                MaskedColumn(length=len(match), dtype='float')],
-                              names=['M_'+col,'L_'+col,'E_'+col], indexes=[l,l,l])       
+                              names=['M_'+col,'L_'+col,'E_'+col], indexes=[l,l,l])
             match['E_'+col].format = '.2f'
             match['M_'+col] = False
         # perform match for lines
@@ -692,18 +692,18 @@ class Catalog(Table):
                         r['M_'+c1] = True
                         r['L_'+c1] = c2
                         r['E_'+c1] = err
-            r['NLMATCH'] = nmatch 
-            
+            r['NLMATCH'] = nmatch
+
         if full_output:
             match3d = match[match['NLMATCH']>0]
             match2d = match[match['NLMATCH']==0]
             self._logger.info('Matched 3D: %d Matched 2D: %d Cat1 unmatched: %d Cat2 unmatched: %d',
-                            len(match3d),len(match2d),len(unmatch1),len(unmatch2))              
-            return (match3d,match2d,unmatch1,unmatch2) 
+                            len(match3d),len(match2d),len(unmatch1),len(unmatch2))
+            return (match3d,match2d,unmatch1,unmatch2)
         else:
             self._logger.info('Matched 3D: %d', len(match[match['NLMATCH']>0]))
             return match
-        
+
     def select(self, wcs, ra='RA', dec='DEC', margin=0):
         """Select all sources from catalog which are inside the given WCS
         and return a new catalog.
@@ -772,8 +772,9 @@ class Catalog(Table):
         regions = [CircleSkyRegion(center=c, radius=radius) for c in center]
         write_ds9(regions, filename=outfile, coordsys=frame)
 
-    def plot_symb(self, ax, wcs, ra='RA', dec='DEC',
-                  symb=0.4, col='k', alpha=1.0, **kwargs):
+    def plot_symb(self, ax, wcs, label=False, esize=0.8, lsize=None, etype='o',
+                  ltype=None, ra='RA', dec='DEC', id='ID', ecol='k', lcol=None,
+                  alpha=1.0, fill=False, fontsize=8, expand=1.7, **kwargs):
         """This function plots the sources location from the catalog.
 
         Parameters
@@ -782,63 +783,84 @@ class Catalog(Table):
             Matplotlib axis instance (eg ax = fig.add_subplot(2,3,1)).
         wcs : `mpdaf.obj.WCS`
             Image WCS
+        label: bool
+            If True catalog ID are displayed
+        esize : float
+            symbol size in arcsec (used only if lsize is not set)
+        lsize : str
+            Column name containing the size in arcsec
+        etype : str
+            Type of symbol: o (circle, size=diameter), s (square) used only if ltype is not set
+        ltype : str
+            Name of column that contain the symbol to use
         ra : str
             Name of the column that contains RA values (in degrees)
         dec : str
             Name of the column that contains DEC values (in degrees)
-        symb : list or str or float
-            - List of 3 columns names containing FWHM1,
-                FWHM2 and ANGLE values to define the ellipse of each source.
-            - Column name containing value that will be used
-                to define the circle size of each source.
-            - float in the case of circle with constant size in arcsec
-        col : str
-            Symbol color.
+        id : str
+            Name of the column that contains ID
+        lcol: str
+            Name of the column that contains Color
+        ecol : str
+            Symbol color (only used if lcol is not set)
         alpha : float
             Symbol transparency
-        kwargs : dict
-            Additional properties for `matplotlib.patches.Ellipse`.
+        fill: bool
+            If True filled symbol are used
+        expand: float
+            Expand factor to write label
+        kwargs : matplotlib.artist.Artist
+            kwargs can be used to set additional plotting properties.
 
         """
-        if isinstance(symb, (list, tuple)) and len(symb) == 3:
-            stype = 'ellipse'
-            fwhm1, fwhm2, angle = symb
-        elif isinstance(symb, six.string_types):
-            stype = 'circle'
-            fwhm = symb
-        elif np.isscalar(symb):
-            stype = 'fix'
-            size = symb
-        else:
-            raise IOError('wrong symbol')
 
+        if (ltype is None) and (etype not in ['o', 's']):
+            raise IOError('Unknown symbol %s' % etype)
+        if (ltype is not None) and (ltype not in self.colnames):
+            raise IOError('column %s not found in catalog' % ltype)
+        if (lsize is not None) and (lsize not in self.colnames):
+            raise IOError('column %s not found in catalog' % lsize)
+        if (lcol is not None) and (lcol not in self.colnames):
+            raise IOError('column %s not found in catalog' % lcol)
         if ra not in self.colnames:
             raise IOError('column %s not found in catalog' % ra)
         if dec not in self.colnames:
             raise IOError('column %s not found in catalog' % dec)
+        if label and (id not in self.colnames):
+            raise IOError('column %s not found in catalog' % id)
+
+        texts = []
 
         step = wcs.get_step(unit=u.arcsec)
-        for src in self:
-            cen = wcs.sky2pix([src[dec], src[ra]], unit=u.deg)[0]
-            if stype == 'ellipse':
-                f1 = src[fwhm1] / step[0]  # /cos(dec) ?
-                f2 = src[fwhm2] / step[1]
-                pa = src[angle] * 180 / np.pi
-            elif stype == 'circle':
-                f1 = src[fwhm] / step[0]
-                f2 = f1
-                pa = 0
-            elif stype == 'fix':
-                f1 = size / step[0]
-                f2 = f1
-                pa = 0
-            ell = Ellipse((cen[1], cen[0]), 2 * f1, 2 * f2, pa, fill=False,
-                          alpha=alpha, edgecolor=col, clip_box=ax.bbox,
-                          **kwargs)
-            ax.add_artist(ell)
+
+        arr = np.vstack([self[dec].data, self[ra].data]).T
+        arr = wcs.sky2pix(arr, unit=u.deg)
+
+        for src, cen in zip(self, arr):
+            yy, xx = cen
+            if (xx < 0) or (yy < 0) or (xx > wcs.naxis1) or (yy > wcs.naxis2):
+                continue
+            vsize = esize if lsize is None else src[lsize]
+            pixsize = vsize / step[0]
+            vtype = etype if ltype is None else src[ltype]
+            vcol = ecol if lcol is None else src[lcol]
+            if vtype == 'o':
+                s = Circle((xx, yy), 0.5 * pixsize, fill=fill, ec=vcol, alpha=alpha, **kwargs)
+            elif vtype == 's':
+                s = Rectangle((xx, yy), pixsize, pixsize, fill=fill, ec=vcol, alpha=alpha, **kwargs)
+            ax.add_artist(s)
+            if label and (not np.ma.is_masked(src[id])):
+                texts.append((ax.text(xx, yy, src[id], ha='center', color=vcol,
+                                      fontsize=fontsize), cen[1], cen[0]))
+            s.set_clip_box(ax.bbox)
+
+        if label and len(texts) > 0:
+            text, x, y = zip(*texts)
+            adjust_text(text, x=x, y=y, ax=ax, only_move={text: 'xy'}, expand_points=(expand, expand))
 
     def plot_id(self, ax, wcs, iden='ID', ra='RA', dec='DEC', symb=0.2,
                 alpha=0.5, col='k', ellipse_kwargs=None, **kwargs):
+        self._logger.info('plot_id is deprecated, use plot_symb with label=True instead')
         """This function displays the id of the catalog.
 
         Parameters
