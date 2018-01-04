@@ -44,8 +44,9 @@ import sys
 from astropy.coordinates import SkyCoord
 from astropy.table import Table, Column, MaskedColumn, hstack, vstack
 from astropy import units as u
-from matplotlib.patches import Ellipse
 from six.moves import range, zip
+from adjustText import adjust_text
+from matplotlib.patches import Circle, Rectangle, RegularPolygon, Patch
 
 INVALID = {
     type(1): -9999, np.int_: -9999, np.int32: -9999,
@@ -847,7 +848,7 @@ class Catalog(Table):
             if vtype == 'o':
                 s = Circle((xx, yy), 0.5 * pixsize, fill=fill, ec=vcol, alpha=alpha, **kwargs)
             elif vtype == 's':
-                s = Rectangle((xx, yy), pixsize, pixsize, fill=fill, ec=vcol, alpha=alpha, **kwargs)
+                s = Rectangle((xx-pixsize/2, yy-pixsize/2), pixsize, pixsize, fill=fill, ec=vcol, alpha=alpha, **kwargs)
             ax.add_artist(s)
             if label and (not np.ma.is_masked(src[id])):
                 texts.append((ax.text(xx, yy, src[id], ha='center', color=vcol,
