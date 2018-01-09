@@ -3847,10 +3847,10 @@ class Image(ArithmeticMixin, DataArray):
         position, color, can be chosen using the scale argument, from the
         following options:
 
-        'linear'   =>  color = nv
-        'log'      =>  color = log(1000 * nv + 1) / log(1000 + 1)
-        'sqrt'     =>  color = sqrt(nv)
-        'arcsinh'  =>  color = arcsinh(10*nv) / arcsinh(10.0)
+        - 'linear': ``color = nv``
+        - 'log': ``color = log(1000 * nv + 1) / log(1000 + 1)``
+        - 'sqrt': ``color = sqrt(nv)``
+        - 'arcsinh': ``color = arcsinh(10*nv) / arcsinh(10.0)``
 
         A colorbar can optionally be drawn. If the colorbar argument is given
         the value 'h', then a colorbar is drawn horizontally, above the plot.
@@ -3859,7 +3859,7 @@ class Image(ArithmeticMixin, DataArray):
 
         By default the image image is displayed in its own plot. Alternatively
         to make it a subplot of a larger figure, a suitable
-        ``matplotlib.axes.Axes object`` can be passed via the ``ax`` argument.
+        ``matplotlib.axes.Axes`` object can be passed via the ``ax`` argument.
         Note that unless matplotlib interative mode has previously been enabled
         by calling ``matplotlib.pyplot.ion()``, the plot window will not appear
         until the next time that ``matplotlib.pyplot.show()`` is called. So to
