@@ -87,8 +87,18 @@ be specified via the vmin and vmax arguments, as shown below.
 
    In [4]: plt.figure()
 
-   @savefig Image1.png width=4in
+   @savefig Image1a.png width=4in
    In [5]: ima.plot(vmin=0, vmax=10, colorbar='v')
+
+The `~mpdaf.obj.Image.plot` method has many options to customize the plot, for
+instance:
+
+.. ipython::
+
+   In [4]: plt.figure()
+
+   @savefig Image1b.png width=4in
+   In [5]: ima.plot(zscale=True, colorbar='v', use_wcs=True, scale='sqrt')
 
 The indexing of the image arrays follows the Python conventions for indexing a
 2D array. For an MPDAF image im, the pixel in the lower-left corner is
@@ -111,26 +121,20 @@ anticlockwise, then re-sampled to change its pixel size from 0.2 arcseconds to
 
 .. ipython::
 
-  In [1]: plt.figure()
+  In [2]: import astropy.units as u
 
-  @savefig Image2.png width=2in
-  In [5]: ima.plot(colorbar='v')
+  In [1]: fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(12, 4), tight_layout=True)
+
+  In [5]: ima.plot(ax=ax1, colorbar='v')
 
   In [1]: ima2 = ima.rotate(40) #this rotation uses an interpolation of the pixels
 
-  In [1]: plt.figure()
-
-  @savefig Image3.png width=2in
-  In [5]: ima2.plot(colorbar='v')
-
-  In [2]: import astropy.units as u
+  In [5]: ima2.plot(ax=ax2, colorbar='v')
 
   In [3]: ima3 = ima2.resample(newdim=(150,150), newstart=None, newstep=(0.4,0.4), unit_step=u.arcsec, flux=True)
 
-  In [1]: plt.figure()
-
-  @savefig Image4.png width=2in
-  In [5]: ima3.plot(colorbar='v')
+  @savefig Image4.png width=8in
+  In [5]: ima3.plot(ax=ax3, colorbar='v')
 
 
 The `~mpdaf.obj.Image.rotate` method interpolates the image onto a

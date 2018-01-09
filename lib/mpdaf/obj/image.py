@@ -3911,6 +3911,9 @@ class Image(ArithmeticMixin, DataArray):
             the mouse pointer is over a pixel in the image the
             coordinates of the pixel are shown using these units,
             along with the pixel value.
+        use_wcs : bool
+            If True, use `astropy.visualization.wcsaxes` to get axes
+            with world coordinates.
         kwargs : matplotlib.artist.Artist
             Optional extra keyword/value arguments to be passed to
             the ``ax.imshow()`` function.
@@ -3985,10 +3988,12 @@ class Image(ArithmeticMixin, DataArray):
                             origin='lower', norm=norm, **kwargs)
 
             # Create a colorbar
+            import matplotlib.axes as maxes
             from mpl_toolkits.axes_grid1 import make_axes_locatable
             divider = make_axes_locatable(ax)
             if colorbar == "h":
-                cax2 = divider.append_axes("top", size="5%", pad=0.2)
+                cax2 = divider.append_axes("top", size="5%", pad=0.2,
+                                           axes_class=maxes.Axes)
                 cbar = plt.colorbar(cax, cax=cax2, orientation='horizontal')
                 for t in cbar.ax.xaxis.get_major_ticks():
                     t.tick1On = True
@@ -3996,7 +4001,8 @@ class Image(ArithmeticMixin, DataArray):
                     t.label1On = False
                     t.label2On = True
             elif colorbar == "v":
-                cax2 = divider.append_axes("right", size="5%", pad=0.05)
+                cax2 = divider.append_axes("right", size="5%", pad=0.05,
+                                           axes_class=maxes.Axes)
                 plt.colorbar(cax, cax=cax2)
 
             # Keep the axis to allow other functions to overplot
