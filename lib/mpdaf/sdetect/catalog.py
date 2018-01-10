@@ -45,7 +45,6 @@ from astropy.coordinates import SkyCoord
 from astropy.table import Table, Column, MaskedColumn, hstack, vstack
 from astropy import units as u
 from six.moves import range, zip
-from adjustText import adjust_text
 from matplotlib.patches import Circle, Rectangle, Ellipse
 
 INVALID = {
@@ -548,14 +547,14 @@ class Catalog(Table):
                                   assume_unique=True, invert=True)
             nomatch2 = cat2[id2notmatch]
             nomatch1 = self[id1notmatch]
-            self._logger.debug('Cat1 Nelt %d Matched %d Not Matched %d'
-                               % (len(self), len(match1), len(nomatch1)))
-            self._logger.debug('Cat2 Nelt %d Matched %d Not Matched %d'
-                               % (len(cat2), len(match2), len(nomatch2)))
+            self._logger.debug('Cat1 Nelt %d Matched %d Not Matched %d',
+                               len(self), len(match1), len(nomatch1))
+            self._logger.debug('Cat2 Nelt %d Matched %d Not Matched %d',
+                               len(cat2), len(match2), len(nomatch2))
             return match, nomatch1, nomatch2
         else:
-            self._logger.debug('Cat1 Nelt %d Cat2 Nelt %d Matched %d'
-                               % (len(self), len(cat2), len(match1)))
+            self._logger.debug('Cat1 Nelt %d Cat2 Nelt %d Matched %d',
+                               len(self), len(cat2), len(match1))
             return match
 
     def nearest(self, coord, colcoord=('RA', 'DEC'), ksel=1, maxdist=None,
@@ -867,8 +866,14 @@ class Catalog(Table):
 
         if label and len(texts) > 0:
             text, x, y = zip(*texts)
-            adjust_text(text, x=x, y=y, ax=ax, only_move={text: 'xy'},
-                        expand_points=(expand, expand))
+            try:
+                from adjustText import adjust_text
+            except ImportError:
+                self._logger.error("the 'adjustText' package is needed to "
+                                   "avoid labels overlap")
+            else:
+                adjust_text(text, x=x, y=y, ax=ax, only_move={text: 'xy'},
+                            expand_points=(expand, expand))
 
     def plot_id(self, ax, wcs, iden='ID', ra='RA', dec='DEC', symb=0.2,
                 alpha=0.5, col='k', ellipse_kwargs=None, **kwargs):

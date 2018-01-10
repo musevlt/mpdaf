@@ -206,7 +206,7 @@ setup(
     url='https://git-cral.univ-lyon1.fr/MUSE/mpdaf',
     install_requires=['numpy', 'scipy', 'matplotlib', 'astropy>=1.0', 'six'],
     extras_require={
-        'all': ['numexpr', 'fitsio'],
+        'all': ['numexpr', 'fitsio', 'adjustText'],
     },
     tests_require=['pytest'],
     package_dir={'': 'lib'},
