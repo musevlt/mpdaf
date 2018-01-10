@@ -12,9 +12,6 @@ py27:
 py34:
   script: tox -v -e py34
 
-astropy10:
-  script: tox -v -e astropy10
-
 astropy13:
   script: tox -v -e astropy13
 
