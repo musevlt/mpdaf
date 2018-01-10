@@ -140,14 +140,18 @@ class Catalog(Table):
         has_mag = any(source.mag for source in sources)
         has_z = any(source.z for source in sources)
 
+        names_mag = []
+        names_z = []
+        names_lines = []
+        dtype_lines = []
+        units_lines = []
+
         # magnitudes
         if has_mag:
             names_mag = list(set(np.concatenate(
                 [s.mag['BAND'].data for s in sources if s.mag is not None])))
             names_mag += ['%s_ERR' % mag for mag in names_mag]
             names_mag.sort()
-        else:
-            names_mag = []
 
         # redshifts
         if has_z:
@@ -170,19 +174,12 @@ class Catalog(Table):
             names_z += names_min
             names_z += names_max
             names_z.sort()
-        else:
-            names_z = []
 
         # lines
         llines = [len(source.lines) for source in sources
                   if source.lines is not None]
-        if len(llines) == 0:
-            names_lines = []
-            dtype_lines = []
-            units_lines = []
-        else:
+        if len(llines) > 0:
             if fmt == 'default':
-                names_lines = []
                 d = {}
                 unit = {}
                 for source in sources:
@@ -202,7 +199,7 @@ class Catalog(Table):
                                     logger.warning(
                                         'source %d: line labeled \"%s\" not '
                                         'loaded', source.ID, line)
-                                except:
+                                except Exception:
                                     names_lines += [
                                         '%s_%s' % (line.replace('_', ''), col)
                                         for col in colnames
