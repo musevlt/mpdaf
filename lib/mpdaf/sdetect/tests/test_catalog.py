@@ -36,6 +36,7 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import pytest
+import six
 from astropy.coordinates import SkyCoord
 from mpdaf.sdetect import Catalog
 from numpy.testing import assert_array_equal, assert_almost_equal
@@ -96,6 +97,7 @@ def test_from_path(source1, source2, tmpdir):
     assert isinstance(c, Catalog)
 
 
+@pytest.mark.xfail(six.PY2, reason="issue with astropy coordinates and numpy")
 def test_match():
     c1 = Catalog()
     c1['RA'] = np.arange(10, dtype=float)
@@ -123,6 +125,7 @@ def test_match():
     assert len(nomatch2) == 16
 
 
+@pytest.mark.xfail(six.PY2, reason="issue with astropy coordinates and numpy")
 def test_nearest():
     c1 = Catalog()
     c1['RA'] = np.arange(10, dtype=float)
