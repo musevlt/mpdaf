@@ -539,10 +539,10 @@ class Catalog(Table):
             id1match = np.delete(id1match, to_remove)
             d2match = np.delete(d2match, to_remove)
         match1 = self[id1match]
-        #for name in match1.colnames:
+        # for name in match1.colnames:
         #    match1.remove_indices(name)
         match2 = cat2[id2match]
-        #for name in match2.colnames:
+        # for name in match2.colnames:
         #    match2.remove_indices(name)
         match = hstack([match1, match2], join_type='exact')
         match.add_column(Column(data=d2match.to(u.arcsec), name='Distance',
@@ -583,7 +583,7 @@ class Catalog(Table):
         cat: `astropy.table.Table`
           the corresponding catalog of matched sources with the additional Distance column (arcsec)
         """
-        colra,coldec = colcoord
+        colra, coldec = colcoord
         cra, cdec = _get_coord(coord[0], coord[1])
         xcoord = SkyCoord([cra], [cdec], unit=(u.deg, u.deg))
         src_coords = SkyCoord(self[colra], self[coldec], unit=(u.deg, u.deg))
@@ -604,7 +604,7 @@ class Catalog(Table):
 
     def match3Dline(self, cat2, linecolc1, linecolc2, spatial_radius=1, spectral_window=5,
                     colc1=('RA', 'DEC'), colc2=('RA', 'DEC'),
-                    suffix=('_1','_2'),
+                    suffix=('_1', '_2'),
                     full_output=True, **kwargs):
         """3D Match elements of the current catalog with an other using spatial (RA, DEC) and list of spectral lines location.
 
@@ -647,21 +647,21 @@ class Catalog(Table):
 
         """
         # rename all catalogs columns with _1 or _2
-        self._logger.debug('Rename Catalog columns with %s or %s suffix',suffix[0],suffix[1])
+        self._logger.debug('Rename Catalog columns with %s or %s suffix', suffix[0], suffix[1])
         tcat1 = self.copy()
         tcat2 = cat2.copy()
         for name in tcat1.colnames:
-            tcat1.rename_column(name, name+suffix[0])
+            tcat1.rename_column(name, name + suffix[0])
         for name in tcat2.colnames:
-            tcat2.rename_column(name, name+suffix[1])
-        colc1 = (colc1[0]+suffix[0], colc1[1]+suffix[0])
-        linecolc1 = [col+suffix[0] for col in linecolc1]
-        colc2 = (colc2[0]+suffix[1], colc2[1]+suffix[1])
-        linecolc2 = [col+suffix[1] for col in linecolc2]
+            tcat2.rename_column(name, name + suffix[1])
+        colc1 = (colc1[0] + suffix[0], colc1[1] + suffix[0])
+        linecolc1 = [col + suffix[0] for col in linecolc1]
+        colc2 = (colc2[0] + suffix[1], colc2[1] + suffix[1])
+        linecolc2 = [col + suffix[1] for col in linecolc2]
 
         self._logger.debug('Performing spatial match')
-        match,unmatch1,unmatch2 = tcat1.match(tcat2, radius=spatial_radius, colc1=colc1,
-                                             colc2=colc2, full_output=full_output, **kwargs)
+        match, unmatch1, unmatch2 = tcat1.match(tcat2, radius=spatial_radius, colc1=colc1,
+                                                colc2=colc2, full_output=full_output, **kwargs)
         tcat1._logger.debug('Performing line match')
         # create matched line colonnes
         match.add_column(MaskedColumn(length=len(match), name='NLMATCH', dtype='int'), index=1)
@@ -671,12 +671,12 @@ class Catalog(Table):
         match.remove_column('Distance')
         for col in linecolc1:
             l = tcat1.colnames.index(col)
-            match.add_columns([MaskedColumn(length=len(match),dtype='bool'),
+            match.add_columns([MaskedColumn(length=len(match), dtype='bool'),
                                MaskedColumn(length=len(match), dtype='S30'),
                                MaskedColumn(length=len(match), dtype='float')],
-                              names=['M_'+col,'L_'+col,'E_'+col], indexes=[l,l,l])
-            match['E_'+col].format = '.2f'
-            match['M_'+col] = False
+                              names=['M_' + col, 'L_' + col, 'E_' + col], indexes=[l, l, l])
+            match['E_' + col].format = '.2f'
+            match['M_' + col] = False
         # perform match for lines
         for r in match:
             # Match lines
@@ -687,22 +687,22 @@ class Catalog(Table):
                 for c2 in linecolc2:
                     l2 = r[c2]
                     if np.ma.is_masked(l2): continue
-                    err = abs(l2-l1)
+                    err = abs(l2 - l1)
                     if err < spectral_window:
                         nmatch += 1
-                        r['M_'+c1] = True
-                        r['L_'+c1] = c2
-                        r['E_'+c1] = err
+                        r['M_' + c1] = True
+                        r['L_' + c1] = c2
+                        r['E_' + c1] = err
             r['NLMATCH'] = nmatch
 
         if full_output:
-            match3d = match[match['NLMATCH']>0]
-            match2d = match[match['NLMATCH']==0]
+            match3d = match[match['NLMATCH'] > 0]
+            match2d = match[match['NLMATCH'] == 0]
             self._logger.info('Matched 3D: %d Matched 2D: %d Cat1 unmatched: %d Cat2 unmatched: %d',
-                            len(match3d),len(match2d),len(unmatch1),len(unmatch2))
-            return (match3d,match2d,unmatch1,unmatch2)
+                              len(match3d), len(match2d), len(unmatch1), len(unmatch2))
+            return (match3d, match2d, unmatch1, unmatch2)
         else:
-            self._logger.info('Matched 3D: %d', len(match[match['NLMATCH']>0]))
+            self._logger.info('Matched 3D: %d', len(match[match['NLMATCH'] > 0]))
             return match
 
     def select(self, wcs, ra='RA', dec='DEC', margin=0):
@@ -848,7 +848,7 @@ class Catalog(Table):
             if vtype == 'o':
                 s = Circle((xx, yy), 0.5 * pixsize, fill=fill, ec=vcol, alpha=alpha, **kwargs)
             elif vtype == 's':
-                s = Rectangle((xx-pixsize/2, yy-pixsize/2), pixsize, pixsize, fill=fill, ec=vcol, alpha=alpha, **kwargs)
+                s = Rectangle((xx - pixsize / 2, yy - pixsize / 2), pixsize, pixsize, fill=fill, ec=vcol, alpha=alpha, **kwargs)
             ax.add_artist(s)
             if label and (not np.ma.is_masked(src[id])):
                 texts.append((ax.text(xx, yy, src[id], ha='center', color=vcol,
@@ -906,6 +906,7 @@ class Catalog(Table):
                           alpha=alpha, edgecolor=col, clip_box=ax.bbox,
                           **ellipse_kwargs)
             ax.add_artist(ell)
+
 
 def _get_coord(ra, dec):
     """ translate coordinate from HH:MM:SS to decimal deg"""
