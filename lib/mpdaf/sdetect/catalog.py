@@ -46,7 +46,7 @@ from astropy.table import Table, Column, MaskedColumn, hstack, vstack
 from astropy import units as u
 from six.moves import range, zip
 from adjustText import adjust_text
-from matplotlib.patches import Circle, Rectangle, RegularPolygon, Patch
+from matplotlib.patches import Circle, Rectangle, Ellipse
 
 INVALID = {
     type(1): -9999, np.int_: -9999, np.int32: -9999,
@@ -475,7 +475,7 @@ class Catalog(Table):
             try:
                 self[col][:] = np.ma.masked_invalid(self[col])
                 self[col][:] = np.ma.masked_equal(self[col], -9999)
-            except:
+            except Exception:
                 pass
 
     def match(self, cat2, radius=1, colc1=('RA', 'DEC'), colc2=('RA', 'DEC'),
@@ -539,11 +539,7 @@ class Catalog(Table):
             id1match = np.delete(id1match, to_remove)
             d2match = np.delete(d2match, to_remove)
         match1 = self[id1match]
-        # for name in match1.colnames:
-        #    match1.remove_indices(name)
         match2 = cat2[id2match]
-        # for name in match2.colnames:
-        #    match2.remove_indices(name)
         match = hstack([match1, match2], join_type='exact')
         match.add_column(Column(data=d2match.to(u.arcsec), name='Distance',
                                 dtype=float))
@@ -564,7 +560,8 @@ class Catalog(Table):
                                % (len(self), len(cat2), len(match1)))
             return match
 
-    def nearest(self, coord, colcoord=('RA', 'DEC'), ksel=1, maxdist=None, **kwargs):
+    def nearest(self, coord, colcoord=('RA', 'DEC'), ksel=1, maxdist=None,
+                **kwargs):
         """ return the nearest sources with respect to the given coordinate
 
         Parameters
@@ -574,14 +571,17 @@ class Catalog(Table):
         colcoord: tuple of str
            column names of coordinate: default ('RA','DEC')
         ksel: int
-           Number of sources to return, default 1 (if None return all sources sorted by distance)
+           Number of sources to return, default 1 (if None return all sources
+           sorted by distance)
         maxdist: float
            Maximum distance to source in arcsec, default None
 
         Returns
         -------
         cat: `astropy.table.Table`
-          the corresponding catalog of matched sources with the additional Distance column (arcsec)
+          the corresponding catalog of matched sources with the additional
+          Distance column (arcsec)
+
         """
         colra, coldec = colcoord
         cra, cdec = _get_coord(coord[0], coord[1])
@@ -602,11 +602,11 @@ class Catalog(Table):
         cat['Distance'].format = '.2f'
         return cat
 
-    def match3Dline(self, cat2, linecolc1, linecolc2, spatial_radius=1, spectral_window=5,
-                    colc1=('RA', 'DEC'), colc2=('RA', 'DEC'),
-                    suffix=('_1', '_2'),
-                    full_output=True, **kwargs):
-        """3D Match elements of the current catalog with an other using spatial (RA, DEC) and list of spectral lines location.
+    def match3Dline(self, cat2, linecolc1, linecolc2, spatial_radius=1,
+                    spectral_window=5, suffix=('_1', '_2'), full_output=True,
+                    colc1=('RA', 'DEC'), colc2=('RA', 'DEC'), **kwargs):
+        """3D Match elements of the current catalog with an other using
+        spatial (RA, DEC) and list of spectral lines location.
 
         Parameters
         ----------
@@ -647,7 +647,8 @@ class Catalog(Table):
 
         """
         # rename all catalogs columns with _1 or _2
-        self._logger.debug('Rename Catalog columns with %s or %s suffix', suffix[0], suffix[1])
+        self._logger.debug('Rename Catalog columns with %s or %s suffix',
+                           suffix[0], suffix[1])
         tcat1 = self.copy()
         tcat2 = cat2.copy()
         for name in tcat1.colnames:
@@ -660,11 +661,13 @@ class Catalog(Table):
         linecolc2 = [col + suffix[1] for col in linecolc2]
 
         self._logger.debug('Performing spatial match')
-        match, unmatch1, unmatch2 = tcat1.match(tcat2, radius=spatial_radius, colc1=colc1,
-                                                colc2=colc2, full_output=full_output, **kwargs)
+        match, unmatch1, unmatch2 = tcat1.match(
+            tcat2, radius=spatial_radius, colc1=colc1, colc2=colc2,
+            full_output=full_output, **kwargs)
         tcat1._logger.debug('Performing line match')
         # create matched line colonnes
-        match.add_column(MaskedColumn(length=len(match), name='NLMATCH', dtype='int'), index=1)
+        match.add_column(MaskedColumn(length=len(match), name='NLMATCH',
+                                      dtype='int'), index=1)
         # reorder columns
         match.add_column(match['Distance'], index=2, name='DIST')
         match['DIST'].format = '.2f'
@@ -674,7 +677,8 @@ class Catalog(Table):
             match.add_columns([MaskedColumn(length=len(match), dtype='bool'),
                                MaskedColumn(length=len(match), dtype='S30'),
                                MaskedColumn(length=len(match), dtype='float')],
-                              names=['M_' + col, 'L_' + col, 'E_' + col], indexes=[l, l, l])
+                              names=['M_' + col, 'L_' + col, 'E_' + col],
+                              indexes=[l, l, l])
             match['E_' + col].format = '.2f'
             match['M_' + col] = False
         # perform match for lines
@@ -683,10 +687,12 @@ class Catalog(Table):
             nmatch = 0
             for c1 in linecolc1:
                 l1 = r[c1]
-                if np.ma.is_masked(l1): continue
+                if np.ma.is_masked(l1):
+                    continue
                 for c2 in linecolc2:
                     l2 = r[c2]
-                    if np.ma.is_masked(l2): continue
+                    if np.ma.is_masked(l2):
+                        continue
                     err = abs(l2 - l1)
                     if err < spectral_window:
                         nmatch += 1
@@ -698,11 +704,13 @@ class Catalog(Table):
         if full_output:
             match3d = match[match['NLMATCH'] > 0]
             match2d = match[match['NLMATCH'] == 0]
-            self._logger.info('Matched 3D: %d Matched 2D: %d Cat1 unmatched: %d Cat2 unmatched: %d',
-                              len(match3d), len(match2d), len(unmatch1), len(unmatch2))
+            self._logger.info('Matched 3D: %d Matched 2D: %d Cat1 unmatched: '
+                              '%d Cat2 unmatched: %d', len(match3d),
+                              len(match2d), len(unmatch1), len(unmatch2))
             return (match3d, match2d, unmatch1, unmatch2)
         else:
-            self._logger.info('Matched 3D: %d', len(match[match['NLMATCH'] > 0]))
+            self._logger.info('Matched 3D: %d',
+                              len(match[match['NLMATCH'] > 0]))
             return match
 
     def select(self, wcs, ra='RA', dec='DEC', margin=0):
@@ -791,7 +799,8 @@ class Catalog(Table):
         lsize : str
             Column name containing the size in arcsec
         etype : str
-            Type of symbol: o (circle, size=diameter), s (square) used only if ltype is not set
+            Type of symbol: o (circle, size=diameter), s (square) used only
+            if ltype is not set
         ltype : str
             Name of column that contain the symbol to use
         ra : str
@@ -846,9 +855,12 @@ class Catalog(Table):
             vtype = etype if ltype is None else src[ltype]
             vcol = ecol if lcol is None else src[lcol]
             if vtype == 'o':
-                s = Circle((xx, yy), 0.5 * pixsize, fill=fill, ec=vcol, alpha=alpha, **kwargs)
+                s = Circle((xx, yy), 0.5 * pixsize, fill=fill, ec=vcol,
+                           alpha=alpha, **kwargs)
             elif vtype == 's':
-                s = Rectangle((xx - pixsize / 2, yy - pixsize / 2), pixsize, pixsize, fill=fill, ec=vcol, alpha=alpha, **kwargs)
+                s = Rectangle((xx - pixsize / 2, yy - pixsize / 2),
+                              pixsize, pixsize, fill=fill, ec=vcol,
+                              alpha=alpha, **kwargs)
             ax.add_artist(s)
             if label and (not np.ma.is_masked(src[id])):
                 texts.append((ax.text(xx, yy, src[id], ha='center', color=vcol,
@@ -857,11 +869,13 @@ class Catalog(Table):
 
         if label and len(texts) > 0:
             text, x, y = zip(*texts)
-            adjust_text(text, x=x, y=y, ax=ax, only_move={text: 'xy'}, expand_points=(expand, expand))
+            adjust_text(text, x=x, y=y, ax=ax, only_move={text: 'xy'},
+                        expand_points=(expand, expand))
 
     def plot_id(self, ax, wcs, iden='ID', ra='RA', dec='DEC', symb=0.2,
                 alpha=0.5, col='k', ellipse_kwargs=None, **kwargs):
-        self._logger.info('plot_id is deprecated, use plot_symb with label=True instead')
+        self._logger.info('plot_id is deprecated, use plot_symb with '
+                          'label=True instead')
         """This function displays the id of the catalog.
 
         Parameters
@@ -910,9 +924,11 @@ class Catalog(Table):
 
 def _get_coord(ra, dec):
     """ translate coordinate from HH:MM:SS to decimal deg"""
-    if isinstance(ra, str) and ':' in ra:
+    if isinstance(ra, six.string_types) and ':' in ra:
         c = SkyCoord(ra, dec, unit=(u.hourangle, u.deg))
-        logger.debug('Translating RA,DEC in decimal degre: {}, {}'.format(c.ra.value, c.dec.value))
-        return (c.ra.value, c.dec.value)
+        log = logging.getLogger(__name__)
+        log.debug('Translating RA,DEC in decimal degre: %s, %s',
+                  c.ra.value, c.dec.value)
+        return c.ra.value, c.dec.value
     else:
-        return (ra, dec)
+        return ra, dec
