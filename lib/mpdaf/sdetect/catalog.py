@@ -582,11 +582,20 @@ class Catalog(Table):
             Distance column (arcsec).
 
         """
+        if not isinstance(coord, SkyCoord):
+            ra, dec = coord
+            if isinstance(ra, six.string_types) and ':' in ra:
+                unit = (u.hourangle, u.deg)
+            else:
+                unit = (u.deg, u.deg)
+            coord = SkyCoord(ra, dec, unit=unit, frame='fk5')
+
+        if coord.shape == ():
+            coord = coord.reshape(1)
+
         colra, coldec = colcoord
-        cra, cdec = _get_coord(coord[0], coord[1])
-        xcoord = SkyCoord([cra], [cdec], unit=(u.deg, u.deg), frame='fk5')
         src_coords = self.to_skycoord(ra=colra, dec=coldec)
-        idx, d2d, d3d = src_coords.match_to_catalog_sky(xcoord, **kwargs)
+        idx, d2d, d3d = src_coords.match_to_catalog_sky(coord, **kwargs)
         dist = d2d.arcsec
         ksort = dist.argsort()
 
@@ -928,15 +937,3 @@ class Catalog(Table):
                           alpha=alpha, edgecolor=col, clip_box=ax.bbox,
                           **ellipse_kwargs)
             ax.add_artist(ell)
-
-
-def _get_coord(ra, dec):
-    """ translate coordinate from HH:MM:SS to decimal deg"""
-    if isinstance(ra, six.string_types) and ':' in ra:
-        c = SkyCoord(ra, dec, unit=(u.hourangle, u.deg), frame='fk5')
-        log = logging.getLogger(__name__)
-        log.debug('Translating RA,DEC in decimal degre: %s, %s',
-                  c.ra.value, c.dec.value)
-        return c.ra.value, c.dec.value
-    else:
-        return ra, dec

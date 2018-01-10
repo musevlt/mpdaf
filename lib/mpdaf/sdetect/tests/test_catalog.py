@@ -36,6 +36,7 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import pytest
+from astropy.coordinates import SkyCoord
 from mpdaf.sdetect import Catalog
 from numpy.testing import assert_array_equal, assert_almost_equal
 
@@ -133,5 +134,10 @@ def test_nearest():
     res = c1.nearest((5, 5), ksel=2)
     assert len(res) == 2
 
-    res = c1.nearest((5, 5), ksel=10, maxdist=6000)
+    pos = SkyCoord(5, 5, unit='deg', frame='fk5')
+    res = c1.nearest(pos, ksel=2)
+    assert len(res) == 2
+
+    res = c1.nearest(pos.to_string('hmsdms').split(' '),
+                     ksel=10, maxdist=6000)
     assert len(res) == 3
