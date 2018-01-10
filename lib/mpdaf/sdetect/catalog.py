@@ -589,16 +589,20 @@ class Catalog(Table):
         idx, d2d, d3d = src_coords.match_to_catalog_sky(xcoord, **kwargs)
         dist = d2d.arcsec
         ksort = dist.argsort()
-        if ksel is not None:
-            ksort = ksort[:ksel]
+
         cat = self[ksort]
         dist = dist[ksort]
         if maxdist is not None:
             kmax = dist <= maxdist
             cat = cat[kmax]
             dist = dist[kmax]
+
         cat['Distance'] = dist
         cat['Distance'].format = '.2f'
+
+        if ksel is not None:
+            cat = cat[:ksel]
+
         return cat
 
     def match3Dline(self, cat2, linecolc1, linecolc2, spatial_radius=1,

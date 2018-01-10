@@ -120,3 +120,18 @@ def test_match():
     assert len(match) == 4
     assert len(nomatch1) == 6
     assert len(nomatch2) == 16
+
+
+def test_nearest():
+    c1 = Catalog()
+    c1['RA'] = np.arange(10, dtype=float)
+    c1['DEC'] = np.arange(10, dtype=float)
+
+    res = c1.nearest((5 + 1 / 3600, 5 + 1 / 3600))
+    assert_almost_equal(list(res[0]), (5.0, 5.0, 1.41), decimal=2)
+
+    res = c1.nearest((5, 5), ksel=2)
+    assert len(res) == 2
+
+    res = c1.nearest((5, 5), ksel=10, maxdist=6000)
+    assert len(res) == 3
