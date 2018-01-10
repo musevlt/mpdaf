@@ -495,23 +495,23 @@ class Catalog(Table):
             ('RA','DEC') name of ra,dec columns of cat2
         full_output: bool
             output flag
-        other arguments are passed to astropy match_to_catalog_sky
+        **kwargs
+            Other arguments are passed to
+            `astropy.coordinates.match_coordinates_sky`.
 
         Returns
         -------
-
-        if full_output is True
-
         out : astropy.Table, astropy.Table, astropy.Table
-             match, nomatch1, nomatch2
-        else
 
-        out : astropy.Table
-              match
+            If ``full_output`` is True, return a tuple ``(match, nomatch1,
+            nomatch2)`` where:
 
-        match: table of matched elements in RA,DEC
-        nomatch1: sub-table of non matched elements of the current catalog
-        nomatch2: sub-table of non matched elements of the catalog cat2
+            - match: table of matched elements in RA,DEC.
+            - nomatch1: sub-table of non matched elements of the current
+              catalog.
+            - nomatch2: sub-table of non matched elements of the catalog cat2.
+
+            If ``full_output`` is False, only ``match`` is returned.
 
         """
         coord1 = self.to_skycoord(ra=colc1[0], dec=colc1[1])
@@ -574,12 +574,15 @@ class Catalog(Table):
            sorted by distance)
         maxdist: float
            Maximum distance to source in arcsec, default None
+        **kwargs
+            Other arguments are passed to
+            `astropy.coordinates.match_coordinates_sky`.
 
         Returns
         -------
-        cat: `astropy.table.Table`
-          the corresponding catalog of matched sources with the additional
-          Distance column (arcsec)
+        `astropy.table.Table`
+            The corresponding catalog of matched sources with the additional
+            Distance column (arcsec).
 
         """
         colra, coldec = colcoord
@@ -630,19 +633,17 @@ class Catalog(Table):
 
         Returns
         -------
-
-        if full_output is True
-
         out : astropy.Table, astropy.Table, astropy.Table
-             match3d, match2d, nomatch1, nomatch2
-        else
 
-        out : astropy.Table
-              match
+            If ``full_output`` is True, return a tuple ``(match3d, match2d,
+            nomatch1, nomatch2)`` where:
 
-        match: table of matched elements in RA,DEC
-        nomatch1: sub-table of non matched elements of the current catalog
-        nomatch2: sub-table of non matched elements of the catalog cat2
+            - match3d, match2d: table of matched elements in RA,DEC.
+            - nomatch1: sub-table of non matched elements of the current
+              catalog.
+            - nomatch2: sub-table of non matched elements of the catalog cat2.
+
+            If ``full_output`` is False, only ``match`` is returned.
 
         """
         # rename all catalogs columns with _1 or _2
@@ -729,7 +730,8 @@ class Catalog(Table):
 
         Returns
         -------
-        out : `mpdaf.sdetect.Catalog`
+        `mpdaf.sdetect.Catalog`
+            The catalog with selected rows.
 
         """
         arr = np.vstack([self[dec].data, self[ra].data]).T
@@ -753,7 +755,8 @@ class Catalog(Table):
 
         Returns
         -------
-        out : `numpy.array` in arcsec units
+        `numpy.ndarray`
+            The distance in arcsec units.
 
         """
         dim = np.array([wcs.naxis2, wcs.naxis1])
@@ -787,38 +790,38 @@ class Catalog(Table):
 
         Parameters
         ----------
-        ax : matplotlib.axes._subplots.AxesSubplot
+        ax : `matplotlib.axes.Axes`
             Matplotlib axis instance (eg ax = fig.add_subplot(2,3,1)).
         wcs : `mpdaf.obj.WCS`
-            Image WCS
+            Image WCS.
         label: bool
-            If True catalog ID are displayed
+            If True catalog ID are displayed.
         esize : float
-            symbol size in arcsec (used only if lsize is not set)
+            symbol size in arcsec (used only if lsize is not set).
         lsize : str
-            Column name containing the size in arcsec
+            Column name containing the size in arcsec.
         etype : str
             Type of symbol: o (circle, size=diameter), s (square) used only
-            if ltype is not set
+            if ltype is not set.
         ltype : str
-            Name of column that contain the symbol to use
+            Name of column that contain the symbol to use.
         ra : str
-            Name of the column that contains RA values (in degrees)
+            Name of the column that contains RA values (in degrees).
         dec : str
-            Name of the column that contains DEC values (in degrees)
+            Name of the column that contains DEC values (in degrees).
         id : str
-            Name of the column that contains ID
+            Name of the column that contains ID.
         lcol: str
-            Name of the column that contains Color
+            Name of the column that contains Color.
         ecol : str
-            Symbol color (only used if lcol is not set)
+            Symbol color (only used if lcol is not set).
         alpha : float
-            Symbol transparency
+            Symbol transparency.
         fill: bool
-            If True filled symbol are used
+            If True filled symbol are used.
         expand: float
-            Expand factor to write label
-        kwargs : matplotlib.artist.Artist
+            Expand factor to write label.
+        **kwargs
             kwargs can be used to set additional plotting properties.
 
         """
@@ -884,7 +887,7 @@ class Catalog(Table):
 
         Parameters
         ----------
-        ax : matplotlib.axes._subplots.AxesSubplot
+        ax : `matplotlib.axes.Axes`
             Matplotlib axis instance (eg ax = fig.add_subplot(2,3,1)).
         wcs : `mpdaf.obj.WCS`
             Image WCS
@@ -902,7 +905,7 @@ class Catalog(Table):
             Symbol transparency
         ellipse_kwargs : dict
             Additional properties for `matplotlib.patches.Ellipse`.
-        kwargs : dict
+        **kwargs
             Additional properties for ``ax.text``.
 
         """
