@@ -513,10 +513,8 @@ class Catalog(Table):
         nomatch2: sub-table of non matched elements of the catalog cat2
 
         """
-        coord1 = SkyCoord(self[colc1[0]], self[colc1[1]],
-                          unit=(u.degree, u.degree))
-        coord2 = SkyCoord(cat2[colc2[0]], cat2[colc2[1]],
-                          unit=(u.degree, u.degree))
+        coord1 = self.to_skycoord(ra=colc1[0], dec=colc1[1])
+        coord2 = cat2.to_skycoord(ra=colc2[0], dec=colc2[1])
         id2, d2d, d3d = coord1.match_to_catalog_sky(coord2, **kwargs)
         id1 = np.arange(len(self))
         kmatch = d2d < radius * u.arcsec
@@ -585,8 +583,8 @@ class Catalog(Table):
         """
         colra, coldec = colcoord
         cra, cdec = _get_coord(coord[0], coord[1])
-        xcoord = SkyCoord([cra], [cdec], unit=(u.deg, u.deg))
-        src_coords = SkyCoord(self[colra], self[coldec], unit=(u.deg, u.deg))
+        xcoord = SkyCoord([cra], [cdec], unit=(u.deg, u.deg), frame='fk5')
+        src_coords = self.to_skycoord(ra=colra, dec=coldec)
         idx, d2d, d3d = src_coords.match_to_catalog_sky(xcoord, **kwargs)
         dist = d2d.arcsec
         ksort = dist.argsort()
@@ -925,7 +923,7 @@ class Catalog(Table):
 def _get_coord(ra, dec):
     """ translate coordinate from HH:MM:SS to decimal deg"""
     if isinstance(ra, six.string_types) and ':' in ra:
-        c = SkyCoord(ra, dec, unit=(u.hourangle, u.deg))
+        c = SkyCoord(ra, dec, unit=(u.hourangle, u.deg), frame='fk5')
         log = logging.getLogger(__name__)
         log.debug('Translating RA,DEC in decimal degre: %s, %s',
                   c.ra.value, c.dec.value)
