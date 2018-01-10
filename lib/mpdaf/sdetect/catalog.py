@@ -609,6 +609,25 @@ class Catalog(Table):
         dist = np.hstack([pix, dim - pix]).min(axis=1)
         return dist * wcs.get_step(unit=u.arcsec)[0]
 
+    def to_skycoord(self, ra='RA', dec='DEC', frame='fk5', unit='deg'):
+        """Return an `astropy.coordinates.SkyCoord` object."""
+        from astropy.coordinates import SkyCoord
+        return SkyCoord(ra=self[ra], dec=self[dec],
+                        unit=(unit, unit), frame=frame)
+
+    def to_ds9_regions(self, outfile, ra='RA', dec='DEC', radius=1,
+                       frame='fk5', unit_pos='deg', unit_radius='arcsec'):
+        """Return an `astropy.coordinates.SkyCoord` object."""
+        try:
+            from regions import CircleSkyRegion, write_ds9
+        except ImportError:
+            self._logger.error("the 'regions' package is needed for this")
+            raise
+        center = self.to_skycoord(ra=ra, dec=dec, frame=frame, unit=unit_pos)
+        radius = radius * u.Unit(unit_radius)
+        regions = [CircleSkyRegion(center=c, radius=radius) for c in center]
+        write_ds9(regions, filename=outfile, coordsys=frame)
+
     def plot_symb(self, ax, wcs, ra='RA', dec='DEC',
                   symb=0.4, col='k', alpha=1.0, **kwargs):
         """This function plots the sources location from the catalog.
