@@ -47,6 +47,8 @@ from astropy import units as u
 from six.moves import range, zip
 from matplotlib.patches import Circle, Rectangle, Ellipse
 
+from ..tools import deprecated
+
 INVALID = {
     type(1): -9999, np.int_: -9999, np.int32: -9999,
     type(1.0): np.nan, np.float_: np.nan,
@@ -875,10 +877,9 @@ class Catalog(Table):
                 adjust_text(text, x=x, y=y, ax=ax, only_move={text: 'xy'},
                             expand_points=(expand, expand))
 
+    @deprecated('plot_id is deprecated, use plot_symb with label=True instead')
     def plot_id(self, ax, wcs, iden='ID', ra='RA', dec='DEC', symb=0.2,
                 alpha=0.5, col='k', ellipse_kwargs=None, **kwargs):
-        self._logger.info('plot_id is deprecated, use plot_symb with '
-                          'label=True instead')
         """This function displays the id of the catalog.
 
         Parameters
