@@ -36,8 +36,10 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import pytest
+import six
+from astropy.coordinates import SkyCoord
 from mpdaf.sdetect import Catalog
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_almost_equal
 
 
 def test_catalog():
@@ -75,6 +77,9 @@ def test_from_sources(source1, source2, fmt, ncols):
 
 
 def test_from_path(source1, source2, tmpdir):
+    with pytest.raises(IOError):
+        cat = Catalog.from_path('/not/a/valid/path')
+
     source1.write(str(tmpdir.join('source1.fits')))
     source2.write(str(tmpdir.join('source2.fits')))
     cat = Catalog.from_path(str(tmpdir))
@@ -90,3 +95,52 @@ def test_from_path(source1, source2, tmpdir):
     assert c.colnames == cat.colnames
     assert len(cat) == 2
     assert isinstance(c, Catalog)
+
+
+@pytest.mark.xfail(six.PY2, reason="issue with astropy coordinates and numpy")
+def test_match():
+    c1 = Catalog()
+    c1['RA'] = np.arange(10, dtype=float)
+    c1['DEC'] = np.arange(10, dtype=float)
+
+    c2 = Catalog()
+    c2['ra'] = np.arange(20, dtype=float) + 0.5 / 3600
+    c2['dec'] = np.arange(20, dtype=float) - 0.5 / 3600
+
+    match = c1.match(c2, colc2=('ra', 'dec'), full_output=False)
+    assert len(match) == 10
+    assert_almost_equal(match['Distance'], 0.705, decimal=2)
+
+    # create a duplicate match
+    c1['RA'][4] = c1['RA'][3] - 0.1 / 3600
+    c1['DEC'][4] = c1['DEC'][3] - 0.1 / 3600
+
+    c2['ra'][:5] = np.arange(5, dtype=float) + 0.1 / 3600
+    c2['dec'][:5] = np.arange(5, dtype=float) + 0.1 / 3600
+
+    match, nomatch1, nomatch2 = c1.match(c2, colc2=('ra', 'dec'), radius=0.5,
+                                         full_output=True)
+    assert len(match) == 4
+    assert len(nomatch1) == 6
+    assert len(nomatch2) == 16
+
+
+@pytest.mark.xfail(six.PY2, reason="issue with astropy coordinates and numpy")
+def test_nearest():
+    c1 = Catalog()
+    c1['RA'] = np.arange(10, dtype=float)
+    c1['DEC'] = np.arange(10, dtype=float)
+
+    res = c1.nearest((5 + 1 / 3600, 5 + 1 / 3600))
+    assert_almost_equal(list(res[0]), (5.0, 5.0, 1.41), decimal=2)
+
+    res = c1.nearest((5, 5), ksel=2)
+    assert len(res) == 2
+
+    pos = SkyCoord(5, 5, unit='deg', frame='fk5')
+    res = c1.nearest(pos, ksel=2)
+    assert len(res) == 2
+
+    res = c1.nearest(pos.to_string('hmsdms').split(' '),
+                     ksel=10, maxdist=6000)
+    assert len(res) == 3
