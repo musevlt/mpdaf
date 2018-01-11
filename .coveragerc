@@ -7,6 +7,8 @@ omit =
    lib/mpdaf/*tests/*
    lib/mpdaf/version*
    lib/mpdaf/scripts/update_license.py
+   lib/mpdaf/tools/astropycompat.py
+   lib/mpdaf/tools/numpycompat.py
 
 [report]
 show_missing = false

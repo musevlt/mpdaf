@@ -36,9 +36,15 @@ from __future__ import absolute_import
 import numpy as np
 import os
 import pytest
+import re
+import time
 import warnings
 
-from mpdaf.tools.util import chdir, deprecated, broadcast_to_cube
+from astropy.utils import minversion
+from mpdaf.tools.util import (chdir, deprecated, broadcast_to_cube, timeit,
+                              timer)
+
+PYTEST_LT_3_3 = not minversion('pytest', '3.3')
 
 
 def test_chdir(tmpdir):
@@ -75,3 +81,30 @@ def test_broadcast_to_cube():
     for s in (4, (5, 3), (4, 4, 3)):
         with pytest.raises(ValueError):
             broadcast_to_cube(np.zeros(s), shape)
+
+
+@pytest.mark.skipif(PYTEST_LT_3_3, reason="caplog requires Pytest 3.3+")
+def test_timeit(caplog):
+
+    @timeit
+    def func(foo, bar=0):
+        time.sleep(bar)
+        return foo
+
+    assert func('a', bar=0.1) == 'a'
+    assert re.search(r"INFO     'func' \(\('a',\), {'bar': 0.1}\) 0.1\d sec",
+                     caplog.text) is not None
+
+
+@pytest.mark.skipif(PYTEST_LT_3_3, reason="caplog requires Pytest 3.3+")
+def test_timer(caplog):
+
+    def func(foo, bar=0):
+        time.sleep(bar)
+        return foo
+
+    with timer():
+        out = func('a', bar=0.1)
+
+    assert out == 'a'
+    assert re.search(r'Request took 0.1\d\d sec.', caplog.text) is not None
