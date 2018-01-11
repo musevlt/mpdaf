@@ -55,9 +55,8 @@ LIBRARY_PATH = os.path.dirname(__file__)
 try:
     # load the library, using numpy mechanisms
     ctools = np.ctypeslib.load_library("_ctools", LIBRARY_PATH)
-except OSError:
-    _logger = logging.getLogger(__name__)
-    _logger.error(
+except OSError:  # pragma: no cover
+    logging.getLogger(__name__).error(
         "MPDAF's C extension is missing, probably it was not compiled because "
         "of missing dependencies.\n Try rebuilding MPDAF.")
     raise
