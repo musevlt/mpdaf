@@ -224,6 +224,8 @@ def test_history(source1):
     assert source1.history[0].find('test_arg unitary test') != -1
     source1.add_history('an other', 'mpdaf')
     assert source1.history[1].find('an other') != -1
+    source1.add_history('yet an other', 'mpdaf', '2016-09-02')
+    assert 'yet an other (mpdaf 2016-09-02)' in source1.history[2]
 
 
 def test_line():

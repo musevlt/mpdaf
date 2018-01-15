@@ -814,31 +814,30 @@ class Source(object):
         Parameters
         ----------
         comment : str
-                  Comment
+            Comment.
         author : str
-                 Initial of the author
-        date   : datetime.date
-                 Date
-                 By default the current local date is used.
+            Initials of the author.
+        date : datetime.date
+            Date, by default the current local date is used.
+
         """
-        if date is None:
-            date = datetime.date.today()
+        date = date or datetime.date.today()
         self.header['COMMENT'] = '[%s %s] %s' % (author, str(date), comment)
 
-    def add_history(self, text, author=""):
+    def add_history(self, text, author='', date=None):
         """Add a history to the FITS header of the Source object.
 
         Parameters
         ----------
         text : str
-               History text
+            History text.
         author : str
-                 Initial of the author.
-        date   : datetime.date
-                 Date
-                 By default the current local date is used.
+            Initials of the author.
+        date : datetime.date
+            Date, by default the current local date is used.
+
         """
-        date = datetime.date.today()
+        date = date or datetime.date.today()
         version = self.header['SRC_V']
         ttext = '[%s] %s (%s %s)' % (version, text, author, str(date))
         if len(ttext) > 68:
