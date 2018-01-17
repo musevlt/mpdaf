@@ -16,8 +16,8 @@ lib/mpdaf/version.py
 lib/mpdaf/obj/merging.c
 
 # Sphinx
-docs/api
-docs/_build
+doc/api
+doc/_build
 
 # Packages/installer info
 *.egg

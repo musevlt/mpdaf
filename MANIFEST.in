@@ -6,12 +6,12 @@ include ez_setup.py
 include ah_bootstrap.py
 include setup.cfg
 
-graft docs
+graft doc
 graft lib
 graft src
 
-prune docs/api
-prune docs/build
+prune doc/api
+prune doc/build
 prune lib/mpdaf.egg-info
 
 # the next few stanzas are for astropy_helpers.  It's derived from the
