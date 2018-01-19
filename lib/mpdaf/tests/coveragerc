@@ -1,19 +1,19 @@
 [run]
 source = mpdaf
 omit =
-   lib/mpdaf/scripts/update_license.py
-   lib/mpdaf/_astropy_init*
-   lib/mpdaf/conftest*
-   lib/mpdaf/cython_version*
-   lib/mpdaf/setup_package*
-   lib/mpdaf/*/setup_package*
-   lib/mpdaf/*/*/setup_package*
-   lib/mpdaf/tests/*
-   lib/mpdaf/*/tests/*
-   lib/mpdaf/*/*/tests/*
-   lib/mpdaf/version*
-   lib/mpdaf/tools/astropycompat.py
-   lib/mpdaf/tools/numpycompat.py
+   mpdaf/scripts/update_license.py
+   mpdaf/_astropy_init*
+   mpdaf/conftest*
+   mpdaf/cython_version*
+   mpdaf/setup_package*
+   mpdaf/*/setup_package*
+   mpdaf/*/*/setup_package*
+   mpdaf/tests/*
+   mpdaf/*/tests/*
+   mpdaf/*/*/tests/*
+   mpdaf/version*
+   mpdaf/tools/astropycompat.py
+   mpdaf/tools/numpycompat.py
 
 [report]
 show_missing = false
