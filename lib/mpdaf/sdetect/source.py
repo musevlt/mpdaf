@@ -1190,27 +1190,30 @@ class Source(object):
         self.images['MUSE_WHITE'] = subcub.mean(axis=0)
 
     def add_FSF(self, cube, fieldmap=None):
-        """Compute the mean FSF using the FSF keywords presents if the FITS
+        """Compute the mean FSF using the FSF keywords presents in the FITS
         header of the mosaic cube.
 
         Parameters
         ----------
         cube : `~mpdaf.obj.Cube`
-                Input cube MPDAF object.
-        """
-        try:
-            FSF_mode = cube.primary_header['FSFMODE']
-        except:
-            raise IOError('Cannot compute FSF int the FSF keywords are not'
-                          'present in the primary header of the cube')
-        if FSF_mode != 'MOFFAT1':
-            raise IOError('This method is coded only for FSFMODE=MOFFAT1')
+            Input cube MPDAF object.
 
-        if cube.primary_header['NFIELDS'] == 1:  # just one FSF
+        """
+        hdr = cube.primary_header
+        try:
+            FSF_mode = hdr['FSFMODE']
+        except KeyError:
+            raise ValueError('Cannot compute FSF int the FSF keywords are not'
+                             'present in the primary header of the cube')
+
+        if FSF_mode != 'MOFFAT1':
+            raise ValueError('This method is coded only for FSFMODE=MOFFAT1')
+
+        if hdr['NFIELDS'] == 1:  # just one FSF
             nf = 0
-            beta = cube.primary_header['FSF%02dBET' % nf]
-            a = cube.primary_header['FSF%02dFWA' % nf]
-            b = cube.primary_header['FSF%02dFWB' % nf]
+            beta = hdr['FSF%02dBET' % nf]
+            a = hdr['FSF%02dFWA' % nf]
+            b = hdr['FSF%02dFWB' % nf]
         else:
             # load field map, from a dedicated file or from the cube
             fmap = (FieldsMap(fieldmap) if fieldmap is not None
@@ -1218,17 +1221,14 @@ class Source(object):
             # load info from the white image
             try:
                 white = self.images['MUSE_WHITE']
-            except:
-                raise IOError('Cannot compute FSF if the MUSE_WHITE image'
-                              'does not exist.')
-            size = white.shape[0]
-            center = np.asarray((self.dec, self.ra))
-            center = cube.wcs.sky2pix(center, unit=u.deg)[0]
-            size = int(size + 0.5)
-            radius = size / 2.
-            [sy, sx], _, _ = bounding_box(
-                form="rectangle", center=center, radii=radius,
-                shape=cube.shape[1:])
+            except KeyError:
+                raise ValueError('Cannot compute FSF if the MUSE_WHITE image'
+                                 'does not exist.')
+
+            center = cube.wcs.sky2pix((self.dec, self.ra), unit=u.deg)[0]
+            radius = int(white.shape[0] + 0.5) / 2.
+            [sy, sx], _, _ = bounding_box(form="rectangle", center=center,
+                                          radii=radius, shape=cube.shape[1:])
 
             # compute corresponding sub field map
             subfmap = fmap[sy, sx]
@@ -1242,14 +1242,14 @@ class Source(object):
             ksel = np.where(w != 0)
             if len(ksel[0]) == 1:  # only one field
                 nf = ksel[0][0] + 1
-                beta = cube.primary_header['FSF%02dBET' % nf]
-                a = cube.primary_header['FSF%02dFWA' % nf]
-                b = cube.primary_header['FSF%02dFWB' % nf]
+                beta = hdr['FSF%02dBET' % nf]
+                a = hdr['FSF%02dFWA' % nf]
+                b = hdr['FSF%02dFWB' % nf]
             else:  # several fields
                 nf = 99
                 # FSF model
                 Nfsf = 13
-                step_arcsec = cube.wcs.get_step(unit=u.arcsec)[0]
+                step = cube.wcs.get_step(unit=u.arcsec)[0]
                 FSF_model = FSF(FSF_mode)
                 # compute FSF for minimum and maximum wavelength
                 lbda1, lbda2 = cube.wave.get_range()
@@ -1257,29 +1257,37 @@ class Source(object):
                 FSF2 = np.zeros((Nfsf, Nfsf))
                 for i in ksel[0]:
                     _i = i + 1
-                    beta = cube.primary_header['FSF%02dBET' % _i]
-                    a = cube.primary_header['FSF%02dFWA' % _i]
-                    b = cube.primary_header['FSF%02dFWB' % _i]
-                    kernel1 = FSF_model.get_FSF(lbda1, step_arcsec, Nfsf,
+                    beta = hdr['FSF%02dBET' % _i]
+                    a = hdr['FSF%02dFWA' % _i]
+                    b = hdr['FSF%02dFWB' % _i]
+                    kernel1 = FSF_model.get_FSF(lbda1, step, Nfsf,
                                                 beta=beta, a=a, b=b)[0]
-                    kernel2 = FSF_model.get_FSF(lbda2, step_arcsec, Nfsf,
+                    kernel2 = FSF_model.get_FSF(lbda2, step, Nfsf,
                                                 beta=beta, a=a, b=b)[0]
                     FSF1 += w[i] * kernel1
                     FSF2 += w[i] * kernel2
                 # fit beta, fwhm1 and fwhm2 on PSF1 and PSF2
                 moffatfit = lambda v: np.ravel(
-                    MOFFAT1(lbda1, step_arcsec, Nfsf, v[0], v[1], v[2])[0] - FSF1 +
-                    MOFFAT1(lbda2, step_arcsec, Nfsf, v[0], v[1], v[2])[0] - FSF2)
+                    MOFFAT1(lbda1, step, Nfsf, v[0], v[1], v[2])[0] - FSF1 +
+                    MOFFAT1(lbda2, step, Nfsf, v[0], v[1], v[2])[0] - FSF2)
                 v0 = [beta, a, b]
-                v = leastsq(moffatfit, v0)[0]
-                beta = v[0]
-                a = v[1]
-                b = v[2]
+                beta, a, b = leastsq(moffatfit, v0)[0]
 
         self.header['FSFMODE'] = FSF_mode
         self.header['FSF%02dBET' % nf] = np.around(beta, decimals=2)
         self.header['FSF%02dFWA' % nf] = np.around(a, decimals=3)
         self.header['FSF%02dFWB' % nf] = float('%.3e' % b)
+
+    def get_FSF(self):
+        """Return the FSF keywords if available in the FITS header."""
+        if 'FSFMODE' not in self.header:
+            return
+        for field in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 99):
+            if 'FSF%02dBET' % field in self.header:
+                beta = self.header['FSF%02dBET' % field]
+                a = self.header['FSF%02dFWA' % field]
+                b = self.header['FSF%02dFWB' % field]
+                return a, b, beta, field
 
     def add_narrow_band_images(self, cube, z_desc, eml=None, size=None,
                                unit_size=u.arcsec, width=8, is_sum=False,

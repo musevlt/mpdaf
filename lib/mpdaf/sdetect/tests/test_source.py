@@ -551,11 +551,17 @@ def test_SEA2(minicube):
     assert_almost_equal(18.27, s.spectra['MUSE_WHITE_SKYSUB'].data, decimal=2)
 
 
-def test_add_FSF():
+def test_add_FSF(minicube):
     """Source class: testing add_FSF method"""
     src = Source.from_file(get_data_file('sdetect', 'origin-00026.fits'))
+    assert src.get_FSF() is None
+
+    with pytest.raises(ValueError):
+        src.add_FSF(minicube)
+
     cube = Cube(get_data_file('sdetect', 'subcub_mosaic.fits'))
     src.add_FSF(cube)
     assert src.FSF99BET == 2.8
     assert src.FSF99FWA == 0.855
     assert src.FSF99FWB == -3.551e-05
+    assert src.get_FSF() == (0.855, -3.551e-05, 2.8, 99)
