@@ -1,16 +1,19 @@
 before_script:
-  - export PATH="$HOME/.local/bin:$PATH"
-  - which pip
-  - which tox
+  - export PYENV_ROOT="$HOME/.pyenv"
+  - export PATH="$PYENV_ROOT/bin:$PATH"
+  - eval "$(pyenv init -)"
+  - pyenv local 3.6.3
+  - pip install tox
+  - pwd
 
 coverage-clean:
   script: tox -e clean
 
-py27:
-  script: tox -v -e py27
+# py27:
+#   script: tox -v -e py27
 
-py34:
-  script: tox -v -e py34
+py36:
+  script: tox -v -e py36
 
 astropy13:
   script: tox -v -e astropy13
