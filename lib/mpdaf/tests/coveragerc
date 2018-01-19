@@ -1,23 +1,28 @@
 [run]
 source = mpdaf
 omit =
-   {packagename}/scripts/update_license.py
-   {packagename}/_astropy_init*
-   {packagename}/conftest*
-   {packagename}/cython_version*
-   {packagename}/setup_package*
-   {packagename}/*/setup_package*
-   {packagename}/*/*/setup_package*
-   {packagename}/tests/*
-   {packagename}/*/tests/*
-   {packagename}/*/*/tests/*
-   {packagename}/version*
+   lib/mpdaf/scripts/update_license.py
+   lib/mpdaf/_astropy_init*
+   lib/mpdaf/conftest*
+   lib/mpdaf/cython_version*
+   lib/mpdaf/setup_package*
+   lib/mpdaf/*/setup_package*
+   lib/mpdaf/*/*/setup_package*
+   lib/mpdaf/tests/*
+   lib/mpdaf/*/tests/*
+   lib/mpdaf/*/*/tests/*
+   lib/mpdaf/version*
+   lib/mpdaf/tools/astropycompat.py
+   lib/mpdaf/tools/numpycompat.py
 
 [report]
 show_missing = false
 exclude_lines =
    def __repr__
    def info
+   def plot
+   def _plot
+   def _onclick
    if __name__ == .__main__.:
 
    # Have to re-enable the standard pragma

@@ -36,7 +36,7 @@ from __future__ import absolute_import
 from astropy.io import fits
 from mpdaf.tools.fits import (add_mpdaf_method_keywords,
                               add_mpdaf_keywords_to_file)
-from mpdaf.version import __version__
+from mpdaf import __version__
 
 REFHDR = """\
 HIERARCH MPDAF METH1 VERSION = '{0}' / MPDAF version

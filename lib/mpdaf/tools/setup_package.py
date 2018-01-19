@@ -2,11 +2,11 @@ from __future__ import print_function
 
 import os
 import sys
-from astropy_helpers.setup_helpers import pkg_config
 from distutils.extension import Extension
 
 
 def get_extensions():
+    from astropy_helpers.setup_helpers import pkg_config
     res = pkg_config(['cfitsio'], None)
     if res['libraries'] is not None:
         kw = {'libraries': ['m'] + res['libraries']}

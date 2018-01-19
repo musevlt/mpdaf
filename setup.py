@@ -48,7 +48,7 @@ LONG_DESCRIPTION = open('README.rst').read()
 builtins._ASTROPY_PACKAGE_NAME_ = PACKAGENAME
 
 # VERSION should be PEP386 compatible (http://www.python.org/dev/peps/pep-0386)
-VERSION = '2.3.dev'
+VERSION = '2.5.dev'
 
 # Indicates if this version is a release version
 RELEASE = 'dev' not in VERSION
@@ -112,7 +112,7 @@ setup(
     scripts=scripts,
     install_requires=['numpy', 'scipy', 'matplotlib', 'astropy>=1.0', 'six'],
     extras_require={
-        'all':  ['numexpr', 'fitsio'],
+        'all': ['numexpr', 'fitsio'],
     },
     author=AUTHOR,
     author_email=AUTHOR_EMAIL,
