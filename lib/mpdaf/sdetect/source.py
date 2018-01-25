@@ -464,6 +464,9 @@ class ExtLoader(collections.MutableMapping):
     def __len__(self):
         return len(self.data)
 
+    def _ipython_key_completions_(self):
+        return self.data.keys()
+
 
 class Source(object):
 
@@ -546,6 +549,9 @@ class Source(object):
         for slot, value in state.items():
             setattr(self, slot, value)
         self._logger = logging.getLogger(__name__)
+
+    def __dir__(self):
+        return list(self.header.keys()) + super(Source, self).__dir__()
 
     @classmethod
     def from_data(cls, ID, ra, dec, origin, proba=None, confid=None,

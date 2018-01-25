@@ -62,6 +62,9 @@ def test_from_data():
                           default_size=10)
     s2 = pickle.loads(pickle.dumps(s1))
 
+    assert 'ID' in dir(s1)
+    assert 'FOO' in dir(s1)
+
     for src in (s1, s2):
         assert src.DPROBA == 1.0
         assert src.CONFID == 2

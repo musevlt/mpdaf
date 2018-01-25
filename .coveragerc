@@ -19,6 +19,7 @@ exclude_lines =
     def plot
     def _plot
     def _onclick
+    def _ipython_key_completions_
     raise AssertionError
     raise NotImplementedError
     if __name__ == .__main__.:
