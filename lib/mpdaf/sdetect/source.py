@@ -551,7 +551,10 @@ class Source(object):
         self._logger = logging.getLogger(__name__)
 
     def __dir__(self):
-        return list(self.header.keys()) + super(Source, self).__dir__()
+        if six.PY2:
+            return list(self.header.keys()) + self.__dict__.keys()
+        else:
+            return list(self.header.keys()) + super(Source, self).__dir__()
 
     @classmethod
     def from_data(cls, ID, ra, dec, origin, proba=None, confid=None,
