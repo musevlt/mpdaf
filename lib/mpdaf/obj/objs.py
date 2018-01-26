@@ -154,11 +154,8 @@ def bounding_box(form, center, radii, shape, posangle=0.0, step=None):
     else:
         rx, ry = radii
 
-    # Ensure that the Y and X coordinates of the central position
-    # can be used in numpy array equations.
     center = np.asarray(center)
 
-    # Ensure that the pixel sizes are in a numpy array as well.
     if step is None:
         step = (1.0, 1.0)
     step = np.asarray(step)
@@ -200,7 +197,7 @@ def bounding_box(form, center, radii, shape, posangle=0.0, step=None):
         ymax = np.abs(rx * np.cos(t_ymax) * sin_pa +
                       ry * np.sin(t_ymax) * cos_pa)
     else:
-        raise ValueError("The form argument should be 'rectangle' or 'ellipse'")
+        raise ValueError("form should be 'rectangle' or 'ellipse'")
 
     # Put the height and width in an array, divide them by
     # the pixel sizes along the Y and X axes to convert them to pixel

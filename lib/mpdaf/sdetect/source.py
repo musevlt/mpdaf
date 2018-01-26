@@ -1670,10 +1670,10 @@ class Source(object):
             Gaussian or Moffat PSF at each wavelength (in arcsec) or a cube
             with the PSF to use. No PSF-weighted extraction by default.
         beta : float or none
-            if not none, the PSF is a Moffat function with beta value,
-            else it is a Gaussian
+            If not none, the PSF is a Moffat function with beta value,
+            else it is a Gaussian.
         lbda : (float, float) or none
-            if not none, tuple giving the wavelength range.
+            If not none, tuple giving the wavelength range.
         unit_wave : `astropy.units.Unit`
             Wavelengths unit (angstrom by default)
             If None, inputs are in pixels
@@ -1746,18 +1746,18 @@ class Source(object):
                 self.spectra['MUSE_APER_%.1f%s' % (radius, suffix)] = spec
                 tmpim.unmask()
 
-        # Now loop over the narrow-band images we want to use. Apply
-        # the object mask and ensure that the weight map within the
-        # object mask is >=0.
-        nb_tags = list(set(tags_to_try) & set(self.images))
-        ksel = (object_mask != 0)
-        for tag in nb_tags:
-            if self.images[tag].wcs.isEqual(wcsref):
-                weight = self.images[tag].data.copy()
-                weight[ksel] -= np.min(weight[ksel])
-                weight = weight.filled(0)
-                self.spectra[tag + suffix] = compute_optimal_spectrum(
-                    subcub, object_mask, weight)
+        # Loop over the narrow-band images we want to use. Apply the object
+        # mask and ensure that the weight map within the object mask is >=0.
+        if tags_to_try is not None:
+            nb_tags = list(set(tags_to_try) & set(self.images))
+            ksel = (object_mask != 0)
+            for tag in nb_tags:
+                if self.images[tag].wcs.isEqual(wcsref):
+                    weight = self.images[tag].data.copy()
+                    weight[ksel] -= np.min(weight[ksel])
+                    weight = weight.filled(0)
+                    self.spectra[tag + suffix] = compute_optimal_spectrum(
+                        subcub, object_mask, weight)
 
         # PSF
         if psf is not None:

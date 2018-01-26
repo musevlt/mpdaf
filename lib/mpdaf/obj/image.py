@@ -514,11 +514,8 @@ class Image(ArithmeticMixin, DataArray):
             form="rectangle", center=center, radii=radius,
             shape=self.shape, step=step)
 
-        # Mask pixels inside the region.
         if inside:
             self.data[sy, sx] = np.ma.masked
-
-        # Mask pixels outside the region.
         else:
             self.data[0:sy.start, :] = np.ma.masked
             self.data[sy.stop:, :] = np.ma.masked
