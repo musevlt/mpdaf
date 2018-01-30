@@ -38,10 +38,9 @@ import numpy as np
 
 from astropy.convolution import Model2DKernel
 from astropy.modeling.functional_models import Moffat2D
+from astropy.stats import gaussian_fwhm_to_sigma
 from scipy import special
 from six.moves import range
-
-from ..obj import gauss_image, moffat_image
 
 
 class LSF(object):
@@ -400,18 +399,28 @@ def create_psf_cube(shape, fwhm, beta=None, wcs=None, unit_fwhm=u.arcsec):
         raise ValueError('fwhm length ({}) and input shape ({}) do not match'
                          .format(len(fwhm), shape[0]))
 
-    cube = np.zeros(shape)
+    from astropy.modeling import models
+    cube = np.empty(shape)
+    y0, x0 = (np.array(shape[1:]) - 1) / 2.0
+    yy, xx = np.mgrid[:shape[1], :shape[2]]
+    fwhm = np.asarray(fwhm)
+
+    if unit_fwhm is not None:
+        fwhm = fwhm / wcs.get_step(unit=unit_fwhm)[0]
+
     if beta is None:
         # a Gaussian expected.
+        stddev = fwhm * gaussian_fwhm_to_sigma
         for l in range(shape[0]):
-            gauss_ima = gauss_image(shape=(shape[1], shape[2]), wcs=wcs,
-                                    fwhm=(fwhm[l], fwhm[l]), peak=False,
-                                    unit_fwhm=unit_fwhm)
-            cube[l, :, :] = gauss_ima.data.data
+            g = models.Gaussian2D(amplitude=1, x_mean=x0, y_mean=y0, theta=0,
+                                  x_stddev=stddev[l], y_stddev=stddev[l])
+            cube[l, :, :] = g(xx, yy)
     else:
+        alpha = fwhm / (2 * np.sqrt(2 ** (1.0 / beta) - 1.0))
         for l in range(shape[0]):
-            moffat_ima = moffat_image(shape=(shape[1], shape[2]), wcs=wcs,
-                                      fwhm=(fwhm[l], fwhm[l]), n=beta,
-                                      peak=False, unit_fwhm=unit_fwhm)
-            cube[l, :, :] = moffat_ima.data.data
+            m = models.Moffat2D(amplitude=1, x_0=x0, y_0=y0, gamma=alpha[l],
+                                alpha=beta)
+            cube[l, :, :] = m(xx, yy)
+
+    cube /= cube.sum(axis=(1, 2))[:, None, None]
     return cube

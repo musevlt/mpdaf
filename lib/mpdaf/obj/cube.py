@@ -939,12 +939,9 @@ class Cube(ArithmeticMixin, DataArray):
 
         """
 
-        # Have an array of weights been provided?
         if weights is not None:
-
             # Convert the weights array to a non-masked array with
-            # masked, infinite and nan values replaced with zero
-            # weights.
+            # masked, infinite and nan values replaced with zero weights.
             if isinstance(weights, ma.MaskedArray):
                 weights = weights.filled(0.0)
             weights = np.where(np.isfinite(weights), weights, 0.0)
@@ -953,31 +950,27 @@ class Cube(ArithmeticMixin, DataArray):
             # the dimensions of the data, remedy this if possible using
             # the rules given in the description of the weights argument.
             if not np.array_equal(weights.shape, self.shape):
-                excmsg = ('Wrong dimensions for the weights (%s) '
-                          '(should be (%s))')
+                msg = 'Wrong dimensions for the weights (%s) (should be (%s))'
                 if weights.ndim == 3:
-                    raise ValueError(excmsg % (weights.shape, self.shape))
+                    raise ValueError(msg % (weights.shape, self.shape))
                 elif weights.ndim == 2:
                     if np.array_equal(weights.shape, self.shape[1:]):
                         weights = np.tile(weights, (self.shape[0], 1, 1))
                     else:
-                        raise ValueError(excmsg % (weights.shape,
-                                                   self.shape[1:]))
+                        raise ValueError(msg % (weights.shape, self.shape[1:]))
                 elif weights.ndim == 1:
                     if weights.shape[0] == self.shape[0]:
                         weights = (np.ones_like(self._data) *
                                    weights[:, np.newaxis, np.newaxis])
                     else:
-                        raise ValueError(excmsg % (weights.shape[0],
-                                                   self.shape[0]))
+                        raise ValueError(msg % (weights.shape[0],
+                                                self.shape[0]))
                 else:
-                    raise ValueError(excmsg % (None, self.shape))
+                    raise ValueError(msg % (None, self.shape))
 
-        # Average the whole array to a single number?
         if axis is None:
             return ma.average(self.data, weights=weights)
 
-        # Get the data and variances to be processed.
         data = self.data
         var = None if self._var is None else self.var
 
@@ -997,14 +990,11 @@ class Cube(ArithmeticMixin, DataArray):
         # Average the data over the specified axis. Note that the
         # wsum return value holds the sum of weights for each of the
         # returned data points. When weights=None, this is the
-        # number of unmasked points that contributed to the
-        # average.
+        # number of unmasked points that contributed to the average.
         data, wsum = ma.average(data, axis=axis, weights=weights,
                                 returned=True)
 
-        # Does the input cube have variances to be updated?
         if var is not None:
-
             # Compute the variance of each averaged data-point,
             # using the equation given in the docstring of
             # this function. When weights=None, the effective
@@ -1015,7 +1005,6 @@ class Cube(ArithmeticMixin, DataArray):
             else:
                 var = ma.sum(var * weights**2, axis=axis) / wsum**2
 
-        # Return the average in an appropriate object.
         if axis is None:
             return data
         elif axis == 0:

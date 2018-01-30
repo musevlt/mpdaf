@@ -514,11 +514,8 @@ class Image(ArithmeticMixin, DataArray):
             form="rectangle", center=center, radii=radius,
             shape=self.shape, step=step)
 
-        # Mask pixels inside the region.
         if inside:
             self.data[sy, sx] = np.ma.masked
-
-        # Mask pixels outside the region.
         else:
             self.data[0:sy.start, :] = np.ma.masked
             self.data[sy.stop:, :] = np.ma.masked
@@ -4282,7 +4279,7 @@ def gauss_image(shape=(101, 101), wcs=None, factor=1, gauss=None,
     if unit_fwhm is not None:
         fwhm = np.array(fwhm) / wcs.get_step(unit=unit_fwhm)
 
-    data = np.empty(shape=shape, dtype=float)
+    # data = np.empty(shape=shape, dtype=float)
 
     if fwhm[1] == 0 or fwhm[0] == 0:
         raise ValueError('fwhm equal to 0')
@@ -4293,19 +4290,20 @@ def gauss_image(shape=(101, 101), wcs=None, factor=1, gauss=None,
     theta = np.pi * rot / 180.0
 
     if peak is True:
-        I = flux * np.sqrt(2 * np.pi * (p_width ** 2)) \
-            * np.sqrt(2 * np.pi * (q_width ** 2))
+        norm = flux * 2 * np.pi * p_width * q_width
     else:
-        I = flux
+        norm = flux
 
-    gauss = lambda p, q: (
-        I * (1 / np.sqrt(2 * np.pi * (p_width ** 2))) *
-        np.exp(-((p - center[0]) * np.cos(theta) -
-                 (q - center[1]) * np.sin(theta)) ** 2 / (2 * p_width ** 2)) *
-        (1 / np.sqrt(2 * np.pi * (q_width ** 2))) *
-        np.exp(-((p - center[0]) * np.sin(theta) +
-                 (q - center[1]) * np.cos(theta)) ** 2 / (2 * q_width ** 2))
-    )
+    def gauss(p, q):
+        cost = np.cos(theta)
+        sint = np.sin(theta)
+        xdiff = p - center[0]
+        ydiff = q - center[1]
+        return (
+            norm / (2 * np.pi * p_width * q_width) *
+            np.exp(-(xdiff * cost - ydiff * sint) ** 2 / (2 * p_width ** 2)) *
+            np.exp(-(xdiff * sint + ydiff * cost) ** 2 / (2 * q_width ** 2))
+        )
 
     if factor > 1:
         if rot == 0:
@@ -4324,25 +4322,18 @@ def gauss_image(shape=(101, 101), wcs=None, factor=1, gauss=None,
 
             dx = pixcrd_max[:, 1] - pixcrd_min[:, 1]
             dy = pixcrd_max[:, 0] - pixcrd_min[:, 0]
-            data = I * 0.25 / dx / dy \
+            data = norm * 0.25 / dx / dy \
                 * (special.erf(xmax) - special.erf(xmin)) \
                 * (special.erf(ymax) - special.erf(ymin))
             data = np.reshape(data, (shape[1], shape[0])).T
         else:
-            X, Y = np.meshgrid(range(shape[0] * factor),
-                               range(shape[1] * factor))
-            pixcrd = np.array(list(zip(X.ravel() / factor,
-                                       Y.ravel() / factor)))
-            # pixsky = wcs.pix2sky(pixcrd)
-            data = gauss(pixcrd[:, 0], pixcrd[:, 1])
-            data = (data.reshape(shape[1], factor, shape[0], factor)
-                    .sum(1).sum(2) / factor / factor).T
+            yy, xx = np.mgrid[:shape[0] * factor, :shape[1] * factor] / factor
+            data = gauss(yy, xx)
+            data = data.reshape(shape[0], 2, shape[1], 2).sum(axis=(1, 3))
+            data /= factor ** 2
     else:
-        X, Y = np.meshgrid(range(shape[0]), range(shape[1]))
-        pixcrd = np.array(list(zip(X.ravel(), Y.ravel())))
-        # data = gauss(pixcrd[:,1],pixcrd[:,0])
-        data = gauss(pixcrd[:, 0], pixcrd[:, 1])
-        data = np.reshape(data, (shape[1], shape[0])).T
+        yy, xx = np.mgrid[:shape[0], :shape[1]]
+        data = gauss(yy, xx)
 
     return Image(data=data + cont, wcs=wcs, unit=unit, copy=False, dtype=None)
 
@@ -4429,9 +4420,9 @@ def moffat_image(shape=(101, 101), wcs=None, factor=1, moffat=None,
         a = a / wcs.get_step(unit=unit_fwhm)[0]
 
     if peak:
-        I = flux
+        norm = flux
     else:
-        I = flux * (n - 1) / (np.pi * a * a * e)
+        norm = flux * (n - 1) / (np.pi * a * a * e)
 
     if center is None:
         center = np.array([(shape[0] - 1) / 2.0, (shape[1] - 1) / 2.0])
@@ -4444,12 +4435,16 @@ def moffat_image(shape=(101, 101), wcs=None, factor=1, moffat=None,
     # rotation angle in rad
     theta = np.pi * rot / 180.0
 
-    moffat = lambda p, q: (
-        I * (1 + (((p - center[0]) * np.cos(theta) -
-                   (q - center[1]) * np.sin(theta)) / a) ** 2 +
-             (((p - center[0]) * np.sin(theta) +
-               (q - center[1]) * np.cos(theta)) / a / e) ** 2) ** (-n)
-    )
+    def moffat(p, q):
+        cost = np.cos(theta)
+        sint = np.sin(theta)
+        xdiff = p - center[0]
+        ydiff = q - center[1]
+        return (
+            norm * (1 +
+                    ((xdiff * cost - ydiff * sint) / a) ** 2 +
+                    ((xdiff * sint + ydiff * cost) / a / e) ** 2) ** (-n)
+        )
 
     if factor > 1:
         X, Y = np.meshgrid(range(shape[0] * factor),
@@ -4460,10 +4455,8 @@ def moffat_image(shape=(101, 101), wcs=None, factor=1, moffat=None,
         data = (data.reshape(shape[1], factor, shape[0], factor)
                 .sum(1).sum(2) / factor / factor).T
     else:
-        X, Y = np.meshgrid(range(shape[0]), range(shape[1]))
-        pixcrd = np.array(list(zip(X.ravel(), Y.ravel())))
-        data = moffat(pixcrd[:, 0], pixcrd[:, 1])
-        data = np.reshape(data, (shape[1], shape[0])).T
+        yy, xx = np.mgrid[:shape[0], :shape[1]]
+        data = moffat(yy, xx)
 
     return Image(data=data + cont, wcs=wcs, unit=unit, copy=False, dtype=None)
 
