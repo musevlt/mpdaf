@@ -231,11 +231,7 @@ def test_gauss_circular(fwhm, flux, factor, weight, fit_back, cont, center,
                           unit_center=None, unit_fwhm=None, circular=True,
                           full_output=True, maxiter=200)
     assert isinstance(gauss.ima, Image)
-    if factor == 1:
-        assert_array_almost_equal(gauss.center, (19.5, 14.5))
-    else:
-        # FIXME: This must be fixed, when factor=2 center is wrong
-        assert_array_almost_equal(gauss.center, (19.5, 14.5))
+    assert_array_almost_equal(gauss.center, (19.5, 14.5))
 
     for param, value in params.items():
         if np.isscalar(value):
