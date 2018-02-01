@@ -402,13 +402,7 @@ def create_psf_cube(shape, fwhm, beta=None, wcs=None, unit_fwhm=u.arcsec):
 
     nl = shape[0]
     y0, x0 = (np.array(shape[1:]) - 1) / 2.0
-
-    # Strides are used to avoid creating arrays with the same siez as the cube.
-    # So instead of using np.mgrid[:nl, :shape[1], :shape[2]] or np.resize, the
-    # following allows to replicate the 2D arrays xx and yy in 3D.
     yy, xx = np.mgrid[:shape[1], :shape[2]]
-    xx = as_strided(xx, (nl, ) + xx.shape, (0, ) + xx.strides)
-    yy = as_strided(yy, (nl, ) + yy.shape, (0, ) + yy.strides)
 
     fwhm = np.asarray(fwhm)
     if unit_fwhm is not None:
@@ -425,6 +419,6 @@ def create_psf_cube(shape, fwhm, beta=None, wcs=None, unit_fwhm=u.arcsec):
         m = Moffat2D(amplitude=[1] * nl, x_0=[x0] * nl, y_0=[y0] * nl,
                      gamma=alpha, alpha=[beta] * nl, n_models=nl)
 
-    cube = m(xx, yy)
+    cube = m(xx, yy, model_set_axis=False)
     cube /= cube.sum(axis=(1, 2))[:, None, None]
     return cube
