@@ -37,8 +37,9 @@ import astropy.units as u
 import numpy as np
 
 from astropy.convolution import Model2DKernel
-from astropy.modeling.functional_models import Moffat2D
+from astropy.modeling.models import Moffat2D, Gaussian2D
 from astropy.stats import gaussian_fwhm_to_sigma
+from numpy.lib.stride_tricks import as_strided
 from scipy import special
 from six.moves import range
 
@@ -399,25 +400,30 @@ def create_psf_cube(shape, fwhm, beta=None, wcs=None, unit_fwhm=u.arcsec):
         raise ValueError('fwhm length ({}) and input shape ({}) do not match'
                          .format(len(fwhm), shape[0]))
 
-    from astropy.modeling import models
     nl = shape[0]
     y0, x0 = (np.array(shape[1:]) - 1) / 2.0
-    _, yy, xx = np.mgrid[:nl, :shape[1], :shape[2]]
-    fwhm = np.asarray(fwhm)
 
+    # Strides are used to avoid creating arrays with the same siez as the cube.
+    # So instead of using np.mgrid[:nl, :shape[1], :shape[2]] or np.resize, the
+    # following allows to replicate the 2D arrays xx and yy in 3D.
+    yy, xx = np.mgrid[:shape[1], :shape[2]]
+    xx = as_strided(xx, (nl, ) + xx.shape, (0, ) + xx.strides)
+    yy = as_strided(yy, (nl, ) + yy.shape, (0, ) + yy.strides)
+
+    fwhm = np.asarray(fwhm)
     if unit_fwhm is not None:
         fwhm = fwhm / wcs.get_step(unit=unit_fwhm)[0]
 
     if beta is None:
         # a Gaussian expected.
         stddev = fwhm * gaussian_fwhm_to_sigma
-        m = models.Gaussian2D(amplitude=[1] * nl, theta=[0] * nl,
-                              x_mean=[x0] * nl, y_mean=[y0] * nl,
-                              x_stddev=stddev, y_stddev=stddev, n_models=nl)
+        m = Gaussian2D(amplitude=[1] * nl, theta=[0] * nl,
+                       x_mean=[x0] * nl, y_mean=[y0] * nl,
+                       x_stddev=stddev, y_stddev=stddev, n_models=nl)
     else:
         alpha = fwhm / (2 * np.sqrt(2 ** (1.0 / beta) - 1.0))
-        m = models.Moffat2D(amplitude=[1] * nl, x_0=[x0] * nl, y_0=[y0] * nl,
-                            gamma=alpha, alpha=[beta] * nl, n_models=nl)
+        m = Moffat2D(amplitude=[1] * nl, x_0=[x0] * nl, y_0=[y0] * nl,
+                     gamma=alpha, alpha=[beta] * nl, n_models=nl)
 
     cube = m(xx, yy)
     cube /= cube.sum(axis=(1, 2))[:, None, None]
