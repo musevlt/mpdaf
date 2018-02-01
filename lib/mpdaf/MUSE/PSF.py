@@ -400,9 +400,9 @@ def create_psf_cube(shape, fwhm, beta=None, wcs=None, unit_fwhm=u.arcsec):
                          .format(len(fwhm), shape[0]))
 
     from astropy.modeling import models
-    cube = np.empty(shape)
+    nl = shape[0]
     y0, x0 = (np.array(shape[1:]) - 1) / 2.0
-    yy, xx = np.mgrid[:shape[1], :shape[2]]
+    _, yy, xx = np.mgrid[:nl, :shape[1], :shape[2]]
     fwhm = np.asarray(fwhm)
 
     if unit_fwhm is not None:
@@ -411,16 +411,14 @@ def create_psf_cube(shape, fwhm, beta=None, wcs=None, unit_fwhm=u.arcsec):
     if beta is None:
         # a Gaussian expected.
         stddev = fwhm * gaussian_fwhm_to_sigma
-        for l in range(shape[0]):
-            g = models.Gaussian2D(amplitude=1, x_mean=x0, y_mean=y0, theta=0,
-                                  x_stddev=stddev[l], y_stddev=stddev[l])
-            cube[l, :, :] = g(xx, yy)
+        m = models.Gaussian2D(amplitude=[1] * nl, theta=[0] * nl,
+                              x_mean=[x0] * nl, y_mean=[y0] * nl,
+                              x_stddev=stddev, y_stddev=stddev, n_models=nl)
     else:
         alpha = fwhm / (2 * np.sqrt(2 ** (1.0 / beta) - 1.0))
-        for l in range(shape[0]):
-            m = models.Moffat2D(amplitude=1, x_0=x0, y_0=y0, gamma=alpha[l],
-                                alpha=beta)
-            cube[l, :, :] = m(xx, yy)
+        m = models.Moffat2D(amplitude=[1] * nl, x_0=[x0] * nl, y_0=[y0] * nl,
+                            gamma=alpha, alpha=[beta] * nl, n_models=nl)
 
+    cube = m(xx, yy)
     cube /= cube.sum(axis=(1, 2))[:, None, None]
     return cube
