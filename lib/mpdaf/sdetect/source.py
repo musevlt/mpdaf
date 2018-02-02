@@ -1632,12 +1632,12 @@ class Source(object):
         the corresponding narrow bands image.  They are saved in
         ``self.spectra[nb_ima]`` (for nb_ima in tags_to_try).
 
-        If psf:
+        If ``psf``:
             The potential PSF weighted spectrum is computed as the sum of the
             subcube weighted by mutliplication of the mask of the objetct and
             the PSF. It is saved in self.spectra['MUSE_PSF']
 
-        If skysub:
+        If ``skysub``:
             The local sky spectrum is computed as the average of the subcube
             weighted by the sky mask image.
             It is saved in ``self.spectra['MUSE_SKY']``

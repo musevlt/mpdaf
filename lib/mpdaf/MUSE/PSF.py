@@ -39,7 +39,6 @@ import numpy as np
 from astropy.convolution import Model2DKernel
 from astropy.modeling.models import Moffat2D, Gaussian2D
 from astropy.stats import gaussian_fwhm_to_sigma
-from numpy.lib.stride_tricks import as_strided
 from scipy import special
 from six.moves import range
 
