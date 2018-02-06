@@ -47,7 +47,6 @@ class Gauss1D(object):
         self.err_lpeak = err_lpeak
         self.err_peak = err_peak
         self.err_flux = err_flux
-        self._logger = logging.getLogger(__name__)
         self.chisq = chisq
         self.dof = dof
 
@@ -59,23 +58,13 @@ class Gauss1D(object):
 
     def print_param(self):
         """Print Gaussian parameters."""
-
-        msg = 'Gaussian center = %g (error:%g)' % (self.lpeak, self.err_lpeak)
-        self._logger.info(msg)
-
-        msg = 'Gaussian integrated flux = %g (error:%g)' % \
-            (self.flux, self.err_flux)
-        self._logger.info(msg)
-
-        msg = 'Gaussian peak value = %g (error:%g)' % \
-            (self.peak, self.err_peak)
-        self._logger.info(msg)
-
-        msg = 'Gaussian fwhm = %g (error:%g)' % (self.fwhm, self.err_fwhm)
-        self._logger.info(msg)
-
-        msg = 'Gaussian continuum = %g' % self.cont
-        self._logger.info(msg)
+        info = logging.getLogger(__name__).info
+        info('Gaussian center = %g (error:%g)', self.lpeak, self.err_lpeak)
+        info('Gaussian integrated flux = %g (error:%g)',
+             self.flux, self.err_flux)
+        info('Gaussian peak value = %g (error:%g)', self.peak, self.err_peak)
+        info('Gaussian fwhm = %g (error:%g)', self.fwhm, self.err_fwhm)
+        info('Gaussian continuum = %g', self.cont)
 
 
 class Gauss2D(object):
