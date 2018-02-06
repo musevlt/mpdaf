@@ -98,7 +98,6 @@ class Gauss2D(object):
 
     def __init__(self, center, flux, fwhm, cont, rot, peak, err_center,
                  err_flux, err_fwhm, err_cont, err_rot, err_peak, ima=None):
-        self._logger = logging.getLogger(__name__)
         self.center = center
         self.flux = flux
         self.fwhm = fwhm
@@ -122,24 +121,16 @@ class Gauss2D(object):
 
     def print_param(self):
         """Print Gaussian parameters."""
-        msg = 'Gaussian center = (%g,%g) (error:(%g,%g))' \
-            % (self.center[0], self.center[1],
-               self.err_center[0], self.err_center[1])
-        self._logger.info(msg)
-        msg = 'Gaussian integrated flux = %g (error:%g)' \
-            % (self.flux, self.err_flux)
-        self._logger.info(msg)
-        msg = 'Gaussian peak value = %g (error:%g)' \
-            % (self.peak, self.err_peak)
-        self._logger.info(msg)
-        msg = 'Gaussian fwhm = (%g,%g) (error:(%g,%g))' \
-            % (self.fwhm[0], self.fwhm[1], self.err_fwhm[0], self.err_fwhm[1])
-        self._logger.info(msg)
-        msg = 'Rotation in degree: %g (error:%g)' % (self.rot, self.err_rot)
-        self._logger.info(msg)
-        msg = 'Gaussian continuum = %g (error:%g)' \
-            % (self.cont, self.err_cont)
-        self._logger.info(msg)
+        info = logging.getLogger(__name__).info
+        info('Gaussian center = (%g,%g) (error:(%g,%g))', self.center[0],
+             self.center[1], self.err_center[0], self.err_center[1])
+        info('Gaussian integrated flux = %g (error:%g)',
+             self.flux, self.err_flux)
+        info('Gaussian peak value = %g (error:%g)', self.peak, self.err_peak)
+        info('Gaussian fwhm = (%g,%g) (error:(%g,%g))',
+             self.fwhm[0], self.fwhm[1], self.err_fwhm[0], self.err_fwhm[1])
+        info('Rotation in degree: %g (error:%g)', self.rot, self.err_rot)
+        info('Gaussian continuum = %g (error:%g)', self.cont, self.err_cont)
 
 
 class Moffat2D(object):
@@ -184,7 +175,6 @@ class Moffat2D(object):
     def __init__(self, center, flux, fwhm, cont, n, rot, peak, err_center,
                  err_flux, err_fwhm, err_cont, err_n, err_rot, err_peak,
                  ima=None):
-        self._logger = logging.getLogger(__name__)
         self.center = center
         self.flux = flux
         self.fwhm = fwhm
@@ -210,23 +200,16 @@ class Moffat2D(object):
 
     def print_param(self):
         """Print Moffat parameters."""
-        msg = 'center = (%g,%g) (error:(%g,%g))' \
-            % (self.center[0], self.center[1],
-               self.err_center[0], self.err_center[1])
-        self._logger.info(msg)
-        msg = 'integrated flux = %g (error:%g)' % (self.flux, self.err_flux)
-        self._logger.info(msg)
-        msg = 'peak value = %g (error:%g)' % (self.peak, self.err_peak)
-        self._logger.info(msg)
-        msg = 'fwhm = (%g,%g) (error:(%g,%g))' \
-            % (self.fwhm[0], self.fwhm[1], self.err_fwhm[0], self.err_fwhm[1])
-        self._logger.info(msg)
-        msg = 'n = %g (error:%g)' % (self.n, self.err_n)
-        self._logger.info(msg)
-        msg = 'rotation in degree: %g (error:%g)' % (self.rot, self.err_rot)
-        self._logger.info(msg)
-        msg = 'continuum = %g (error:%g)' % (self.cont, self.err_cont)
-        self._logger.info(msg)
+        info = logging.getLogger(__name__).info
+        info('center = (%g,%g) (error:(%g,%g))', self.center[0],
+             self.center[1], self.err_center[0], self.err_center[1])
+        info('integrated flux = %g (error:%g)', self.flux, self.err_flux)
+        info('peak value = %g (error:%g)', self.peak, self.err_peak)
+        info('fwhm = (%g,%g) (error:(%g,%g))',
+             self.fwhm[0], self.fwhm[1], self.err_fwhm[0], self.err_fwhm[1])
+        info('n = %g (error:%g)', self.n, self.err_n)
+        info('rotation in degree: %g (error:%g)', self.rot, self.err_rot)
+        info('continuum = %g (error:%g)', self.cont, self.err_cont)
 
 
 class Image(ArithmeticMixin, DataArray):
