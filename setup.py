@@ -46,22 +46,11 @@ import ez_setup
 ez_setup.use_setuptools(version='18.0')  # NOQA
 
 from setuptools import setup, find_packages, Extension
+from setuptools.command.build_ext import build_ext as _build_ext
 from setuptools.command.test import test as TestCommand
-
-# os.environ['DISTUTILS_DEBUG'] = '1'
-
-PY2 = sys.version_info[0] == 2
-
-# Check if Numpy is available
-try:
-    import numpy
-except ImportError:
-    sys.exit('You must install Numpy before MPDAF, as it is required to '
-             'build C extensions.')
 
 # Check if Cython is available
 try:
-    from Cython.Distutils import build_ext
     from Cython.Build import cythonize
 except ImportError:
     HAVE_CYTHON = False
@@ -128,8 +117,25 @@ class PyTest(TestCommand):
         sys.exit(errno)
 
 
+class build_ext(_build_ext):
+    def run(self):
+        # For extensions that require 'numpy' in their include dirs,
+        # replace 'numpy' with the actual paths
+        import numpy
+        np_include = numpy.get_include()
+
+        for extension in self.extensions:
+            if 'numpy' in extension.include_dirs:
+                idx = extension.include_dirs.index('numpy')
+                extension.include_dirs.insert(idx, np_include)
+                extension.include_dirs.remove('numpy')
+
+        super(build_ext, self).run()
+
+
 def options(*packages, **kw):
     flag_map = {'-I': 'include_dirs', '-L': 'library_dirs', '-l': 'libraries'}
+    PY2 = sys.version_info[0] == 2
 
     for package in packages:
         try:
@@ -173,14 +179,13 @@ with open('README.rst') as f:
 with open('CHANGELOG') as f:
     CHANGELOG = f.read()
 
-cmdclass = {'test': PyTest}
-
 ext = '.pyx' if HAVE_CYTHON else '.c'
 ext_modules = [
     Extension('obj.merging',
               ['src/tools.c', './lib/mpdaf/obj/merging' + ext],
-              include_dirs=[numpy.get_include()]),
+              include_dirs=['numpy']),
 ]
+
 if HAVE_PKG_CONFIG:
     try:
         ext_modules.append(
@@ -190,8 +195,8 @@ if HAVE_PKG_CONFIG:
         )
     except Exception:
         pass
+
 if HAVE_CYTHON:
-    cmdclass.update({'build_ext': build_ext})
     ext_modules = cythonize(ext_modules)
 
 setup(
@@ -204,6 +209,7 @@ setup(
     long_description=README + '\n' + CHANGELOG,
     license='BSD',
     url='https://git-cral.univ-lyon1.fr/MUSE/mpdaf',
+    setup_requires=['numpy'],
     install_requires=['numpy', 'scipy', 'matplotlib', 'astropy>=1.0', 'six'],
     extras_require={
         'all': ['numexpr', 'fitsio', 'adjustText'],
@@ -214,7 +220,7 @@ setup(
     zip_safe=False,
     include_package_data=True,
     platforms='any',
-    cmdclass=cmdclass,
+    cmdclass={'test': PyTest, 'build_ext': build_ext},
     entry_points={
         'console_scripts': [
             'make_white_image = mpdaf.scripts.make_white_image:main',
