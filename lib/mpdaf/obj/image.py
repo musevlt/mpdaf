@@ -4413,8 +4413,6 @@ def moffat_image(shape=(101, 101), wcs=None, factor=1, moffat=None,
         if unit_center is not None:
             center = wcs.sky2pix(center, unit=unit_center)[0]
 
-    data = np.empty(shape=shape, dtype=float)
-
     # rotation angle in rad
     theta = np.pi * rot / 180.0
 
