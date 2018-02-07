@@ -37,7 +37,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import absolute_import, division, print_function
 
-import logging
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy import ma
@@ -55,178 +54,10 @@ from six.moves import range, zip
 from .arithmetic import ArithmeticMixin
 from .coords import WCS
 from .data import DataArray
+from .fitting import Gauss2D, Moffat2D
 from .objs import is_int, is_number, bounding_box, UnitMaskedArray, UnitArray
 
-__all__ = ('Gauss2D', 'Moffat2D', 'Image', 'gauss_image', 'moffat_image',
-           'SpatialFrequencyLimits')
-
-
-class Gauss2D(object):
-
-    """This class stores 2D gaussian parameters.
-
-    Attributes
-    ----------
-    center : (float,float)
-        Gaussian center (y,x).
-    flux : float
-        Gaussian integrated flux.
-    fwhm : (float,float)
-        Gaussian fwhm (fhwm_y,fwhm_x).
-    cont : float
-        Continuum value.
-    rot : float
-        Rotation in degrees.
-    peak : float
-        Gaussian peak value.
-    err_center : (float,float)
-        Estimated error on Gaussian center.
-    err_flux : float
-        Estimated error on Gaussian integrated flux.
-    err_fwhm : (float,float)
-        Estimated error on Gaussian fwhm.
-    err_cont : float
-        Estimated error on continuum value.
-    err_rot : float
-        Estimated error on rotation.
-    err_peak : float
-        Estimated error on Gaussian peak value.
-    ima : `~mpdaf.obj.Image`
-        Gaussian image
-
-    """
-
-    def __init__(self, center, flux, fwhm, cont, rot, peak, err_center,
-                 err_flux, err_fwhm, err_cont, err_rot, err_peak, ima=None):
-        self._logger = logging.getLogger(__name__)
-        self.center = center
-        self.flux = flux
-        self.fwhm = fwhm
-        self.cont = cont
-        self.rot = rot
-        self.peak = peak
-        self.err_center = err_center
-        self.err_flux = err_flux
-        self.err_fwhm = err_fwhm
-        self.err_cont = err_cont
-        self.err_rot = err_rot
-        self.err_peak = err_peak
-        self.ima = ima
-
-    def copy(self):
-        """Copy Gauss2D object in a new one and returns it."""
-        return Gauss2D(self.center, self.flux, self.fwhm, self.cont,
-                       self.rot, self.peak, self.err_center, self.err_flux,
-                       self.err_fwhm, self.err_cont, self.err_rot,
-                       self.err_peak)
-
-    def print_param(self):
-        """Print Gaussian parameters."""
-        msg = 'Gaussian center = (%g,%g) (error:(%g,%g))' \
-            % (self.center[0], self.center[1],
-               self.err_center[0], self.err_center[1])
-        self._logger.info(msg)
-        msg = 'Gaussian integrated flux = %g (error:%g)' \
-            % (self.flux, self.err_flux)
-        self._logger.info(msg)
-        msg = 'Gaussian peak value = %g (error:%g)' \
-            % (self.peak, self.err_peak)
-        self._logger.info(msg)
-        msg = 'Gaussian fwhm = (%g,%g) (error:(%g,%g))' \
-            % (self.fwhm[0], self.fwhm[1], self.err_fwhm[0], self.err_fwhm[1])
-        self._logger.info(msg)
-        msg = 'Rotation in degree: %g (error:%g)' % (self.rot, self.err_rot)
-        self._logger.info(msg)
-        msg = 'Gaussian continuum = %g (error:%g)' \
-            % (self.cont, self.err_cont)
-        self._logger.info(msg)
-
-
-class Moffat2D(object):
-
-    """This class stores 2D moffat parameters.
-
-    Attributes
-    ----------
-    center : (float,float)
-        peak center (y,x).
-    flux : float
-        integrated flux.
-    fwhm : (float,float)
-        fwhm (fhwm_y,fwhm_x).
-    cont : float
-        Continuum value.
-    n : int
-        Atmospheric scattering coefficient.
-    rot : float
-        Rotation in degrees.
-    peak : float
-        intensity peak value.
-    err_center : (float,float)
-        Estimated error on center.
-    err_flux : float
-        Estimated error on integrated flux.
-    err_fwhm : (float,float)
-        Estimated error on fwhm.
-    err_cont : float
-        Estimated error on continuum value.
-    err_n : float
-        Estimated error on n coefficient.
-    err_rot : float
-        Estimated error on rotation.
-    err_peak : float
-        Estimated error on peak value.
-    ima : `~mpdaf.obj.Image`
-        Moffat image
-
-    """
-
-    def __init__(self, center, flux, fwhm, cont, n, rot, peak, err_center,
-                 err_flux, err_fwhm, err_cont, err_n, err_rot, err_peak,
-                 ima=None):
-        self._logger = logging.getLogger(__name__)
-        self.center = center
-        self.flux = flux
-        self.fwhm = fwhm
-        self.cont = cont
-        self.rot = rot
-        self.peak = peak
-        self.n = n
-        self.err_center = err_center
-        self.err_flux = err_flux
-        self.err_fwhm = err_fwhm
-        self.err_cont = err_cont
-        self.err_rot = err_rot
-        self.err_peak = err_peak
-        self.err_n = err_n
-        self.ima = ima
-
-    def copy(self):
-        """Return a copy of a Moffat2D object."""
-        return Moffat2D(self.center, self.flux, self.fwhm, self.cont,
-                        self.n, self.rot, self.peak, self.err_center,
-                        self.err_flux, self.err_fwhm, self.err_cont,
-                        self.err_n, self.err_rot, self.err_peak)
-
-    def print_param(self):
-        """Print Moffat parameters."""
-        msg = 'center = (%g,%g) (error:(%g,%g))' \
-            % (self.center[0], self.center[1],
-               self.err_center[0], self.err_center[1])
-        self._logger.info(msg)
-        msg = 'integrated flux = %g (error:%g)' % (self.flux, self.err_flux)
-        self._logger.info(msg)
-        msg = 'peak value = %g (error:%g)' % (self.peak, self.err_peak)
-        self._logger.info(msg)
-        msg = 'fwhm = (%g,%g) (error:(%g,%g))' \
-            % (self.fwhm[0], self.fwhm[1], self.err_fwhm[0], self.err_fwhm[1])
-        self._logger.info(msg)
-        msg = 'n = %g (error:%g)' % (self.n, self.err_n)
-        self._logger.info(msg)
-        msg = 'rotation in degree: %g (error:%g)' % (self.rot, self.err_rot)
-        self._logger.info(msg)
-        msg = 'continuum = %g (error:%g)' % (self.cont, self.err_cont)
-        self._logger.info(msg)
+__all__ = ('Image', 'gauss_image', 'moffat_image', 'SpatialFrequencyLimits')
 
 
 class Image(ArithmeticMixin, DataArray):
@@ -4429,8 +4260,6 @@ def moffat_image(shape=(101, 101), wcs=None, factor=1, moffat=None,
     else:
         if unit_center is not None:
             center = wcs.sky2pix(center, unit=unit_center)[0]
-
-    data = np.empty(shape=shape, dtype=float)
 
     # rotation angle in rad
     theta = np.pi * rot / 180.0

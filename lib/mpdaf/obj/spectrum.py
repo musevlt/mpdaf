@@ -35,7 +35,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import absolute_import, division, print_function
 
-import logging
 import matplotlib.pyplot as plt
 import numpy as np
 import types
@@ -50,83 +49,11 @@ from six.moves import range
 from . import ABmag_filters, wavelet1D
 from .arithmetic import ArithmeticMixin
 from .data import DataArray
+from .fitting import Gauss1D
 from .objs import flux2mag
 from ..tools import deprecated
 
-__all__ = ('Gauss1D', 'Spectrum')
-
-
-class Gauss1D(object):
-
-    """This class stores 1D Gaussian parameters.
-
-    Attributes
-    ----------
-    cont : float
-        Continuum value.
-    fwhm : float
-        Gaussian fwhm.
-    lpeak : float
-        Gaussian center.
-    peak : float
-        Gaussian peak value.
-    flux : float
-        Gaussian integrated flux.
-    err_fwhm : float
-        Estimated error on Gaussian fwhm.
-    err_lpeak : float
-        Estimated error on Gaussian center.
-    err_peak : float
-        Estimated error on Gaussian peak value.
-    err_flux : float
-        Estimated error on Gaussian integrated flux.
-    chisq : float
-        minimization process info (Chi-sqr)
-    dof : float
-        minimization process info (number of points - number of parameters)
-
-    """
-
-    def __init__(self, lpeak, peak, flux, fwhm, cont, err_lpeak,
-                 err_peak, err_flux, err_fwhm, chisq, dof):
-        self.cont = cont
-        self.fwhm = fwhm
-        self.lpeak = lpeak
-        self.peak = peak
-        self.flux = flux
-        self.err_fwhm = err_fwhm
-        self.err_lpeak = err_lpeak
-        self.err_peak = err_peak
-        self.err_flux = err_flux
-        self._logger = logging.getLogger(__name__)
-        self.chisq = chisq
-        self.dof = dof
-
-    def copy(self):
-        """Copy Gauss1D object in a new one and returns it."""
-        return Gauss1D(self.lpeak, self.peak, self.flux, self.fwhm,
-                       self.cont, self.err_lpeak, self.err_peak,
-                       self.err_flux, self.err_fwhm, self.chisq, self.dof)
-
-    def print_param(self):
-        """Print Gaussian parameters."""
-
-        msg = 'Gaussian center = %g (error:%g)' % (self.lpeak, self.err_lpeak)
-        self._logger.info(msg)
-
-        msg = 'Gaussian integrated flux = %g (error:%g)' % \
-            (self.flux, self.err_flux)
-        self._logger.info(msg)
-
-        msg = 'Gaussian peak value = %g (error:%g)' % \
-            (self.peak, self.err_peak)
-        self._logger.info(msg)
-
-        msg = 'Gaussian fwhm = %g (error:%g)' % (self.fwhm, self.err_fwhm)
-        self._logger.info(msg)
-
-        msg = 'Gaussian continuum = %g' % self.cont
-        self._logger.info(msg)
+__all__ = ('Spectrum', )
 
 
 class Spectrum(ArithmeticMixin, DataArray):
@@ -1776,10 +1703,10 @@ class Spectrum(ArithmeticMixin, DataArray):
             err_peak_1 = np.NAN
             err_peak_2 = np.NAN
 
-        return Gauss1D(lpeak_1, peak_1, flux_1, fwhm, cont0, err_lpeak_1,
-                       err_peak_1, err_flux_1, err_fwhm, chisq, dof), \
-            Gauss1D(lpeak_2, peak_2, flux_2, fwhm, cont0, err_lpeak_2,
-                    err_peak_2, err_flux_2, err_fwhm, chisq, dof)
+        return (Gauss1D(lpeak_1, peak_1, flux_1, fwhm, cont0, err_lpeak_1,
+                        err_peak_1, err_flux_1, err_fwhm, chisq, dof),
+                Gauss1D(lpeak_2, peak_2, flux_2, fwhm, cont0, err_lpeak_2,
+                        err_peak_2, err_flux_2, err_fwhm, chisq, dof))
 
     def gauss_asymfit(self, lmin, lmax, lpeak=None, flux=None, fwhm=None,
                       cont=None, peak=False, spline=False, weight=True,
@@ -1965,10 +1892,10 @@ class Spectrum(ArithmeticMixin, DataArray):
             err_fwhm_left = np.NAN
             err_peak = np.NAN
 
-        return Gauss1D(lpeak, peak, flux_left, fwhm_left, cont0, err_lpeak,
-                       err_peak, err_flux / 2, err_fwhm_left, chisq, dof), \
-            Gauss1D(lpeak, peak, flux_right, fwhm_right, cont0, err_lpeak,
-                    err_peak, err_flux / 2, err_fwhm_right, chisq, dof)
+        return (Gauss1D(lpeak, peak, flux_left, fwhm_left, cont0, err_lpeak,
+                        err_peak, err_flux / 2, err_fwhm_left, chisq, dof),
+                Gauss1D(lpeak, peak, flux_right, fwhm_right, cont0, err_lpeak,
+                        err_peak, err_flux / 2, err_fwhm_right, chisq, dof))
 
     def add_asym_gaussian(self, lpeak, flux, fwhm_right, fwhm_left, cont=0,
                           peak=False, unit=u.angstrom):
