@@ -117,7 +117,7 @@ class PyTest(TestCommand):
         sys.exit(errno)
 
 
-class build_ext(_build_ext):
+class build_ext(_build_ext, object):
     def run(self):
         # For extensions that require 'numpy' in their include dirs,
         # replace 'numpy' with the actual paths
