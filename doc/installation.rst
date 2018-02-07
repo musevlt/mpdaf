@@ -19,6 +19,7 @@ Several additional packages can be installed for optional features:
 - Pytest_, to run the unit tests.
 - Numexpr_, to optimize some computations with pixtables.
 - fitsio_, a Python wrapper for cfitsio, used in `~mpdaf.obj.CubeMosaic`.
+- adjustText_, for catalogs plotting.
 - `pkg-config`_, helper tool used when compiling C libraries.
 - CFITSIO_, C library for reading and writing FITS files.
 - C OpenMP_ library, to get parallelization.
@@ -34,11 +35,8 @@ MPDAF can be installed with pip::
 
 .. note::
 
-  - Numpy_ must be installed before MPDAF as it is needed by the setup
-    script.
-
-  - You will need a C compiler (e.g. gcc or clang) to be installed for the
-    installation to succeed (see below).
+   You will need a C compiler (e.g. gcc or clang) to be installed for the
+   installation to succeed (see below).
 
 MPDAF can also be installed with extra dependencies (Numexpr, fitsio) with::
 
@@ -47,12 +45,12 @@ MPDAF can also be installed with extra dependencies (Numexpr, fitsio) with::
 Installing with conda
 =====================
 
-MPDAF can be installed with the OpenAstronomy_ channel for conda_::
+An old version of MPDAF can be installed with the OpenAstronomy_ channel for
+conda_, but this package is not maintained currently. It has to be moved to
+conda-forge, which has not been done yet.
 
-    conda install -c openastronomy mpdaf
-
-This will install a compiled version of MPDAF, with CFITSIO_ and the other
-dependencies.
+.. This will install a compiled version of MPDAF, with CFITSIO_ and the other
+.. dependencies.
 
 Building from source
 ====================
@@ -121,3 +119,4 @@ To run the unit tests, you need to install the Pytest_ package, then run::
 .. _SExtractor: http://www.astromatic.net/software/sextractor
 .. _OpenAstronomy: https://anaconda.org/openastronomy
 .. _conda: http://conda.pydata.org/docs/
+.. _adjustText: https://github.com/Phlya/adjustText
