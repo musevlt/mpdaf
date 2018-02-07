@@ -558,7 +558,7 @@ class Catalog(Table):
 
     def nearest(self, coord, colcoord=('RA', 'DEC'), ksel=1, maxdist=None,
                 **kwargs):
-        """ return the nearest sources with respect to the given coordinate
+        """Return the nearest sources with respect to the given coordinate.
 
         Parameters
         ----------

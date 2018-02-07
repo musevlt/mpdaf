@@ -1,19 +1,51 @@
-2.5 or 3.0 (dev)
-----------------
+2.5.dev (xx/xx/xxxx)
+--------------------
 
-- Allow to pass additional Ellipse arguments to ``Catalog.plot_symb``.
-
-- Allow to load fieldmap from a dedicated file (in ``Source.add_FSF``).
-
-- Remove the index that was added by default on the 'ID' column (in
-  ``Catalog``).
+- Numpy is now installed with ``setup_requires``, which means that it is no
+  more required to run the setup, and it can be installed directly as
+  a dependency.
 
 - Allow to pickle MPDAF objects (``Cube``, ``Image``, ``Spectrum``,
-  ``Source``). This makes it much easier to use with ``multiprocessing``.
+  ``Source``). This makes it much easier to use these MPDAF objects with
+  ``multiprocessing`` as they can now be passed transparently to the
+  subprocesses.
 
 - Allow to specify the wavelength range in ``Cube.subcube_circle_aperture``.
 
-- Add option to plot images with ``wcsaxes``.
+- Speedup ``create_psf_cube``, ``moffat_image`` and ``gauss_image``.
+
+- Add option to plot images with world coordinates axes, using
+  ``astropy.visualization.wcsaxes``. This can be used with
+  ``Image.plot(..., use_wcs=True)``
+
+Sources
+~~~~~~~
+
+- Better completions for Source attributes, and for keys in IPython.
+
+- Allow to load a "fieldmap" from a dedicated file (in ``Source.add_FSF``).
+
+- New method to get FSF keywords from a Source (``Source.get_FSF``).
+
+Catalog
+~~~~~~~
+
+- Remove the index that was added by default on the 'ID' column.
+
+- Allow to pass additional Ellipse arguments to ``Catalog.plot_symb``.
+
+- Allow to export coordinates from their columns to
+  a ``astropy.coordinates.SkyCoord`` object (``Catalog.to_skycoord``) and to
+  ds9 region file (``Catalog.to_ds9_regions``).
+
+- New methods ``Catalog.nearest``, to get the nearest sources with respect to
+  a given coordinate, and ``Catalog.match3Dline``, to match elements of the
+  current catalog with an other using spatial (RA, DEC) and a list of spectral
+  lines location.
+
+- ``Catalog.plot_id`` is deprecated, in favor of ``Catalog.plot_symb`` with
+  ``label=True``.
+
 
 2.4 (24/11/2017)
 ----------------
