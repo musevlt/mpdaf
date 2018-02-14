@@ -467,6 +467,39 @@ class Catalog(Table):
 
         return t
 
+    def write(self, *args, **kwargs):
+        """Write this Table object out in the specified format.
+
+        This function provides the Table interface to the astropy unified I/O
+        layer.  This allows easily writing a file in many supported data
+        formats using syntax such as::
+
+          >>> from astropy.table import Table
+          >>> dat = Table([[1, 2], [3, 4]], names=('a', 'b'))
+          >>> dat.write('table.dat', format='ascii')
+
+        The arguments and keywords (other than ``format``) provided to this
+        function are passed through to the underlying data reader (e.g.
+        `~astropy.io.ascii.write`).
+
+        """
+        # Try to detect if the file is saved as FITS. In this case, Astropy
+        # 3.0 serialize .format and .description in yaml comments, which causes
+        # the table to not be readable by Catalog.read (inside Astropy it is
+        # then read as QTable which is not parent class from Catalog).
+        # So for now we just remove .format and .description in this case.
+        # https://github.com/astropy/astropy/issues/7181
+        if (kwargs.get('format') == 'fits' or (
+                isinstance(args[0], six.string_types) and
+                args[0].endswith('.fits'))):
+            t = self.copy()
+            for col in t.itercols():
+                col.format = None
+                col.description = None
+            super(Catalog, t).write(*args, **kwargs)
+        else:
+            super(Catalog, self).write(*args, **kwargs)
+
     def masked_invalid(self):
         """Mask where invalid values occur (NaNs or infs or -9999 or '')."""
         for col in self.colnames:
