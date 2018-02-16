@@ -174,18 +174,19 @@ def test_truncate(image):
     assert_image_equal(image, shape=(2, 3), start=(0, 1), end=(1, 3))
 
 
+@pytest.mark.parametrize('rot', (60, ))
 @pytest.mark.parametrize('fwhm', (None, (3., 3.)))
 @pytest.mark.parametrize('flux', (None, 10))
-@pytest.mark.parametrize('factor', (1, 5))
+@pytest.mark.parametrize('factor', (5, 5))
 @pytest.mark.parametrize('weight', (True, False))
 @pytest.mark.parametrize('fit_back,cont', ((True, 0), (False, 2.0)))
 @pytest.mark.parametrize('center,pos_min,pos_max',
                          ((None, None, None),
                           ((18., 15.), (2., 2), (38, 28))))
-def test_gauss(fwhm, flux, factor, weight, fit_back, cont, center,
+def test_gauss(rot, fwhm, flux, factor, weight, fit_back, cont, center,
                pos_min, pos_max):
     """Image class: testing Gaussian fit"""
-    params = dict(fwhm=(2, 1), rot=60, cont=2.0, flux=5.)
+    params = dict(fwhm=(2, 1), rot=rot, cont=2.0, flux=5.)
     wcs = WCS(cdelt=(0.2, 0.3), crval=(8.5, 12), shape=(40, 30))
     ima = gauss_image(wcs=wcs, factor=factor, unit_center=u.pix,
                       unit_fwhm=u.pix, **params)
@@ -198,12 +199,7 @@ def test_gauss(fwhm, flux, factor, weight, fit_back, cont, center,
                           full_output=True, maxiter=200, plot=False)
 
     assert isinstance(gauss.ima, Image)
-    if factor == 1:
-        assert_array_almost_equal(gauss.center, (19.5, 14.5))
-    else:
-        # FIXME: This must be fixed, when factor>1 center is wrong (comes
-        # from gauss_image)
-        assert_array_almost_equal(gauss.center, (19.1, 14.1))
+    assert_array_almost_equal(gauss.center, (19.5, 14.5))
 
     decimal = 6 if factor == 1 else 1
     for param, value in params.items():

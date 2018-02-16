@@ -43,7 +43,9 @@ from numpy import ma
 
 import astropy.units as u
 from astropy.io import fits
-from astropy.modeling import models, fitting
+from astropy.convolution import discretize_model
+from astropy.modeling.fitting import LevMarLSQFitter, _fitter_to_model_params
+from astropy.modeling.models import Gaussian2D, Const2D
 from astropy.stats import gaussian_sigma_to_fwhm, gaussian_fwhm_to_sigma
 from matplotlib.path import Path
 from scipy import interpolate, signal
@@ -1789,13 +1791,13 @@ class Image(ArithmeticMixin, DataArray):
 
         width = fwhm * gaussian_fwhm_to_sigma
 
-        # rotation angle in rad
-        rot = np.pi * rot / 180.0
+        # rotation angle in rad, and take the opposite as Astropy use
+        # counterclockwise angle
+        rot = - np.deg2rad(rot)
 
-        model = (models.Gaussian2D(amplitude=flux, x_mean=center[0],
-                                   y_mean=center[1], x_stddev=width[0],
-                                   y_stddev=width[1], theta=rot) +
-                 models.Const2D(cont))
+        model = (Gaussian2D(amplitude=flux, x_mean=center[0], y_mean=center[1],
+                            x_stddev=width[0], y_stddev=width[1], theta=rot) +
+                 Const2D(cont))
 
         if circular:
             # tie x_stddev and y_stddev
@@ -1806,17 +1808,21 @@ class Image(ArithmeticMixin, DataArray):
             # fix background
             model[1].amplitude.fixed = True
 
-        fitter = fitting.LevMarLSQFitter()
+        fitter = LevMarLSQFitter()
         res = fitter(model, q, p, data, weights=wght, maxiter=maxiter)
 
         if plot:
-            pp = np.arange(pmin, pmax, float(pmax - pmin) / 100)
-            qq = np.arange(qmin, qmax, float(qmax - qmin) / 100)
-            pp, qq = np.meshgrid(pp, qq, indexing='ij')
-            if not hasattr(self, '_ax'):
-                plt.figure()
-                self.plot()
-            self._ax.contour(qq, pp, res(qq, pp), 5)
+            pp, qq = np.mgrid[pmin:pmax, qmin:qmax]
+            orig = self.data[pmin:pmax, qmin:qmax]
+            rec = res(qq, pp)
+
+            fig, axes = plt.subplots(1, 3, figsize=(9, 3), tight_layout=True,
+                                     sharex=True, sharey=True)
+            titles = ('original', 'reconstructed', 'residual')
+            for ax, arr, title in zip(axes, (orig, rec, orig - rec), titles):
+                cax = ax.imshow(arr, origin='lower')
+                plt.colorbar(cax, ax=ax)
+                ax.set_title(title)
             plt.show()
 
         if np.abs(res[0].y_stddev.value) > np.abs(res[0].x_stddev.value):
@@ -1832,10 +1838,10 @@ class Image(ArithmeticMixin, DataArray):
         flux = peak * 2 * np.pi * p_width * q_width
 
         if fitter.fit_info['param_cov'] is not None:
+            # Create a model which contains errors for each param
             err_params = np.sqrt(np.diag(fitter.fit_info['param_cov']))
             err = model.copy()
-            # err.parameters = err_params
-            fitting._fitter_to_model_params(err, err_params)
+            _fitter_to_model_params(err, err_params)
 
             err_rot = np.rad2deg(err[0].theta.value)
             err_flux = err[0].amplitude.value
@@ -3944,9 +3950,8 @@ def gauss_image(shape=(101, 101), wcs=None, factor=1, gauss=None,
     wcs = wcs or WCS()
     if wcs.naxis1 == 1. and wcs.naxis2 == 1.:
         wcs.naxis2, wcs.naxis1 = shape
-    else:
-        if wcs.naxis1 != 0. or wcs.naxis2 != 0.:
-            shape[:] = [wcs.naxis2, wcs.naxis1]
+    elif wcs.naxis1 != 0. or wcs.naxis2 != 0.:
+        shape[:] = [wcs.naxis2, wcs.naxis1]
 
     if gauss is not None:
         center = gauss.center
@@ -3958,66 +3963,28 @@ def gauss_image(shape=(101, 101), wcs=None, factor=1, gauss=None,
 
     if center is None:
         center = (np.array(shape) - 1) / 2.0
-    else:
-        if unit_center is not None:
-            center = wcs.sky2pix(center, unit=unit_center)[0]
+    elif unit_center is not None:
+        center = wcs.sky2pix(center, unit=unit_center)[0]
 
     if unit_fwhm is not None:
         fwhm = np.array(fwhm) / wcs.get_step(unit=unit_fwhm)
-
-    # data = np.empty(shape=shape, dtype=float)
 
     if fwhm[1] == 0 or fwhm[0] == 0:
         raise ValueError('fwhm equal to 0')
     p_width = fwhm[0] * gaussian_fwhm_to_sigma
     q_width = fwhm[1] * gaussian_fwhm_to_sigma
 
-    # rotation angle in rad
-    theta = np.pi * rot / 180.0
+    # rotation angle in rad, and take the opposite as Astropy use
+    # counterclockwise angle
+    theta = - np.deg2rad(rot)
 
-    if peak is True:
-        norm = flux * 2 * np.pi * p_width * q_width
-    else:
-        norm = flux
-
-    def gauss(p, q):
-        cost = np.cos(theta)
-        sint = np.sin(theta)
-        xdiff = p - center[0]
-        ydiff = q - center[1]
-        return (
-            norm / (2 * np.pi * p_width * q_width) *
-            np.exp(-(xdiff * cost - ydiff * sint) ** 2 / (2 * p_width ** 2)) *
-            np.exp(-(xdiff * sint + ydiff * cost) ** 2 / (2 * q_width ** 2))
-        )
+    amplitude = flux if peak else flux / (2 * np.pi * p_width * q_width)
+    gauss = Gaussian2D(amplitude=amplitude, x_mean=center[0], y_mean=center[1],
+                       x_stddev=p_width, y_stddev=q_width, theta=theta)
 
     if factor > 1:
-        if rot == 0:
-            from scipy import special
-
-            X, Y = np.meshgrid(range(shape[0]), range(shape[1]))
-            pixcrd_min = np.array(list(zip(X.ravel(), Y.ravel()))) - 0.5
-            # pixsky_min = wcs.pix2sky(pixcrd)
-            xmin = (pixcrd_min[:, 1] - center[1]) / np.sqrt(2.0) / q_width
-            ymin = (pixcrd_min[:, 0] - center[0]) / np.sqrt(2.0) / p_width
-
-            pixcrd_max = np.array(list(zip(X.ravel(), Y.ravel()))) + 0.5
-            # pixsky_max = wcs.pix2sky(pixcrd)
-            xmax = (pixcrd_max[:, 1] - center[1]) / np.sqrt(2.0) / q_width
-            ymax = (pixcrd_max[:, 0] - center[0]) / np.sqrt(2.0) / p_width
-
-            dx = pixcrd_max[:, 1] - pixcrd_min[:, 1]
-            dy = pixcrd_max[:, 0] - pixcrd_min[:, 0]
-            data = norm * 0.25 / dx / dy \
-                * (special.erf(xmax) - special.erf(xmin)) \
-                * (special.erf(ymax) - special.erf(ymin))
-            data = np.reshape(data, (shape[1], shape[0])).T
-        else:
-            yy, xx = np.mgrid[:shape[0] * factor, :shape[1] * factor] / factor
-            data = gauss(yy, xx)
-            data = (data.reshape(shape[0], factor, shape[1], factor)
-                    .sum(axis=(1, 3)))
-            data /= factor ** 2
+        data = discretize_model(gauss, (0, shape[0]), (0, shape[1]),
+                                mode='oversample', factor=factor).T
     else:
         yy, xx = np.mgrid[:shape[0], :shape[1]]
         data = gauss(yy, xx)
