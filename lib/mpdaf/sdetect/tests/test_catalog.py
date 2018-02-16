@@ -41,6 +41,8 @@ from astropy.coordinates import SkyCoord
 from mpdaf.sdetect import Catalog
 from numpy.testing import assert_array_equal, assert_almost_equal
 
+from ...tests.utils import get_data_file
+
 
 def test_catalog():
     cat = Catalog(rows=[[1, 50., 10., 2., -9999],
@@ -144,3 +146,26 @@ def test_nearest():
     res = c1.nearest(pos.to_string('hmsdms').split(' '),
                      ksel=10, maxdist=6000)
     assert len(res) == 3
+
+
+@pytest.mark.xfail(six.PY2, reason="issue with astropy coordinates and numpy")
+def test_select(minicube):
+    cat = Catalog.read(get_data_file('sdetect', 'cat.txt'), format='ascii')
+    im = minicube.mean(axis=0)
+
+    # Note im.shape is (40, 40) and cat has 8 rows all inside the image
+    assert len(cat) == 8
+
+    # all sources are in the image
+    assert len(cat.select(im.wcs, margin=0)) == 8
+
+    # using a margin removing sources on the edges
+    assert len(cat.select(im.wcs, margin=5)) == 4
+
+    # Create a mask with the bottom and left edges masked
+    mask = np.ones(im.shape, dtype=bool)
+    mask[5:, 5:] = False
+
+    # using a margin removing sources on the edges
+    assert len(cat.select(im.wcs, mask=mask)) == 4
+    assert len(cat.select(im.wcs, margin=1, mask=mask)) == 4

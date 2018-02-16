@@ -756,7 +756,7 @@ class Catalog(Table):
                               len(match[match['NLMATCH'] > 0]))
             return match
 
-    def select(self, wcs, ra='RA', dec='DEC', margin=0):
+    def select(self, wcs, ra='RA', dec='DEC', margin=0, mask=None):
         """Select all sources from catalog which are inside the given WCS
         and return a new catalog.
 
@@ -770,6 +770,8 @@ class Catalog(Table):
             Name of the column that contains DEC values in degrees.
         margin : int
             Margin from the edges (pixels).
+        mask : array-like
+            Mask used to filter sources (1 to mask).
 
         Returns
         -------
@@ -781,6 +783,10 @@ class Catalog(Table):
         cen = wcs.sky2pix(arr, unit=u.deg).T
         sel = ((cen[0] > margin) & (cen[0] < wcs.naxis2 - margin) &
                (cen[1] > margin) & (cen[1] < wcs.naxis1 - margin))
+        if mask is not None:
+            # select sources that are not masked
+            sel[sel] = ~mask[(cen[0, sel] + 0.5).astype(int),
+                             (cen[1, sel] + 0.5).astype(int)]
         return self[sel]
 
     def edgedist(self, wcs, ra='RA', dec='DEC'):
