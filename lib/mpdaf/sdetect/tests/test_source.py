@@ -38,6 +38,7 @@ import numpy as np
 import os
 import pickle
 import pytest
+import subprocess
 import warnings
 
 from astropy.io import fits
@@ -48,6 +49,16 @@ from mpdaf.tools import ASTROPY_LT_1_1, MpdafWarning
 from numpy.testing import assert_array_equal, assert_almost_equal
 
 from ...tests.utils import get_data_file
+
+try:
+    subprocess.check_call(['sex', '-v'])
+    HAS_SEX = True
+except OSError:
+    try:
+        subprocess.check_call(['sextractor', '-v'])
+        HAS_SEX = True
+    except OSError:
+        HAS_SEX = False
 
 
 def test_init():
@@ -334,6 +345,7 @@ def test_add_image(source2, a478hst, a370II):
     assert source2.add_image(a370II, 'ERROR') is None
 
 
+@pytest.mark.skipif(not HAS_SEX, reason="requires sextractor")
 def test_add_narrow_band_image(minicube, tmpdir):
     """Source class: testing methods on narrow bands images"""
     src = Source.from_data(ID=1, ra=63.35592651367188, dec=10.46536922454834,
@@ -391,6 +403,7 @@ def test_sort_lines(source1):
     assert source1.lines['LINE'][0] == '[OIII]2'
 
 
+@pytest.mark.skipif(not HAS_SEX, reason="requires sextractor")
 def test_SEA(minicube, a478hst):
     """test SEA"""
     cat = Table.read(get_data_file('sdetect', 'cat.txt'), format='ascii')

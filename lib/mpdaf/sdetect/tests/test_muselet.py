@@ -35,9 +35,22 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import pytest
+import subprocess
 from mpdaf.sdetect import muselet, Catalog
 
 
+try:
+    subprocess.check_call(['sex', '-v'])
+    HAS_SEX = True
+except OSError:
+    try:
+        subprocess.check_call(['sextractor', '-v'])
+        HAS_SEX = True
+    except OSError:
+        HAS_SEX = False
+
+
+@pytest.mark.skipif(not HAS_SEX, reason="requires sextractor")
 def test_muselet_fast(tmpdir, minicube):
     """test MUSELET"""
     outdir = str(tmpdir)
