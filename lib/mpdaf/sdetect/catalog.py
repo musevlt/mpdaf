@@ -476,7 +476,7 @@ class Catalog(Table):
 
           >>> from astropy.table import Table
           >>> dat = Table([[1, 2], [3, 4]], names=('a', 'b'))
-          >>> dat.write('table.dat', format='ascii')
+          >>> dat.write('table.dat', format='ascii')  # doctest: +SKIP
 
         The arguments and keywords (other than ``format``) provided to this
         function are passed through to the underlying data reader (e.g.
