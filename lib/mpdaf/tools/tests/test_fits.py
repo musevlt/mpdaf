@@ -33,19 +33,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import absolute_import
 
+import re
 from astropy.io import fits
 from mpdaf.tools.fits import (add_mpdaf_method_keywords,
                               add_mpdaf_keywords_to_file)
 from mpdaf.version import __version__
 
 REFHDR = """\
-HIERARCH MPDAF METH1 VERSION = '{0}' / MPDAF version
+HIERARCH MPDAF METH1 VERSION = '{0}\\s*' / MPDAF version
 HIERARCH MPDAF METH1 ID = 'func1   ' / MPDAF method identifier
 HIERARCH MPDAF METH1 PARAM1 NAME = 'a       ' / test
 HIERARCH MPDAF METH1 PARAM1 VALUE = 1
 HIERARCH MPDAF METH1 PARAM2 NAME = 'b       ' / test2
 HIERARCH MPDAF METH1 PARAM2 VALUE = 'hello   '
-HIERARCH MPDAF METH2 VERSION = '{0}' / MPDAF version
+HIERARCH MPDAF METH2 VERSION = '{0}\\s*' / MPDAF version
 HIERARCH MPDAF METH2 ID = 'func2   ' / MPDAF method identifier
 HIERARCH MPDAF METH2 PARAM1 NAME = 'c       ' / the comment
 HIERARCH MPDAF METH2 PARAM1 VALUE = 'with a very long parameter that i'
@@ -62,7 +63,9 @@ def test_add_mpdaf_method_keywords():
                               ['the comment'])
 
     hdrtxt = hdr.tostring(sep='\n', padding=False)
-    assert [l.strip() for l in hdrtxt.splitlines()] == REFHDR.splitlines()
+    hdrlines = hdrtxt.splitlines()
+    for ref, line in zip(REFHDR.splitlines(), [l.strip() for l in hdrlines]):
+        assert re.match(ref, line) is not None
 
 
 def test_add_mpdaf_keywords_to_file(tmpdir):
@@ -76,4 +79,6 @@ def test_add_mpdaf_keywords_to_file(tmpdir):
 
     hdr = fits.getheader(testf)
     hdrtxt = hdr[4:].tostring(sep='\n', padding=False)
-    assert [l.strip() for l in hdrtxt.splitlines()] == REFHDR.splitlines()
+    hdrlines = hdrtxt.splitlines()
+    for ref, line in zip(REFHDR.splitlines(), [l.strip() for l in hdrlines]):
+        assert re.match(ref, line) is not None

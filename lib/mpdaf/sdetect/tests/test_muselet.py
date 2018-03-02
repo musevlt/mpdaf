@@ -77,6 +77,7 @@ def test_muselet_fast(tmpdir, minicube):
 
 
 @pytest.mark.slow
+@pytest.mark.skipif(not HAS_SEX, reason="requires sextractor")
 def test_muselet_full(tmpdir, minicube):
     """test MUSELET"""
     outdir = str(tmpdir)
