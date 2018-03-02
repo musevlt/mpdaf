@@ -9,8 +9,8 @@ coverage-clean:
 py27:
   script: tox -v -e py27
 
-py34:
-  script: tox -v -e py34
+py35:
+  script: tox -v -e py35
 
 astropy13:
   script: tox -v -e astropy13
