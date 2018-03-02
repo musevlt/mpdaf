@@ -103,6 +103,10 @@ To run the unit tests, you need to install the Pytest_ package, then run::
 
     $ python setup.py test
 
+To run the unit tests on an installed version of MPDAF::
+
+    $ pytest $(dirname $(python -c 'import mpdaf; print(mpdaf.__file__)'))
+
 
 .. _Python: http://python.org/
 .. _Numpy: http://www.numpy.org/
