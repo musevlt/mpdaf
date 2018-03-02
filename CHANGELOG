@@ -1,5 +1,5 @@
-2.5.dev (xx/xx/xxxx)
---------------------
+2.5 (02/03/2018)
+----------------
 
 - Numpy is now installed with ``setup_requires``, which means that it is no
   more required to run the setup, and it can be installed directly as
@@ -30,7 +30,9 @@ Sources
 Catalog
 ~~~~~~~
 
-- Remove the index that was added by default on the 'ID' column.
+- Remove the index that was added by default on the 'ID' column, as it was
+  causing errors with some operations due to bugs in the Astropy
+  implementations. Indexes can still be added manually if needed.
 
 - Allow to pass additional Ellipse arguments to ``Catalog.plot_symb``.
 
@@ -46,6 +48,11 @@ Catalog
 - ``Catalog.plot_id`` is deprecated, in favor of ``Catalog.plot_symb`` with
   ``label=True``.
 
+- Allow to use a mask in ``Catalog.select``.
+
+- Add workaround for reading FITS table written with ``Catalog``, with Astropy
+  3.0 (because of a bug introduced with their new serialization feature, which
+  does not work with subclasses).
 
 2.4 (24/11/2017)
 ----------------
