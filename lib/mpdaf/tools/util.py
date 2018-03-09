@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 from __future__ import absolute_import, print_function
 
+from collections import MutableMapping, OrderedDict
 import functools
 import inspect
 import logging
@@ -47,7 +48,7 @@ from time import time
 from .numpycompat import broadcast_to
 
 __all__ = ('MpdafWarning', 'MpdafUnitsWarning', 'deprecated', 'chdir',
-           'timeit', 'timer', 'broadcast_to_cube')
+           'timeit', 'timer', 'broadcast_to_cube', 'LowercaseOrderedDict')
 
 
 # NOTE(kgriffs): We don't want our deprecations to be ignored by default,
@@ -136,3 +137,40 @@ def broadcast_to_cube(arr, shape):
         arr = arr[:, np.newaxis, np.newaxis]
 
     return broadcast_to(arr, shape)
+
+
+class LowercaseOrderedDict(MutableMapping):
+    """Ordered dictonary where all strings keys are case insensitive.
+    i.e. keys such as 'abc', 'ABC', 'Abc' all map to the same value.
+    This can be useful for mimicing the storage of FITS headers.
+    """
+    def __init__(self, *args):
+        self._d = OrderedDict()
+        self.update(*args)
+
+    @staticmethod
+    def _convert(key):
+        if isinstance(key, basestring):
+            key = key.lower()
+        else:
+            return key
+
+    def __getitem__(self, key):
+        return self._d[self._convert(key)]
+
+    def __setitem__(self, key, value):
+        self._d[self._convert(key)] = value
+
+    def __delitem__(self, key):
+        del self._d[self._convert(key)]
+
+    def __iter__(self):
+        return iter(self._d)
+
+    def __len__(self):
+        return len(self._d)
+
+    def __repr__(self):
+        return 'LowercaseOrderedDict({})'.format([i for i in self._d.items()])
+
+

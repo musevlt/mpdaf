@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import absolute_import, division
 
-from collections import MutableMapping, OrderedDict
 import glob
 import logging
 import numpy as np
@@ -63,38 +62,6 @@ MANDATORY_TYPES = [int, np.float64, np.float64, str, str, str, str]
 # List of exluded keywords
 EXCLUDED_CARDS = {'SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE', 'AUTHOR'}
 
-class UppercaseOrderedDict(MutableMapping):
-    def __init__(self, *args):
-        self._d = OrderedDict()
-        self.update(*args)
-
-    def __getitem__(self, key):
-        try:
-            return self._d[key.upper()]
-        except AttributeError:
-            return self._d[key]
-
-    def __setitem__(self, key, value):
-        try:
-            self._d[key.upper()] = value
-        except AttributeError:
-            self._d[key] = value
-
-    def __delitem__(self, key):
-        try:
-            del self._d[key.upper()]
-        except AttributeError:
-            del self._d[key]
-
-    def __iter__(self):
-        return iter(self._d)
-
-    def __len__(self):
-        return len(self._d)
-
-    def __repr__(self):
-        return 'UppercaseOrderedDict({})'.format([i for i in self._d.items()])
-
 
 class Catalog(Table):
 
@@ -109,7 +76,7 @@ class Catalog(Table):
             self.masked_invalid()
 
         #replace Table.meta OrderedDict with an uppercase only verions
-        self.meta = UppercaseOrderedDict(self.meta)
+        self.meta = LowercaseOrderedDict(self.meta)
 
     @classmethod
     def from_sources(cls, sources, fmt='default'):
