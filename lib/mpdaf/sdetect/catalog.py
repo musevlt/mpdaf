@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import absolute_import, division
 
+from collections import MutableMapping, OrderedDict
 import glob
 import logging
 import numpy as np
@@ -62,6 +63,38 @@ MANDATORY_TYPES = [int, np.float64, np.float64, str, str, str, str]
 # List of exluded keywords
 EXCLUDED_CARDS = {'SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE', 'AUTHOR'}
 
+class UppercaseOrderedDict(MutableMapping):
+    def __init__(self, *args):
+        self._d = OrderedDict()
+        self.update(*args)
+
+    def __getitem__(self, key):
+        try:
+            return self._d[key.upper()]
+        except AttributeError:
+            return self._d[key]
+
+    def __setitem__(self, key, value):
+        try:
+            self._d[key.upper()] = value
+        except AttributeError:
+            self._d[key] = value
+
+    def __delitem__(self, key):
+        try:
+            del self._d[key.upper()]
+        except AttributeError:
+            del self._d[key]
+
+    def __iter__(self):
+        return iter(self._d)
+
+    def __len__(self):
+        return len(self._d)
+
+    def __repr__(self):
+        return 'UppercaseOrderedDict({})'.format([i for i in self._d.items()])
+
 
 class Catalog(Table):
 
@@ -74,6 +107,9 @@ class Catalog(Table):
         self._logger = logging.getLogger(__name__)
         if self.masked:
             self.masked_invalid()
+
+        #replace Table.meta OrderedDict with an uppercase only verions
+        self.meta = UppercaseOrderedDict(self.meta)
 
     @classmethod
     def from_sources(cls, sources, fmt='default'):
@@ -476,7 +512,7 @@ class Catalog(Table):
 
           >>> from astropy.table import Table
           >>> dat = Table([[1, 2], [3, 4]], names=('a', 'b'))
-          >>> dat.write('table.dat', format='ascii')  # doctest: +SKIP
+          >>> dat.write('table.dat', format='ascii')
 
         The arguments and keywords (other than ``format``) provided to this
         function are passed through to the underlying data reader (e.g.
@@ -509,7 +545,7 @@ class Catalog(Table):
             except Exception:
                 pass
 
-    def match(self, cat2, radius=1, colc1=('RA', 'DEC'), colc2=('RA', 'DEC'),
+    def match(self, cat2, radius=1, colc1=(None, None), colc2=(None, None),
               full_output=True, **kwargs):
         """Match elements of the current catalog with an other (in RA, DEC).
 
@@ -544,8 +580,13 @@ class Catalog(Table):
             If ``full_output`` is False, only ``match`` is returned.
 
         """
-        coord1 = self.to_skycoord(ra=colc1[0], dec=colc1[1])
-        coord2 = cat2.to_skycoord(ra=colc2[0], dec=colc2[1])
+        col1_ra = colc1[0] or self.meta.setdefault('RANAME', 'RA')
+        col1_dec = colc1[1] or self.meta.setdefault('DECNAME', 'DEC')
+        col2_ra = colc2[0] or cat2.meta.setdefault('RANAME', 'RA')
+        col2_dec = colc2[1] or cat2.meta.setdefault('DECNAME', 'DEC')
+
+        coord1 = self.to_skycoord(ra=col1_ra, dec=col1_dec)
+        coord2 = cat2.to_skycoord(ra=col2_ra, dec=col2_dec)
         id2, d2d, d3d = coord1.match_to_catalog_sky(coord2, **kwargs)
         id1 = np.arange(len(self))
         kmatch = d2d < radius * u.arcsec
@@ -589,7 +630,7 @@ class Catalog(Table):
                                len(self), len(cat2), len(match1))
             return match
 
-    def nearest(self, coord, colcoord=('RA', 'DEC'), ksel=1, maxdist=None,
+    def nearest(self, coord, colcoord=(None, None), ksel=1, maxdist=None,
                 **kwargs):
         """Return the nearest sources with respect to the given coordinate.
 
@@ -626,8 +667,9 @@ class Catalog(Table):
         if coord.shape == ():
             coord = coord.reshape(1)
 
-        colra, coldec = colcoord
-        src_coords = self.to_skycoord(ra=colra, dec=coldec)
+        col_ra = colcoord[0] or self.meta.setdefault('RANAME', 'RA')
+        col_dec = colcoord[1] or self.meta.setdefault('DECNAME', 'DEC')
+        src_coords = self.to_skycoord(ra=col_ra, dec=col_dec)
         idx, d2d, d3d = src_coords.match_to_catalog_sky(coord, **kwargs)
         dist = d2d.arcsec
         ksort = dist.argsort()
@@ -649,7 +691,7 @@ class Catalog(Table):
 
     def match3Dline(self, cat2, linecolc1, linecolc2, spatial_radius=1,
                     spectral_window=5, suffix=('_1', '_2'), full_output=True,
-                    colc1=('RA', 'DEC'), colc2=('RA', 'DEC'), **kwargs):
+                    colc1=(None, None), colc2=(None, None), **kwargs):
         """3D Match elements of the current catalog with an other using
         spatial (RA, DEC) and list of spectral lines location.
 
@@ -689,6 +731,11 @@ class Catalog(Table):
             If ``full_output`` is False, only ``match`` is returned.
 
         """
+        col1_ra = colc1[0] or self.meta.setdefault('RANAME', 'RA')
+        col1_dec = colc1[1] or self.meta.setdefault('DECNAME', 'DEC')
+        col2_ra = colc2[0] or cat2.meta.setdefault('RANAME', 'RA')
+        col2_dec = colc2[1] or cat2.meta.setdefault('DECNAME', 'DEC')
+        
         # rename all catalogs columns with _1 or _2
         self._logger.debug('Rename Catalog columns with %s or %s suffix',
                            suffix[0], suffix[1])
@@ -698,9 +745,9 @@ class Catalog(Table):
             tcat1.rename_column(name, name + suffix[0])
         for name in tcat2.colnames:
             tcat2.rename_column(name, name + suffix[1])
-        colc1 = (colc1[0] + suffix[0], colc1[1] + suffix[0])
+        colc1 = (col1_ra + suffix[0], col1_dec + suffix[0])
         linecolc1 = [col + suffix[0] for col in linecolc1]
-        colc2 = (colc2[0] + suffix[1], colc2[1] + suffix[1])
+        colc2 = (col2_ra + suffix[1], col2_dec + suffix[1])
         linecolc2 = [col + suffix[1] for col in linecolc2]
 
         self._logger.debug('Performing spatial match')
@@ -756,7 +803,7 @@ class Catalog(Table):
                               len(match[match['NLMATCH'] > 0]))
             return match
 
-    def select(self, wcs, ra='RA', dec='DEC', margin=0, mask=None):
+    def select(self, wcs, ra=None, dec=None, margin=0, mask=None):
         """Select all sources from catalog which are inside the given WCS
         and return a new catalog.
 
@@ -779,6 +826,9 @@ class Catalog(Table):
             The catalog with selected rows.
 
         """
+        ra = ra or self.meta.setdefault('RANAME', 'RA')
+        dec = dec or self.meta.setdefault('DECNAME', 'DEC')
+
         arr = np.vstack([self[dec].data, self[ra].data]).T
         cen = wcs.sky2pix(arr, unit=u.deg).T
         sel = ((cen[0] > margin) & (cen[0] < wcs.naxis2 - margin) &
@@ -789,7 +839,7 @@ class Catalog(Table):
                              (cen[1, sel] + 0.5).astype(int)]
         return self[sel]
 
-    def edgedist(self, wcs, ra='RA', dec='DEC'):
+    def edgedist(self, wcs, ra=None, dec=None):
         """Return the smallest distance of all catalog sources center to the
         edge of the WCS of the given image.
 
@@ -808,18 +858,24 @@ class Catalog(Table):
             The distance in arcsec units.
 
         """
+        ra = ra or self.meta.setdefault('RANAME', 'RA')
+        dec = dec or self.meta.setdefault('DECNAME', 'DEC')
+
         dim = np.array([wcs.naxis2, wcs.naxis1])
         pix = wcs.sky2pix(np.array([self[dec], self[ra]]).T, unit=u.deg)
         dist = np.hstack([pix, dim - pix]).min(axis=1)
         return dist * wcs.get_step(unit=u.arcsec)[0]
 
-    def to_skycoord(self, ra='RA', dec='DEC', frame='fk5', unit='deg'):
+    def to_skycoord(self, ra=None, dec=None, frame='fk5', unit='deg'):
         """Return an `astropy.coordinates.SkyCoord` object."""
+        ra = ra or self.meta.setdefault('RANAME', 'RA')
+        dec = dec or self.meta.setdefault('DECNAME', 'DEC')
+
         from astropy.coordinates import SkyCoord
         return SkyCoord(ra=self[ra], dec=self[dec],
                         unit=(unit, unit), frame=frame)
 
-    def to_ds9_regions(self, outfile, ra='RA', dec='DEC', radius=1,
+    def to_ds9_regions(self, outfile, ra=None, dec=None, radius=1,
                        frame='fk5', unit_pos='deg', unit_radius='arcsec'):
         """Return an `astropy.coordinates.SkyCoord` object."""
         try:
@@ -827,13 +883,15 @@ class Catalog(Table):
         except ImportError:
             self._logger.error("the 'regions' package is needed for this")
             raise
+        ra = ra or self.meta.setdefault('RANAME', 'RA')
+        dec = dec or self.meta.setdefault('DECNAME', 'DEC')
         center = self.to_skycoord(ra=ra, dec=dec, frame=frame, unit=unit_pos)
         radius = radius * u.Unit(unit_radius)
         regions = [CircleSkyRegion(center=c, radius=radius) for c in center]
         write_ds9(regions, filename=outfile, coordsys=frame)
 
     def plot_symb(self, ax, wcs, label=False, esize=0.8, lsize=None, etype='o',
-                  ltype=None, ra='RA', dec='DEC', id='ID', ecol='k', lcol=None,
+                  ltype=None, ra=None, dec=None, id=None, ecol='k', lcol=None,
                   alpha=1.0, fill=False, fontsize=8, expand=1.7, **kwargs):
         """This function plots the sources location from the catalog.
 
@@ -874,6 +932,9 @@ class Catalog(Table):
             kwargs can be used to set additional plotting properties.
 
         """
+        ra = ra or self.meta.setdefault('RANAME', 'RA')
+        dec = dec or self.meta.setdefault('DECNAME', 'DEC')
+        id = id or self.meta.setdefault('IDNAME', 'ID')
 
         if (ltype is None) and (etype not in ['o', 's']):
             raise IOError('Unknown symbol %s' % etype)
@@ -930,7 +991,7 @@ class Catalog(Table):
                             expand_points=(expand, expand))
 
     @deprecated('plot_id is deprecated, use plot_symb with label=True instead')
-    def plot_id(self, ax, wcs, iden='ID', ra='RA', dec='DEC', symb=0.2,
+    def plot_id(self, ax, wcs, iden=None, ra=None, dec=None, symb=0.2,
                 alpha=0.5, col='k', ellipse_kwargs=None, **kwargs):
         """This function displays the id of the catalog.
 
@@ -958,6 +1019,10 @@ class Catalog(Table):
             Additional properties for ``ax.text``.
 
         """
+        iden = iden or self.meta.setdefault('IDNAME', 'ID')
+        ra = ra or self.meta.setdefault('RANAME', 'RA')
+        dec = dec or self.meta.setdefault('DECNAME', 'DEC')
+
         if ra not in self.colnames:
             raise IOError('column %s not found in catalog' % ra)
         if dec not in self.colnames:
