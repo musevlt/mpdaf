@@ -1454,7 +1454,8 @@ class Spectrum(ArithmeticMixin, DataArray):
             err_lpeak = err.pop()
         else:
             err_lpeak = 0
-        flux, sigma = v
+
+        flux, sigma = v[0], np.abs(v[1])
         fwhm = sigma * gaussian_sigma_to_fwhm
         peak = flux / np.sqrt(2 * np.pi * (sigma ** 2))
 
