@@ -47,7 +47,7 @@ from astropy import units as u
 from six.moves import range, zip
 from matplotlib.patches import Circle, Rectangle, Ellipse
 
-from ..tools import deprecated
+from ..tools import deprecated, LowercaseOrderedDict
 
 INVALID = {
     type(1): -9999, np.int_: -9999, np.int32: -9999,

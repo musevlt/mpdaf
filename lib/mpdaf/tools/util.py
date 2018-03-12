@@ -30,9 +30,10 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
+from builtins import str
 
-from collections import MutableMapping, OrderedDict
+from collections import OrderedDict, MutableMapping
 import functools
 import inspect
 import logging
@@ -150,8 +151,8 @@ class LowercaseOrderedDict(MutableMapping):
 
     @staticmethod
     def _convert(key):
-        if isinstance(key, basestring):
-            key = key.lower()
+        if isinstance(key, str):
+            return key.lower()
         else:
             return key
 
@@ -171,6 +172,7 @@ class LowercaseOrderedDict(MutableMapping):
         return len(self._d)
 
     def __repr__(self):
-        return 'LowercaseOrderedDict({})'.format([i for i in self._d.items()])
+        return "{}({})".format(self.__class__, [i for i in self._d.items()])
 
-
+    def __str__(self):
+        return "{}({})".format(self.__class__, [i for i in self._d.items()])
