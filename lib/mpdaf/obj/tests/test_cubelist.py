@@ -105,48 +105,68 @@ class TestCubeList(unittest.TestCase):
         assert clist.check_dim() is True
         assert clist.check_wcs() is False
 
-    @pytest.mark.skipif(not HAS_FITSIO, reason="requires fitsio")
     def test_median(self):
         clist = CubeList(self.cubenames)
         combined_cube = np.ones(self.shape)
-
-        for method in (clist.median, clist.pymedian):
-            cube, expmap, stat_pix = method(header={'FOO': 'BAR'})
-            self.assert_header(cube)
-            assert_array_equal(cube.data, combined_cube)
-            assert_array_equal(expmap.data, self.expmap)
+        cube, expmap, stat_pix = clist.median(header={'FOO': 'BAR'})
+        self.assert_header(cube)
+        assert_array_equal(cube.data, combined_cube)
+        assert_array_equal(expmap.data, self.expmap)
 
     @pytest.mark.skipif(not HAS_FITSIO, reason="requires fitsio")
+    def test_pymedian(self):
+        clist = CubeList(self.cubenames)
+        combined_cube = np.ones(self.shape)
+        cube, expmap, stat_pix = clist.pymedian(header={'FOO': 'BAR'})
+        self.assert_header(cube)
+        assert_array_equal(cube.data, combined_cube)
+        assert_array_equal(expmap.data, self.expmap)
+
     def test_combine(self):
         clist = CubeList(self.cubenames)
         combined_cube = np.full(self.shape, 2, dtype=float)
 
-        for method in (clist.combine, clist.pycombine):
-            out = method(header={'FOO': 'BAR'})
-            if method == clist.combine:
-                cube, expmap, stat_pix = out
-            else:
-                cube, expmap, stat_pix, rejmap = out
+        cube, expmap, stat_pix = clist.combine(header={'FOO': 'BAR'})
+        cube2, expmap2, stat_pix2 = clist.combine(header={'FOO': 'BAR'},
+                                                  mad=True)
+        assert_array_equal(cube.data, cube2.data)
+        assert_array_equal(expmap.data, expmap2.data)
 
-            out2 = method(header={'FOO': 'BAR'}, mad=True)
-            assert_array_equal(out[0].data, out2[0].data)
-            assert_array_equal(out[1].data, out2[1].data)
+        self.assert_header(cube)
+        assert_array_equal(cube.data, combined_cube)
+        assert_array_equal(expmap.data, self.expmap)
 
-            self.assert_header(cube)
-            assert_array_equal(cube.data, combined_cube)
-            assert_array_equal(expmap.data, self.expmap)
-
-        for method in (clist.combine, clist.pycombine):
-            cube = method(nclip=(5., 5.), var='stat_mean')[0]
-            assert_array_equal(cube.data, combined_cube)
+        cube = clist.combine(nclip=(5., 5.), var='stat_mean')[0]
+        assert_array_equal(cube.data, combined_cube)
 
     @pytest.mark.skipif(not HAS_FITSIO, reason="requires fitsio")
+    def test_pycombine(self):
+        clist = CubeList(self.cubenames)
+        combined_cube = np.full(self.shape, 2, dtype=float)
+
+        cube, expmap, stat_pix, rejmap = clist.pycombine(header={'FOO': 'BAR'})
+        cube2, expmap2, stat_pix2, rejmap2 = clist.pycombine(
+            header={'FOO': 'BAR'}, mad=True)
+        assert_array_equal(cube.data, cube2.data)
+        assert_array_equal(expmap.data, expmap2.data)
+
+        self.assert_header(cube)
+        assert_array_equal(cube.data, combined_cube)
+        assert_array_equal(expmap.data, self.expmap)
+
+        cube = clist.pycombine(nclip=(5., 5.), var='stat_mean')[0]
+        assert_array_equal(cube.data, combined_cube)
+
     def test_combine_scale(self):
         clist = CubeList(self.cubenames, scalelist=[2.] * self.ncubes)
         combined_cube = np.full(self.shape, 2 * 2, dtype=float)
-
         cube, expmap, stat_pix = clist.combine(header={'FOO': 'BAR'})
         assert_array_equal(cube.data, combined_cube)
+
+    @pytest.mark.skipif(not HAS_FITSIO, reason="requires fitsio")
+    def test_pycombine_scale(self):
+        clist = CubeList(self.cubenames, scalelist=[2.] * self.ncubes)
+        combined_cube = np.full(self.shape, 2 * 2, dtype=float)
 
         cube2, expmap2, _, _ = clist.pycombine(header={'FOO': 'BAR'})
         assert_array_equal(cube2.data, combined_cube)
