@@ -17,6 +17,10 @@
 #define MAX_FILE_LENGTH 500
 #define MAX_FILES_PER_THREAD 300
 
+#ifndef NAN
+    #define NAN (0.0/0.0)
+#endif
+
 /**************************************************************
  *
  * Cubes combination with median, mean, sigma clipping, etc.
