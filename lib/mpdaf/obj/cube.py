@@ -1360,7 +1360,7 @@ class Cube(ArithmeticMixin, DataArray):
 
                 nbelow = nabove = (fband * N) / 2   [rounded up to an integer]
 
-            where fband is an optional argument of this function.
+            where fband is a parameter of this function.
 
             The wavelength ranges of the two groups of background
             images below and above the chosen wavelength range are
@@ -1368,9 +1368,8 @@ class Cube(ArithmeticMixin, DataArray):
             wavelength range by a value, margin, which is an argument
             of this function.
 
-            When is_sum is True, the sum of the background images is
-            multiplied by N/nbg to produce a background image that has
-            the same flux scale as the N images being combined.
+            The background is removed from the wavelength region of interest
+            before averaging or summing it.
 
             This scheme was developed by Jarle Brinchmann
             (jarle@strw.leidenuniv.nl)
@@ -1407,12 +1406,8 @@ class Cube(ArithmeticMixin, DataArray):
         l1 = self.wave.coord(k1 - 0.5)
         l2 = self.wave.coord(k1 + 0.5)
 
-        # Obtain the sum of the images within the specified range
-        # of wavelength pixels.
-        if is_sum:
-            ima = self[k1:k2 + 1, :, :].sum(axis=0)
-        else:
-            ima = self[k1:k2 + 1, :, :].mean(axis=0)
+        # Sub-cube on the wavelength range
+        data_cube = self[k1:k2 + 1, :, :].copy()
 
         # Subtract off a background image?
         if subtract_off:
@@ -1459,21 +1454,22 @@ class Cube(ArithmeticMixin, DataArray):
             below = slice(lower_maxpix - nbelow, lower_maxpix)
             above = slice(upper_minpix, upper_minpix + nabove)
 
-            # Combine the background images, rescaling when summing, to
-            # obtain the same unit scaling as the combination of the 'nim'
-            # foreground images.
-            if is_sum:
-                off_im = ((self[below, :, :].sum(axis=0) +
-                           self[above, :, :].sum(axis=0)) *
-                          float(nim) / float(nbelow + nabove))
-            else:
-                off_im = (self[below, :, :].mean(axis=0) +
-                          self[above, :, :].mean(axis=0)) / 2.0
+            # The background is the mean of the background below and the
+            # background above (may be different of the mean of above and
+            # below pixels if the number of pixels is different above and
+            # below).
+            background = (self[below, :, :].mean(axis=0) +
+                          self[above, :, :].mean(axis=0)) / 2
 
-            # Subtract the background image from the combined images.
-            ima.data -= off_im.data
-            if ima._var is not None:
-                ima._var += off_im._var
+            # Remove background from data_cube.
+            data_cube.data -= background[np.newaxis, :, :]
+
+        # Obtain the sum of the images within the specified range
+        # of wavelength pixels.
+        if is_sum:
+            ima = data_cube.sum(axis=0)
+        else:
+            ima = data_cube.mean(axis=0)
 
         # add input in header
         unit = 'pix' if unit_wave is None else str(unit_wave)

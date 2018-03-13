@@ -3,6 +3,14 @@
 
 Development version.
 
+- Before, the method used to remove the background when using ``subtract_off``
+  and ``is_sum`` in ``mpdaf.obj.Cube.get_image``, was equivalent to removing the
+  mean of the flux value in the margins below and above the region of interest.
+  Now, the background is the average of the means in the two regions, as it is
+  done for an average image.i This may lead to slightly different results on the
+  edge of the cube wavelength range where not the same number of pixels are
+  taken in the below and above margins.
+
 2.5 (02/03/2018)
 ----------------
 
