@@ -1371,6 +1371,7 @@ class Cube(ArithmeticMixin, DataArray):
             The background is removed from the wavelength region of interest
             before averaging or summing it.
 
+            # FIXME: Are we still using this method?
             This scheme was developed by Jarle Brinchmann
             (jarle@strw.leidenuniv.nl)
         margin : float
@@ -1461,8 +1462,8 @@ class Cube(ArithmeticMixin, DataArray):
             background = (self[below, :, :].mean(axis=0) +
                           self[above, :, :].mean(axis=0)) / 2
 
-            # Remove background from data_cube.
-            data_cube.data -= background[np.newaxis, :, :]
+            # Adding and Image to a Cube takes care of variance propagation.
+            data_cube -= background
 
         # Obtain the sum of the images within the specified range
         # of wavelength pixels.
