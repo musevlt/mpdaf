@@ -24,7 +24,7 @@
  **************************************************************/
 
 
-char *strdup (const char *s) {
+char *mystrdup (const char *s) {
     char *d = malloc (strlen (s) + 1);   // Space for length plus nul
     if (d == NULL) return NULL;          // No memory
     strcpy (d,s);                        // Copy the characters
@@ -38,7 +38,7 @@ int split_files_list(char* input, char* filenames[]) {
     char *token;
     token = strtok(input, delim);
     while( token != NULL ) {
-        filenames[nfiles++] = strdup(token);
+        filenames[nfiles++] = mystrdup(token);
         if (nfiles > MAX_FILES) {
             printf("ERROR: Too many files, limit is %d \n", MAX_FILES);
             exit(EXIT_FAILURE);
