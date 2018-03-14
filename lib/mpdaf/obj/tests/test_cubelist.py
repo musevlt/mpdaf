@@ -44,11 +44,18 @@ from numpy.testing import assert_array_equal
 from ...tests.utils import generate_cube
 
 try:
-    import fitsio  # NOQA
+    import fitsio  # noqa
 except ImportError:
     HAS_FITSIO = False
 else:
     HAS_FITSIO = True
+
+try:
+    import mpdaf.tools.ctools  # noqa
+except OSError:
+    HAS_CFITSIO = False
+else:
+    HAS_CFITSIO = True
 
 
 class TestCubeList(unittest.TestCase):
@@ -105,6 +112,7 @@ class TestCubeList(unittest.TestCase):
         assert clist.check_dim() is True
         assert clist.check_wcs() is False
 
+    @pytest.mark.skipif(not HAS_CFITSIO, reason="requires cfitsio")
     def test_median(self):
         clist = CubeList(self.cubenames)
         combined_cube = np.ones(self.shape)
@@ -122,6 +130,7 @@ class TestCubeList(unittest.TestCase):
         assert_array_equal(cube.data, combined_cube)
         assert_array_equal(expmap.data, self.expmap)
 
+    @pytest.mark.skipif(not HAS_CFITSIO, reason="requires cfitsio")
     def test_combine(self):
         clist = CubeList(self.cubenames)
         combined_cube = np.full(self.shape, 2, dtype=float)
@@ -157,6 +166,7 @@ class TestCubeList(unittest.TestCase):
         cube = clist.pycombine(nclip=(5., 5.), var='stat_mean')[0]
         assert_array_equal(cube.data, combined_cube)
 
+    @pytest.mark.skipif(not HAS_CFITSIO, reason="requires cfitsio")
     def test_combine_scale(self):
         clist = CubeList(self.cubenames, scalelist=[2.] * self.ncubes)
         combined_cube = np.full(self.shape, 2 * 2, dtype=float)
