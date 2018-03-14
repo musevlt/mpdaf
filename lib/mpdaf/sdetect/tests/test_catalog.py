@@ -169,3 +169,39 @@ def test_select(minicube):
     # using a margin removing sources on the edges
     assert len(cat.select(im.wcs, mask=mask)) == 4
     assert len(cat.select(im.wcs, margin=1, mask=mask)) == 4
+
+
+@pytest.mark.xfail(six.PY2, reason="issue with astropy coordinates and numpy")
+def test_meta():
+    c1 = Catalog()
+    c1['ID'] = np.arange(10, dtype=int)
+    c1['RA'] = np.arange(10, dtype=float)
+    c1['DEC'] = np.arange(10, dtype=float)
+    c1.meta['idname'] = 'ID'
+    c1.meta['raname'] = 'RA'
+    c1.meta['decname'] = 'DEC'
+
+    assert c1.meta['idname'] is c1.meta['IDNAME']
+
+    c2 = Catalog()
+    c2['id'] = np.arange(20, dtype=int)
+    c2['RA'] = np.arange(20, dtype=float) + 0.5 / 3600
+    c2['DEC'] = np.arange(20, dtype=float) - 0.5 / 3600
+    c2.meta['idname'] = 'id'
+    c2.meta['raname'] = 'RA'
+    c2.meta['decname'] = 'DEC'
+
+    match, nomatch1, nomatch2 = c1.match(c2, full_output=True)
+    assert len(match) == 10
+    assert type(match.meta) == type(c1.meta)
+
+    assert match.meta['idname'] == 'ID'
+    assert match.meta['idname_1'] == 'ID'
+    assert match.meta['idname_2'] == 'id'
+    assert match.meta['raname'] == 'RA_1'
+    assert match.meta['raname_1'] == 'RA_1'
+    assert match.meta['raname_2'] == 'RA_2'
+
+    assert nomatch1.meta['idname'] == 'ID'
+    assert nomatch2.meta['idname'] == 'id'
+

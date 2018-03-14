@@ -140,7 +140,7 @@ def broadcast_to_cube(arr, shape):
     return broadcast_to(arr, shape)
 
 
-class LowercaseOrderedDict(MutableMapping):
+class LowercaseOrderedDict(MutableMapping, OrderedDict):
     """Ordered dictonary where all strings keys are case insensitive.
     i.e. keys such as 'abc', 'ABC', 'Abc' all map to the same value.
     This can be useful for mimicing the storage of FITS headers.
@@ -164,7 +164,7 @@ class LowercaseOrderedDict(MutableMapping):
 
     def __delitem__(self, key):
         del self._d[self._convert(key)]
-
+            
     def __iter__(self):
         return iter(self._d)
 
@@ -176,3 +176,6 @@ class LowercaseOrderedDict(MutableMapping):
 
     def __str__(self):
         return "{}({})".format(self.__class__, [i for i in self._d.items()])
+
+    def popitem(self, last=True):
+        return self._d.popitem(last)

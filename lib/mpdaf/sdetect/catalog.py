@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import absolute_import, division
 
+from copy import deepcopy
 import glob
 import logging
 import numpy as np
@@ -77,6 +78,91 @@ class Catalog(Table):
 
         #replace Table.meta OrderedDict with an uppercase only verions
         self.meta = LowercaseOrderedDict(self.meta)
+
+    def id_col(self):
+        """Get ID column name as specified from metadata.
+        If missing, defaults to 'ID'"""
+        try:
+            return self.meta['idname']
+        except KeyError:
+            return 'ID'
+
+    def ra_col(self):
+        """Get RA column name as specified from metadata.
+        If missing, defaults to 'RA'"""
+        try:
+            return self.meta['raname']
+        except KeyError:
+            return 'RA'
+
+    def dec_col(self):
+        """Get Dec column name as specified from metadata.
+        If missing, defaults to 'DEC'"""
+        try:
+            return self.meta['decname']
+        except KeyError:
+            return 'DEC'
+
+    @staticmethod
+    def _merge_meta(catalogs, suffix=None):
+        """Returns a metadata object combined from a set of catalogs.
+
+        Parameters
+        ----------
+        catalogs : list< `mpdaf.sdetect.Catalog` >
+            List of `mpdaf.sdetect.Catalog` objects to be combined
+        suffix : list< str >
+            Column suffixes that are appended column names when tables are
+            joined. Must be the same length as the number of catalogs.
+            Defaults to ['_1', '_2', '_3', etc.]
+        """
+        n_cat = len(catalogs)
+
+        if suffix is None:
+            suffix = tuple(['_{}'.format(i+1) for i in range(n_cat)])
+
+        cat0 = catalogs[0]
+        # create output with same type as meta of first catalog
+        out = type(cat0.meta)()
+
+        n_cat = len(catalogs)
+        for i_cat, cat in enumerate(catalogs):
+            s = suffix[i_cat]
+            for key, value in cat.meta.items():
+                out[key+s] = value
+        
+        # special treatment for keys that identify columns
+        col_keys = ['idname', 'raname', 'decname']
+        for i_cat, cat in enumerate(catalogs):
+            for key in col_keys:
+                # check key exists
+                try:
+                    col_name = cat.meta[key]
+                except KeyError:
+                    continue
+
+                # check actually found in catalog
+                if col_name not in cat.columns:
+                    continue
+
+                # check if name is dupilcated in other catalogs, and thus a
+                # suffix is needed
+                n = sum([1 for c in catalogs if col_name in c.columns])
+                if n > 1: #not unique
+                    key += suffix[i_cat]
+                    col_name += suffix[i_cat]
+                out[key] = col_name
+
+        #set default column keys to the first table
+        #e.g. raname = raname_1
+        for key in col_keys:
+            try:
+                out[key] = out[key+suffix[0]]
+            except KeyError:
+                pass
+
+        return out
+
 
     @classmethod
     def from_sources(cls, sources, fmt='default'):
@@ -524,6 +610,7 @@ class Catalog(Table):
             Matching size in arcsec (default 1).
         colc1: tuple
             ('RA','DEC') name of ra,dec columns of input table
+            
         colc2: tuple
             ('RA','DEC') name of ra,dec columns of cat2
         full_output: bool
@@ -547,10 +634,10 @@ class Catalog(Table):
             If ``full_output`` is False, only ``match`` is returned.
 
         """
-        col1_ra = colc1[0] or self.meta.setdefault('RANAME', 'RA')
-        col1_dec = colc1[1] or self.meta.setdefault('DECNAME', 'DEC')
-        col2_ra = colc2[0] or cat2.meta.setdefault('RANAME', 'RA')
-        col2_dec = colc2[1] or cat2.meta.setdefault('DECNAME', 'DEC')
+        col1_ra = colc1[0] or self.ra_col()
+        col1_dec = colc1[1] or self.dec_col()
+        col2_ra = colc2[0] or cat2.ra_col()
+        col2_dec = colc2[1] or cat2.dec_col()
 
         coord1 = self.to_skycoord(ra=col1_ra, dec=col1_dec)
         coord2 = cat2.to_skycoord(ra=col2_ra, dec=col2_dec)
@@ -577,9 +664,12 @@ class Catalog(Table):
             d2match = np.delete(d2match, to_remove)
         match1 = self[id1match]
         match2 = cat2[id2match]
-        match = hstack([match1, match2], join_type='exact')
+        match = hstack([match1, match2], join_type='exact',
+                       metadata_conflicts='silent')
         match.add_column(Column(data=d2match.to(u.arcsec), name='Distance',
                                 dtype=float))
+        match.meta = self._merge_meta([match1, match2])
+
         if full_output:
             id1notmatch = np.in1d(range(len(self)), id1match,
                                   assume_unique=True, invert=True)
@@ -634,8 +724,8 @@ class Catalog(Table):
         if coord.shape == ():
             coord = coord.reshape(1)
 
-        col_ra = colcoord[0] or self.meta.setdefault('RANAME', 'RA')
-        col_dec = colcoord[1] or self.meta.setdefault('DECNAME', 'DEC')
+        col_ra = colcoord[0] or self.ra_col()
+        col_dec = colcoord[1] or self.dec_col()
         src_coords = self.to_skycoord(ra=col_ra, dec=col_dec)
         idx, d2d, d3d = src_coords.match_to_catalog_sky(coord, **kwargs)
         dist = d2d.arcsec
@@ -698,10 +788,10 @@ class Catalog(Table):
             If ``full_output`` is False, only ``match`` is returned.
 
         """
-        col1_ra = colc1[0] or self.meta.setdefault('RANAME', 'RA')
-        col1_dec = colc1[1] or self.meta.setdefault('DECNAME', 'DEC')
-        col2_ra = colc2[0] or cat2.meta.setdefault('RANAME', 'RA')
-        col2_dec = colc2[1] or cat2.meta.setdefault('DECNAME', 'DEC')
+        col1_ra = colc1[0] or self.ra_col()
+        col1_dec = colc1[1] or self.dec_col()
+        col2_ra = colc2[0] or cat2.ra_col()
+        col2_dec = colc2[1] or cat2.dec_col()
         
         # rename all catalogs columns with _1 or _2
         self._logger.debug('Rename Catalog columns with %s or %s suffix',
@@ -721,6 +811,8 @@ class Catalog(Table):
         match, unmatch1, unmatch2 = tcat1.match(
             tcat2, radius=spatial_radius, colc1=colc1, colc2=colc2,
             full_output=full_output, **kwargs)
+        match.meta = self._merge_meta([tcat1, tcat2], suffix=suffix)
+
         tcat1._logger.debug('Performing line match')
         # create matched line colonnes
         match.add_column(MaskedColumn(length=len(match), name='NLMATCH',
@@ -793,8 +885,8 @@ class Catalog(Table):
             The catalog with selected rows.
 
         """
-        ra = ra or self.meta.setdefault('RANAME', 'RA')
-        dec = dec or self.meta.setdefault('DECNAME', 'DEC')
+        ra = ra or self.ra_col()
+        dec = dec or self.dec_col()
 
         arr = np.vstack([self[dec].data, self[ra].data]).T
         cen = wcs.sky2pix(arr, unit=u.deg).T
@@ -825,8 +917,8 @@ class Catalog(Table):
             The distance in arcsec units.
 
         """
-        ra = ra or self.meta.setdefault('RANAME', 'RA')
-        dec = dec or self.meta.setdefault('DECNAME', 'DEC')
+        ra = ra or self.ra_col()
+        dec = dec or self.dec_col()
 
         dim = np.array([wcs.naxis2, wcs.naxis1])
         pix = wcs.sky2pix(np.array([self[dec], self[ra]]).T, unit=u.deg)
@@ -835,8 +927,8 @@ class Catalog(Table):
 
     def to_skycoord(self, ra=None, dec=None, frame='fk5', unit='deg'):
         """Return an `astropy.coordinates.SkyCoord` object."""
-        ra = ra or self.meta.setdefault('RANAME', 'RA')
-        dec = dec or self.meta.setdefault('DECNAME', 'DEC')
+        ra = ra or self.ra_col()
+        dec = dec or self.dec_col()
 
         from astropy.coordinates import SkyCoord
         return SkyCoord(ra=self[ra], dec=self[dec],
@@ -850,8 +942,8 @@ class Catalog(Table):
         except ImportError:
             self._logger.error("the 'regions' package is needed for this")
             raise
-        ra = ra or self.meta.setdefault('RANAME', 'RA')
-        dec = dec or self.meta.setdefault('DECNAME', 'DEC')
+        ra = ra or self.ra_col()
+        dec = dec or self.dec_col()
         center = self.to_skycoord(ra=ra, dec=dec, frame=frame, unit=unit_pos)
         radius = radius * u.Unit(unit_radius)
         regions = [CircleSkyRegion(center=c, radius=radius) for c in center]
@@ -899,9 +991,9 @@ class Catalog(Table):
             kwargs can be used to set additional plotting properties.
 
         """
-        ra = ra or self.meta.setdefault('RANAME', 'RA')
-        dec = dec or self.meta.setdefault('DECNAME', 'DEC')
-        id = id or self.meta.setdefault('IDNAME', 'ID')
+        ra = ra or self.ra_col()
+        dec = dec or self.dec_col()
+        id = id or self.id_col()
 
         if (ltype is None) and (etype not in ['o', 's']):
             raise IOError('Unknown symbol %s' % etype)
@@ -986,9 +1078,9 @@ class Catalog(Table):
             Additional properties for ``ax.text``.
 
         """
-        iden = iden or self.meta.setdefault('IDNAME', 'ID')
-        ra = ra or self.meta.setdefault('RANAME', 'RA')
-        dec = dec or self.meta.setdefault('DECNAME', 'DEC')
+        iden = iden or self.id_col()
+        ra = ra or self.ra_col()
+        dec = dec or self.dec_col()
 
         if ra not in self.colnames:
             raise IOError('column %s not found in catalog' % ra)
