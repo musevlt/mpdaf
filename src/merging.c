@@ -17,12 +17,23 @@
 #define MAX_FILE_LENGTH 500
 #define MAX_FILES_PER_THREAD 300
 
+#ifndef NAN
+    #define NAN (0.0/0.0)
+#endif
+
 /**************************************************************
  *
  * Cubes combination with median, mean, sigma clipping, etc.
  *
  **************************************************************/
 
+
+char *mystrdup (const char *s) {
+    char *d = malloc (strlen (s) + 1);   // Space for length plus nul
+    if (d == NULL) return NULL;          // No memory
+    strcpy (d,s);                        // Copy the characters
+    return d;                            // Return the new string
+}
 
 // split input files list
 int split_files_list(char* input, char* filenames[]) {
@@ -31,7 +42,7 @@ int split_files_list(char* input, char* filenames[]) {
     char *token;
     token = strtok(input, delim);
     while( token != NULL ) {
-        filenames[nfiles++] = strdup(token);
+        filenames[nfiles++] = mystrdup(token);
         if (nfiles > MAX_FILES) {
             printf("ERROR: Too many files, limit is %d \n", MAX_FILES);
             exit(EXIT_FAILURE);
@@ -63,12 +74,14 @@ int get_max_threads(int nfiles, int typ_var) {
         num_nthreads = num_nthreads/2;
     }
 
-    int nthreads;
+    int nthreads=1;
+#ifdef _OPENMP
     #pragma omp parallel
     {
         nthreads = omp_get_num_threads();
     }
     printf("omp_get_num_threads: %d\n", nthreads);
+#endif
     if (nthreads < num_nthreads) {
         num_nthreads=nthreads;
     }
@@ -113,8 +126,13 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
     // create threads
     #pragma omp parallel shared(filenames, nfiles, data, expmap, valid_pix, buffer, begin) num_threads(num_nthreads)
     {
+#ifdef _OPENMP
         int rang = omp_get_thread_num(); //current thread number
         int nthreads = omp_get_num_threads(); //number of threads
+#else
+        int rang = 1;
+        int nthreads = 1;
+#endif
 
         fitsfile *fdata[MAX_FILES_PER_THREAD];
         int status = 0;  // CFITSIO status value MUST be initialized to zero!
@@ -282,8 +300,13 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
     // create threads
     #pragma omp parallel shared(filenames, nfiles, data, var, expmap, scale, valid_pix, buffer, begin, nmax, nclip_low, nclip_up, nstop, selected_pix, typ_var, mad) num_threads(num_nthreads)
     {
+#ifdef _OPENMP
         int rang = omp_get_thread_num(); // current thread number
         int nthreads = omp_get_num_threads(); // number of threads
+#else
+        int rang = 1;
+        int nthreads = 1;
+#endif
 
         fitsfile *fdata[MAX_FILES_PER_THREAD], *fvar[MAX_FILES_PER_THREAD];
         int status = 0;  // CFITSIO status value MUST be initialized to zero!
