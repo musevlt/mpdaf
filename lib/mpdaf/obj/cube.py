@@ -1336,7 +1336,7 @@ class Cube(ArithmeticMixin, DataArray):
                                      verbose=verbose, **kargs)
 
     def get_image(self, wave, is_sum=False, subtract_off=False, margin=10.,
-                  fband=3., unit_wave=u.angstrom, *, agg_method="mean"):
+                  fband=3., unit_wave=u.angstrom, agg_method="mean"):
         """Generate an image agregating over a wavelenth range.
 
         This method creates an image aggregating all the slices between
