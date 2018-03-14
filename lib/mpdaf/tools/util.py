@@ -31,7 +31,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 from __future__ import absolute_import, print_function, unicode_literals
-from builtins import str
+from six import string_types
 
 from collections import OrderedDict, MutableMapping
 import functools
@@ -151,7 +151,7 @@ class LowercaseOrderedDict(MutableMapping, OrderedDict):
 
     @staticmethod
     def _convert(key):
-        if isinstance(key, str):
+        if isinstance(key, string_types):
             return key.lower()
         else:
             return key
