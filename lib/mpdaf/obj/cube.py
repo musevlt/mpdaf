@@ -1336,8 +1336,11 @@ class Cube(ArithmeticMixin, DataArray):
                                      verbose=verbose, **kargs)
 
     def get_image(self, wave, is_sum=False, subtract_off=False, margin=10.,
-                  fband=3., unit_wave=u.angstrom):
-        """Form the average or sum of images over given wavelength range.
+                  fband=3., unit_wave=u.angstrom, *, agg_method="mean"):
+        """Generate an image agregating over a wavelenth range.
+
+        This method creates an image aggregating all the slices between
+        a wavelength range.
 
         Parameters
         ----------
@@ -1348,8 +1351,8 @@ class Cube(ArithmeticMixin, DataArray):
             arguments (angstrom by default). If None, lbda1, lbda2,
             and margin should be in pixels.
         is_sum : bool
-            If True, compute the sum of the images, otherwise compute
-            the arithmetic mean of the images.
+            If True, compute the sum of the images. Deprecated, use "sum"
+            as aggregation method.
         subtract_off : bool
             If True, subtract off a background image that is estimated
             from combining some images from both below and above the
@@ -1385,12 +1388,22 @@ class Cube(ArithmeticMixin, DataArray):
             The ratio of the number of images used to form a
             background image and the number of images that are being
             combined.  The default value is 3.0.
+        agg_method: string
+            Name of the Cube method used to aggregate the data. This method
+            must accept the axis=0 parameter and return an image. Example:
+            mean, sum, max.
 
         Returns
         -------
         out : `~mpdaf.obj.Image`
 
         """
+
+        if is_sum:
+            self._logger.warning(
+                "The is_sum parameter is deprecated. Use agg_method=\"sum\" "
+                "instead. Aggregation function set to sum.")
+            agg_method = "sum"
 
         # Convert the wavelength range to pixel indexes.
         if unit_wave is None:
@@ -1465,26 +1478,23 @@ class Cube(ArithmeticMixin, DataArray):
             # Adding and Image to a Cube takes care of variance propagation.
             data_cube -= background
 
-        # Obtain the sum of the images within the specified range
-        # of wavelength pixels.
-        if is_sum:
-            ima = data_cube.sum(axis=0)
-        else:
-            ima = data_cube.mean(axis=0)
+        # Aggregating using the Cube method takes care of the variance
+        # propagation.
+        ima = getattr(data_cube, agg_method)(axis=0)
 
         # add input in header
         unit = 'pix' if unit_wave is None else str(unit_wave)
         f = '' if self.filename is None else os.path.basename(self.filename)
         add_mpdaf_method_keywords(ima.primary_header,
                                   "cube.get_image",
-                                  ['cube', 'lbda1', 'lbda2', 'is_sum',
+                                  ['cube', 'lbda1', 'lbda2', 'agg_method',
                                    'subtract_off', 'margin', 'fband'],
                                   [f, l1, l2,
-                                   is_sum, subtract_off, margin, fband],
+                                   agg_method, subtract_off, margin, fband],
                                   ['cube',
                                    'min wavelength (%s)' % str(unit),
                                    'max wavelength (%s)' % str(unit),
-                                   'sum/average',
+                                   'aggregation method',
                                    'subtracting off nearby data',
                                    'off-band margin',
                                    'off_band size'])
