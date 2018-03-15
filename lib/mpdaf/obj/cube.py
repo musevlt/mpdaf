@@ -1337,7 +1337,7 @@ class Cube(ArithmeticMixin, DataArray):
 
     def get_image(self, wave, is_sum=False, subtract_off=False, margin=10.,
                   fband=3., unit_wave=u.angstrom, agg_method="mean"):
-        """Generate an image agregating over a wavelenth range.
+        """Generate an image aggregating over a wavelength range.
 
         This method creates an image aggregating all the slices between
         a wavelength range.
@@ -1371,12 +1371,11 @@ class Cube(ArithmeticMixin, DataArray):
             wavelength range by a value, margin, which is an argument
             of this function.
 
-            The background is removed from the wavelength region of interest
-            before averaging or summing it.
-
-            # FIXME: Are we still using this method?
             This scheme was developed by Jarle Brinchmann
             (jarle@strw.leidenuniv.nl)
+
+            The background is removed from the wavelength region of interest
+            before aggregating it.
         margin : float
             The wavelength or pixel offset of the centers of the
             ranges of background images below and above the chosen
@@ -1398,7 +1397,6 @@ class Cube(ArithmeticMixin, DataArray):
         out : `~mpdaf.obj.Image`
 
         """
-
         if is_sum:
             self._logger.warning(
                 "The is_sum parameter is deprecated. Use agg_method=\"sum\" "
