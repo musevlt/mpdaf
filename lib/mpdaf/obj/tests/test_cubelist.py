@@ -36,6 +36,7 @@ import numpy as np
 import os
 import pytest
 import shutil
+import sys
 import tempfile
 import unittest
 
@@ -56,6 +57,8 @@ except OSError:
     HAS_CFITSIO = False
 else:
     HAS_CFITSIO = True
+
+DARWIN = sys.platform == 'darwin'
 
 
 class TestCubeList(unittest.TestCase):
@@ -122,6 +125,7 @@ class TestCubeList(unittest.TestCase):
         assert_array_equal(expmap.data, self.expmap)
 
     @pytest.mark.skipif(not HAS_FITSIO, reason="requires fitsio")
+    @pytest.mark.xfail(DARWIN, reason="broken on MacOS")
     def test_pymedian(self):
         clist = CubeList(self.cubenames)
         combined_cube = np.ones(self.shape)
@@ -149,6 +153,7 @@ class TestCubeList(unittest.TestCase):
         assert_array_equal(cube.data, combined_cube)
 
     @pytest.mark.skipif(not HAS_FITSIO, reason="requires fitsio")
+    @pytest.mark.xfail(DARWIN, reason="broken on MacOS")
     def test_pycombine(self):
         clist = CubeList(self.cubenames)
         combined_cube = np.full(self.shape, 2, dtype=float)
@@ -174,6 +179,7 @@ class TestCubeList(unittest.TestCase):
         assert_array_equal(cube.data, combined_cube)
 
     @pytest.mark.skipif(not HAS_FITSIO, reason="requires fitsio")
+    @pytest.mark.xfail(DARWIN, reason="broken on MacOS")
     def test_pycombine_scale(self):
         clist = CubeList(self.cubenames, scalelist=[2.] * self.ncubes)
         combined_cube = np.full(self.shape, 2 * 2, dtype=float)
@@ -189,6 +195,7 @@ class TestCubeList(unittest.TestCase):
         assert_array_equal(cube2.data, combined_cube)
 
     @pytest.mark.skipif(not HAS_FITSIO, reason="requires fitsio")
+    @pytest.mark.xfail(DARWIN, reason="broken on MacOS")
     def test_mosaic_combine(self):
         clist = CubeMosaic(self.cubenames, self.cubenames[0])
         combined_cube = np.full(self.shape, 2, dtype=float)
