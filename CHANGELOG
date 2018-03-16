@@ -1,9 +1,20 @@
-3.0.dev (xx/xx/xxxx)
---------------------
+2.5.1 (xx/xx/xxxx)
+------------------
 
 Development version.
 
-- Changes to ``mpdaf.obj.Cube.get_image``:
+- Fix ``Spectrum.gauss_fit`` to always return a positive fwhm. [#501]
+
+- Fix several issues with the ``CubeList`` C extension:
+
+  - Avoid segfault with ``-std=c99``.
+
+  - Fix compilation when NAN is not defined.
+
+  - Fix the extension when not using OpenMP, which is still the case with Clang.
+    Support for OpenMP with Clang will be addressed in the future.
+
+- Changes to ``Cube.get_image``:
 
   - It's now possible to use any method from the Cube object that reduces the
     data on the wavelength axis to get an image, e.g. mean, sum, max...

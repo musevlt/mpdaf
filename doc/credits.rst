@@ -10,6 +10,8 @@ MPDAF team at `CRAL <https://cral.univ-lyon1.fr/>`_
 - `Laure Piqueras <mailto:laure.piqueras@univ-lyon1.fr>`_ lead developer
 - `Simon Conseil <mailto:simon.conseil@univ-lyon1.fr>`_ developer
 - `Martin Shepherd <mailto:martin.shepherd@univ-lyon1.fr>`_ developer
+- `Yannick Roehlly <mailto:yannick.roehlly@univ-lyon1.fr>`_ developer
+
 
 Credits
 -------
@@ -21,5 +23,3 @@ Credits
 .. image:: _static/logo/logocnrs.jpeg
 
 .. image:: _static/logo/ERC.png
-
-

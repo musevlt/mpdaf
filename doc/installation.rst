@@ -35,8 +35,13 @@ MPDAF can be installed with pip::
 
 .. note::
 
-   You will need a C compiler (e.g. gcc or clang) to be installed for the
-   installation to succeed (see below).
+   If binary wheels are not available for your OS/Python version, you will need
+   a C compiler (e.g. gcc or clang) to be installed for the installation to
+   succeed (see below).
+
+   If you want to use specific compilation options (compiler, OpenMP, cfitsio
+   path), you can do so by using ``pip install --no-binary mpdaf mpdaf`` and
+   prepending environment variables (CC, CFLAGS, etc.).
 
 MPDAF can also be installed with extra dependencies (Numexpr, fitsio) with::
 
@@ -47,7 +52,8 @@ Installing with conda
 
 An old version of MPDAF can be installed with the OpenAstronomy_ channel for
 conda_, but this package is not maintained currently. It has to be moved to
-conda-forge, which has not been done yet.
+conda-forge, which has not been done yet. Instead we now produce binary wheels,
+which achieve the same goal.
 
 .. This will install a compiled version of MPDAF, with CFITSIO_ and the other
 .. dependencies.
@@ -68,11 +74,12 @@ and these require optional dependencies:
   `~mpdaf.drs.PixTable.selfcalibrate`).
 
   This extension can also use OpenMP_ if available.  Note that on Mac OS,
-  OpenMP is not used by default because clang doesn't support OpenMP. To force
-  it, the ``USEOPENMP`` environment variable can be set to anything except an
-  empty string::
+  OpenMP is deactivated by default and not supported yet.
 
-      USEOPENMP=1 CC=<local path of gcc> pip install mpdaf
+  To force the use of OpenMP, the ``USEOPENMP`` environment variable can be set
+  to 1::
+
+      USEOPENMP=1 CC=<local path of gcc> pip install --no-binary mpdaf mpdaf
 
 - The second extension is used for `~mpdaf.obj.CubeMosaic` and uses Cython, but
   it is only required for the development version. The distributed package
@@ -88,8 +95,8 @@ Tips for Mac OS users
   pkg-config: `Homebrew <http://brew.sh/>`_. Then, ``brew install cfitsio
   pkgconfig``.
 
-- It is also possible to install and use gcc to compile MPDAF
-  with OpenMP support (for parallelized functions). Otherwise clang is used.
+- It is also possible to install and use gcc to compile MPDAF with OpenMP
+  support (``brew install gcc --without-multilib``). Otherwise clang is used.
 
 - `Anaconda <http://continuum.io/downloads>`_ is a great scientific python
   distribution, it comes with up-to-date and pre-compiled versions of Numpy,
