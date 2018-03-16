@@ -1419,7 +1419,7 @@ class Cube(ArithmeticMixin, DataArray):
         l2 = self.wave.coord(k1 + 0.5)
 
         # Sub-cube on the wavelength range
-        data_cube = self[k1:k2 + 1, :, :].copy()
+        data_cube = self[k1:k2 + 1, :, :]
 
         # Subtract off a background image?
         if subtract_off:
@@ -1474,7 +1474,7 @@ class Cube(ArithmeticMixin, DataArray):
                           self[above, :, :].mean(axis=0)) / 2
 
             # Adding and Image to a Cube takes care of variance propagation.
-            data_cube -= background
+            data_cube = data_cube - background
 
         # Aggregating using the Cube method takes care of the variance
         # propagation.
