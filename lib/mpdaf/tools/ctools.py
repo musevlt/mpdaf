@@ -70,7 +70,10 @@ else:
 
     # mpdaf_merging_median
     ctools.mpdaf_merging_median.argtypes = [
-        charptr, array_1d_double, array_1d_int, array_1d_int
+        charptr,          # char* input
+        array_1d_double,  # double* data
+        array_1d_int,     # int* expmap
+        array_1d_int      # int* valid_pix
     ]
 
     # mpdaf_merging_sigma_clipping
@@ -93,10 +96,18 @@ else:
     # mpdaf_sky_ref
     ctools.mpdaf_sky_ref.restype = None
     ctools.mpdaf_sky_ref.argtypes = [
-        array_1d_double, array_1d_double, array_1d_int, ctypes.c_int,
-        ctypes.c_double, ctypes.c_double, ctypes.c_int,
-        ctypes.c_int, ctypes.c_double, ctypes.c_double, ctypes.c_int,
-        array_1d_double
+        array_1d_double,  # double* data
+        array_1d_double,  # double* lbda
+        array_1d_int,     # int* mask
+        ctypes.c_int,     # int npix
+        ctypes.c_double,  # double lmin
+        ctypes.c_double,  # double dl
+        ctypes.c_int,     # int n
+        ctypes.c_int,     # int nmax
+        ctypes.c_double,  # double nclip_low
+        ctypes.c_double,  # double nclip_up
+        ctypes.c_int,     # int nstop
+        array_1d_double   # double* result
     ]
 
     # mpdaf_slice_median
