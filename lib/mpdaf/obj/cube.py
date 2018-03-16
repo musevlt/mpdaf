@@ -1336,7 +1336,7 @@ class Cube(ArithmeticMixin, DataArray):
                                      verbose=verbose, **kargs)
 
     def get_image(self, wave, is_sum=False, subtract_off=False, margin=10.,
-                  fband=3., unit_wave=u.angstrom, agg_method="mean"):
+                  fband=3., unit_wave=u.angstrom, method="mean"):
         """Generate an image aggregating over a wavelength range.
 
         This method creates an image aggregating all the slices between
@@ -1387,7 +1387,7 @@ class Cube(ArithmeticMixin, DataArray):
             The ratio of the number of images used to form a
             background image and the number of images that are being
             combined.  The default value is 3.0.
-        agg_method: string
+        method: str
             Name of the Cube method used to aggregate the data. This method
             must accept the axis=0 parameter and return an image. Example:
             mean, sum, max.
@@ -1399,9 +1399,9 @@ class Cube(ArithmeticMixin, DataArray):
         """
         if is_sum:
             self._logger.warning(
-                "The is_sum parameter is deprecated. Use agg_method=\"sum\" "
+                "The is_sum parameter is deprecated. Use method=\"sum\" "
                 "instead. Aggregation function set to sum.")
-            agg_method = "sum"
+            method = "sum"
 
         # Convert the wavelength range to pixel indexes.
         if unit_wave is None:
@@ -1478,17 +1478,17 @@ class Cube(ArithmeticMixin, DataArray):
 
         # Aggregating using the Cube method takes care of the variance
         # propagation.
-        ima = getattr(data_cube, agg_method)(axis=0)
+        ima = getattr(data_cube, method)(axis=0)
 
         # add input in header
         unit = 'pix' if unit_wave is None else str(unit_wave)
         f = '' if self.filename is None else os.path.basename(self.filename)
         add_mpdaf_method_keywords(ima.primary_header,
                                   "cube.get_image",
-                                  ['cube', 'lbda1', 'lbda2', 'agg_method',
+                                  ['cube', 'lbda1', 'lbda2', 'method',
                                    'subtract_off', 'margin', 'fband'],
                                   [f, l1, l2,
-                                   agg_method, subtract_off, margin, fband],
+                                   method, subtract_off, margin, fband],
                                   ['cube',
                                    'min wavelength (%s)' % str(unit),
                                    'max wavelength (%s)' % str(unit),
