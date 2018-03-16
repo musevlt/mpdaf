@@ -1399,7 +1399,7 @@ class Cube(ArithmeticMixin, DataArray):
         """
         if is_sum:
             self._logger.warning(
-                "The is_sum parameter is deprecated. Use method=\"sum\" "
+                "The is_sum parameter is deprecated. Use method='sum' "
                 "instead. Aggregation function set to sum.")
             method = "sum"
 
