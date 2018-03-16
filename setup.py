@@ -49,6 +49,8 @@ from setuptools import setup, find_packages, Extension
 from setuptools.command.build_ext import build_ext as _build_ext
 from setuptools.command.test import test as TestCommand
 
+PY2 = sys.version_info[0] == 2
+
 # Check if Cython is available
 try:
     from Cython.Build import cythonize
@@ -70,7 +72,9 @@ except OSError:
           'and in your $PATH and rebuild MPDAF if you need them.')
     HAVE_PKG_CONFIG = False
 else:
-    print('Found pkg-config {}'.format(out))
+    if not PY2:
+        out = out.decode(encoding='utf-8', errors='replace')
+    print('Found pkg-config {}'.format(out.strip('\n')))
     del out
     HAVE_PKG_CONFIG = True
 
@@ -133,9 +137,31 @@ class build_ext(_build_ext, object):
         super(build_ext, self).run()
 
 
+def use_openmp():
+    """Find if OpenMP must be used or not. Disabled by default on MacOS,
+    enabled otherwise. Usage can be forced with the USEOPENMP env var.
+    """
+    openmp_env = os.environ.get('USEOPENMP')
+    if openmp_env == '1':
+        print('OPENMP enabled from USEOPENMP env var')
+        return True
+    elif openmp_env == '0':
+        print('OPENMP disabled from USEOPENMP env var')
+        return False
+
+    if openmp_env is not None:
+        print('USEOPENMP env var must be set to 0 or 1')
+
+    if sys.platform.startswith('darwin'):
+        print('OPENMP disabled by default on MacOS')
+        return False
+    else:
+        print('OPENMP enabled by default')
+        return True
+
+
 def options(*packages, **kw):
     flag_map = {'-I': 'include_dirs', '-L': 'library_dirs', '-l': 'libraries'}
-    PY2 = sys.version_info[0] == 2
 
     for package in packages:
         try:
@@ -148,7 +174,7 @@ def options(*packages, **kw):
         else:
             if not PY2:
                 out = out.decode('utf8')
-            print('Found {} {}'.format(package, out))
+            print('Found {} {}'.format(package, out.strip('\n')))
 
     for token in subprocess.check_output(["pkg-config", "--libs", "--cflags",
                                           ' '.join(packages)]).split():
@@ -161,12 +187,9 @@ def options(*packages, **kw):
 
     kw.setdefault('libraries', []).append('m')
 
-    # Use OpenMP if directed or not on a Mac
-    if os.environ.get('USEOPENMP') or not sys.platform.startswith('darwin'):
+    if use_openmp():
         kw.setdefault('extra_link_args', []).append('-lgomp')
         kw.setdefault('extra_compile_args', []).append('-fopenmp')
-    else:
-        print("Unable to find OPENMP")
 
     for k, v in kw.items():  # remove duplicated
         kw[k] = list(set(v))
@@ -198,6 +221,8 @@ if HAVE_PKG_CONFIG:
 
 if HAVE_CYTHON:
     ext_modules = cythonize(ext_modules)
+
+print('Configuration done, now running setup() ...\n')
 
 setup(
     name='mpdaf',
