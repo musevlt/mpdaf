@@ -1,7 +1,5 @@
-2.5.1 (xx/xx/xxxx)
+2.5.1 (16/03/2018)
 ------------------
-
-Development version.
 
 - Fix ``Spectrum.gauss_fit`` to always return a positive fwhm. [#501]
 
