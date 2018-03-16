@@ -1336,8 +1336,11 @@ class Cube(ArithmeticMixin, DataArray):
                                      verbose=verbose, **kargs)
 
     def get_image(self, wave, is_sum=False, subtract_off=False, margin=10.,
-                  fband=3., unit_wave=u.angstrom):
-        """Form the average or sum of images over given wavelength range.
+                  fband=3., unit_wave=u.angstrom, method="mean"):
+        """Generate an image aggregating over a wavelength range.
+
+        This method creates an image aggregating all the slices between
+        a wavelength range.
 
         Parameters
         ----------
@@ -1348,8 +1351,8 @@ class Cube(ArithmeticMixin, DataArray):
             arguments (angstrom by default). If None, lbda1, lbda2,
             and margin should be in pixels.
         is_sum : bool
-            If True, compute the sum of the images, otherwise compute
-            the arithmetic mean of the images.
+            If True, compute the sum of the images. Deprecated, use "sum"
+            as aggregation method.
         subtract_off : bool
             If True, subtract off a background image that is estimated
             from combining some images from both below and above the
@@ -1360,7 +1363,7 @@ class Cube(ArithmeticMixin, DataArray):
 
                 nbelow = nabove = (fband * N) / 2   [rounded up to an integer]
 
-            where fband is an optional argument of this function.
+            where fband is a parameter of this function.
 
             The wavelength ranges of the two groups of background
             images below and above the chosen wavelength range are
@@ -1368,12 +1371,11 @@ class Cube(ArithmeticMixin, DataArray):
             wavelength range by a value, margin, which is an argument
             of this function.
 
-            When is_sum is True, the sum of the background images is
-            multiplied by N/nbg to produce a background image that has
-            the same flux scale as the N images being combined.
-
             This scheme was developed by Jarle Brinchmann
             (jarle@strw.leidenuniv.nl)
+
+            The background is removed from the wavelength region of interest
+            before aggregating it.
         margin : float
             The wavelength or pixel offset of the centers of the
             ranges of background images below and above the chosen
@@ -1385,12 +1387,21 @@ class Cube(ArithmeticMixin, DataArray):
             The ratio of the number of images used to form a
             background image and the number of images that are being
             combined.  The default value is 3.0.
+        method: str
+            Name of the Cube method used to aggregate the data. This method
+            must accept the axis=0 parameter and return an image. Example:
+            mean, sum, max.
 
         Returns
         -------
         out : `~mpdaf.obj.Image`
 
         """
+        if is_sum:
+            self._logger.warning(
+                "The is_sum parameter is deprecated. Use method='sum' "
+                "instead. Aggregation function set to sum.")
+            method = "sum"
 
         # Convert the wavelength range to pixel indexes.
         if unit_wave is None:
@@ -1407,12 +1418,8 @@ class Cube(ArithmeticMixin, DataArray):
         l1 = self.wave.coord(k1 - 0.5)
         l2 = self.wave.coord(k1 + 0.5)
 
-        # Obtain the sum of the images within the specified range
-        # of wavelength pixels.
-        if is_sum:
-            ima = self[k1:k2 + 1, :, :].sum(axis=0)
-        else:
-            ima = self[k1:k2 + 1, :, :].mean(axis=0)
+        # Sub-cube on the wavelength range
+        data_cube = self[k1:k2 + 1, :, :]
 
         # Subtract off a background image?
         if subtract_off:
@@ -1459,35 +1466,33 @@ class Cube(ArithmeticMixin, DataArray):
             below = slice(lower_maxpix - nbelow, lower_maxpix)
             above = slice(upper_minpix, upper_minpix + nabove)
 
-            # Combine the background images, rescaling when summing, to
-            # obtain the same unit scaling as the combination of the 'nim'
-            # foreground images.
-            if is_sum:
-                off_im = ((self[below, :, :].sum(axis=0) +
-                           self[above, :, :].sum(axis=0)) *
-                          float(nim) / float(nbelow + nabove))
-            else:
-                off_im = (self[below, :, :].mean(axis=0) +
-                          self[above, :, :].mean(axis=0)) / 2.0
+            # The background is the mean of the background below and the
+            # background above (may be different of the mean of above and
+            # below pixels if the number of pixels is different above and
+            # below).
+            background = (self[below, :, :].mean(axis=0) +
+                          self[above, :, :].mean(axis=0)) / 2
 
-            # Subtract the background image from the combined images.
-            ima.data -= off_im.data
-            if ima._var is not None:
-                ima._var += off_im._var
+            # Adding and Image to a Cube takes care of variance propagation.
+            data_cube = data_cube - background
+
+        # Aggregating using the Cube method takes care of the variance
+        # propagation.
+        ima = getattr(data_cube, method)(axis=0)
 
         # add input in header
         unit = 'pix' if unit_wave is None else str(unit_wave)
         f = '' if self.filename is None else os.path.basename(self.filename)
         add_mpdaf_method_keywords(ima.primary_header,
                                   "cube.get_image",
-                                  ['cube', 'lbda1', 'lbda2', 'is_sum',
+                                  ['cube', 'lbda1', 'lbda2', 'method',
                                    'subtract_off', 'margin', 'fband'],
                                   [f, l1, l2,
-                                   is_sum, subtract_off, margin, fband],
+                                   method, subtract_off, margin, fband],
                                   ['cube',
                                    'min wavelength (%s)' % str(unit),
                                    'max wavelength (%s)' % str(unit),
-                                   'sum/average',
+                                   'aggregation method',
                                    'subtracting off nearby data',
                                    'off-band margin',
                                    'off_band size'])

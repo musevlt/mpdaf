@@ -3,6 +3,18 @@
 
 Development version.
 
+- Changes to ``mpdaf.obj.Cube.get_image``:
+
+  - It's now possible to use any method from the Cube object that reduces the
+    data on the wavelength axis to get an image, e.g. mean, sum, max...
+
+  - The way to compute the background when asking for a summed image has
+    changed. Before, it was computed averaging the pixel values of regions
+    'below' and 'above' the kept wavelengths; now it is calculated as the mean
+    of the average in each region. This may lead to slightly different results
+    when working at the edge of the spectrum, when the width of the regions are
+    different.
+
 2.5 (02/03/2018)
 ----------------
 
