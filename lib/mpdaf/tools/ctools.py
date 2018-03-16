@@ -46,15 +46,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import ctypes
 import logging
-import numpy as np
 import os
+from numpy.ctypeslib import ndpointer, load_library
 
 
 LIBRARY_PATH = os.path.dirname(__file__)
 
 try:
     # load the library, using numpy mechanisms
-    ctools = np.ctypeslib.load_library("_ctools", LIBRARY_PATH)
+    ctools = load_library("_ctools", LIBRARY_PATH)
 except OSError:  # pragma: no cover
     logging.getLogger(__name__).error(
         "MPDAF's C extension is missing, probably it was not compiled because "
@@ -63,10 +63,9 @@ except OSError:  # pragma: no cover
 else:
     # define argument types
     charptr = ctypes.POINTER(ctypes.c_char)
-    array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1,
-                                             flags='CONTIGUOUS')
-    array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1,
-                                          flags='CONTIGUOUS')
+    array_1d_double = ndpointer(dtype=ctypes.c_double, ndim=1,
+                                flags='C_CONTIGUOUS')
+    array_1d_int = ndpointer(dtype=ctypes.c_int, ndim=1, flags='C_CONTIGUOUS')
 
     # mpdaf_merging_median
     ctools.mpdaf_merging_median.argtypes = [

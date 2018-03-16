@@ -438,9 +438,9 @@ class CubeList(object):
 
         # run C method
         npixels = np.prod(self.shape)
-        data = np.empty(npixels, dtype=np.float64)
-        expmap = np.empty(npixels, dtype=np.int32)
-        valid_pix = np.zeros(self.nfiles, dtype=np.int32)
+        data = np.empty(npixels, dtype=np.float64, order='C')
+        expmap = np.empty(npixels, dtype=np.intc, order='C')
+        valid_pix = np.zeros(self.nfiles, dtype=np.intc, order='C')
         files = '\n'.join(self.files)
         if not six.PY2:
             files = files.encode('utf8')
@@ -471,11 +471,11 @@ class CubeList(object):
 
         # returned arrays
         npixels = self.shape[0] * self.shape[1] * self.shape[2]
-        data = np.empty(npixels, dtype=np.float64)
-        vardata = np.empty(npixels, dtype=np.float64)
-        expmap = np.empty(npixels, dtype=np.int32)
-        valid_pix = np.zeros(self.nfiles, dtype=np.int32)
-        select_pix = np.zeros(self.nfiles, dtype=np.int32)
+        data = np.empty(npixels, dtype=np.float64, order='C')
+        vardata = np.empty(npixels, dtype=np.float64, order='C')
+        expmap = np.empty(npixels, dtype=np.intc, order='C')
+        valid_pix = np.zeros(self.nfiles, dtype=np.intc, order='C')
+        select_pix = np.zeros(self.nfiles, dtype=np.intc, order='C')
 
         if var == 'propagate':
             var_mean = 0
