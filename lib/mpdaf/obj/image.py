@@ -3686,7 +3686,7 @@ class Image(ArithmeticMixin, DataArray):
         If it is 'v', the colorbar is drawn vertically, to the right of the
         plot.
 
-        By default the image image is displayed in its own plot. Alternatively
+        By default the image is displayed in its own plot. Alternatively
         to make it a subplot of a larger figure, a suitable
         ``matplotlib.axes.Axes`` object can be passed via the ``ax`` argument.
         Note that unless matplotlib interative mode has previously been enabled
@@ -4037,7 +4037,88 @@ class Image(ArithmeticMixin, DataArray):
 def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
              zscale=False, show_xlabel=True, show_ylabel=True, ax=None,
              unit=u.deg, use_wcs=False, **kwargs):
+    """Plot the RGB composite image with axes labeled in pixels.
 
+    For each color, final intensity values are assigned to each pixel as
+    follows. First each pixel value, ``pv``, is normalized over the range 
+    ``vmin`` to ``vmax``, to have a value ``nv``, that goes from 0 to 1, as
+    follows::
+
+        nv = (pv - vmin) / (vmax - vmin)
+
+    This value is then mapped to another number between 0 and 1 which
+    determines the final value to give the displayed pixel. The mapping from
+    normalized values to final value can be chosen using the scale argument,
+    from the following options:
+
+    - 'linear': ``color = nv``
+    - 'log': ``color = log(1000 * nv + 1) / log(1000 + 1)``
+    - 'sqrt': ``color = sqrt(nv)``
+    - 'arcsinh': ``color = arcsinh(10*nv) / arcsinh(10.0)``
+
+    By default the image is displayed in its own plot. Alternatively
+    to make it a subplot of a larger figure, a suitable
+    ``matplotlib.axes.Axes`` object can be passed via the ``ax`` argument.
+    Note that unless matplotlib interative mode has previously been enabled
+    by calling ``matplotlib.pyplot.ion()``, the plot window will not appear
+    until the next time that ``matplotlib.pyplot.show()`` is called. So to
+    arrange that a new window appears as soon as ``plot_rgb`` is
+    called, do the following before the first call to ``plot_rgb``::
+
+        import matplotlib.pyplot as plt
+        plt.ion()
+
+    Parameters
+    ----------
+    images : [`~mpdaf.obj.Image`, `~mpdaf.obj.Image`, `~mpdaf.obj.Image`]
+        The three [red, green, blue] images to be used.
+    title : str
+        An optional title for the figure (None by default).
+    scale : 'linear' | 'log' | 'sqrt' | 'arcsinh'
+        The stretch function to use mapping pixel values to
+        final values (The default is 'linear'). The same scaling is applied to
+        all three imasges. The pixel values are
+        first normalized to range from 0 for values <= vmin,
+        to 1 for values >= vmax, then the stretch algorithm maps
+        these normalized values, nv, to a position p from 0 to 1
+        along the colorbar, as follows:
+        linear:  p = nv
+        log:     p = log(1000 * nv + 1) / log(1000 + 1)
+        sqrt:    p = sqrt(nv)
+        arcsinh: p = arcsinh(10*nv) / arcsinh(10.0)
+    vmin : [float, float, float]
+        Lower limits corresponing to the [red, green, blue] images.
+        Pixels that have values <= vmin are assigned a value of 0.
+        Pixel values between vmin and vmax are scaled according
+        to the mapping algorithm specified by the scale argument.
+    vmax : [float, float, float]
+        Upper limits corresponing to the [red, green, blue] images.
+        Pixels that have values >= vmax are assigned a value of 1.
+        Pixel values between vmin and vmax are scaled according
+        to the mapping algorithm specified by the scale argument.
+    zscale : bool
+        If True, vmin and vmax are automatically computed
+        using the IRAF zscale algorithm.
+    ax : matplotlib.axes.Axes
+        An optional Axes instance in which to draw the image,
+        or None to have one created using ``matplotlib.pyplot.gca()``.
+    unit : `astropy.units.Unit`
+        The units to use for displaying world coordinates
+        (degrees by default). In the interactive plot, when
+        the mouse pointer is over a pixel in the image the
+        coordinates of the pixel are shown using these units,
+        along with the pixel value.
+    use_wcs : bool
+        If True, use `astropy.visualization.wcsaxes` to get axes
+        with world coordinates.
+    kwargs : matplotlib.artist.Artist
+        Optional extra keyword/value arguments to be passed to
+        the ``ax.imshow()`` function.
+
+    Returns
+    -------
+    out : matplotlib AxesImage
+    """
 
     if vmin is None:
         vmin = [None, None, None]
