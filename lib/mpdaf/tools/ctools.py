@@ -46,15 +46,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import ctypes
 import logging
-import numpy as np
 import os
+from numpy.ctypeslib import ndpointer, load_library
 
 
 LIBRARY_PATH = os.path.dirname(__file__)
 
 try:
     # load the library, using numpy mechanisms
-    ctools = np.ctypeslib.load_library("_ctools", LIBRARY_PATH)
+    ctools = load_library("_ctools", LIBRARY_PATH)
 except OSError:  # pragma: no cover
     logging.getLogger(__name__).error(
         "MPDAF's C extension is missing, probably it was not compiled because "
@@ -63,14 +63,16 @@ except OSError:  # pragma: no cover
 else:
     # define argument types
     charptr = ctypes.POINTER(ctypes.c_char)
-    array_1d_double = np.ctypeslib.ndpointer(dtype=np.double, ndim=1,
-                                             flags='CONTIGUOUS')
-    array_1d_int = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1,
-                                          flags='CONTIGUOUS')
+    array_1d_double = ndpointer(dtype=ctypes.c_double, ndim=1,
+                                flags='C_CONTIGUOUS')
+    array_1d_int = ndpointer(dtype=ctypes.c_int, ndim=1, flags='C_CONTIGUOUS')
 
     # mpdaf_merging_median
     ctools.mpdaf_merging_median.argtypes = [
-        charptr, array_1d_double, array_1d_int, array_1d_int
+        charptr,          # char* input
+        array_1d_double,  # double* data
+        array_1d_int,     # int* expmap
+        array_1d_int      # int* valid_pix
     ]
 
     # mpdaf_merging_sigma_clipping
@@ -93,10 +95,18 @@ else:
     # mpdaf_sky_ref
     ctools.mpdaf_sky_ref.restype = None
     ctools.mpdaf_sky_ref.argtypes = [
-        array_1d_double, array_1d_double, array_1d_int, ctypes.c_int,
-        ctypes.c_double, ctypes.c_double, ctypes.c_int,
-        ctypes.c_int, ctypes.c_double, ctypes.c_double, ctypes.c_int,
-        array_1d_double
+        array_1d_double,  # double* data
+        array_1d_double,  # double* lbda
+        array_1d_int,     # int* mask
+        ctypes.c_int,     # int npix
+        ctypes.c_double,  # double lmin
+        ctypes.c_double,  # double dl
+        ctypes.c_int,     # int n
+        ctypes.c_int,     # int nmax
+        ctypes.c_double,  # double nclip_low
+        ctypes.c_double,  # double nclip_up
+        ctypes.c_int,     # int nstop
+        array_1d_double   # double* result
     ]
 
     # mpdaf_slice_median

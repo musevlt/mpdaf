@@ -109,6 +109,32 @@ int open_fits(char *input, char *extname, fitsfile **fdata, long naxes[]) {
     return EXIT_SUCCESS;
 }
 
+int compute_loop_limits(long naxes, int* limits) {
+#ifdef _OPENMP
+    int rang = omp_get_thread_num(); //current thread number
+    int nthreads = omp_get_num_threads(); //number of threads
+#else
+    int rang = 0;
+    int nthreads = 1;
+#endif
+
+    // start and end of the loop for the current thread
+    if (nthreads<naxes) {
+        int nloops = (int) naxes/nthreads +1;
+        limits[0] = rang*nloops + 1;
+        limits[1] = MIN((rang+1)*nloops, naxes);
+        /* printf("rang: %d, nloops: %d, nthreads: %d, start: %d, end: %d\n", */
+        /*     rang, nloops, nthreads, limits[0], limits[1]); */
+    }
+    else {
+        limits[0] = rang+1;
+        limits[1] = MIN(rang+2, naxes);
+        /* printf("rang: %d, nthreads: %d, start: %d, end: %d\n", */
+        /*     rang, nthreads, limits[0], limits[1]); */
+    }
+
+    return EXIT_SUCCESS;
+}
 
 int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
 {
@@ -121,26 +147,20 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
     // read input files list
     nfiles = split_files_list(input, filenames);
 
+#ifdef _OPENMP
     int num_nthreads = get_max_threads(nfiles, -1);
+    omp_set_num_threads(num_nthreads); // Set number of threads to use
 
     // create threads
-    #pragma omp parallel shared(filenames, nfiles, data, expmap, valid_pix, buffer, begin) num_threads(num_nthreads)
+    #pragma omp parallel shared(filenames, nfiles, data, expmap, valid_pix, buffer, begin)
     {
-#ifdef _OPENMP
-        int rang = omp_get_thread_num(); //current thread number
-        int nthreads = omp_get_num_threads(); //number of threads
-#else
-        int rang = 1;
-        int nthreads = 1;
 #endif
 
         fitsfile *fdata[MAX_FILES_PER_THREAD];
         int status = 0;  // CFITSIO status value MUST be initialized to zero!
         long naxes[3] = {1,1,1}, bnaxes[3] = {1,1,1};
-
         int i, ii, n;
         long firstpix[3] = {1,1,1};
-
         int valid[nfiles];
 
         // read first file
@@ -162,18 +182,8 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
         }
 
         // start and end of the loop for the current thread
-        int start, end;
-        if (nthreads<naxes[2])
-        {
-            int nloops = (int) naxes[2]/nthreads +1;
-            start = rang*nloops + 1;
-            end = MIN((rang+1)*nloops, naxes[2]);
-        }
-        else
-        {
-            start = rang+1;
-            end = MIN(rang+2, naxes[2]);
-        }
+        int limits[2];
+        compute_loop_limits(naxes[2], limits);
 
         firstpix[0] = 1;
 
@@ -193,7 +203,7 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
         wdata = (double *) malloc(nfiles * sizeof(double));
         indx = (int *) malloc(nfiles * sizeof(int));
 
-        for (firstpix[2] = start; firstpix[2] <= end; firstpix[2]++)
+        for (firstpix[2] = limits[0]; firstpix[2] <= limits[1]; firstpix[2]++)
         {
             for (firstpix[1] = 1; firstpix[1] <= naxes[1]; firstpix[1]++)
             {
@@ -243,7 +253,7 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
                 strftime(buffer,80,"%x - %I:%M%p", info);
                 if(strcmp(buffer,begin) != 0)
                 {
-                    printf("%s %3.1f%%\n", buffer, (firstpix[2]-start)*100.0/(end-start));
+                    printf("%s %3.1f%%\n", buffer, (firstpix[2]-limits[0])*100.0/(limits[1]-limits[0]));
                     fflush(stdout);
                     strcpy(begin, buffer);
                 }
@@ -267,7 +277,9 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
             fits_report_error(stderr, status);
             exit(EXIT_FAILURE);
         }
+#ifdef _OPENMP
     }
+#endif
     printf("%s 100%%\n", buffer);
     fflush(stdout);
     return EXIT_SUCCESS;
@@ -295,26 +307,20 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
     // read input files list
     nfiles = split_files_list(input, filenames);
 
+#ifdef _OPENMP
     int num_nthreads = get_max_threads(nfiles, typ_var);
+    omp_set_num_threads(num_nthreads); // Set number of threads to use
 
     // create threads
-    #pragma omp parallel shared(filenames, nfiles, data, var, expmap, scale, valid_pix, buffer, begin, nmax, nclip_low, nclip_up, nstop, selected_pix, typ_var, mad) num_threads(num_nthreads)
+    #pragma omp parallel shared(filenames, nfiles, data, var, expmap, scale, valid_pix, buffer, begin, nmax, nclip_low, nclip_up, nstop, selected_pix, typ_var, mad)
     {
-#ifdef _OPENMP
-        int rang = omp_get_thread_num(); // current thread number
-        int nthreads = omp_get_num_threads(); // number of threads
-#else
-        int rang = 1;
-        int nthreads = 1;
 #endif
 
         fitsfile *fdata[MAX_FILES_PER_THREAD], *fvar[MAX_FILES_PER_THREAD];
         int status = 0;  // CFITSIO status value MUST be initialized to zero!
         long naxes[3] = {1,1,1}, bnaxes[3] = {1,1,1};
-
         int i, ii, n;
         long firstpix[3] = {1,1,1};
-
         int valid[nfiles], select[nfiles];
 
         // read first file
@@ -347,18 +353,9 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
             }
         }
 
-        int start, end;
-        if (nthreads<naxes[2])
-        {
-            int nloops = (int) naxes[2]/nthreads +1;
-            start = rang*nloops + 1;
-            end = MIN((rang+1)*nloops, naxes[2]);
-        }
-        else
-        {
-            start = rang+1;
-            end = MIN(rang+2, naxes[2]);
-        }
+        // start and end of the loop for the current thread
+        int limits[2];
+        compute_loop_limits(naxes[2], limits);
 
         firstpix[0] = 1;
 
@@ -393,7 +390,7 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
         indx = (int *) malloc(nfiles * sizeof(int));
         files_id = (int *) malloc(nfiles * sizeof(int));
 
-        for (firstpix[2] = start; firstpix[2] <= end; firstpix[2]++)
+        for (firstpix[2] = limits[0]; firstpix[2] <= limits[1]; firstpix[2]++)
         {
             for (firstpix[1] = 1; firstpix[1] <= naxes[1]; firstpix[1]++)
             {
@@ -494,7 +491,7 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
                 strftime(buffer,80,"%x - %I:%M%p", info);
                 if(strcmp(buffer,begin) != 0)
                 {
-                    printf("%s %3.1f%%\n", buffer, firstpix[2]*100.0/(end-start));
+                    printf("%s %3.1f%%\n", buffer, firstpix[2]*100.0/(limits[1]-limits[0]));
                     fflush(stdout);
                     strcpy(begin, buffer);
                 }
@@ -530,7 +527,9 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
             fits_report_error(stderr, status);
             exit(EXIT_FAILURE);
         }
+#ifdef _OPENMP
     }
+#endif
     printf("%s 100%%\n", buffer);
     fflush(stdout);
     return EXIT_SUCCESS;
