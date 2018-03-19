@@ -4020,7 +4020,14 @@ def get_plot_norm(data, vmin=None, vmax=None, zscale=False,
     if zscale:
         from ..tools.astropycompat import zscale as plt_zscale
         if data.dtype == np.float64:
-            vmin, vmax = plt_zscale(data.filled(np.nan))
+            try:
+                vmin, vmax = plt_zscale(data.filled(np.nan))
+            except:
+                #catch failure on all NaN
+                if np.all(np.isnan(data.filled(np.nan))):
+                    vmin, vmax = (np.nan, np.nan)
+                else:
+                    raise
         else:
             vmin, vmax = plt_zscale(data.filled(0))
 
@@ -4156,6 +4163,7 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
     im_best_res = images[idx_best_res]
 
     data_stack = np.full(im_best_res.shape + (3,), np.nan, dtype=float)
+    data_stack = np.ma.array(data_stack)
     for i, im in enumerate(images):
         #align all images to image with best res
         im = im.align_with_image(im_best_res)
@@ -4164,7 +4172,17 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
         norm = get_plot_norm(data, vmin=vmin[i], vmax=vmax[i], zscale=zscale,
                 scale=scale)
 
-        data_stack[:,:,i] = norm(data.filled(np.nan))
+        data = norm(data, clip=True)
+
+        data_stack[:,:,i] = data
+
+    
+    if np.issubdtype(data_stack.dtype, np.floating): #is array of floats
+        data_stack = data_stack.filled(np.nan)
+        data_stack = np.clip(data_stack, 0, 1)
+    else: #is array of integers
+        data_stack = data_stack.filled(0)
+        data_stack = np.clip(data_stack, 0, 255)
 
     # Display the image.
     ax.imshow(data_stack, interpolation='nearest', origin='lower', **kwargs)
