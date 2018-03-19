@@ -3750,6 +3750,7 @@ class Image(ArithmeticMixin, DataArray):
         Returns
         -------
         out : matplotlib AxesImage
+
         """
         cax = None
         # Default X and Y axes are labeled in pixels.
@@ -4149,6 +4150,7 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
     images_aligned : [`~mpdaf.obj.Image`, `~mpdaf.obj.Image`,
                       `~mpdaf.obj.Image`]
         The input images, but all aligned to that with the highest resolution.
+
     """
 
     if vmin is None:
