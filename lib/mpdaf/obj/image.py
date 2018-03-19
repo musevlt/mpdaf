@@ -3784,33 +3784,10 @@ class Image(ArithmeticMixin, DataArray):
             ylabel = self.unit
         else:
             # Plot a 2D image.
-            from astropy import visualization as viz
-            from astropy.visualization.mpl_normalize import ImageNormalize
-
-            # Choose vmin and vmax automatically?
-            if zscale:
-                from ..tools.astropycompat import zscale as plt_zscale
-                if data_plot.dtype == np.float64:
-                    vmin, vmax = plt_zscale(data_plot.filled(np.nan))
-                else:
-                    vmin, vmax = plt_zscale(data_plot.filled(0))
-
-            # How are values between vmin and vmax mapped to corresponding
-            # positions along the colorbar?
-            if scale == 'linear':
-                stretch = viz.LinearStretch
-            elif scale == 'log':
-                stretch = viz.LogStretch
-            elif scale in ('asinh', 'arcsinh'):
-                stretch = viz.AsinhStretch
-            elif scale == 'sqrt':
-                stretch = viz.SqrtStretch
-            else:
-                raise ValueError('Unknown scale: {}'.format(scale))
-
-            # Create an object that will be used to map pixel values
-            # in the range vmin..vmax to normalized colormap indexes.
-            norm = ImageNormalize(vmin=vmin, vmax=vmax, stretch=stretch())
+            
+            # get image normalization
+            norm = get_plot_norm(data_plot, vmin=vmin, vmax=vmax, zscale=zscale,
+                    scale=scale)
 
             # Display the image.
             cax = ax.imshow(data_plot, interpolation='nearest',
@@ -4033,6 +4010,39 @@ class Image(ArithmeticMixin, DataArray):
             rot = self.wcs.get_rot()
         self._spflims = SpatialFrequencyLimits(newfmax, rot)
 
+    
+def get_plot_norm(data, vmin=None, vmax=None, zscale=False,
+                   scale='linear'):
+    from astropy import visualization as viz
+    from astropy.visualization.mpl_normalize import ImageNormalize
+
+    # Choose vmin and vmax automatically?
+    if zscale:
+        from ..tools.astropycompat import zscale as plt_zscale
+        if data.dtype == np.float64:
+            vmin, vmax = plt_zscale(data.filled(np.nan))
+        else:
+            vmin, vmax = plt_zscale(data.filled(0))
+
+    # How are values between vmin and vmax mapped to corresponding
+    # positions along the colorbar?
+    if scale == 'linear':
+        stretch = viz.LinearStretch
+    elif scale == 'log':
+        stretch = viz.LogStretch
+    elif scale in ('asinh', 'arcsinh'):
+        stretch = viz.AsinhStretch
+    elif scale == 'sqrt':
+        stretch = viz.SqrtStretch
+    else:
+        raise ValueError('Unknown scale: {}'.format(scale))
+
+    # Create an object that will be used to map pixel values
+    # in the range vmin..vmax to normalized colormap indexes.
+    norm = ImageNormalize(vmin=vmin, vmax=vmax, stretch=stretch())
+
+    return norm
+
 
 def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
              zscale=False, show_xlabel=True, show_ylabel=True, ax=None,
@@ -4145,41 +4155,16 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
     idx_best_res = np.argmin(np.mean(np.abs(axis_inc), 1))
     im_best_res = images[idx_best_res]
 
-    from astropy import visualization as viz
-    from astropy.visualization.mpl_normalize import ImageNormalize
-    # How are values between vmin and vmax mapped to corresponding
-    # final intensity?
-    if scale == 'linear':
-        stretch = viz.LinearStretch
-    elif scale == 'log':
-        stretch = viz.LogStretch
-    elif scale in ('asinh', 'arcsinh'):
-        stretch = viz.AsinhStretch
-    elif scale == 'sqrt':
-        stretch = viz.SqrtStretch
-    else:
-        raise ValueError('Unknown scale: {}'.format(scale))
-
     data_stack = np.full(im_best_res.shape + (3,), np.nan, dtype=float)
     for i, im in enumerate(images):
         #align all images to image with best res
         im = im.align_with_image(im_best_res)
         data = im.data
 
-        # Choose vmin and vmax automatically?
-        if zscale:
-            from ..tools.astropycompat import zscale as plt_zscale
-            if data.dtype == np.float64:
-                vmin[i], vmax[i] = plt_zscale(data.filled(np.nan))
-            else:
-                vmin[i], vmax[i] = plt_zscale(data.filled(0))
+        norm = get_plot_norm(data, vmin=vmin[i], vmax=vmax[i], zscale=zscale,
+                scale=scale)
 
-        # Create an object that will be used to map pixel values
-        # in the range vmin..vmax to normalized colormap indexes.
-        norm = ImageNormalize(vmin=vmin[i], vmax=vmax[i], stretch=stretch(),
-                              clip=True)
-
-        data_stack[:,:,i] = norm(data)
+        data_stack[:,:,i] = norm(data.filled(np.nan))
 
     # Display the image.
     ax.imshow(data_stack, interpolation='nearest', origin='lower', **kwargs)
