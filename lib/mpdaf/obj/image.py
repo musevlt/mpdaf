@@ -4134,7 +4134,10 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
 
     Returns
     -------
-    out : matplotlib AxesImage
+    ax : matplotlib AxesImage
+    images_aligned : [`~mpdaf.obj.Image`, `~mpdaf.obj.Image`,
+                      `~mpdaf.obj.Image`]
+        The input images, but all aligned to that with the highest resolution.
     """
 
     if vmin is None:
@@ -4162,11 +4165,13 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
     idx_best_res = np.argmin(np.mean(np.abs(axis_inc), 1))
     im_best_res = images[idx_best_res]
 
+    images_aligned = []
     data_stack = np.full(im_best_res.shape + (3,), np.nan, dtype=float)
     data_stack = np.ma.array(data_stack)
     for i, im in enumerate(images):
         #align all images to image with best res
         im = im.align_with_image(im_best_res)
+        images_aligned.append(im)
         data = im.data
 
         norm = get_plot_norm(data, vmin=vmin[i], vmax=vmax[i], zscale=zscale,
@@ -4189,7 +4194,7 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
 
     # Keep the axis to allow other functions to overplot
     # the image with contours etc.
-    for im in images:
+    for im in images_aligned:
         im._ax = ax
 
     # Label the axes if requested.
@@ -4237,9 +4242,9 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
     # specified unit, and pixel values are displayed with their native
     # units.
     ax.format_coord = _format_coord
-    for im in images:
+    for im in images_aligned:
         im._unit = unit
-    return
+    return ax, images_aligned
 
 
 
