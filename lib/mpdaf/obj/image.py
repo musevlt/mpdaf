@@ -3823,42 +3823,11 @@ class Image(ArithmeticMixin, DataArray):
         if title is not None:
             ax.set_title(title)
 
-        def _format_coord(x, y):  # pragma: no cover
-            """Tell the interactive plotting window how to display the sky
-            coordinates and pixel values of an image.
-
-            Parameters
-            ----------
-            x : float
-                The X-axis pixel index of the mouse pointer.
-            y : float
-                The Y-axis pixel index of the mouse pointer.
-
-            Returns
-            -------
-            out : str
-                The string to be displayed when the mouse pointer is
-                over pixel x,y.
-
-            """
-            # Find the pixel indexes closest to the specified position.
-            col = int(x + 0.5)
-            row = int(y + 0.5)
-
-            # Is the mouse pointer within the image?
-            if (self.wcs is not None and row >= 0 and row < self.shape[0] and
-                    col >= 0 and col < self.shape[1]):
-                yc, xc = self.wcs.pix2sky([row, col], unit=self._unit)[0]
-                val = data_plot.data[row, col]
-                return 'y= %g x=%g p=%i q=%i data=%g' % (yc, xc, row, col, val)
-            else:
-                return 'x=%1.4f, y=%1.4f' % (x, y)
-
         # Change the way that plt.show() displays coordinates when the pointer
         # is over the image, such that world coordinates are displayed with the
         # specified unit, and pixel values are displayed with their native
         # units.
-        ax.format_coord = _format_coord
+        ax.format_coord = FormatCoord(self, data_plot)
         self._unit = unit
         return cax
 
@@ -4009,6 +3978,47 @@ class Image(ArithmeticMixin, DataArray):
         if rot is None:
             rot = self.wcs.get_rot()
         self._spflims = SpatialFrequencyLimits(newfmax, rot)
+
+class FormatCoord(object):
+    """Alter mouse-over coordinates displayed by plt.show()"""
+    def __init__(self, image, data):
+        self.image = image
+        self.data = data
+        
+    def __call__(self, x, y):  # pragma: no cover
+        """Tell the interactive plotting window how to display the sky
+        coordinates and pixel values of an image.
+
+        Parameters
+        ----------
+        x : float
+            The X-axis pixel index of the mouse pointer.
+        y : float
+            The Y-axis pixel index of the mouse pointer.
+
+        Returns
+        -------
+        out : str
+            The string to be displayed when the mouse pointer is
+            over pixel x,y.
+
+        """
+        # Find the pixel indexes closest to the specified position.
+        col = int(x + 0.5)
+        row = int(y + 0.5)
+
+        # Is the mouse pointer within the image?
+        im = self.image
+        if (im.wcs is not None and row >= 0 and row < im.shape[0] 
+            and col >= 0 and col < im.shape[1]):
+            yc, xc = im.wcs.pix2sky([row, col], unit=im._unit)[0]
+            val = self.data[row, col]
+            if np.isscalar(val):
+                return 'y= %g x=%g p=%i q=%i data=%g' % (yc, xc, row, col, val)
+            else:
+                return 'y= %g x=%g p=%i q=%i data=%s' % (yc, xc, row, col, val)
+        else:
+            return 'x=%1.4f, y=%1.4f' % (x, y)
 
     
 def get_plot_norm(data, vmin=None, vmax=None, zscale=False,
@@ -4166,9 +4176,11 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
     idx_best_res = np.argmin(np.mean(np.abs(axis_inc), 1))
     im_best_res = images[idx_best_res]
 
-    images_aligned = []
+
     data_stack = np.full(im_best_res.shape + (3,), np.nan, dtype=float)
     data_stack = np.ma.array(data_stack)
+
+    images_aligned = []
     for i, im in enumerate(images):
         #align all images to image with best res
         im = im.align_with_image(im_best_res)
@@ -4183,12 +4195,8 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
         data_stack[:,:,i] = data
 
     
-    if np.issubdtype(data_stack.dtype, np.floating): #is array of floats
-        data_stack = np.ma.clip(data_stack, 0, 1)
-        data_stack = data_stack.filled(np.nan)
-    else: #is array of integers
-        data_stack = np.ma.clip(data_stack, 0, 255)
-        data_stack = data_stack.filled(0)
+    data_stack = np.ma.clip(data_stack, 0, 1)
+    data_stack = data_stack.filled(np.nan)
 
     #reverse BGR to RGB order
     data_stack = data_stack[:,:,::-1]
@@ -4209,43 +4217,12 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
     if title is not None:
         ax.set_title(title)
 
-    def _format_coord(x, y):  # pragma: no cover
-        """Tell the interactive plotting window how to display the sky
-        coordinates and pixel values of an image.
-
-        Parameters
-        ----------
-        x : float
-            The X-axis pixel index of the mouse pointer.
-        y : float
-            The Y-axis pixel index of the mouse pointer.
-
-        Returns
-        -------
-        out : str
-            The string to be displayed when the mouse pointer is
-            over pixel x,y.
-
-        """
-        # Find the pixel indexes closest to the specified position.
-        col = int(x + 0.5)
-        row = int(y + 0.5)
-
-        # Is the mouse pointer within the image?
-        im = im_best_res
-        if (im.wcs is not None and row >= 0 and row < im.shape[0] 
-            and col >= 0 and col < im.shape[1]):
-            yc, xc = im.wcs.pix2sky([row, col], unit=im._unit)[0]
-            val = data_stack[row, col]
-            return 'y= %g x=%g p=%i q=%i data=%s' % (yc, xc, row, col, val)
-        else:
-            return 'x=%1.4f, y=%1.4f' % (x, y)
 
     # Change the way that plt.show() displays coordinates when the pointer
     # is over the image, such that world coordinates are displayed with the
     # specified unit, and pixel values are displayed with their native
     # units.
-    ax.format_coord = _format_coord
+    ax.format_coord = FormatCoord(images_aligned[0], data_stack)
     for im in images_aligned:
         im._unit = unit
     return ax, images_aligned
