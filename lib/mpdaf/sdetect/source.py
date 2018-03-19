@@ -1952,13 +1952,13 @@ class Source(object):
         ax : matplotlib.axes._subplots.AxesSubplot
             Matplotlib axis instance (eg ax = fig.add_subplot(2,3,1)).
         names : [str, str, str]
-            List of images coresponding to the red, green and blue filters.
+            List of images coresponding to the blue, green and red filters.
         showcenter : (float, str)
             radius in arcsec and color used to plot a circle around the center
             of the source.
         cuts : [(float, float), (float, float), (float, float)]
             Minimum and maximum values to use for the scaling coresponding to
-            the red, green and blue filters.
+            the blue, green and red filters.
         kwargs : matplotlib.artist.Artist
             kwargs can be used to set additional plotting properties.
 
@@ -1980,6 +1980,8 @@ class Source(object):
         if cuts is None:
             vmin = [None, None, None]
             vmax = [None, None, None]
+        else:
+            vmin, vmax = zip(*cuts)
 
         if 'title' not in kwargs:
             kwargs['title'] = ' '.join(names)

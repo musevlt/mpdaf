@@ -4088,7 +4088,8 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
     Parameters
     ----------
     images : [`~mpdaf.obj.Image`, `~mpdaf.obj.Image`, `~mpdaf.obj.Image`]
-        The three [red, green, blue] images to be used.
+        The three [blue, green, red] images to be used.
+        (Ordered by increasing wavelength.)
     title : str
         An optional title for the figure (None by default).
     scale : 'linear' | 'log' | 'sqrt' | 'arcsinh'
@@ -4104,12 +4105,12 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
         sqrt:    p = sqrt(nv)
         arcsinh: p = arcsinh(10*nv) / arcsinh(10.0)
     vmin : [float, float, float]
-        Lower limits corresponing to the [red, green, blue] images.
+        Lower limits corresponing to the [blue, green, red] images.
         Pixels that have values <= vmin are assigned a value of 0.
         Pixel values between vmin and vmax are scaled according
         to the mapping algorithm specified by the scale argument.
     vmax : [float, float, float]
-        Upper limits corresponing to the [red, green, blue] images.
+        Upper limits corresponing to the [blue, green, red] images.
         Pixels that have values >= vmax are assigned a value of 1.
         Pixel values between vmin and vmax are scaled according
         to the mapping algorithm specified by the scale argument.
@@ -4188,6 +4189,9 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
     else: #is array of integers
         data_stack = np.ma.clip(data_stack, 0, 255)
         data_stack = data_stack.filled(0)
+
+    #reverse BGR to RGB order
+    data_stack = data_stack[:,:,::-1]
 
     # Display the image.
     ax.imshow(data_stack, interpolation='nearest', origin='lower', **kwargs)
