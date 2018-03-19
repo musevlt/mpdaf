@@ -4172,17 +4172,17 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
         norm = get_plot_norm(data, vmin=vmin[i], vmax=vmax[i], zscale=zscale,
                 scale=scale)
 
-        data = norm(data, clip=True)
+        data = norm(data)
 
         data_stack[:,:,i] = data
 
     
     if np.issubdtype(data_stack.dtype, np.floating): #is array of floats
+        data_stack = np.ma.clip(data_stack, 0, 1)
         data_stack = data_stack.filled(np.nan)
-        data_stack = np.clip(data_stack, 0, 1)
     else: #is array of integers
+        data_stack = np.ma.clip(data_stack, 0, 255)
         data_stack = data_stack.filled(0)
-        data_stack = np.clip(data_stack, 0, 255)
 
     # Display the image.
     ax.imshow(data_stack, interpolation='nearest', origin='lower', **kwargs)
