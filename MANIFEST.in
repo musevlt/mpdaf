@@ -2,7 +2,6 @@ include README.rst
 include CHANGELOG
 include LICENSE
 include tox.ini
-include ez_setup.py
 
 graft doc
 graft lib

@@ -41,10 +41,6 @@ import os
 import subprocess
 import sys
 
-# Bootstrap setuptools if not available
-import ez_setup
-ez_setup.use_setuptools(version='18.0')  # NOQA
-
 from setuptools import setup, find_packages, Extension
 from setuptools.command.build_ext import build_ext as _build_ext
 from setuptools.command.test import test as TestCommand
