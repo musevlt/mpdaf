@@ -4099,8 +4099,8 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
     Parameters
     ----------
     images : [`~mpdaf.obj.Image`, `~mpdaf.obj.Image`, `~mpdaf.obj.Image`]
-        The three [blue, green, red] images to be used.
-        (Ordered by increasing wavelength.)
+        The three [blue, green, red] images to be used. i.e. ordered by
+        increasing wavelength.
     title : str
         An optional title for the figure (None by default).
     scale : 'linear' | 'log' | 'sqrt' | 'arcsinh'
@@ -4171,26 +4171,55 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
             ax = plt.gca()
 
     #find which image has the highest pixel resolution
-    axis_inc = []
-    for im in images:
-        axis_inc.append(im.wcs.get_axis_increments(unit=u.deg))
-    idx_best_res = np.argmin(np.mean(np.abs(axis_inc), 1))
-    im_best_res = images[idx_best_res]
+    #also find bbox that encloses all 3 images
+    steps = np.full([3, 2], np.nan, dtype=float)
+    corners = np.full([3, 4, 2], np.nan, dtype=float)
+    for i_im, im in enumerate(images):
+        wcs = im.wcs
+        step = wcs.get_axis_increments(unit=u.deg)
+        corn = wcs.wcs.calc_footprint(axes=[wcs.naxis1, wcs.naxis2])
+
+        steps[i_im] = step
+        corners[i_im] = corn
+
+    idx_best_res = np.argmin(np.mean(np.abs(steps), 1))
+    im_best_res = images[idx_best_res] # image with highest res
+
+    # get bounding pixel coords in best image
+    corners = np.vstack(corners)
+    corners = im_best_res.wcs.wcs.all_world2pix(corners, 0)
+    new_shape = np.array([[np.min(corners[:,0]), np.max(corners[:,0])],
+                          [np.min(corners[:,1]), np.max(corners[:,1])]])
+    new_shape = np.around(new_shape).astype(int)
+
+    new_dim = new_shape[:,1] - new_shape[:,0] + 1
+    new_start = new_shape[:,0].reshape(1,2)
+    new_start = im_best_res.wcs.wcs.all_pix2world(new_start, 0)[0]
+
+    new_dim = new_dim[::-1] #naxis2, naxis1
+    new_start = new_start[::-1] #dec, ra
+    old_inc = im_best_res.get_axis_increments(unit=u.deg)
+
+    # expand the reference image so that it now covers the footprints of the
+    # other 2 images
+    im_best_res = im_best_res.resample(new_dim, new_start, old_inc,
+                        unit_step=u.deg)
 
 
+    # create BGR stack
     data_stack = np.full(im_best_res.shape + (3,), np.nan, dtype=float)
     data_stack = np.ma.array(data_stack)
 
     images_aligned = []
     for i, im in enumerate(images):
-        #align all images to image with best res
+        # align all images to image with best res
         im = im.align_with_image(im_best_res)
         images_aligned.append(im)
         data = im.data
 
         norm = get_plot_norm(data, vmin=vmin[i], vmax=vmax[i], zscale=zscale,
                 scale=scale)
-
+        
         data = norm(data)
 
         data_stack[:,:,i] = data
@@ -4199,10 +4228,15 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
     data_stack = np.ma.clip(data_stack, 0, 1)
     data_stack = data_stack.filled(np.nan)
 
-    #reverse BGR to RGB order
+    # reverse BGR to RGB order
     data_stack = data_stack[:,:,::-1]
 
-    # Display the image.
+    # mask all NaNs and plot transparent
+    mask = np.all(np.isnan(data_stack), axis=2)
+    alpha = ~mask * 1. #no transparency where data is good
+    data_stack = np.concatenate([data_stack, alpha[...,np.newaxis]], axis=2)
+
+    # Display the RGBA image.
     ax.imshow(data_stack, interpolation='nearest', origin='lower', **kwargs)
 
     # Keep the axis to allow other functions to overplot
