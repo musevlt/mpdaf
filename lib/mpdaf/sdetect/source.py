@@ -1965,8 +1965,7 @@ class Source(object):
         Returns
         -------
         ax : matplotlib AxesImage
-        images_aligned : [`~mpdaf.obj.Image`, `~mpdaf.obj.Image`,
-                          `~mpdaf.obj.Image`]
+        images_aligned : [`~mpdaf.obj.Image`, `~mpdaf.obj.Image`, `~mpdaf.obj.Image`]
             The input images, but all aligned to that with the highest
             resolution.
         """
