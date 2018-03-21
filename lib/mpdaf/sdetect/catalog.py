@@ -80,7 +80,7 @@ class Catalog(Table):
         if self.masked:
             self.masked_invalid()
 
-        #replace Table.meta OrderedDict with an uppercase only verions
+        #replace Table.meta OrderedDict with a case insenstive version
         self.meta = LowercaseOrderedDict(self.meta)
 
     @property
