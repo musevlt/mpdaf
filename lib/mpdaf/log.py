@@ -68,11 +68,24 @@ def setup_logging(name='mpdaf', level=logging.DEBUG, color=False,
 
     steam_handler = logging.StreamHandler(stream)
     steam_handler.setLevel(level)
-    if (color and os.isatty(sys.stdout.fileno()) and
-            not sys.platform.startswith('win')):
-        formatter = ColoredFormatter(fmt)
-    else:
-        formatter = logging.Formatter(fmt)
+    formatter = logging.Formatter(fmt)
+    if color:
+        # Jupyter
+        try:
+            import ipykernel
+        except ImportError:
+            pass
+        else:
+            if isinstance(sys.stdout, ipykernel.iostream.OutStream):
+                formatter = ColoredFormatter(fmt)
+
+        # Try to detect if stdout is a tty
+        try:
+            if (os.isatty(sys.stdout.fileno()) and
+                    not sys.platform.startswith('win')):
+                formatter = ColoredFormatter(fmt)
+        except IOError:
+            pass
     steam_handler.setFormatter(formatter)
     logger.addHandler(steam_handler)
 
