@@ -140,10 +140,14 @@ def broadcast_to_cube(arr, shape):
     return broadcast_to(arr, shape)
 
 
+# Here we inherit unncessarily from OrderDict.
+# This is because when mergy astropy.table.Table() objects, an explisit check
+# for the metadata object is a <dict> instance
 class LowercaseOrderedDict(MutableMapping, OrderedDict):
     """Ordered dictonary where all strings keys are case insensitive.
     i.e. keys such as 'abc', 'ABC', 'Abc' all map to the same value.
     This can be useful for mimicing the storage of FITS headers.
+
     """
     def __init__(self, *args):
         self._d = OrderedDict()
@@ -178,4 +182,6 @@ class LowercaseOrderedDict(MutableMapping, OrderedDict):
         return "{}({})".format(self.__class__, [i for i in self._d.items()])
 
     def popitem(self, last=True):
+        # MutableMapping pops the first item, whereas OrderedDict pops the last
+        # We implement the latter.
         return self._d.popitem(last)
