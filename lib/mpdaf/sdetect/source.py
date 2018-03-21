@@ -57,6 +57,7 @@ from six.moves import range, zip
 from scipy.optimize import leastsq
 
 from ..obj import Cube, Image, Spectrum
+from ..obj.image import plot_rgb
 from ..obj.objs import is_int, is_float, bounding_box
 from ..tools import deprecated, write_hdulist_to
 from ..MUSE import FieldsMap, FSF
@@ -1942,6 +1943,62 @@ class Source(object):
             ell.set_edgecolor(col)
         ax.axis('off')
         return
+
+    def show_rgb(self, ax, names, showcenter=None, cuts=None, **kwargs):
+        """Show RGB composite image.
+
+        Parameters
+        ----------
+        ax : matplotlib.axes._subplots.AxesSubplot
+            Matplotlib axis instance (eg ax = fig.add_subplot(2,3,1)).
+        names : [str, str, str]
+            List of images coresponding to the blue, green and red filters.
+        showcenter : (float, str)
+            radius in arcsec and color used to plot a circle around the center
+            of the source.
+        cuts : [(float, float), (float, float), (float, float)]
+            Minimum and maximum values to use for the scaling coresponding to
+            the blue, green and red filters.
+        kwargs : matplotlib.artist.Artist
+            kwargs can be used to set additional plotting properties.
+
+        Returns
+        -------
+        ax : matplotlib AxesImage
+        images_aligned : [`~mpdaf.obj.Image`, `~mpdaf.obj.Image`, `~mpdaf.obj.Image`]
+            The input images, but all aligned to that with the highest
+            resolution.
+        """
+
+        images = []
+        for im_name in names:
+            if im_name not in self.images:
+                raise ValueError('Image %s not found' % im_name)
+            images.append(self.images[im_name])
+
+        if cuts is None:
+            vmin = [None, None, None]
+            vmax = [None, None, None]
+        else:
+            vmin, vmax = zip(*cuts)
+
+        if 'title' not in kwargs:
+            kwargs['title'] = ' '.join(names)
+
+        _, images_aligned = plot_rgb(images, vmin=vmin, vmax=vmax, ax=ax,
+                                    **kwargs)
+
+        if showcenter is not None:
+            rad, col = showcenter
+            pix = images_aligned[0].wcs.sky2pix((self.DEC, self.RA))[0]
+            rpix = rad / images_aligned[0].wcs.get_step(unit=u.arcsec)[0]
+            ell = Ellipse((pix[1], pix[0]), 2 * rpix, 2 * rpix, 0, fill=False)
+            ax.add_artist(ell)
+            ell.set_clip_box(ax.bbox)
+            ell.set_alpha(1)
+            ell.set_edgecolor(col)
+        ax.axis('off')
+        return ax, images_aligned
 
     def show_spec(self, ax, name, cuts=None, zero=False, sky=None, lines=None,
                   **kwargs):
