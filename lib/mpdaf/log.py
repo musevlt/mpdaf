@@ -73,7 +73,9 @@ def setup_logging(name='mpdaf', level=logging.DEBUG, color=False,
         # Jupyter
         try:
             import ipykernel
-        except ImportError:
+            # check if iostream attribute is available
+            ipykernel.iostream  # noqa
+        except (ImportError, AttributeError):
             pass
         else:
             if isinstance(sys.stdout, ipykernel.iostream.OutStream):
