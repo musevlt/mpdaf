@@ -1395,7 +1395,7 @@ class Source(object):
                     # self._logger.debug('Generate narrow band image for NB_%s'
                     #                   ' with z=%s', tag, z[0])
                     self.images['NB_' + tag] = subcub.get_image(
-                        wave=(l1, l2), is_sum=is_sum,
+                        wave=(l1, l2), method='sum' if is_sum else 'mean',
                         subtract_off=subtract_off, margin=margin,
                         fband=fband, unit_wave=u.angstrom)
 
@@ -1444,7 +1444,8 @@ class Source(object):
 
         subcub = cube.subcube(center=(self.dec, self.ra), size=size,
                               unit_center=u.deg, unit_size=unit_size)
-        self.images[tag] = subcub.get_image(wave=(l1, l2), is_sum=is_sum,
+        self.images[tag] = subcub.get_image(wave=(l1, l2),
+                                            method='sum' if is_sum else 'mean',
                                             subtract_off=subtract_off,
                                             margin=margin, fband=fband,
                                             unit_wave=u.angstrom)

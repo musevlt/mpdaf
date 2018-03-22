@@ -431,7 +431,8 @@ def test_median():
 
     with pytest.raises(ValueError):
         m = cube1.median(axis=-1)
-        
+
+
 def test_max():
     """Cube class: testing max method"""
     cube1 = generate_cube(data=1., wave=WaveCoord(crval=1))
@@ -591,7 +592,7 @@ def test_get_image():
     # Get an image that is the mean of all images in the above wavelength
     # range, minus a background image estimated from outside this range,
     # where all image values are 2.0.
-    ima = cube1.get_image(wave=lrange, is_sum=False, subtract_off=True)
+    ima = cube1.get_image(wave=lrange, method='mean', subtract_off=True)
 
     # In the cube, all spectral pixels of image pixel 0,0 were 2.0,
     # so the mean over the desired wavelength range, minus the mean
@@ -607,7 +608,7 @@ def test_get_image():
     # Get another mean image, but this time without subtracting off a
     # background.  Image pixel 0,0 should have a mean of 2.0, and
     # pixel 2,2 should equal the mean of the gaussian added to 2.0
-    ima = cube1.get_image(wave=lrange, is_sum=False, subtract_off=False)
+    ima = cube1.get_image(wave=lrange, method='mean', subtract_off=False)
     assert ima[0, 0] == 2
     assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].mean()[0], 3)
 
@@ -620,7 +621,7 @@ def test_get_image():
     # units as the output image. Check the background subtraction of
     # pixel 2,2 using an equal number of pixels that were not affected
     # by the addition of the gaussian.
-    ima = cube1.get_image(wave=lrange, is_sum=True, subtract_off=True)
+    ima = cube1.get_image(wave=lrange, method='sum', subtract_off=True)
     assert ima[0, 0] == 0
     assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].sum()[0] -
                         cube1[lslice, 0, 0].sum()[0], 3)
@@ -628,7 +629,7 @@ def test_get_image():
     # Finally, perform a sum of the chosen wavelength range without
     # subtracting a background image. This is easy to test by doing
     # equivalent sums through the cube over the chosen wavelength range.
-    ima = cube1.get_image(wave=lrange, is_sum=True, subtract_off=False)
+    ima = cube1.get_image(wave=lrange, method='sum', subtract_off=False)
     assert ima[0, 0] == cube1[lslice, 0, 0].sum()[0]
     assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].sum()[0])
 

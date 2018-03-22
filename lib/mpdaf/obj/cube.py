@@ -43,6 +43,7 @@ import os.path
 import sys
 import time
 import types
+import warnings
 
 from astropy.io import fits
 from matplotlib.path import Path
@@ -55,7 +56,7 @@ from .data import DataArray
 from .image import Image
 from .objs import bounding_box, is_number
 from .spectrum import Spectrum
-from ..tools import add_mpdaf_method_keywords
+from ..tools import add_mpdaf_method_keywords, MpdafWarning
 
 __all__ = ('iter_spe', 'iter_ima', 'Cube')
 
@@ -1399,9 +1400,9 @@ class Cube(ArithmeticMixin, DataArray):
 
         """
         if is_sum:
-            self._logger.warning(
-                "The is_sum parameter is deprecated. Use method='sum' "
-                "instead. Aggregation function set to sum.")
+            warnings.warn(
+                "The 'is_sum' parameter is deprecated. Use method='sum' "
+                "instead. Aggregation function set to sum.", MpdafWarning)
             method = "sum"
 
         # Convert the wavelength range to pixel indexes.
