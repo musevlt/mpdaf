@@ -83,51 +83,6 @@ class Catalog(Table):
         #replace Table.meta OrderedDict with a case insenstive version
         self.meta = LowercaseOrderedDict(self.meta)
 
-    @property
-    def idname(self):
-        try:
-            return self.meta['idname']
-        except KeyError:
-            return self._idname_default
-
-    @idname.setter
-    def idname(self, value):
-        self.meta['idname'] = value
-
-    @idname.deleter
-    def idname(self):
-        del self.meta['idname']
-
-    @property
-    def raname(self):
-        try:
-            return self.meta['raname']
-        except KeyError:
-            return self._raname_default
-
-    @raname.setter
-    def raname(self, value):
-        self.meta['raname'] = value
-
-    @raname.deleter
-    def raname(self):
-        del self.meta['raname']
-
-    @property
-    def decname(self):
-        try:
-            return self.meta['decname']
-        except KeyError:
-            return self._decname_default
-
-    @decname.setter
-    def decname(self, value):
-        self.meta['decname'] = value
-
-    @decname.deleter
-    def decname(self):
-        del self.meta['decname']
-
 
     @staticmethod
     def _merge_meta(catalogs, suffix=None):
@@ -660,10 +615,12 @@ class Catalog(Table):
             If ``full_output`` is False, only ``match`` is returned.
 
         """
-        col1_ra = colc1[0] or self.raname
-        col1_dec = colc1[1] or self.decname
-        col2_ra = colc2[0] or cat2.raname
-        col2_dec = colc2[1] or cat2.decname
+        col1_ra = colc1[0] or self.meta.get('raname', self._raname_default)
+        col1_dec = colc1[1] or self.meta.get('decname', self._decname_default)
+        
+        cls = self.__class__ #use original class defaults
+        col2_ra = colc2[0] or cat2.meta.get('raname', cls._raname_default)
+        col2_dec = colc2[1] or cat2.meta.get('decname', cls._decname_default)
 
         coord1 = self.to_skycoord(ra=col1_ra, dec=col1_dec)
         coord2 = cat2.to_skycoord(ra=col2_ra, dec=col2_dec)
@@ -750,8 +707,8 @@ class Catalog(Table):
         if coord.shape == ():
             coord = coord.reshape(1)
 
-        col_ra = colcoord[0] or self.raname
-        col_dec = colcoord[1] or self.decname
+        col_ra = colcoord[0] or self.meta.get('raname', self._raname_default)
+        col_dec = colcoord[1] or self.meta.get('decname', self._decname_default)
         src_coords = self.to_skycoord(ra=col_ra, dec=col_dec)
         idx, d2d, d3d = src_coords.match_to_catalog_sky(coord, **kwargs)
         dist = d2d.arcsec
@@ -814,10 +771,12 @@ class Catalog(Table):
             If ``full_output`` is False, only ``match`` is returned.
 
         """
-        col1_ra = colc1[0] or self.raname
-        col1_dec = colc1[1] or self.decname
-        col2_ra = colc2[0] or cat2.raname
-        col2_dec = colc2[1] or cat2.decname
+        col1_ra = colc1[0] or self.meta.get('raname', self._raname_default)
+        col1_dec = colc1[1] or self.meta.get('decname', self._decname_default)
+
+        cls = self.__class__ #use original class defaults
+        col2_ra = colc2[0] or cat2.meta.get('raname', cls._raname_default)
+        col2_dec = colc2[1] or cat2.meta.get('decname', cls._decname_default)
         
         # rename all catalogs columns with _1 or _2
         self._logger.debug('Rename Catalog columns with %s or %s suffix',
@@ -912,8 +871,8 @@ class Catalog(Table):
 
         """
 
-        ra = ra or self.raname
-        dec = dec or self.decname
+        ra = ra or self.meta.get('raname', self._raname_default)
+        dec = dec or self.meta.get('decname', self._decname_default)
 
         arr = np.vstack([self[dec].data, self[ra].data]).T
         cen = wcs.sky2pix(arr, unit=u.deg).T
@@ -944,8 +903,8 @@ class Catalog(Table):
             The distance in arcsec units.
 
         """
-        ra = ra or self.raname
-        dec = dec or self.decname
+        ra = ra or self.meta.get('raname', self._raname_default)
+        dec = dec or self.meta.get('decname', self._decname_default)
 
         dim = np.array([wcs.naxis2, wcs.naxis1])
         pix = wcs.sky2pix(np.array([self[dec], self[ra]]).T, unit=u.deg)
@@ -954,8 +913,8 @@ class Catalog(Table):
 
     def to_skycoord(self, ra=None, dec=None, frame='fk5', unit='deg'):
         """Return an `astropy.coordinates.SkyCoord` object."""
-        ra = ra or self.raname
-        dec = dec or self.decname
+        ra = ra or self.meta.get('raname', self._raname_default)
+        dec = dec or self.meta.get('decname', self._decname_default)
 
         from astropy.coordinates import SkyCoord
         return SkyCoord(ra=self[ra], dec=self[dec],
@@ -969,8 +928,8 @@ class Catalog(Table):
         except ImportError:
             self._logger.error("the 'regions' package is needed for this")
             raise
-        ra = ra or self.raname
-        dec = dec or self.decname
+        ra = ra or self.meta.get('raname', self._raname_default)
+        dec = dec or self.meta.get('decname', self._decname_default)
         center = self.to_skycoord(ra=ra, dec=dec, frame=frame, unit=unit_pos)
         radius = radius * u.Unit(unit_radius)
         regions = [CircleSkyRegion(center=c, radius=radius) for c in center]
@@ -1018,9 +977,9 @@ class Catalog(Table):
             kwargs can be used to set additional plotting properties.
 
         """
-        ra = ra or self.raname
-        dec = dec or self.decname
-        id = id or self.idname
+        ra = ra or self.meta.get('raname', self._raname_default)
+        dec = dec or self.meta.get('decname', self._decname_default)
+        id = id or self.meta.get('idname', self._idname_default)
 
         if (ltype is None) and (etype not in ['o', 's']):
             raise IOError('Unknown symbol %s' % etype)
@@ -1105,9 +1064,9 @@ class Catalog(Table):
             Additional properties for ``ax.text``.
 
         """
-        iden = iden or self.idname
-        ra = ra or self.raname
-        dec = dec or self.decname
+        iden = iden or self.meta.get('idname', self._idname_default)
+        ra = ra or self.meta.get('raname', self._raname_default)
+        dec = dec or self.meta.get('decname', self._decname_default)
 
         if ra not in self.colnames:
             raise IOError('column %s not found in catalog' % ra)
