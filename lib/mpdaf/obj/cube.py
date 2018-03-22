@@ -1699,7 +1699,7 @@ class Cube(ArithmeticMixin, DataArray):
 
     def subcube(self, center, size, lbda=None, unit_center=u.deg,
                 unit_size=u.arcsec, unit_wave=u.angstrom):
-        """Return a subcuve view around a position and for a wavelength range.
+        """Return a subcube view around a position and for a wavelength range.
 
         Note: as this is a view on the original cube, both the cube and the
         sub-cube will be modified at the same time.  If you need to make
