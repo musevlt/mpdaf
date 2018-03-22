@@ -615,12 +615,19 @@ class Catalog(Table):
             If ``full_output`` is False, only ``match`` is returned.
 
         """
+        #convert cat2 to Catalog object
+        if not isinstance(cat2, Catalog):
+            cat2_class = cat2.__class__
+            cat2 = Catalog(cat2, copy=False)
+        else:
+            cat2_class = None
+
         col1_ra = colc1[0] or self.meta.get('raname', self._raname_default)
         col1_dec = colc1[1] or self.meta.get('decname', self._decname_default)
         
-        cls = self.__class__ #use original class defaults
-        col2_ra = colc2[0] or cat2.meta.get('raname', cls._raname_default)
-        col2_dec = colc2[1] or cat2.meta.get('decname', cls._decname_default)
+        col2_ra = colc2[0] or cat2.meta.get('raname', cat2._raname_default)
+        col2_dec = colc2[1] or cat2.meta.get('decname', cat2._decname_default)
+
 
         coord1 = self.to_skycoord(ra=col1_ra, dec=col1_dec)
         coord2 = cat2.to_skycoord(ra=col2_ra, dec=col2_dec)
@@ -664,6 +671,11 @@ class Catalog(Table):
                                len(self), len(match1), len(nomatch1))
             self._logger.debug('Cat2 Nelt %d Matched %d Not Matched %d',
                                len(cat2), len(match2), len(nomatch2))
+
+            #convert nomatch2 back to original cat2 type
+            if cat2_class:
+                nomatch2 = cat2_class(nomatch2, copy=False)
+
             return match, nomatch1, nomatch2
         else:
             self._logger.debug('Cat1 Nelt %d Cat2 Nelt %d Matched %d',
@@ -771,12 +783,19 @@ class Catalog(Table):
             If ``full_output`` is False, only ``match`` is returned.
 
         """
+
+        #convert cat2 to Catalog object
+        if not isinstance(cat2, Catalog):
+            cat2_class = cat2.__class__
+            cat2 = Catalog(cat2, copy=False)
+        else:
+            cat2_class = None
+
         col1_ra = colc1[0] or self.meta.get('raname', self._raname_default)
         col1_dec = colc1[1] or self.meta.get('decname', self._decname_default)
 
-        cls = self.__class__ #use original class defaults
-        col2_ra = colc2[0] or cat2.meta.get('raname', cls._raname_default)
-        col2_dec = colc2[1] or cat2.meta.get('decname', cls._decname_default)
+        col2_ra = colc2[0] or cat2.meta.get('raname', cat2._raname_default)
+        col2_dec = colc2[1] or cat2.meta.get('decname', cat2._decname_default)
         
         # rename all catalogs columns with _1 or _2
         self._logger.debug('Rename Catalog columns with %s or %s suffix',
@@ -841,6 +860,11 @@ class Catalog(Table):
             self._logger.info('Matched 3D: %d Matched 2D: %d Cat1 unmatched: '
                               '%d Cat2 unmatched: %d', len(match3d),
                               len(match2d), len(unmatch1), len(unmatch2))
+
+            #convert unmatch2 back to original cat2 type
+            if cat2_class:
+                unmatch2 = cat2_class(unmatch2, copy=False)
+
             return (match3d, match2d, unmatch1, unmatch2)
         else:
             self._logger.info('Matched 3D: %d',
