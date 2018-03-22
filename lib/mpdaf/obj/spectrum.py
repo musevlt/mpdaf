@@ -131,6 +131,11 @@ class Spectrum(ArithmeticMixin, DataArray):
         is returned is the value of the pixel whose wavelength is
         closest to the wavelength specified by the lmin argument.
 
+        Note that is a wavelength range is asked for, a view on the original
+        spectrum is returned and both will be modified at the same time.  If
+        you need to modify only the sub-spectrum, you'll need to copy() it
+        before.
+
         Parameters
         ----------
         lmin : float

@@ -601,8 +601,13 @@ class Image(ArithmeticMixin, DataArray):
 
     def subimage(self, center, size, unit_center=u.deg, unit_size=u.arcsec,
                  minsize=2.0):
-        """Extract a square or rectangular sub-image whose center and size
-        are specified in world coordinates.
+        """Return a view on a square or rectangular part.
+
+        This method returns a square or rectangular sub-image whose center and
+        size are specified in world coordinates.  Note that this is a view on
+        the original map and that both will be modified at the same time. If
+        you need to modify only the sub-image, copy() the result of the
+        method.
 
         Parameters
         ----------
