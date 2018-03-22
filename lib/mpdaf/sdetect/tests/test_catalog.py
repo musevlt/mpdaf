@@ -37,6 +37,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import pytest
 import six
+from astropy.table import Table
 from astropy.coordinates import SkyCoord
 from mpdaf.sdetect import Catalog
 from numpy.testing import assert_array_equal, assert_almost_equal
@@ -105,7 +106,7 @@ def test_match():
     c1['RA'] = np.arange(10, dtype=float)
     c1['DEC'] = np.arange(10, dtype=float)
 
-    c2 = Catalog()
+    c2 = Table()
     c2['ra'] = np.arange(20, dtype=float) + 0.5 / 3600
     c2['dec'] = np.arange(20, dtype=float) - 0.5 / 3600
 
@@ -125,6 +126,7 @@ def test_match():
     assert len(match) == 4
     assert len(nomatch1) == 6
     assert len(nomatch2) == 16
+    assert type(nomatch2) == type(c2)
 
 
 @pytest.mark.xfail(six.PY2, reason="issue with astropy coordinates and numpy")
@@ -179,17 +181,15 @@ def test_meta():
     c1['DEC'] = np.arange(10, dtype=float)
     c1.meta['idname'] = 'ID'
     c1.meta['raname'] = 'RA'
-    c1.meta['decname'] = 'DEC'
 
     assert c1.meta['idname'] is c1.meta['IDNAME']
 
-    c2 = Catalog()
+    c2 = Table()
     c2['id'] = np.arange(20, dtype=int)
     c2['RA'] = np.arange(20, dtype=float) + 0.5 / 3600
     c2['DEC'] = np.arange(20, dtype=float) - 0.5 / 3600
     c2.meta['idname'] = 'id'
     c2.meta['raname'] = 'RA'
-    c2.meta['decname'] = 'DEC'
 
     match, nomatch1, nomatch2 = c1.match(c2, full_output=True)
     assert len(match) == 10
@@ -204,4 +204,5 @@ def test_meta():
 
     assert nomatch1.meta['idname'] == 'ID'
     assert nomatch2.meta['idname'] == 'id'
+
 
