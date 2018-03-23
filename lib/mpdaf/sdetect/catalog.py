@@ -70,11 +70,32 @@ class Catalog(Table):
     Its goal is to manage a list of objects.
     """
 
+    # These are default column names to be used if not provided by metadata.
+    # They are not stored in the meta directly, and therefore not written when
+    # the catalog is writen to disk. 
     _idname_default = 'ID'
     _raname_default = 'RA'
     _decname_default = 'DEC'
 
     def __init__(self, *args, **kwargs):
+        """Initialize a Catalog instance
+
+        Parameters
+        ----------
+        idname : str, optional
+            Table column name containing object IDs
+        raname : str, optional
+            Table column name containing object RA coords
+        decname : str, optional
+            Table column name containing object DEC coords
+        Remaining args and kwargs are passed to `astropy.table.Table.__init__`.
+
+        """
+        #pop kwargs for PY2 compatibility
+        idname = kwargs.pop('idname', None)
+        raname = kwargs.pop('raname', None)
+        decname = kwargs.pop('decname', None)
+
         super(Catalog, self).__init__(*args, **kwargs)
         self._logger = logging.getLogger(__name__)
         if self.masked:
@@ -82,6 +103,14 @@ class Catalog(Table):
 
         #replace Table.meta OrderedDict with a case insenstive version
         self.meta = LowercaseOrderedDict(self.meta)
+
+        #set column names in metadata
+        if idname is not None:
+            self.meta['idname'] = idname
+        if raname is not None:
+            self.meta['raname'] = raname
+        if decname is not None:
+            self.meta['decname'] = decname
 
 
     @staticmethod

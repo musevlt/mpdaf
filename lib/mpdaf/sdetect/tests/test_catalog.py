@@ -175,12 +175,10 @@ def test_select(minicube):
 
 @pytest.mark.xfail(six.PY2, reason="issue with astropy coordinates and numpy")
 def test_meta():
-    c1 = Catalog()
+    c1 = Catalog(idname='ID', raname='RA')
     c1['ID'] = np.arange(10, dtype=int)
     c1['RA'] = np.arange(10, dtype=float)
     c1['DEC'] = np.arange(10, dtype=float)
-    c1.meta['idname'] = 'ID'
-    c1.meta['raname'] = 'RA'
 
     assert c1.meta['idname'] is c1.meta['IDNAME']
 
