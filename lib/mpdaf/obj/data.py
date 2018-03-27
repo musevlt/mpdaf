@@ -1001,7 +1001,7 @@ class DataArray(object):
         elif self.ndim == 3 and self.wcs is not None:
             return self.wcs.to_cube_header(self.wave)
 
-    def get_data_hdu(self, name='DATA', savemask='dq'):
+    def get_data_hdu(self, name='DATA', savemask='dq', convert_float32=True):
         """Return an ImageHDU corresponding to the DATA extension.
 
         Parameters
@@ -1012,13 +1012,16 @@ class DataArray(object):
             If 'dq', the mask array is saved in a DQ extension.
             If 'nan', masked data are replaced by nan in a DATA extension.
             If 'none', masked array is not saved.
+        convert_float32: bool
+            By default float64 arrays are converted to float32, in order to
+            produce smaller files.
 
         Returns
         -------
         out : `astropy.io.fits.ImageHDU`
 
         """
-        if self.data.dtype == np.float64:
+        if convert_float32 and self._data.dtype == np.float64:
             # Force data to be stored in float instead of double
             data = self.data.astype(np.float32)
         else:
@@ -1045,13 +1048,19 @@ class DataArray(object):
                           unit=self.unit)
         return fits.ImageHDU(name=name, data=data, header=hdr)
 
-    def get_stat_hdu(self, name='STAT', header=None):
+    def get_stat_hdu(self, name='STAT', header=None, convert_float32=True):
         """Return an ImageHDU corresponding to the STAT extension.
 
         Parameters
         ----------
         name : str
             Extension name, STAT by default.
+        header: fits.Header
+            Fits Header to put in the extension, typically to reuse the same as
+            in the DATA extension. Otherwise it is created with the wcs.
+        convert_float32: bool
+            By default float64 arrays are converted to float32, in order to
+            produce smaller files.
 
         Returns
         -------
@@ -1061,7 +1070,7 @@ class DataArray(object):
         if self._var is None:
             return None
 
-        if self._var.dtype == np.float64:
+        if convert_float32 and self._var.dtype == np.float64:
             # Force var to be stored in float instead of double
             var = self._var.astype(np.float32)
         else:
@@ -1075,7 +1084,8 @@ class DataArray(object):
                              exclude=('CD*', 'PC*'), unit=self.unit**2)
         return fits.ImageHDU(name=name, data=var, header=header)
 
-    def write(self, filename, savemask='dq', checksum=False):
+    def write(self, filename, savemask='dq', checksum=False,
+              convert_float32=True):
         """Save the data to a FITS file.
 
         Overwrite the file if it exists.
@@ -1091,6 +1101,9 @@ class DataArray(object):
         checksum : bool
             If ``True``, adds both ``DATASUM`` and ``CHECKSUM`` cards to the
             headers of all HDU's written to the file.
+        convert_float32: bool
+            By default float64 arrays are converted to float32, in order to
+            produce smaller files.
 
         """
         with warnings.catch_warnings():
@@ -1104,12 +1117,14 @@ class DataArray(object):
         # create cube DATA extension
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            datahdu = self.get_data_hdu(savemask=savemask)
+            datahdu = self.get_data_hdu(savemask=savemask,
+                                        convert_float32=convert_float32)
         hdulist.append(datahdu)
 
         # create spectrum STAT extension
         if self._var is not None:
-            hdulist.append(self.get_stat_hdu(header=datahdu.header.copy()))
+            hdulist.append(self.get_stat_hdu(header=datahdu.header.copy(),
+                                             convert_float32=convert_float32))
 
         # create DQ extension
         if savemask == 'dq' and np.ma.count_masked(self.data) != 0:
