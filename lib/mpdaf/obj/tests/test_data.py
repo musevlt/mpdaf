@@ -683,6 +683,11 @@ def test_get_data_hdu():
     hdr_wave = WaveCoord(hdr)
     assert cube.wave.isEqual(hdr_wave)
 
+    # Test the dtype conversion
+    assert hdu.data.dtype == np.float32
+    hdu = cube.get_data_hdu(convert_float32=False)
+    assert hdu.data.dtype == np.float64
+
 
 def test_get_stat_hdu():
     """DataArray class: Testing the get_stat_hdu method"""
@@ -702,6 +707,11 @@ def test_get_stat_hdu():
     hdu = cube.get_stat_hdu()
     hdu_var = np.asarray(hdu.data, dtype=cube.dtype)
     assert_masked_allclose(ma.array(hdu_var, mask=mask), cube.var)
+
+    # Test the dtype conversion
+    assert hdu.data.dtype == np.float32
+    hdu = cube.get_stat_hdu(convert_float32=False)
+    assert hdu.data.dtype == np.float64
 
 
 def test_write(tmpdir):
@@ -732,6 +742,19 @@ def test_write(tmpdir):
     # references to the same mask array.
     assert cube2.data.mask is cube2.mask
     assert cube2.var.mask is cube2.mask
+
+    # Test the dtype conversion and savemask=nan
+    assert cube.dtype == np.float64
+    assert cube2.dtype == np.float64
+    assert fits.getval(testfile, 'BITPIX', ext=1) == -32
+    assert fits.getval(testfile, 'BITPIX', ext=2) == -32
+
+    cube.write(testfile, savemask='nan', checksum=True, convert_float32=False)
+    cube3 = Cube(testfile, fits_kwargs={'checksum': True})
+    assert str(cube3.data.dtype) == '>f8'
+    assert fits.getval(testfile, 'BITPIX', ext=1) == -64
+    assert fits.getval(testfile, 'BITPIX', ext=2) == -64
+    assert_array_equal(cube3.mask, cube2.mask)
 
 
 def test_sqrt():
