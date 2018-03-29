@@ -43,7 +43,7 @@ import six
 import sys
 
 from astropy.coordinates import SkyCoord
-from astropy.table import Table, Column, MaskedColumn, hstack, vstack
+from astropy.table import Table, Column, MaskedColumn, hstack, vstack, join
 from astropy import units as u
 from six.moves import range, zip
 from matplotlib.patches import Circle, Rectangle, Ellipse
@@ -114,7 +114,7 @@ class Catalog(Table):
 
 
     @staticmethod
-    def _merge_meta(catalogs, suffix=None):
+    def _merge_meta(catalogs, join_keys=None, suffix=None):
         """Returns a metadata object combined from a set of catalogs.
 
         Parameters
@@ -126,6 +126,9 @@ class Catalog(Table):
             joined. Must be the same length as the number of catalogs.
             Defaults to ['_1', '_2', '_3', etc.]
         """
+        if join_keys is None:
+            join_keys = []
+
         n_cat = len(catalogs)
 
         if suffix is None:
@@ -155,12 +158,15 @@ class Catalog(Table):
                 if col_name not in cat.columns:
                     continue
 
-                # check if name is dupilcated in other catalogs, and thus a
-                # suffix is needed
-                n = sum([1 for c in catalogs if col_name in c.columns])
-                if n > 1: #not unique
-                    key += suffix[i_cat]
-                    col_name += suffix[i_cat]
+                # is col_name supposed to be joined
+                if col_name not in join_keys:
+
+                    # check if name is dupilcated in other catalogs, and thus a
+                    # suffix is needed
+                    n = sum([1 for c in catalogs if col_name in c.columns])
+                    if n > 1: #not unique
+                        key += suffix[i_cat]
+                        col_name += suffix[i_cat]
                 out[key] = col_name
 
         #set default column keys to the first table
@@ -608,6 +614,64 @@ class Catalog(Table):
             except Exception:
                 pass
 
+    def hstack(self, cat2, **kwargs):
+        """Peforms an `astropy.table.hstack` with another catalog, but also
+        handles the metadata correctly.
+
+        Parameters
+        ----------
+        cat2 : `astropy.table.Table`
+            Catalog to stack with.
+        Remaining args and kwargs are passed to `astropy.table.hstack`, excecpt
+        metadata_conflicts.
+
+        Returns
+        -------
+        stacked : `Catalog` object
+            New catalog containing the stacked data
+
+        """
+        #convert cat2 to Catalog object
+        if not isinstance(cat2, Catalog):
+            cat2 = Catalog(cat2, copy=False)
+
+        #suppress metadata conflict warnings 
+        kwargs['metadata_conflicts'] = 'silent'
+        stacked = hstack([self, cat2], **kwargs)
+        stacked.meta = self._merge_meta([self, cat2])
+
+        return stacked
+
+    def join(self, cat2, **kwargs):
+        """Peforms an `astropy.table.join` with another catalog, but also
+        handles the metadata correctly.
+
+        Parameters
+        ----------
+        cat2 : `astropy.table.Table`
+            Right catalog to join with.
+        Remaining args and kwargs are passed to `astropy.table.join`, excecpt
+        metadata_conflicts.
+
+        Returns
+        -------
+        joined : `~astropy.table.Table` object
+            New table containing the result of the join operation.
+
+        """
+        #convert cat2 to Catalog object
+        if not isinstance(cat2, Catalog):
+            cat2 = Catalog(cat2, copy=False)
+
+        #suppress metadata conflict warnings 
+        keys = kwargs.get('keys', None)
+        kwargs['metadata_conflicts'] = 'silent'
+        joined = join(self, cat2, **kwargs)
+
+        joined.meta = self._merge_meta([self, cat2], join_keys=keys)
+
+        return joined
+
     def match(self, cat2, radius=1, colc1=(None, None), colc2=(None, None),
               full_output=True, **kwargs):
         """Match elements of the current catalog with an other (in RA, DEC).
@@ -644,6 +708,7 @@ class Catalog(Table):
             If ``full_output`` is False, only ``match`` is returned.
 
         """
+
         #convert cat2 to Catalog object
         if not isinstance(cat2, Catalog):
             cat2_class = cat2.__class__
@@ -683,11 +748,9 @@ class Catalog(Table):
             d2match = np.delete(d2match, to_remove)
         match1 = self[id1match]
         match2 = cat2[id2match]
-        match = hstack([match1, match2], join_type='exact',
-                       metadata_conflicts='silent')
+        match = match1.hstack(match2, join_type='exact')
         match.add_column(Column(data=d2match.to(u.arcsec), name='Distance',
                                 dtype=float))
-        match.meta = self._merge_meta([match1, match2])
 
         if full_output:
             id1notmatch = np.in1d(range(len(self)), id1match,

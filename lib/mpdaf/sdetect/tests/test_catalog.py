@@ -203,4 +203,29 @@ def test_meta():
     assert nomatch1.meta['idname'] == 'ID'
     assert nomatch2.meta['idname'] == 'id'
 
+@pytest.mark.xfail(six.PY2, reason="issue with astropy coordinates and numpy")
+def test_join_meta():
+    c1 = Catalog()
+    c1['ID'] = np.arange(10, dtype=int)
+    c1['RA'] = np.arange(10, dtype=float)
+    c1['DEC'] = np.arange(10, dtype=float)
+    c1.meta['idname'] = 'ID'
+    c1.meta['raname'] = 'RA'
 
+    c2 = Table()
+    c2['ID'] = np.arange(15, dtype=int)
+    c2['RA'] = np.arange(15, dtype=float)
+    c2['dec'] = np.arange(15, dtype=float)
+    c2.meta['idname'] = 'ID'
+    c2.meta['raname'] = 'RA'
+    c2.meta['decname'] = 'dec'
+    
+    join = c1.join(c2, keys=['ID']) #join on id
+    assert len(join) == 10
+    assert type(join.meta) == type(c1.meta)
+
+    assert join.meta['idname'] == 'ID'
+    assert join.meta['raname'] == 'RA_1'
+    assert join.meta['raname_1'] == 'RA_1'
+    assert join.meta['raname_2'] == 'RA_2'
+    
