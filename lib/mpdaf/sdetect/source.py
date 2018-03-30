@@ -327,7 +327,13 @@ def _mask_invalid(tables):
 def _read_ext(cls, hdulist, extname, **kwargs):
     """Read an extension from a FITS HDUList."""
     try:
-        obj = cls(hdulist[extname].data, **kwargs)
+        if cls == Table:
+            # use Table.read method to ensure extra header keywords are loaded
+            # as metadata
+            obj = Table.read(hdulist, hdu=extname)
+            obj = Table(obj, **kwargs)
+        else:
+            obj = cls(hdulist[extname].data, **kwargs)
     except Exception as e:
         raise IOError('%s: Impossible to open extension %s as a %s\n%s' % (
             os.path.basename(hdulist.filename()), extname, cls.__name__, e))
@@ -1634,12 +1640,12 @@ class Source(object):
         the corresponding narrow bands image.  They are saved in
         ``self.spectra[nb_ima]`` (for nb_ima in tags_to_try).
 
-        If ``psf``:
+        If psf:
             The potential PSF weighted spectrum is computed as the sum of the
             subcube weighted by mutliplication of the mask of the objetct and
             the PSF. It is saved in self.spectra['MUSE_PSF']
 
-        If ``skysub``:
+        If skysub:
             The local sky spectrum is computed as the average of the subcube
             weighted by the sky mask image.
             It is saved in ``self.spectra['MUSE_SKY']``

@@ -30,8 +30,10 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function, unicode_literals
+from six import string_types
 
+from collections import OrderedDict, MutableMapping
 import functools
 import inspect
 import logging
@@ -47,7 +49,7 @@ from time import time
 from .numpycompat import broadcast_to
 
 __all__ = ('MpdafWarning', 'MpdafUnitsWarning', 'deprecated', 'chdir',
-           'timeit', 'timer', 'broadcast_to_cube')
+           'timeit', 'timer', 'broadcast_to_cube', 'LowercaseOrderedDict')
 
 
 # NOTE(kgriffs): We don't want our deprecations to be ignored by default,
@@ -136,3 +138,50 @@ def broadcast_to_cube(arr, shape):
         arr = arr[:, np.newaxis, np.newaxis]
 
     return broadcast_to(arr, shape)
+
+
+# Here we inherit unncessarily from OrderDict.
+# This is because when mergy astropy.table.Table() objects, an explisit check
+# for the metadata object is a <dict> instance
+class LowercaseOrderedDict(MutableMapping, OrderedDict):
+    """Ordered dictonary where all strings keys are case insensitive.
+    i.e. keys such as 'abc', 'ABC', 'Abc' all map to the same value.
+    This can be useful for mimicing the storage of FITS headers.
+
+    """
+    def __init__(self, *args):
+        self._d = OrderedDict()
+        self.update(*args)
+
+    @staticmethod
+    def _convert(key):
+        if isinstance(key, string_types):
+            return key.lower()
+        else:
+            return key
+
+    def __getitem__(self, key):
+        return self._d[self._convert(key)]
+
+    def __setitem__(self, key, value):
+        self._d[self._convert(key)] = value
+
+    def __delitem__(self, key):
+        del self._d[self._convert(key)]
+            
+    def __iter__(self):
+        return iter(self._d)
+
+    def __len__(self):
+        return len(self._d)
+
+    def __repr__(self):
+        return "{}({})".format(self.__class__, [i for i in self._d.items()])
+
+    def __str__(self):
+        return "{}({})".format(self.__class__, [i for i in self._d.items()])
+
+    def popitem(self, last=True):
+        # MutableMapping pops the first item, whereas OrderedDict pops the last
+        # We implement the latter.
+        return self._d.popitem(last)
