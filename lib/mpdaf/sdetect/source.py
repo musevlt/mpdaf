@@ -56,7 +56,7 @@ from numpy import ma
 from six.moves import range, zip
 from scipy.optimize import leastsq
 
-from ..obj import Cube, Image, Spectrum
+from ..obj import Cube, Image, Spectrum, vactoair, airtovac
 from ..obj.image import plot_rgb
 from ..obj.objs import is_int, is_float, bounding_box
 from ..tools import deprecated, write_hdulist_to
@@ -182,23 +182,6 @@ def _headercorrected(hdr):
     # SRC_VERS -> SRC_V
     if 'SRC_VERS' in hdr.keys():
         hdr.rename_keyword('SRC_VERS', 'SRC_V')
-
-
-def vacuum2air(vac):
-    """in angstroms."""
-    vac = np.array(vac)
-    return vac / (1.0 + 2.735182e-4 + 131.4182 / (vac**2) + 2.76249e8 / (vac**4))
-
-
-def air2vacuum(air):
-    """in angstroms."""
-    air = np.array(air)
-    vactest = air + (air - vacuum2air(air))
-    x = np.abs(air - vacuum2air(vactest))
-    for i in range(10):
-        vactest = vactest + x
-        x = np.abs(air - vacuum2air(vactest))
-    return vactest
 
 
 def matchlines(nlines, wl, z, eml):
@@ -1842,10 +1825,10 @@ class Source(object):
 
         try:
             # vacuum wavelengths
-            wl = air2vacuum(np.array(self.lines[col_lbda]))
+            wl = airtovac(np.array(self.lines[col_lbda]))
             flux = np.array(self.lines[col_flux])
             nlines = len(wl)
-        except:
+        except Exception:
             self._logger.info('Impossible to estimate the redshift, no '
                               'emission lines')
             return
@@ -1853,7 +1836,7 @@ class Source(object):
         z, errz, nlines, wl, flux, lnames = crackz(nlines, wl, flux, eml,
                                                    zguess)
         # observed wavelengths
-        wl = vacuum2air(wl)
+        wl = vactoair(wl)
 
         if nlines > 0:
             if nlines < nline_max:
@@ -2110,7 +2093,7 @@ class SourceList(list):
         cat = Catalog.from_sources(self, fmt)
         try:
             cat.write(fcat)
-        except:
+        except Exception:
             logger = logging.getLogger(__name__)
             logger.warning('Failed to write in FITS format, trying txt',
                            exc_info=True)

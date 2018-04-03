@@ -37,6 +37,10 @@ import numpy as np
 import six
 from astropy.table import Table
 
+from ..obj import vactoair
+from ..obj import airtovac  # noqa - for backward compatibility
+
+
 __all__ = ['get_emlines']
 
 # list of useful emission lines
@@ -97,8 +101,8 @@ emlines = np.array([
     ('CAG', 4305.61, 4305.61, 4305.61, 'is', 0, 0),
     ('MG5177', 5176.7, 5176.7, 5176.7, 'is', 0, 0),
     ('NAD', 5891.9399, 5881.0, 5906.0, 'is', 0, 0),
-], dtype=[('id', 'S20' if six.PY2 else 'U20'), ('c', '<f4'), ('lo', '<f4'), ('up', '<f4'),
-          ('tp', 'S2'), ('s', '<i4'), ('d', '<f4')])
+], dtype=[('id', 'S20' if six.PY2 else 'U20'), ('c', '<f4'), ('lo', '<f4'),
+          ('up', '<f4'), ('tp', 'S2'), ('s', '<i4'), ('d', '<f4')])
 
 
 def get_emlines(iden=None, z=0, vac=True, lbrange=None, margin=25, sel=None,
@@ -132,12 +136,13 @@ def get_emlines(iden=None, z=0, vac=True, lbrange=None, margin=25, sel=None,
     """
     em = emlines.copy()
     if iden is not None:
-        if type(iden) is str:
+        if isinstance(iden, str):
             em = em[em['id'] == iden]
             if len(em) == 0:
                 return None
-        elif type(iden) is list or type(iden) is np.ndarray:
+        elif isinstance(iden, (list, tuple, np.ndarray)):
             em = em[np.in1d(em['id'], iden)]
+
     kd = np.where(em['d'] > 0)
     if not restframe:
         em['d'][kd] *= 1 + z
@@ -165,67 +170,7 @@ def get_emlines(iden=None, z=0, vac=True, lbrange=None, margin=25, sel=None,
     if not table:
         return em
     else:
-        tab = Table(data=[em['id'], em['c'], em['lo'], em['up'], em['tp'], em['d']],
-                    names=['LINE', 'LBDA_OBS', 'LBDA_LOW', 'LBDA_UP', 'TYPE', 'DOUBLET'])
-        return tab
-
-
-def vactoair(vacwl):
-    """
-    Calculate the approximate wavelength in air for vacuum wavelengths
-
-    Parameters
-    ----------
-    vacwl : ndarray
-       Vacuum wavelengths.
-
-    This uses an approximate formula from the IDL astronomy library
-    vactoair.pro.
-    """
-
-    wave2 = vacwl * vacwl
-    n = 1.0 + 2.735182e-4 + 131.4182 / wave2 + 2.76249e8 / (wave2 * wave2)
-
-    # Do not extrapolate to very short wavelengths.
-    if not isinstance(vacwl, np.ndarray):
-        if vacwl < 2000:
-            n = 1.0
-    else:
-        ignore = np.where(vacwl < 2000)
-        n[ignore] = 1.0
-
-    return vacwl / n
-
-
-def airtovac(airwl):
-    """
-    Convert air wavelengths to vacuum wavelengths
-
-    Parameters
-    ----------
-    vacwl : ndarray
-       Vacuum wavelengths.
-
-    This uses the IAU standard as implemented in the IDL astronomy
-    library airtovac.pro
-    """
-
-    sigma2 = (1e4 / airwl)**2.        # Convert to wavenumber squared
-    n = 1.0 + (6.4328e-5 + 2.94981e-2 / (146. - sigma2) +
-               2.5540e-4 / (41. - sigma2))
-
-    if not isinstance(airwl, np.ndarray):
-        if airwl < 2000:
-            n = 1.0
-    else:
-        ignore = np.where(airwl < 2000)
-        n[ignore] = 1.0
-
-    return airwl * n
-
-
-if __name__ == '__main__':
-    em = get_emlines(doublet=True, z=3.0, vac=False)
-    #em = get_emlines(z=0, vac=False, lbrange=(4750,9350), margin=20, sel=0, ltype='is')
-    print(em)
-    print('done')
+        return Table(
+            data=[em['id'], em['c'], em['lo'], em['up'], em['tp'], em['d']],
+            names=['LINE', 'LBDA_OBS', 'LBDA_LOW', 'LBDA_UP', 'TYPE',
+                   'DOUBLET'])
