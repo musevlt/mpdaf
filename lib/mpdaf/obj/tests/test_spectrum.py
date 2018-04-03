@@ -38,9 +38,9 @@ import pytest
 import numpy as np
 
 from astropy import units as u
-from astropy.io import fits
+from astropy.io import ascii, fits
 from mpdaf.log import setup_logging
-from mpdaf.obj import Spectrum, Image, Cube, WCS, WaveCoord
+from mpdaf.obj import Spectrum, Image, Cube, WCS, WaveCoord, airtovac, vactoair
 from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_almost_equal, assert_allclose)
 
@@ -545,3 +545,23 @@ def test_get_item():
     r = s[2]
     assert np.isscalar(r)
     assert_allclose(r, s.data[2])
+
+
+def test_airtovac():
+    # From http://classic.sdss.org/dr7/products/spectra/vacwavelength.html
+    tbl = ascii.read("""\
+line air vacuum
+H-beta 4861.363 4862.721
+[OIII] 4958.911 4960.295
+[OIII] 5006.843 5008.239
+[NII] 6548.05  6549.86
+H-alpha 6562.801 6564.614
+[NII] 6583.45  6585.27
+[SII] 6716.44  6718.29
+[SII] 6730.82  6732.68
+""")
+
+    for row in tbl:
+        assert_allclose(airtovac(row['air']), row['vacuum'], atol=1e-2)
+
+    assert_allclose(vactoair(row['vacuum']), row['air'], atol=1e-2)

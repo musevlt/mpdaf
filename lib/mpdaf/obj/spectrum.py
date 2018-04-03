@@ -53,7 +53,59 @@ from .fitting import Gauss1D
 from .objs import flux2mag
 from ..tools import deprecated
 
-__all__ = ('Spectrum', )
+__all__ = ('Spectrum', 'vactoair', 'airtovac')
+
+
+def vactoair(vacwl):
+    """Calculate the approximate wavelength in air for vacuum wavelengths.
+
+    Parameters
+    ----------
+    vacwl : ndarray
+       Vacuum wavelengths.
+
+    This uses an approximate formula from the IDL astronomy library
+    https://idlastro.gsfc.nasa.gov/ftp/pro/astro/vactoair.pro
+
+    """
+    wave2 = vacwl * vacwl
+    n = 1.0 + 2.735182e-4 + 131.4182 / wave2 + 2.76249e8 / (wave2 * wave2)
+
+    # Do not extrapolate to very short wavelengths.
+    if not isinstance(vacwl, np.ndarray):
+        if vacwl < 2000:
+            n = 1.0
+    else:
+        ignore = np.where(vacwl < 2000)
+        n[ignore] = 1.0
+
+    return vacwl / n
+
+
+def airtovac(airwl):
+    """Convert air wavelengths to vacuum wavelengths.
+
+    Parameters
+    ----------
+    vacwl : ndarray
+       Vacuum wavelengths.
+
+    This uses the IAU standard as implemented in the IDL astronomy library
+    https://idlastro.gsfc.nasa.gov/ftp/pro/astro/airtovac.pro
+
+    """
+    sigma2 = (1e4 / airwl)**2.        # Convert to wavenumber squared
+    n = 1.0 + (6.4328e-5 + 2.94981e-2 / (146. - sigma2) +
+               2.5540e-4 / (41. - sigma2))
+
+    if not isinstance(airwl, np.ndarray):
+        if airwl < 2000:
+            n = 1.0
+    else:
+        ignore = np.where(airwl < 2000)
+        n[ignore] = 1.0
+
+    return airwl * n
 
 
 class Spectrum(ArithmeticMixin, DataArray):

@@ -1,7 +1,6 @@
+# -*- coding: utf-8 -*-
 """
-Copyright (c) 2010-2017 CNRS / Centre de Recherche Astrophysique de Lyon
-Copyright (c) 2015-2016 Laure Piqueras <laure.piqueras@univ-lyon1.fr>
-Copyright (c) 2015-2017 Simon Conseil <simon.conseil@univ-lyon1.fr>
+Copyright (c)      2018 Simon Conseil <simon.conseil@univ-lyon1.fr>
 
 All rights reserved.
 
@@ -31,7 +30,36 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from .source import *
-from .catalog import Catalog
-from .muselet import muselet
-from .linelist import *
+from __future__ import absolute_import, division, print_function
+
+from numpy.testing import assert_allclose
+from ..linelist import get_emlines
+
+
+def test_linelist():
+    em = get_emlines()
+    assert len(em) == 54
+
+    em = get_emlines(doublet=True, z=3.0, vac=False)
+    assert len(em) == 6
+
+    em = get_emlines(z=0, vac=False, lbrange=(4750, 9350), margin=20, sel=0,
+                     ltype=b'is')
+    assert len(em) == 2
+
+
+def test_restframe():
+    em = get_emlines(iden='LYALPHA', z=3.0, restframe=True)[0]
+    assert_allclose(em[1], 1215.67)
+    em = get_emlines(iden='LYALPHA', z=3.0, restframe=False)[0]
+    assert_allclose(em[1], 4862.68)
+
+
+def test_table():
+    em = get_emlines(table=True, iden=('LYALPHA', 'HALPHA'))
+    assert_allclose(em[0]['LBDA_OBS'], 1215.67)
+    assert_allclose(em[1]['LBDA_OBS'], 6564.61)
+
+    em = get_emlines(table=True, iden=('LYALPHA', 'HALPHA'), vac=False)
+    assert_allclose(em[0]['LBDA_OBS'], 1215.67)
+    assert_allclose(em[1]['LBDA_OBS'], 6562.794)
