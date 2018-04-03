@@ -66,6 +66,9 @@ from ..sdetect.sea import segmentation, mask_creation, findCentralDetection
 from ..sdetect.sea import union, intersection, compute_optimal_spectrum
 from ..tools.astropycompat import ASTROPY_LT_1_1, table_to_hdu
 
+
+__all__ = ('Source', 'SourceList', 'matchlines', 'crackz')
+
 emlines = {1215.67: 'LYALPHA1216',
            1550.0: 'CIV1550',
            1909.0: 'CIII]1909',
