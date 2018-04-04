@@ -159,7 +159,7 @@ def test_iter_spe():
 
 def test_crop(cube):
     """Cube class: tests the crop method."""
-    cube.data.mask[0, :, :] = True
+    cube.mask[0, :, :] = True
     cube.crop()
     assert cube.shape[0] == 9
 
@@ -462,7 +462,7 @@ def test_rebin():
     wave = WaveCoord(crval=0.0, crpix=1.0, cdelt=1.0)
 
     # Create a cube with even valued dimensions, filled with ones.
-    data = np.ma.ones((4, 6, 8))       # Start with all pixels 1.0
+    data = ma.ones((4, 6, 8))       # Start with all pixels 1.0
     data.reshape(4 * 6 * 8)[::2] = 0.0   # Set every second pixel to 0.0
     data.mask = data < -1            # Unmask all pixels.
     cube1 = generate_cube(data=data.data, mask=data.mask, wcs=wcs, wave=wave)
@@ -475,12 +475,12 @@ def test_rebin():
     # Compute the expected output cube, given that the input cube is a
     # repeating pattern of 1,0, and we divided the x-axis by a
     # multiple of 2, the output pixels should all be 0.5.
-    expected = np.ma.ones((2, 2, 2)) * 0.5
+    expected = ma.ones((2, 2, 2)) * 0.5
     expected.mask = expected < 0  # All pixels unmasked.
     assert_masked_allclose(cube2.data, expected)
 
     # Do the same experiment but with the zero valued pixels all masked.
-    data = np.ma.ones((4, 6, 8))       # Start with all pixels 1.0
+    data = ma.ones((4, 6, 8))       # Start with all pixels 1.0
     data.reshape(4 * 6 * 8)[::2] = 0.0   # Set every second pixel to 0.0
     data.mask = data < 0.1           # Mask the pixels that are 0.0
     cube1 = generate_cube(data=data.data, mask=data.mask, wcs=wcs, wave=wave)
@@ -493,7 +493,7 @@ def test_rebin():
     # Compute the expected output cube. The zero valued pixels are all
     # masked, leaving just pixels with values of 1, so the mean that is
     # recorded in each output pixel should be 1.0.
-    expected = np.ma.ones((2, 2, 2)) * 1.0
+    expected = ma.ones((2, 2, 2)) * 1.0
     expected.mask = expected < 0  # All output pixels should be unmasked.
     assert_masked_allclose(cube2.data, expected)
 
@@ -511,7 +511,7 @@ def test_rebin():
     # by a number whose remainder is large enough to test selection
     # of the truncated part of the cube.
     shape = np.array([4, 17, 15])
-    data = np.ma.ones(shape)                # Start with all pixels 1.0
+    data = ma.ones(shape)                # Start with all pixels 1.0
     data.reshape(shape.prod())[::2] = 0.0   # Set every second pixel to 0.0
     data.mask = data < -1                   # Unmask all pixels.
     cube1 = generate_cube(data=data.data, mask=data.mask, wcs=wcs, wave=wave)
@@ -527,7 +527,7 @@ def test_rebin():
     # repeating pattern of 1,0, and we divided the x-axis by a
     # multiple of 2, the output pixels should all be 0.5.
     expected_shape = cube1.shape // factor
-    expected = np.ma.ones(expected_shape) * 0.5
+    expected = ma.ones(expected_shape) * 0.5
     expected.mask = expected < 0  # All pixels unmasked.
     assert_masked_allclose(cube2.data, expected)
 
@@ -543,7 +543,7 @@ def test_rebin():
     # Compute the expected output cube. The values should be the
     # same as the previous test.
     expected_shape = cube1.shape // factor
-    expected = np.ma.ones(expected_shape) * 0.5
+    expected = ma.ones(expected_shape) * 0.5
     expected.mask = expected < 0  # All pixels unmasked.
     assert_masked_allclose(cube2.data, expected)
 
@@ -634,9 +634,11 @@ def test_get_image():
     assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].sum()[0])
 
 
-def test_subcube():
+@pytest.mark.parametrize('mask', (None, ma.nomask))
+def test_subcube(mask):
     """Cube class: testing sub-cube extraction methods"""
-    cube1 = generate_cube(data=1, wave=WaveCoord(crval=1))
+    cube1 = generate_cube(data=np.arange(10 * 6 * 5).reshape(10, 6, 5),
+                          wave=WaveCoord(crval=1), mask=mask)
 
     # Extract a sub-cube whose images are centered close to pixel
     # (2.3, 2.8) of the cube and have a width and height of 2 pixels.
@@ -645,16 +647,27 @@ def test_subcube():
     # of 2.3,2.8 is 2.5,2.5. Thus the sub-images should be from pixels
     # 2,3 along both the X and Y axes.
     cube2 = cube1.subcube(center=(2.3, 2.8), size=2, lbda=(5, 8),
-                          unit_center=None, unit_size=None)
+                          unit_center=None, unit_size=None, unit_wave=None)
     assert_allclose(cube1.data[5:9, 2:4, 2:4], cube2.data)
+
+    # Test when subcube is on the edges
+    cube2 = cube1.subcube(center=(0.3, 0.8), size=4,
+                          unit_center=None, unit_size=None)
+    assert_allclose(cube1.data[:, :3, :3], cube2.data[:, 1:, 1:])
+    # pixels inside the selected region are not masked
+    assert np.all(~cube2.mask[:, 1:, 1:])
+    # pixels outside the selected region are masked
+    assert np.all(cube2.mask[:, :, 0])
+    assert np.all(cube2.mask[:, 0, :])
 
     # The following should select the same image area as above, followed by
     # masking pixels in this area outside a circle of radius 1.
     cube2 = cube1.subcube_circle_aperture(center=(2.3, 2.8), radius=1,
                                           unit_center=None, unit_radius=None)
     # masking the subcube should not mask the original cube
-    assert np.ma.count_masked(cube1[0].data) == 0
-    assert bool(cube2.data.mask[0, 0, 0]) is True
+    assert ma.count_masked(cube1[0].data) == 0
+    if cube2.mask is not ma.nomask:
+        assert bool(cube2.mask[0, 0, 0]) is True
     assert_array_equal(cube2.get_start(), (1, 2, 2))
     assert_array_equal(cube2.shape, (10, 2, 2))
 
@@ -704,10 +717,12 @@ def test_get_item():
     """Cube class: testing __getitem__"""
     # Set the shape and contents of the cube's data array.
     shape = (3, 4, 5)
-    data = np.arange(shape[0] * shape[1] * shape[2]).reshape(shape[0], shape[1], shape[2])
+    data = np.arange(shape[0] * shape[1] * shape[2])\
+        .reshape(shape[0], shape[1], shape[2])
 
     # Create a test cube with the above data array.
-    c = generate_cube(data=data, shape=shape, wave=WaveCoord(crval=1, cunit=u.angstrom))
+    c = generate_cube(data=data, shape=shape,
+                      wave=WaveCoord(crval=1, cunit=u.angstrom))
     c.primary_header['KEY'] = 'primary value'
     c.data_header['KEY'] = 'data value'
 
@@ -887,11 +902,11 @@ def test_bandpass_image():
 
     # What do we expect?
 
-    expected_data = np.ma.array(
+    expected_data = ma.array(
         data=[[unmasked_mean, unmasked_mean], [unmasked_mean, masked_mean]],
         mask=expected_mask)
 
-    expected_var = np.ma.array(
+    expected_var = ma.array(
         data=[[unmasked_var, unmasked_var], [unmasked_var, masked_var]],
         mask=expected_mask)
 
@@ -921,7 +936,7 @@ def test_convolve():
 
     # The image should consist of a copy of the convolution kernel, centered
     # such that pixels (kern.shape-1)//2 is at pixel 7,5 of data.
-    expected_data = np.ma.array(data=np.zeros(shape), mask=mask)
+    expected_data = ma.array(data=np.zeros(shape), mask=mask)
     expected_data.data[:, 6:9, 4:8] = kern
 
     res = c.convolve(kern)

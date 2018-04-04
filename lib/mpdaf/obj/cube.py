@@ -1797,22 +1797,12 @@ class Cube(ArithmeticMixin, DataArray):
         # Since the subcube is smaller than requested, due to clipping,
         # create new data and variance arrays of the required size.
         shape = (sl.stop - sl.start, uy.stop - uy.start, ux.stop - ux.start)
-        data = np.zeros(shape)
-        if self._var is None:
-            var = None
-        else:
-            var = np.zeros(shape)
+        data = np.zeros(shape, dtype=self.dtype)
+        var = None if self._var is None else np.zeros(shape, dtype=self.dtype)
 
-        # If no mask is currently in use, start with every pixel of
-        # the new array filled with nans. Otherwise create a mask that
-        # initially flags all pixels.
-        if self._mask is ma.nomask:
-            mask = ma.nomask
-            data[:] = np.nan
-            if var is not None:
-                var[:] = np.nan
-        else:
-            mask = np.ones(shape, dtype=bool)
+        # Create the mask (ignoring nomask) as we need it to mask the regions
+        # outside of the subcube
+        mask = np.ones(shape, dtype=bool)
 
         # Calculate the slices where the clipped subcube should go in
         # the new arrays.
@@ -1824,8 +1814,10 @@ class Cube(ArithmeticMixin, DataArray):
         data[slices] = res._data[:]
         if var is not None:
             var[slices] = res._var[:]
-        if mask is not None:
+        if res._mask is not ma.nomask:
             mask[slices] = res._mask[:]
+        else:
+            mask[slices] = False
 
         # Create a new WCS object for the unclipped subcube.
         wcs = res.wcs
@@ -1844,8 +1836,9 @@ class Cube(ArithmeticMixin, DataArray):
                     primary_header=fits.Header(self.primary_header),
                     filename=self.filename)
 
-    def subcube_circle_aperture(self, center, radius, lbda=None, unit_center=u.deg,
-                unit_radius=u.arcsec, unit_wave=u.angstrom):
+    def subcube_circle_aperture(self, center, radius, lbda=None,
+                                unit_center=u.deg, unit_radius=u.arcsec,
+                                unit_wave=u.angstrom):
         """Extract a sub-cube that encloses a circular aperture of
         a specified radius and for a given wavelength range.
 
