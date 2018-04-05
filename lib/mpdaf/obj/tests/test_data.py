@@ -42,7 +42,7 @@ import warnings
 from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning
 from numpy import ma
-from mpdaf.obj import DataArray, WaveCoord, WCS, Cube
+from mpdaf.obj import DataArray, WaveCoord, WCS, Cube, Image, Spectrum
 from numpy.testing import assert_array_equal, assert_allclose
 
 from ...tests.utils import (generate_image, generate_cube, generate_spectrum,
@@ -66,6 +66,13 @@ def test_fits_img():
     assert data.dtype == float
     assert data.data.dtype == float
 
+    # Check that it can be read as Image but not with other classes
+    assert Image(testimg).ndim == 2
+    with pytest.raises(ValueError):
+        Cube(testimg)
+    with pytest.raises(ValueError):
+        Spectrum(testimg)
+
 
 def test_fits_spectrum():
     """DataArray class: Testing FITS spectrum reading"""
@@ -82,6 +89,13 @@ def test_fits_spectrum():
     assert data.data.ndim == 1
     assert data.dtype.type == np.float64
     assert data.var.dtype == np.float64
+
+    # Check that it can be read as Spectrum but not with other classes
+    assert Spectrum(testspe, ext=0).ndim == 1
+    with pytest.raises(ValueError):
+        Cube(testspe, ext=0)
+    with pytest.raises(ValueError):
+        Image(testspe, ext=0)
 
 
 def test_invalid_file():

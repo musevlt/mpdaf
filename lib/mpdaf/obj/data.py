@@ -313,6 +313,12 @@ class DataArray(object):
             self.primary_header = hdulist[0].header
             self.data_header = hdr = hdulist[self._data_ext].header
 
+            if (self._ndim_required is not None and
+                    self._ndim_required != self.data_header['NAXIS']):
+                raise ValueError('{} class cannot manage data with {} axes'
+                                 .format(self.__class__.__name__,
+                                         self.data_header['NAXIS']))
+
             try:
                 self.unit = u.Unit(fix_unit_read(hdr['BUNIT']))
             except KeyError:
