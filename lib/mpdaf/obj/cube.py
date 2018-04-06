@@ -46,7 +46,6 @@ import warnings
 from astropy.io import fits
 from matplotlib.path import Path
 from numpy import ma
-from six.moves import range
 from scipy import integrate, interpolate, signal, ndimage as ndi
 
 from .arithmetic import ArithmeticMixin

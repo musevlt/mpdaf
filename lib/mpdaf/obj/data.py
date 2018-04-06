@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import logging
 import numpy as np
-import six
 import warnings
 
 from astropy import units as u
@@ -312,7 +311,7 @@ class DataArray(object):
                     self._var_ext = 'STAT'
             elif isinstance(ext, (list, tuple, np.ndarray)):
                 self._data_ext, self._var_ext = ext
-            elif isinstance(ext, (int, str, six.text_type)):
+            elif isinstance(ext, (int, str)):
                 self._data_ext = ext
                 self._var_ext = None
 

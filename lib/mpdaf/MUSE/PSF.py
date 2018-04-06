@@ -37,7 +37,6 @@ import numpy as np
 from astropy.modeling.models import Moffat2D, Gaussian2D
 from astropy.stats import gaussian_fwhm_to_sigma
 from scipy import special
-from six.moves import range
 
 
 class LSF(object):

@@ -54,7 +54,6 @@ import logging
 import numpy as np
 import os
 import shutil
-import six
 import subprocess
 import warnings
 
@@ -279,7 +278,7 @@ def segmentation(source, tags, DIR, remove):
 
     # Save segmentation maps
     if len(maps) > 0:
-        for tag, data in six.iteritems(maps):
+        for tag, data in maps.items():
             ima = Image(wcs=wcs, data=data, dtype=np.uint8, copy=False)
             source.images['SEG_' + tag] = ima
 

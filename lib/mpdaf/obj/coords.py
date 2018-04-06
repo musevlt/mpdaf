@@ -40,7 +40,6 @@ import numpy as np
 
 from astropy.coordinates import Angle
 from astropy.io import fits
-from six.moves import range
 
 from .objs import UnitArray
 from ..tools import fix_unit_read

@@ -36,20 +36,15 @@ import astropy.units as u
 import numpy as np
 import pytest
 import scipy.ndimage as ndi
-import six
 
 from mpdaf.obj import Image, WCS, gauss_image, moffat_image
 from numpy.testing import (assert_array_equal, assert_allclose,
                            assert_almost_equal, assert_equal,
                            assert_array_almost_equal)
+from operator import add, sub, mul, truediv as div
 
 from ...tests.utils import (assert_image_equal, generate_image, generate_cube,
                             assert_masked_allclose)
-
-if six.PY2:
-    from operator import add, sub, mul, div
-else:
-    from operator import add, sub, mul, truediv as div
 
 
 def test_copy(image):

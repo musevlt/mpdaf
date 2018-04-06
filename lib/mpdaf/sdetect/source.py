@@ -42,7 +42,6 @@ import logging
 import numpy as np
 import os
 import re
-import six
 import shutil
 
 from astropy.io import fits as pyfits
@@ -51,7 +50,6 @@ from functools import partial
 from matplotlib import cm
 from matplotlib.patches import Ellipse
 from numpy import ma
-from six.moves import range, zip
 from scipy.optimize import leastsq
 
 from ..obj import Cube, Image, Spectrum, vactoair, airtovac
@@ -91,7 +89,7 @@ emlines = {1215.67: 'LYALPHA1216',
            6731.0: '[SII]6731'}
 
 
-STR_DTYPE = 'S20' if six.PY2 else 'U20'
+STR_DTYPE = 'U20'
 
 TABLES_SCHEMA = {
     # Version of the source format, see SourceICD.pdf
@@ -406,7 +404,7 @@ class ExtLoader(collections.MutableMapping):
 
     """
 
-    delayed_types = six.string_types + (tuple, )
+    delayed_types = (str, tuple)
 
     def __init__(self, type_, filename=None, data=None):
         self.data = {}
@@ -542,10 +540,7 @@ class Source(object):
         self._logger = logging.getLogger(__name__)
 
     def __dir__(self):
-        if six.PY2:
-            return list(self.header.keys()) + self.__dict__.keys()
-        else:
-            return list(self.header.keys()) + super(Source, self).__dir__()
+        return list(self.header.keys()) + super(Source, self).__dir__()
 
     @classmethod
     def from_data(cls, ID, ra, dec, origin, proba=None, confid=None,
@@ -621,7 +616,7 @@ class Source(object):
 
         if ext is None:
             extnames = [h.name for h in hdulist[1:]]
-        elif isinstance(ext, six.string_types):
+        elif isinstance(ext, str):
             extnames = [h.name for h in hdulist[1:] if re.findall(ext, h.name)]
         else:
             extnames = [h.name for e in ext
@@ -734,12 +729,12 @@ class Source(object):
             _write_table(self.z, 'Z', hdulist)
 
             for typ in ('spectra', 'images', 'cubes'):
-                for key, obj in six.iteritems(getattr(self, typ)):
+                for key, obj in getattr(self, typ).items():
                     _write_mpdaf_obj(obj, _ATTRIBUTES_TO_EXTNAME[typ], key,
                                      hdulist)
 
             # tables
-            for key, tab in six.iteritems(self.tables):
+            for key, tab in self.tables.items():
                 _write_table(tab, 'TAB_%s' % key, hdulist)
 
             # save to disk
@@ -1497,7 +1492,7 @@ class Source(object):
         """
         maps = {}
         if tags is None:
-            for tag, ima in six.iteritems(self.images):
+            for tag, ima in self.images.items():
                 if tag[0:4] == 'SEG_':
                     maps[tag[4:]] = ima.data.data
         else:

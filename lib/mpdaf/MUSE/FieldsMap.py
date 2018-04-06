@@ -33,12 +33,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import numpy as np
 import os
-import six
 
 from astropy.io import fits
 from scipy.interpolate import griddata
 from scipy.signal import fftconvolve
-from six.moves import range, zip
 
 from ..obj import Image
 
@@ -115,7 +113,7 @@ class FieldsMap(object):
         (e.g. UDF-03).
 
         """
-        if isinstance(field_name, six.string_types):
+        if isinstance(field_name, str):
             field_name = int(field_name[-2:])
         return (self.data & 2**field_name).astype(bool)
 

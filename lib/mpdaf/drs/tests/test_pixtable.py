@@ -42,7 +42,6 @@ from contextlib import contextmanager
 from mpdaf.drs import PixTable, pixtable, PixTableMask, PixTableAutoCalib
 from numpy.testing import assert_array_equal, assert_allclose
 from os.path import exists, join, basename
-from six.moves import range
 
 from ...tests.utils import DATADIR
 

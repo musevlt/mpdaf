@@ -38,13 +38,11 @@ import datetime
 import logging
 import numpy as np
 import warnings
-import six
 
 from astropy.io import fits
 from astropy.io.fits import Column, ImageHDU
 from astropy.table import Table
 from os.path import basename
-from six.moves import range
 
 from ..obj import Image, Spectrum, WaveCoord, WCS
 from ..tools import add_mpdaf_method_keywords, copy_header, write_hdulist_to
@@ -1827,8 +1825,7 @@ class PixTable(object):
 
         if logfile is None:
             logfile = ''
-        if six.PY3:
-            logfile = logfile.encode('utf8')
+        logfile = logfile.encode('utf8')
 
         ctools.mpdaf_slice_median(
             result, result_stat, corr, npts, ifu, sli, data, stat, lbda,

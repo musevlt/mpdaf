@@ -229,7 +229,7 @@ setup(
     license='BSD',
     url='https://git-cral.univ-lyon1.fr/MUSE/mpdaf',
     setup_requires=['numpy'],
-    install_requires=['numpy', 'scipy', 'matplotlib', 'astropy>=1.0', 'six'],
+    install_requires=['numpy', 'scipy', 'matplotlib', 'astropy>=1.0'],
     extras_require={
         'all': ['numexpr', 'fitsio', 'adjustText'],
     },

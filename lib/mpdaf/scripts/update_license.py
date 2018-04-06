@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import os
-import six
 import sys
 from collections import OrderedDict
 from subprocess import check_output
@@ -134,8 +133,7 @@ if __name__ == "__main__":
         authors = OrderedDict()
         for l in check_output(GIT_CMD.format(filename),
                               shell=True).splitlines():
-            if not six.PY2:
-                l = l.decode()
+            l = l.decode()
             year, author = l.split(' ', 1)
             if author in authors:
                 authors[author].append(year)

@@ -40,7 +40,6 @@ import numpy as np
 import os
 
 from astropy.io import fits
-from six.moves import range
 
 from ..version import __version__
 

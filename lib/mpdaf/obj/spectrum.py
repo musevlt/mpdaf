@@ -42,7 +42,6 @@ from astropy.stats import gaussian_sigma_to_fwhm, gaussian_fwhm_to_sigma
 from os.path import join, abspath, dirname
 from scipy import interpolate, signal
 from scipy.optimize import leastsq
-from six.moves import range
 
 from . import ABmag_filters, wavelet1D
 from .arithmetic import ArithmeticMixin

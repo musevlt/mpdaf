@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import numpy as np
 import pytest
-import six
 from astropy.table import Table
 from astropy.coordinates import SkyCoord
 from mpdaf.sdetect import Catalog
@@ -98,7 +97,6 @@ def test_from_path(source1, source2, tmpdir):
     assert isinstance(c, Catalog)
 
 
-@pytest.mark.xfail(six.PY2, reason="issue with astropy coordinates and numpy")
 def test_match():
     c1 = Catalog()
     c1['RA'] = np.arange(10, dtype=float)
@@ -127,7 +125,6 @@ def test_match():
     assert type(nomatch2) == type(c2)
 
 
-@pytest.mark.xfail(six.PY2, reason="issue with astropy coordinates and numpy")
 def test_nearest():
     c1 = Catalog()
     c1['RA'] = np.arange(10, dtype=float)
@@ -148,7 +145,6 @@ def test_nearest():
     assert len(res) == 3
 
 
-@pytest.mark.xfail(six.PY2, reason="issue with astropy coordinates and numpy")
 def test_select(minicube):
     cat = Catalog.read(get_data_file('sdetect', 'cat.txt'), format='ascii')
     im = minicube.mean(axis=0)
@@ -171,7 +167,6 @@ def test_select(minicube):
     assert len(cat.select(im.wcs, margin=1, mask=mask)) == 4
 
 
-@pytest.mark.xfail(six.PY2, reason="issue with astropy coordinates and numpy")
 def test_meta():
     c1 = Catalog(idname='ID', raname='RA')
     c1['ID'] = np.arange(10, dtype=int)
@@ -201,7 +196,7 @@ def test_meta():
     assert nomatch1.meta['idname'] == 'ID'
     assert nomatch2.meta['idname'] == 'id'
 
-@pytest.mark.xfail(six.PY2, reason="issue with astropy coordinates and numpy")
+
 def test_join_meta():
     c1 = Catalog()
     c1['ID'] = np.arange(10, dtype=int)

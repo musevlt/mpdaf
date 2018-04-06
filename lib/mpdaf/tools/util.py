@@ -30,7 +30,6 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-from six import string_types
 
 from collections import OrderedDict, MutableMapping
 import functools
@@ -154,7 +153,7 @@ class LowercaseOrderedDict(MutableMapping, OrderedDict):
 
     @staticmethod
     def _convert(key):
-        if isinstance(key, string_types):
+        if isinstance(key, str):
             return key.lower()
         else:
             return key

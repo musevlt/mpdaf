@@ -35,14 +35,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
 import numpy as np
 import os
-import six
 
 from astropy import units as u
 from astropy.table import Table
 from astropy.utils.console import ProgressBar
 from ctypes import c_char_p
 from numpy import allclose, array_equal
-from six.moves import range, zip
 
 from .cube import Cube
 from ..tools.fits import add_mpdaf_method_keywords, copy_keywords
@@ -440,8 +438,7 @@ class CubeList(object):
         expmap = np.empty(npixels, dtype=np.intc, order='C')
         valid_pix = np.zeros(self.nfiles, dtype=np.intc, order='C')
         files = '\n'.join(self.files)
-        if not six.PY2:
-            files = files.encode('utf8')
+        files = files.encode('utf8')
         ctools.mpdaf_merging_median(c_char_p(files), data, expmap, valid_pix)
 
         # no valid pixels
@@ -484,8 +481,7 @@ class CubeList(object):
 
         # run C method
         files = '\n'.join(self.files)
-        if not six.PY2:
-            files = files.encode('utf8')
+        files = files.encode('utf8')
 
         if self.flux_scales is None:
             scales = np.ones(self.nfiles)

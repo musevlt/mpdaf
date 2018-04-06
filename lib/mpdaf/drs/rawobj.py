@@ -39,7 +39,6 @@ import os
 
 from astropy.io import fits
 from scipy.integrate import quad
-from six.moves import range
 
 from ..obj import Image, WCS
 

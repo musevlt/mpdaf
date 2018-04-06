@@ -54,7 +54,6 @@ from scipy import interpolate, signal
 from scipy import ndimage as ndi
 from scipy.ndimage.interpolation import affine_transform
 from scipy.optimize import leastsq
-from six.moves import range, zip
 
 from .arithmetic import ArithmeticMixin
 from .coords import WCS

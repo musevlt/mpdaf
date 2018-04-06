@@ -45,7 +45,6 @@ import sys
 from astropy.io import fits
 from astropy.table import Table
 from os.path import join
-from six.moves import range
 
 from ..obj import Cube, Image
 from ..sdetect import Source, SourceList
