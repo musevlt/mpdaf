@@ -75,7 +75,6 @@ GIT_CMD = ("git log --date=format:%Y --format='%ad %aN <%aE>' --date-order "
 EXCLUDES = (
     'lib/mpdaf/_githash.py',
     'lib/mpdaf/obj/wavelet1D.py',
-    'lib/mpdaf/tools/astropycompat.py',
 )
 
 ADDITIONAL_COPYRIGHTS = {

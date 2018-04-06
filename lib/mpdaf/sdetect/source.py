@@ -55,7 +55,7 @@ from scipy.optimize import leastsq
 from ..obj import Cube, Image, Spectrum, vactoair, airtovac
 from ..obj.image import plot_rgb
 from ..obj.objs import is_int, is_float, bounding_box
-from ..tools import deprecated, write_hdulist_to
+from ..tools import deprecated
 from ..MUSE import FieldsMap, FSF
 from ..MUSE.PSF import MOFFAT1, create_psf_cube
 from ..sdetect.sea import segmentation, mask_creation, findCentralDetection
@@ -737,8 +737,7 @@ class Source(object):
                 _write_table(tab, 'TAB_%s' % key, hdulist)
 
             # save to disk
-            write_hdulist_to(hdulist, filename, overwrite=True,
-                             output_verify='fix')
+            hdulist.writeto(filename, overwrite=True, output_verify='fix')
         else:
             # update the existing FITS file
             if os.path.abspath(filename) != self._filename:
