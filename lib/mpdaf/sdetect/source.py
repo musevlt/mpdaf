@@ -1200,6 +1200,11 @@ class Source(object):
         cube : `~mpdaf.obj.Cube`
             Input cube MPDAF object.
 
+        fieldmap: str
+            Name for the FITS file containing the field map. The field map
+            must be on the same WCS as the cube. If None, the field map is
+            taken for the cube.
+
         """
         hdr = cube.primary_header
         try:
