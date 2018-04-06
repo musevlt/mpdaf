@@ -49,6 +49,7 @@ from numpy import ma
 import astropy.units as u
 from astropy.io import fits
 from astropy.stats import gaussian_sigma_to_fwhm, gaussian_fwhm_to_sigma
+from astropy.visualization import ZScaleInterval
 from matplotlib.path import Path
 from scipy import interpolate, signal
 from scipy import ndimage as ndi
@@ -4036,17 +4037,16 @@ class FormatCoord(object):
             return 'x=%1.4f, y=%1.4f' % (x, y)
 
 
-def get_plot_norm(data, vmin=None, vmax=None, zscale=False,
-                  scale='linear'):
+def get_plot_norm(data, vmin=None, vmax=None, zscale=False, scale='linear'):
     from astropy import visualization as viz
     from astropy.visualization.mpl_normalize import ImageNormalize
 
     # Choose vmin and vmax automatically?
     if zscale:
-        from ..tools.astropycompat import zscale as plt_zscale
+        interval = ZScaleInterval()
         if data.dtype == np.float64:
             try:
-                vmin, vmax = plt_zscale(data.filled(np.nan))
+                vmin, vmax = interval.get_limits(data.filled(np.nan))
             except:
                 # catch failure on all NaN
                 if np.all(np.isnan(data.filled(np.nan))):
@@ -4054,7 +4054,7 @@ def get_plot_norm(data, vmin=None, vmax=None, zscale=False,
                 else:
                     raise
         else:
-            vmin, vmax = plt_zscale(data.filled(0))
+            vmin, vmax = interval.get_limits(data.filled(0))
 
     # How are values between vmin and vmax mapped to corresponding
     # positions along the colorbar?

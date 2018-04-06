@@ -76,7 +76,6 @@ EXCLUDES = (
     'lib/mpdaf/_githash.py',
     'lib/mpdaf/obj/wavelet1D.py',
     'lib/mpdaf/tools/astropycompat.py',
-    'lib/mpdaf/tools/tests/test_astropycompat.py'
 )
 
 ADDITIONAL_COPYRIGHTS = {

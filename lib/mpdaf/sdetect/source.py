@@ -60,7 +60,6 @@ from ..MUSE import FieldsMap, FSF
 from ..MUSE.PSF import MOFFAT1, create_psf_cube
 from ..sdetect.sea import segmentation, mask_creation, findCentralDetection
 from ..sdetect.sea import union, intersection, compute_optimal_spectrum
-from ..tools.astropycompat import ASTROPY_LT_1_1, table_to_hdu
 
 
 __all__ = ('Source', 'SourceList', 'matchlines', 'crackz')
@@ -148,7 +147,7 @@ def _set_table_attributes(name, table):
         for attr, value in attributes.items():
             if attr not in ('dtype', 'primary_index'):
                 setattr(table[colname], attr, value)
-            elif not ASTROPY_LT_1_1 and attr == 'primary_index':
+            elif attr == 'primary_index':
                 table.add_index(colname, unique=True)
 
 
@@ -375,7 +374,7 @@ def _write_table(table, name, hdulist):
     if table is None:
         return
 
-    hdu = table_to_hdu(table)
+    hdu = pyfits.table_to_hdu(table)
     hdu.name = name
     _insert_or_update_hdu(hdulist, name, hdu)
 
