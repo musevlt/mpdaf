@@ -1210,7 +1210,7 @@ class Source(object):
         try:
             FSF_mode = hdr['FSFMODE']
         except KeyError:
-            raise ValueError('Cannot compute FSF int the FSF keywords are not'
+            raise ValueError('Cannot compute FSF int the FSF keywords are not '
                              'present in the primary header of the cube')
 
         if FSF_mode != 'MOFFAT1':
@@ -1229,7 +1229,7 @@ class Source(object):
             try:
                 white = self.images['MUSE_WHITE']
             except KeyError:
-                raise ValueError('Cannot compute FSF if the MUSE_WHITE image'
+                raise ValueError('Cannot compute FSF if the MUSE_WHITE image '
                                  'does not exist.')
 
             center = cube.wcs.sky2pix((self.dec, self.ra), unit=u.deg)[0]
