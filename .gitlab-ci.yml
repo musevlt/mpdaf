@@ -6,9 +6,6 @@ before_script:
 coverage-clean:
   script: tox -e clean
 
-py27:
-  script: tox -v -e py27
-
 py35:
   script: tox -v -e py35
 
