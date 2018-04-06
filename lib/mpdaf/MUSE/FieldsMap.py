@@ -135,22 +135,19 @@ class FieldsMap(object):
 
     def compute_weights(self):
         """Return a list of weight maps (one per fields).
-        The weight gives the influence of the field for each pixel.
-        In the overlap area the weight changes linearly to have a
-        smooth transition.
+
+        The weight gives the influence of the field for each pixel.  In the
+        overlap area the weight changes linearly to have a smooth transition.
+
         """
-        p, q = np.meshgrid(range(self.data.shape[0]),
-                           range(self.data.shape[1]),
-                           sparse=False, indexing='ij')
+        p, q = np.mgrid[:self.data.shape[0], :self.data.shape[1]]
 
         # compute the mask for each field
-        fmaps = []
-        for i in range(1, self.nfields + 1):
-            fmaps.append(self.get_field_mask(i).astype(int))
+        fmaps = [self.get_field_mask(i).astype(int)
+                 for i in range(1, self.nfields + 1)]
 
         several = (np.sum(fmaps, axis=0) > 1)
-
-        w = []
+        weights = []
         s = None
         for m in fmaps:
             # pixels just in one field
@@ -160,17 +157,17 @@ class FieldsMap(object):
             qd = list(ksel[1])
             z = m[ksel].astype(float)
             wmap = griddata((pd, qd), z, (p, q), method='linear')
-            w.append(wmap)
+            weights.append(wmap)
             if s is None:
                 s = wmap.copy()
             else:
                 s += wmap
 
         ksel = np.where((s != 0) & (s != 1))
-        for wmap in w:
+        for wmap in weights:
             wmap[ksel] /= s[ksel]
 
-        return w
+        return weights
 
     def get_FSF(self, y, x, kernels, weights=None):
         """Return the local FSF.
