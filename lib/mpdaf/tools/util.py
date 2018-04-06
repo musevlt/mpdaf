@@ -44,8 +44,6 @@ from contextlib import contextmanager
 from functools import wraps
 from time import time
 
-from .numpycompat import broadcast_to
-
 __all__ = ('MpdafWarning', 'MpdafUnitsWarning', 'deprecated', 'chdir',
            'timeit', 'timer', 'broadcast_to_cube', 'LowercaseOrderedDict')
 
@@ -135,7 +133,7 @@ def broadcast_to_cube(arr, shape):
             raise ValueError(excmsg % (arr.shape[0], shape[0]))
         arr = arr[:, np.newaxis, np.newaxis]
 
-    return broadcast_to(arr, shape)
+    return np.broadcast_to(arr, shape)
 
 
 # Here we inherit unncessarily from OrderDict.
