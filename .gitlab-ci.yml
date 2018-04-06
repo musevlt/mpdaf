@@ -3,14 +3,20 @@ before_script:
   - which pip
   - which tox
 
-coverage-clean:
-  script: tox -e clean
-
 py35:
-  script: tox -v -e py35
+  script:
+    - tox -v -e py35
+    - grep pc_cov htmlcov/index.html | egrep -o "[0-9]+\%" | awk '{ print "covered " $1;}'
 
 astropy13:
-  script: tox -v -e astropy13
+  script:
+    - tox -v -e astropy13
+    - grep pc_cov htmlcov/index.html | egrep -o "[0-9]+\%" | awk '{ print "covered " $1;}'
+
+astropy20:
+  script:
+    - tox -v -e astropy20
+    - grep pc_cov htmlcov/index.html | egrep -o "[0-9]+\%" | awk '{ print "covered " $1;}'
 
 check-setup:
   script: tox -v -e check
@@ -21,8 +27,3 @@ check-setup:
 
 docs:
   script: tox -v -e docs
-
-coverage-report:
-  script:
-    - tox -e report
-    - grep pc_cov htmlcov/index.html | egrep -o "[0-9]+\%" | awk '{ print "covered " $1;}'
