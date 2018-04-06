@@ -9,8 +9,6 @@ license information.
 
 """
 
-from __future__ import absolute_import, division
-
 import numpy as np
 import six
 import textwrap

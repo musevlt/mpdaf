@@ -30,7 +30,6 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-from __future__ import absolute_import, print_function, unicode_literals
 from six import string_types
 
 from collections import OrderedDict, MutableMapping
@@ -168,7 +167,7 @@ class LowercaseOrderedDict(MutableMapping, OrderedDict):
 
     def __delitem__(self, key):
         del self._d[self._convert(key)]
-            
+
     def __iter__(self):
         return iter(self._d)
 

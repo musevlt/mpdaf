@@ -47,8 +47,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # Please contact Jarle for more info at jarle@strw.leidenuniv.nl
 
-from __future__ import absolute_import, division
-
 from astropy.io import fits
 import astropy.units as u
 

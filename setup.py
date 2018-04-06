@@ -35,8 +35,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # See README.rst for details on how to install MPDAF.
 
-from __future__ import print_function
-
 import os
 import subprocess
 import sys

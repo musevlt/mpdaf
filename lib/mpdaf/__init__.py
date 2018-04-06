@@ -33,7 +33,6 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from __future__ import absolute_import
 from . import drs, MUSE, obj, sdetect, tools
 from .log import setup_logging, setup_logfile, clear_loggers
 from .version import __version__, __date__

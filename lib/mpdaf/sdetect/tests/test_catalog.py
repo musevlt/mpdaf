@@ -32,8 +32,6 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 import pytest
 import six
@@ -219,7 +217,7 @@ def test_join_meta():
     c2.meta['idname'] = 'ID'
     c2.meta['raname'] = 'RA'
     c2.meta['decname'] = 'dec'
-    
+
     join = c1.join(c2, keys=['ID']) #join on id
     assert len(join) == 10
     assert type(join.meta) == type(c1.meta)
@@ -228,4 +226,4 @@ def test_join_meta():
     assert join.meta['raname'] == 'RA_1'
     assert join.meta['raname_1'] == 'RA_1'
     assert join.meta['raname_2'] == 'RA_2'
-    
+
