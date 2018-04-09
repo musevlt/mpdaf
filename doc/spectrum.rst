@@ -304,6 +304,7 @@ The `poly_spec <mpdaf.obj.Spectrum.poly_spec>` method performs a polynomial fit
 to a spectrum. This can be used to fit the continuum:
 
 .. ipython::
+  :okwarning:
 
   In [1]: plt.figure()
 

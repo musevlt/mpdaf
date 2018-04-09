@@ -36,7 +36,6 @@ from __future__ import absolute_import, division
 import astropy.units as u
 import numpy as np
 
-from astropy.convolution import Model2DKernel
 from astropy.modeling.models import Moffat2D, Gaussian2D
 from astropy.stats import gaussian_fwhm_to_sigma
 from scipy import special
@@ -160,7 +159,6 @@ def Moffat(step_arcsec, Nfsf, beta, fwhm):
     fwhm : float or array of float
         Moffat fwhm in arcsec.
 
-
     Returns
     -------
     PSF_Moffat : array (Nz, Nfsf, Nfsf)
@@ -177,30 +175,28 @@ def Moffat(step_arcsec, Nfsf, beta, fwhm):
     # alpha coefficient in pixel
     alpha = fwhm_pix / (2 * np.sqrt(2**(1 / beta) - 1))
     amplitude = (beta - 1) * (np.pi * alpha**2)
+    center = Nfsf // 2
+    yy, xx = np.mgrid[:Nfsf, :Nfsf]
 
     if np.isscalar(alpha):
-        amplitude = (beta - 1) * (np.pi * alpha**2)
-        moffat = Moffat2D(amplitude, 0, 0, alpha, beta)
-        moffat_kernel = Model2DKernel(moffat, x_size=Nfsf, y_size=Nfsf)
-        PSF_Moffat = moffat_kernel.array
+        moffat = Moffat2D(amplitude, center, center, alpha, beta)
+        PSF_Moffat = moffat(xx, yy)
         # Normalization
-#         PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat)
+        # PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat)
     else:
         Nz = alpha.shape[0]
-        PSF_Moffat = np.empty((Nz, Nfsf, Nfsf))
-        for i in range(Nz):
-            moffat = Moffat2D(amplitude[i], 0, 0, alpha[i], beta)
-            moffat_kernel = Model2DKernel(moffat, x_size=Nfsf, y_size=Nfsf)
-            PSF_Moffat[i, :, :] = moffat_kernel.array
+        moffat = Moffat2D(amplitude, [center] * Nz, [center] * Nz,
+                          alpha, [beta] * Nz, n_models=Nz)
+        PSF_Moffat = moffat(xx, yy, model_set_axis=False)
         # Normalization
-#         PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat, axis=(1, 2))\
-#                     [:, np.newaxis, np.newaxis]
+        # PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat, axis=(1, 2))\
+        #     [:, np.newaxis, np.newaxis]
 
     return PSF_Moffat, fwhm_pix
 
 
 def MOFFAT1(lbda, step_arcsec, Nfsf, beta, a, b):
-    """Compute PSF with a Moffat function
+    """Compute PSF with a Moffat function.
 
     Parameters
     ----------
@@ -233,47 +229,41 @@ def MOFFAT1(lbda, step_arcsec, Nfsf, beta, a, b):
 
 
 class FSF(object):
+    """This class offers Field Spread Function (FSF) models for MUSE.
 
-    """This class offers Field Spread Function models for MUSE.
+    The only supported model currently is "MOFFAT1".
+
+    MOFFAT1: Moffat function with a FWHM which varies linearly with the
+    wavelength. Parameters:
+
+        - beta (float) Power index of the Moffat.
+        - a (float) constant in arcsec which defined the FWHM (fwhm=a+b*lbda)
+        - b (float) constant which defined the FWHM (fwhm=a+b*lbda)
 
     Attributes
     ----------
     typ : str
-        FSF type.
+        FSF type. Only "MOFFAT1" is supported currently.
 
     """
 
     def __init__(self, typ="MOFFAT1"):
-        """Manages LSF model.
-
-        Parameters
-        ----------
-        typ : str
-            type of LSF
-
-
-        MOFFAT1: Moffat function with a FWHM which varies linearly with the
-        wavelength. Parameters:
-         - beta (float) Power index of the Moffat.
-         - a (float) constant in arcsec which defined the FWHM (fwhm=a+b*lbda)
-         - b (float) constant which defined the FWHM (fwhm=a+b*lbda)
-
-        """
         self.typ = typ
 
-    def get_FSF(self, lbda, step, size, **kargs):
+    def get_FSF(self, lbda, step, size, **kwargs):
         """Return an array containing the FSF for a given wavelength.
 
         Parameters
         ----------
-        lbda : float
+        lbda : float or array of float
             Wavelength value in A.
         step : float
             Size of the pixel in arcsec.
         size : int
             Number of pixels.
-        kargs : dict
-            kargs can be used to set FSF parameters.
+        kwargs : dict
+            Additional arguments are passed to the FSF function (e.g.
+            ``MOFFAT1``).
 
         Returns
         -------
@@ -287,7 +277,7 @@ class FSF(object):
         """
         lbda = np.asarray(lbda)
         if self.typ == "MOFFAT1":
-            return MOFFAT1(lbda, step, size, **kargs)
+            return MOFFAT1(lbda, step, size, **kwargs)
         else:
             raise IOError('Invalid FSF type')
 
@@ -350,34 +340,35 @@ def get_FSF_from_cube_keywords(cube, size):
         fwhm of the FSF in arcsec
 
     """
-    if 'FSFMODE' in cube.primary_header:
-        FSF_mode = cube.primary_header['FSFMODE']
-        if FSF_mode != 'MOFFAT1':
-            raise IOError('This method is coded only for FSFMODE=MOFFAT1')
-        nfields = cube.primary_header['NFIELDS']
-        FSF_model = FSF(FSF_mode)
-        if nfields == 1:  # just one FSF
-            nf = 0
-            beta = cube.primary_header['FSF%02dBET' % nf]
-            a = cube.primary_header['FSF%02dFWA' % nf]
-            b = cube.primary_header['FSF%02dFWB' % nf]
-            return FSF_model.get_FSF_cube(cube, size, beta=beta, a=a, b=b)
-        else:
-            l_PSF = []
-            l_fwhm_pix = []
-            l_fwhm_arcsec = []
-            for i in range(1, nfields + 1):
-                beta = cube.primary_header['FSF%02dBET' % i]
-                a = cube.primary_header['FSF%02dFWA' % i]
-                b = cube.primary_header['FSF%02dFWB' % i]
-                PSF, fwhm_pix, fwhm_arcsec = \
-                    FSF_model.get_FSF_cube(cube, size, beta=beta, a=a, b=b)
-                l_PSF.append(PSF)
-                l_fwhm_pix.append(fwhm_pix)
-                l_fwhm_arcsec.append(fwhm_arcsec)
-            return l_PSF, l_fwhm_pix, l_fwhm_arcsec
-    else:
+    if 'FSFMODE' not in cube.primary_header:
         raise IOError('No FSF keywords in the cube primary header')
+
+    FSF_mode = cube.primary_header['FSFMODE']
+    if FSF_mode != 'MOFFAT1':
+        raise IOError('This method is coded only for FSFMODE=MOFFAT1')
+
+    nfields = cube.primary_header['NFIELDS']
+    FSF_model = FSF(FSF_mode)
+    if nfields == 1:  # just one FSF
+        nf = 0
+        beta = cube.primary_header['FSF%02dBET' % nf]
+        a = cube.primary_header['FSF%02dFWA' % nf]
+        b = cube.primary_header['FSF%02dFWB' % nf]
+        return FSF_model.get_FSF_cube(cube, size, beta=beta, a=a, b=b)
+    else:
+        l_PSF = []
+        l_fwhm_pix = []
+        l_fwhm_arcsec = []
+        for i in range(1, nfields + 1):
+            beta = cube.primary_header['FSF%02dBET' % i]
+            a = cube.primary_header['FSF%02dFWA' % i]
+            b = cube.primary_header['FSF%02dFWB' % i]
+            PSF, fwhm_pix, fwhm_arcsec = \
+                FSF_model.get_FSF_cube(cube, size, beta=beta, a=a, b=b)
+            l_PSF.append(PSF)
+            l_fwhm_pix.append(fwhm_pix)
+            l_fwhm_arcsec.append(fwhm_arcsec)
+        return l_PSF, l_fwhm_pix, l_fwhm_arcsec
 
 
 def create_psf_cube(shape, fwhm, beta=None, wcs=None, unit_fwhm=u.arcsec):
