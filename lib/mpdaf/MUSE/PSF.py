@@ -229,12 +229,11 @@ def MOFFAT1(lbda, step_arcsec, Nfsf, beta, a, b):
 
 
 class FSF(object):
-
     """This class offers Field Spread Function (FSF) models for MUSE.
 
     The only supported model currently is "MOFFAT1".
 
-    - MOFFAT1: Moffat function with a FWHM which varies linearly with the
+    MOFFAT1: Moffat function with a FWHM which varies linearly with the
     wavelength. Parameters:
 
         - beta (float) Power index of the Moffat.
