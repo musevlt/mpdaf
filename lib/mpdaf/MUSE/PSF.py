@@ -36,7 +36,6 @@ from __future__ import absolute_import, division
 import astropy.units as u
 import numpy as np
 
-from astropy.convolution import Model2DKernel
 from astropy.modeling.models import Moffat2D, Gaussian2D
 from astropy.stats import gaussian_fwhm_to_sigma
 from scipy import special
@@ -176,25 +175,22 @@ def Moffat(step_arcsec, Nfsf, beta, fwhm):
     # alpha coefficient in pixel
     alpha = fwhm_pix / (2 * np.sqrt(2**(1 / beta) - 1))
     amplitude = (beta - 1) * (np.pi * alpha**2)
+    center = Nfsf // 2
+    yy, xx = np.mgrid[:Nfsf, :Nfsf]
 
-    # TODO: use create_psf_cube ??
     if np.isscalar(alpha):
-        amplitude = (beta - 1) * (np.pi * alpha**2)
-        moffat = Moffat2D(amplitude, 0, 0, alpha, beta)
-        moffat_kernel = Model2DKernel(moffat, x_size=Nfsf, y_size=Nfsf)
-        PSF_Moffat = moffat_kernel.array
+        moffat = Moffat2D(amplitude, center, center, alpha, beta)
+        PSF_Moffat = moffat(xx, yy)
         # Normalization
-#         PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat)
+        # PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat)
     else:
         Nz = alpha.shape[0]
-        PSF_Moffat = np.empty((Nz, Nfsf, Nfsf))
-        for i in range(Nz):
-            moffat = Moffat2D(amplitude[i], 0, 0, alpha[i], beta)
-            moffat_kernel = Model2DKernel(moffat, x_size=Nfsf, y_size=Nfsf)
-            PSF_Moffat[i, :, :] = moffat_kernel.array
+        moffat = Moffat2D(amplitude, [center] * Nz, [center] * Nz,
+                          alpha, [beta] * Nz, n_models=Nz)
+        PSF_Moffat = moffat(xx, yy, model_set_axis=False)
         # Normalization
-#         PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat, axis=(1, 2))\
-#                     [:, np.newaxis, np.newaxis]
+        # PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat, axis=(1, 2))\
+        #     [:, np.newaxis, np.newaxis]
 
     return PSF_Moffat, fwhm_pix
 
@@ -351,6 +347,7 @@ def get_FSF_from_cube_keywords(cube, size):
     FSF_mode = cube.primary_header['FSFMODE']
     if FSF_mode != 'MOFFAT1':
         raise IOError('This method is coded only for FSFMODE=MOFFAT1')
+
     nfields = cube.primary_header['NFIELDS']
     FSF_model = FSF(FSF_mode)
     if nfields == 1:  # just one FSF

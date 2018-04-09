@@ -34,9 +34,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import absolute_import, division
 
 import numpy as np
+import pytest
 from mpdaf.obj import Image, Cube
 from mpdaf.sdetect import Source
-from mpdaf.MUSE import create_psf_cube
+from mpdaf.MUSE import create_psf_cube, get_FSF_from_cube_keywords
 from numpy.testing import assert_almost_equal
 from ...tests.utils import get_data_file
 
@@ -66,3 +67,17 @@ def test_create_psf_cube():
     assert_almost_equal(wcs.sky2pix(res.center)[0], [12., 12.])
     assert np.allclose(res.fwhm, psf[0])
     assert np.allclose(res.flux, 1.0, atol=1e-2)
+
+
+def test_get_FSF_from_cube_keywords():
+    cube = Cube(get_data_file('sdetect', 'minicube.fits'))
+    with pytest.raises(IOError):
+        # This cube has no FSF info
+        PSF, fwhm_pix, fwhm_arcsec = get_FSF_from_cube_keywords(cube, 13)
+
+    cube = Cube(get_data_file('sdetect', 'subcub_mosaic.fits'))
+    PSF, fwhm_pix, fwhm_arcsec = get_FSF_from_cube_keywords(cube, 13)
+
+    assert len(PSF) == 9
+    assert len(fwhm_pix) == 9
+    np.testing.assert_allclose(fwhm_pix[0] * 0.2, fwhm_arcsec[0])
