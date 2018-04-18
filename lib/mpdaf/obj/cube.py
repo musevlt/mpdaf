@@ -1088,6 +1088,42 @@ class Cube(ArithmeticMixin, DataArray):
         else:
             raise ValueError('Invalid axis argument')
 
+    def min(self, axis=None):
+        """Return the minimum over a given axis.
+
+        Beware that if the pixels of the cube have associated variances, these
+        are discarded by this function, because there is no way to estimate the
+        effects of a minimum on the variance.
+
+        Parameters
+        ----------
+        axis : None or int or tuple of ints
+            The axis or axes along which the minimum is computed.
+
+            The default (axis = None) computes the minimum over all the
+            dimensions of the cube and returns a float.
+
+            axis = 0 computes the minimum over the wavelength dimension and
+            returns an image.
+
+            axis = (1,2) computes the minimum over the (X,Y) axes and
+            returns a spectrum.
+
+        """
+        if axis is None:
+            return np.ma.amin(self.data)
+        elif axis == 0:
+            # return an image
+            data = np.ma.amin(self.data, axis)
+            return Image.new_from_obj(self, data=data, var=False, copy=False)
+        elif axis == (1, 2):
+            # return a spectrum
+            data = np.ma.amin(np.ma.amin(self.data, axis=1), axis=1)
+            return Spectrum.new_from_obj(self, data=data, var=False,
+                                         copy=False)
+        else:
+            raise ValueError('Invalid axis argument')
+        
     def truncate(self, coord, mask=True, unit_wave=u.angstrom, unit_wcs=u.deg):
         """Return a sub-cube bounded by specified wavelength and spatial
         world-coordinates.
