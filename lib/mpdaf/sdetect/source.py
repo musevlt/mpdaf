@@ -969,11 +969,11 @@ class Source(object):
         values : list<int/float/str>
             List of corresponding values
         units : list<astropy.units>
-            Unity of each column
+            Unit of each column
         desc : list of str
-               Description of each column
+            Description of each column
         fmt : list of str
-               Fromat of each column.
+            Format of each column.
         match : (str, float/int/str, bool)
             Tuple (key, value, False/True) that gives the key to match the
             added line with an existing line.  eg ('LINE','LYALPHA1216', True)
