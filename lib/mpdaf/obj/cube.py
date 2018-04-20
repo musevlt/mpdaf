@@ -1123,7 +1123,7 @@ class Cube(ArithmeticMixin, DataArray):
                                          copy=False)
         else:
             raise ValueError('Invalid axis argument')
-        
+
     def truncate(self, coord, mask=True, unit_wave=u.angstrom, unit_wcs=u.deg):
         """Return a sub-cube bounded by specified wavelength and spatial
         world-coordinates.
