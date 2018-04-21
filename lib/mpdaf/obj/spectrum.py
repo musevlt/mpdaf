@@ -1768,7 +1768,7 @@ class Spectrum(ArithmeticMixin, DataArray):
 
     def gauss_asymfit(self, lmin, lmax, lpeak=None, flux=None, fwhm=None,
                       cont=None, peak=False, spline=False, weight=True,
-                      plot=False, plot_factor=10, unit=u.angstrom):
+                      plot=False, plot_factor=10, ax=None, unit=u.angstrom):
         """Truncate the spectrum and fit it with an asymetric gaussian
         function.
 
@@ -1918,7 +1918,10 @@ class Spectrum(ArithmeticMixin, DataArray):
             # Same wavelenght grid as input spectrum
             xxx = np.arange(l[0], l[-1], (l[1] - l[0]) / plot_factor)
             ccc = asymfit(v, xxx)
-            plt.plot(xxx, ccc, 'm--', label='Asymmetric')
+            if ax is None:
+                plt.plot(xxx, ccc, 'm--', label='Asymmetric')
+            else:
+                ax.plot(xxx, ccc, 'm--', label='Asymmetric')
 
         # return a Gauss1D object
         sigma_right = np.abs(v[2])
