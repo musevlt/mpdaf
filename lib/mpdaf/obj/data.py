@@ -833,15 +833,16 @@ class DataArray(object):
         # Slice a Cube?
         if self.ndim == 3:
 
-            # Handle cube[ii,jj,kk], where ii, jj, kk can be int or slice objects.
+            # Handle cube[ii,jj,kk], where ii, jj, kk can be int or slice
+            # objects.
             if isinstance(item, (list, tuple)) and len(item) == 3:
                 try:
                     wcs = self.wcs[item[1], item[2]]
-                except:
+                except Exception:
                     wcs = None
                 try:
                     wave = self.wave[item[0]]
-                except:
+                except Exception:
                     wave = None
 
                 # If x's slice is selected with an integer, and y's slice
@@ -865,11 +866,11 @@ class DataArray(object):
             if isinstance(item, (list, tuple)) and len(item) == 2:
                 try:
                     wcs = self.wcs[item[1], slice(None)]
-                except:
+                except Exception:
                     wcs = None
                 try:
                     wave = self.wave[item[0]]
-                except:
+                except Exception:
                     wave = None
 
                 # If the Y-axis slice has been specified as an int, then
@@ -886,22 +887,22 @@ class DataArray(object):
             elif isinstance(item, (int, slice)):
                 try:
                     wcs = self.wcs.copy()
-                except:
+                except Exception:
                     wcs = None
                 try:
                     wave = self.wave[item]
-                except:
+                except Exception:
                     wave = None
 
             # Handle cube[]
             elif item is None or item is ():
                 try:
                     wcs = self.wcs.copy()
-                except:
+                except Exception:
                     wcs = None
                 try:
                     wave = self.wave.copy()
-                except:
+                except Exception:
                     wave = None
 
         # Slice an Image?
@@ -911,7 +912,7 @@ class DataArray(object):
             if isinstance(item, (list, tuple)) and len(item) == 2:
                 try:
                     wcs = self.wcs[item]
-                except:
+                except Exception:
                     wcs = None
 
                 # If x's slice is selected with an integer, and y's slice
@@ -929,7 +930,7 @@ class DataArray(object):
             elif isinstance(item, (int, slice)):
                 try:
                     wcs = self.wcs[item, slice(None)]
-                except:
+                except Exception:
                     wcs = None
 
                 # If item is an int, then numpy will have removed
@@ -942,7 +943,7 @@ class DataArray(object):
             elif item is None or item is ():
                 try:
                     wcs = self.wcs.copy()
-                except:
+                except Exception:
                     wcs = None
 
         # Slice a Spectrum?
@@ -952,14 +953,14 @@ class DataArray(object):
             if isinstance(item, slice):
                 try:
                     wave = self.wave[item]
-                except:
+                except Exception:
                     wave = None
 
             # Handle spectrum[]
             elif item is None or item is ():
                 try:
                     wave = self.wave.copy()
-                except:
+                except Exception:
                     wave = None
 
         # Reshape the data, variance and mask arrays, if necessary.
@@ -1278,7 +1279,7 @@ class DataArray(object):
                     self.wcs = self.wcs[item]
                 else:
                     self.wcs = self.wcs[item[1:]]
-            except:
+            except Exception:
                 self.wcs = None
                 self._logger.warning('wcs not copied, attribute set to None',
                                      exc_info=True)
@@ -1287,7 +1288,7 @@ class DataArray(object):
         if self._has_wave:
             try:
                 self.wave = self.wave[item[0]]
-            except:
+            except Exception:
                 self.wave = None
                 self._logger.warning('wavelength solution not copied: '
                                      'attribute set to None', exc_info=True)
@@ -1326,7 +1327,7 @@ class DataArray(object):
                             'object')
                     self.wcs.naxis1 = self.shape[-1]
                     self.wcs.naxis2 = self.shape[-2]
-            except:
+            except Exception:
                 self._logger.warning('Unable to install world coordinates',
                                      exc_info=True)
 
@@ -1345,9 +1346,9 @@ class DataArray(object):
                             'different dimensions. Modifying the shape of '
                             'the WaveCoord object')
                     self.wave.shape = self.shape[0]
-            except:
-                self._logger.warning('Unable to install wavelength coordinates',
-                                     exc_info=True)
+            except Exception:
+                self._logger.warning('Unable to install wavelength '
+                                     'coordinates', exc_info=True)
 
     def _rebin(self, factor, margin='center', inplace=False):
         """Combine neighboring pixels to reduce the size by integer factors
@@ -1415,7 +1416,7 @@ class DataArray(object):
         n = np.mod(res.shape, factor).astype(int)
 
         # If necessary, compute the slices needed to truncate the
-        # dimesions to be integer multiples of the axis reduction
+        # dimensions to be integer multiples of the axis reduction
         # factors.
         if np.any(n != 0):
 
