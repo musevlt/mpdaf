@@ -60,7 +60,8 @@ class LazyData(object):
     def read_data(self, obj):
         obj_dict = obj.__dict__
         data, mask = read_slice_from_fits(obj.filename, ext=obj._data_ext,
-                                          mask_ext='DQ', dtype=obj.dtype)
+                                          mask_ext='DQ', dtype=obj.dtype,
+                                          convert_float64=obj._convert_float64)
         if mask is None:
             mask = ~(np.isfinite(data))
         obj_dict['_data'] = data
@@ -84,8 +85,9 @@ class LazyData(object):
                 # Make sure that data is read because the mask may be needed
                 if not obj._loaded_data:
                     self.read_data(obj)
-                val, _ = read_slice_from_fits(obj.filename, ext=obj._var_ext,
-                                              dtype=np.float64)
+                val, _ = read_slice_from_fits(
+                    obj.filename, ext=obj._var_ext, dtype=obj._var_dtype,
+                    convert_float64=obj._convert_float64)
                 obj.__dict__[self.label] = val
             return val
 
@@ -190,8 +192,8 @@ class DataArray(object):
     filename : str
         FITS file name, default to None.
     hdulist : `astropy.fits.HDUList`
-        HDU list class, used instead of ``fits.open(filename)`` if not None,
-        to avoid opening the FITS file.
+        HDUList object, can be used instead of ``filename`` to avoid opening
+        the FITS file multiple times.
     data : numpy.ndarray or list
         Data array, passed to `numpy.ma.MaskedArray`.
     mask : bool or numpy.ma.nomask or numpy.ndarray
@@ -218,6 +220,9 @@ class DataArray(object):
         FITS data header instance.
     fits_kwargs : dict
         Additional arguments that can be passed to `astropy.io.fits.open`.
+    convert_float64: bool
+        By default input arrays or FITS data are converted to float64, in
+        order to increase precision to the detriment of memory usage.
 
     Attributes
     ----------
@@ -256,17 +261,20 @@ class DataArray(object):
 
     def __init__(self, filename=None, hdulist=None, data=None, mask=False,
                  var=None, ext=None, unit=u.dimensionless_unscaled, copy=True,
-                 dtype=None, primary_header=None, data_header=None, **kwargs):
+                 dtype=None, primary_header=None, data_header=None,
+                 convert_float64=True, **kwargs):
         self._logger = logging.getLogger(__name__)
 
         self._loaded_data = False
         self._data_ext = None
         self._var_ext = None
+        self._convert_float64 = convert_float64
 
         self.filename = filename
         self.wcs = None
         self.wave = None
         self._dtype = dtype
+        self._var_dtype = np.float64 if convert_float64 else None
         self.unit = unit
         self.data_header = data_header or fits.Header()
         self.primary_header = primary_header or fits.Header()
@@ -343,7 +351,8 @@ class DataArray(object):
             # Use a specified numpy data array?
             if data is not None:
                 # Force data to be in double instead of float
-                if self._dtype is None and data.dtype.type == np.float32:
+                if (self._dtype is None and data.dtype.type == np.float32 and
+                        convert_float64):
                     self._dtype = np.float64
 
                 if isinstance(data, ma.MaskedArray):
@@ -365,10 +374,11 @@ class DataArray(object):
             # Use a specified variance array?
             if var is not None:
                 if isinstance(var, ma.MaskedArray):
-                    self._var = np.array(var.data, dtype=np.float64, copy=copy)
+                    self._var = np.array(var.data, dtype=self._var_dtype,
+                                         copy=copy)
                     self._mask |= var.mask
                 else:
-                    self._var = np.array(var, dtype=np.float64, copy=copy)
+                    self._var = np.array(var, dtype=self._var_dtype, copy=copy)
 
         # Where WCS and/or wavelength objects are specified as optional
         # parameters, install them.
@@ -798,10 +808,11 @@ class DataArray(object):
             with fits.open(self.filename) as hdu:
                 data, mask = read_slice_from_fits(
                     hdu, ext=self._data_ext, mask_ext='DQ', dtype=self.dtype,
-                    item=item)
+                    item=item, convert_float64=self._convert_float64)
                 if self._var_ext is not None:
-                    var = read_slice_from_fits(hdu, ext=self._var_ext,
-                                               dtype=np.float64, item=item)[0]
+                    var = read_slice_from_fits(
+                        hdu, ext=self._var_ext, dtype=self._var_dtype,
+                        convert_float64=self._convert_float64, item=item)[0]
                 if mask is None:
                     mask = ~(np.isfinite(data))
         else:
@@ -810,9 +821,9 @@ class DataArray(object):
         if data.ndim == 0:
             return data
 
-        # If the data, mask and variance arrays need to be reshaped to reintroduce
-        # a single-pixel dimension, the following variable will be assigned the
-        # required shape.
+        # If the data, mask and variance arrays need to be reshaped to
+        # reintroduce a single-pixel dimension, the following variable will be
+        # assigned the required shape.
         reshape = None
 
         # Construct new WCS and wavelength coordinate information for the slice
