@@ -40,7 +40,8 @@ from astropy.modeling.models import Disk2D
 from collections import OrderedDict
 from scipy.special import j1, jn_zeros
 
-__all__ = ('Gauss1D', 'Gauss2D', 'Moffat2D')
+__all__ = ('Gauss1D', 'Gauss2D', 'Moffat2D', 'SmoothDisk2D',
+           'SmoothOuterDisk2D', 'EllipticalMoffat2D', 'AiryDisk2D')
 
 
 class Gauss1D(object):

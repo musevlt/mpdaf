@@ -15,8 +15,8 @@ from photutils.detection import find_peaks
 from scipy.special import j1, jn_zeros
 
 from ..obj import Image, Cube
-from ..obj.nfm import (SmoothDisk2D, SmoothOuterDisk2D, EllipticalMoffat2D,
-                       AiryDisk2D)
+from ..obj.fitting import (SmoothDisk2D, SmoothOuterDisk2D, EllipticalMoffat2D,
+                           AiryDisk2D)
 
 # Magic parameters from the IDL code
 ACT = .19    # [m] Inter-actuator distance in the pupil plane
@@ -398,13 +398,16 @@ def fit_line_with_outliers(x, y, niter=3, sigma=3.0, plot=False):
     return fit2
 
 
-def plot_all_results(filename):
-    t = Table.read(filename)
-    starids = np.unique(t['starid'])
-    valid = np.in1d(t['ierr'], [1, 2, 3, 4])
-    good = t[valid]
-    bad = t[~valid]
-    print(f'{np.count_nonzero(~valid)} invalid fits out of {len(t)}')
+def plot_all_results(filename, plot_bad_fits=False):
+    table = Table.read(filename)
+    starids = np.unique(table['starid'])
+    valid = np.in1d(table['ierr'], [1, 2, 3, 4])
+
+    good = table[valid]
+    bad = table[~valid]
+    print(f'{np.count_nonzero(~valid)} invalid fits out of {len(table)}')
+
+    t = table if plot_bad_fits else good
 
     fig, axes = plt.subplots(2, 4, figsize=(20, 9), sharex=True)
 
@@ -440,7 +443,7 @@ def plot_all_results(filename):
     ax = next(axit)
     for name in res.colnames:
         if name.endswith('amplitude') and not name.startswith('W'):
-            ax.plot(good['lbda'], good[name], 'o', label=name.split('_')[0])
+            ax.plot(t['lbda'], t[name], 'o', label=name.split('_')[0])
     ax.legend()
     ax.set_title('ampltiudes')
 
