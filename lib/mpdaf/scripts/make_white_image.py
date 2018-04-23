@@ -49,7 +49,7 @@ def make_white_image(inputfile, outputfile, verbose=False):
         sys.exit('Input and output files are identical')
 
     print('Creating white light image {}'.format(outputfile))
-    cube = Cube(inputfile)
+    cube = Cube(inputfile, convert_float64=False)
     if verbose:
         cube.info()
 
