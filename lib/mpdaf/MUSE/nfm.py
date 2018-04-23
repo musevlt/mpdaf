@@ -21,7 +21,10 @@ from scipy.special import j1, jn_zeros
 ACT = .19    # [m] Inter-actuator distance in the pupil plane
 FOC = 1800.  # [m] Focal length
 PIX = 30.*1e-6/7.*5.24*4.8*2.*1.1  # [m] Pixel size
+OCC = 1.12   # [m] Occultation
 D = 8.       # [m] Aperture
+
+BETA_H = 11./6.
 
 
 class OuterDisk2D(Disk2D):
@@ -170,13 +173,24 @@ class EllipticalMoffat2D(Fittable2DModel):
 
 
 def compute_airy_radius(lbda):
-    return (
-        lbda * 1e-10  # lbda in meter
-        / D           # / D (telescop diameter)
-        * 206265000   # radian to mas
-        / 25          # mas to pixel
-        * 1.22        # radius for astropy
-    )
+    """
+    omega = pix*D/lambda/f
+
+    PIX     - Size of pixels, in meter per pix
+    D       - Diameter of pupil, in meter
+    LAMBDA  - Wavelength, in meter
+    F       - Focal length, in meter
+
+    """
+    omega = PIX * D / (lbda * 1e-10) / FOC
+    return omega
+    # return (
+    #     lbda * 1e-10  # lbda in meter
+    #     / 8           # / D (telescop diameter)
+    #     * 206265000   # radian to mas
+    #     / 25          # mas to pixel
+    #     * 1.22        # radius for astropy
+    # )
 
 
 def correction_radius(lbda):
@@ -258,11 +272,11 @@ def mphd_model(shape, lbda, with_ellipticity=False, R_0=None, verbose=False,
 @custom_model
 def mphd(x, y, x_0=0, y_0=0, R_c=1, Airy_radius=1, Airy_amplitude=1,
          Mpeak_amplitude=1, Mpeak_alpha=1, Mpeak_gamma=1, Bp=0,
-         Mhalo_amplitude=1, Mhalo_alpha=1, Mhalo_gamma=1):
+         Mhalo_amplitude=1, Mhalo_gamma=1):
 
     # print(x_0, y_0, R_c, Airy_radius, Airy_amplitude,
     #       Mpeak_amplitude, Mpeak_alpha, Mpeak_gamma, Bp,
-    #       Mhalo_amplitude, Mhalo_alpha, Mhalo_gamma)
+    #       Mhalo_amplitude, BETA_H, Mhalo_gamma)
 
     rr = ((x - x_0) ** 2 + (y - y_0) ** 2)
     rr2 = np.sqrt(rr)
@@ -273,7 +287,7 @@ def mphd(x, y, x_0=0, y_0=0, R_c=1, Airy_radius=1, Airy_amplitude=1,
 
     # Halo Moffat
     rr_gg = rr / Mhalo_gamma ** 2
-    Mhalo = Mhalo_amplitude * (1 + rr_gg) ** (-Mhalo_alpha)
+    Mhalo = Mhalo_amplitude * (1 + rr_gg) ** (-BETA_H)
 
     W = 1 / (1 + np.exp((rr2 - R_c)))
 
@@ -288,10 +302,18 @@ def mphd(x, y, x_0=0, y_0=0, R_c=1, Airy_radius=1, Airy_amplitude=1,
 
 def mphd_model2(shape, lbda, R_0=None, verbose=False, with_bounds=False,
                 peak=1):
-    # center
+    # initial parameters
     x_0, y_0 = np.array(shape)/2
-    R_c = correction_radius(lbda) if R_0 is None else R_0
+    R_c = (1.22 * correction_radius(lbda)) if R_0 is None else R_0
     R_airy = compute_airy_radius(lbda)
+
+    r0 = 0.25      # [m] Fried parameter
+    # strehl = 0.22  # Strehl ratio (between 0 and 1)
+    # κ known conversion factor from the atmospheric turbulence to
+    # intensity in the focal plane
+    kappa = lbda * 1e-10 * FOC / PIX
+    ah = 0.2301 * kappa / r0
+    Mhalo_amplitude = (BETA_H - 1) / np.pi  # 0.2652
 
     if verbose:
         print(f'Initial R_c for lambda {lbda} is {R_c:.2f}')
@@ -300,7 +322,7 @@ def mphd_model2(shape, lbda, R_0=None, verbose=False, with_bounds=False,
     model = mphd(x_0=x_0, y_0=y_0, R_c=R_c, Airy_radius=R_airy*2,
                  Airy_amplitude=peak,
                  Mpeak_amplitude=peak, Mpeak_alpha=1, Mpeak_gamma=1, Bp=0,
-                 Mhalo_amplitude=peak/2, Mhalo_alpha=2, Mhalo_gamma=1)
+                 Mhalo_amplitude=Mhalo_amplitude, Mhalo_gamma=ah)
 
     if R_0 is not None:
         model.R_c.fixed = True
@@ -310,7 +332,6 @@ def mphd_model2(shape, lbda, R_0=None, verbose=False, with_bounds=False,
         model.Mpeak_gamma.min = 0.1
         model.Mhalo_gamma.min = 0.1
         model.Mpeak_alpha.min = 0.1
-        model.Mhalo_alpha.min = 0.1
         model.Bp.min = 0.
         model.R_c.min = R_c - 4
         model.R_c.max = R_c + 4
@@ -334,7 +355,7 @@ def get_fit_params(fit):
         params = dict(zip(fit.param_names, fit.parameters))
         params['Mpeak_fwhm'] = moffat_to_fwhm(fit.Mpeak_alpha.value,
                                               fit.Mpeak_gamma.value)
-        params['Mhalo_fwhm'] = moffat_to_fwhm(fit.Mhalo_alpha.value,
+        params['Mhalo_fwhm'] = moffat_to_fwhm(BETA_H,
                                               fit.Mhalo_gamma.value)
 
     return params
@@ -489,7 +510,7 @@ def plot_residual(im, fit, figsize=(12, 8), title=None):
 
         m = Moffat2D(x_0=x_0, y_0=y_0,
                      amplitude=fit.Mhalo_amplitude.value,
-                     alpha=fit.Mhalo_alpha.value, gamma=fit.Mhalo_gamma.value)
+                     alpha=BETA_H, gamma=fit.Mhalo_gamma.value)
         ax.plot(((1 - W) * m(xx, yy))[fy], label='halo', **kwargs)
 
     ax.set_yscale('log')
@@ -582,14 +603,14 @@ def plot_all_results(filename):
     ax.set_title('$beta_{peak}$')
 
     # beta halo
-    ax = next(axit)
-    for i in starids:
-        res = t[t['starid'] == i]
-        ax.plot(res['lbda'], res['Mhalo_alpha'], '-.^', alpha=0.6,
-                label=str(i))
-    ax.legend()
-    ax.set_ylim((0, 3))
-    ax.set_title('$beta_{halo}$')
+    # ax = next(axit)
+    # for i in starids:
+    #     res = t[t['starid'] == i]
+    #     ax.plot(res['lbda'], BETA_H, '-.^', alpha=0.6,
+    #             label=str(i))
+    # ax.legend()
+    # ax.set_ylim((0, 3))
+    # ax.set_title('$beta_{halo}$')
 
     # airy
     ax = next(axit)
