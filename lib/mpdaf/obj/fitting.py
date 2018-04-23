@@ -31,7 +31,14 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
+import astropy.units as u
 import logging
+import numpy as np
+
+from astropy.modeling import Fittable2DModel, Parameter
+from astropy.modeling.models import Disk2D
+from collections import OrderedDict
+from scipy.special import j1, jn_zeros
 
 __all__ = ('Gauss1D', 'Gauss2D', 'Moffat2D')
 
@@ -247,3 +254,140 @@ class Moffat2D(object):
         info('n = %g (error:%g)', self.n, self.err_n)
         info('rotation in degree: %g (error:%g)', self.rot, self.err_rot)
         info('continuum = %g (error:%g)', self.cont, self.err_cont)
+
+
+class SmoothDisk2D(Disk2D):
+    @staticmethod
+    def evaluate(x, y, amplitude, x_0, y_0, R_0):
+        """Two dimensional Disk model function"""
+        rr = np.sqrt((x - x_0) ** 2 + (y - y_0) ** 2)
+        return amplitude / (1 + np.exp((rr - R_0)))
+
+
+class SmoothOuterDisk2D(Disk2D):
+    @staticmethod
+    def evaluate(x, y, amplitude, x_0, y_0, R_0):
+        """Two dimensional Disk model function"""
+        rr = np.sqrt((x - x_0) ** 2 + (y - y_0) ** 2)
+        return amplitude * (1 - 1 / (1 + np.exp((rr - R_0))))
+
+
+RZ = jn_zeros(1, 1)[0] / np.pi
+
+
+class AiryDisk2D(Fittable2DModel):
+    """ Two dimensional Airy disk model.
+
+    Optimized version from astropy.modeling.AiryDisk2D
+
+    """
+
+    amplitude = Parameter(default=1)
+    x_0 = Parameter(default=0)
+    y_0 = Parameter(default=0)
+    radius = Parameter(default=1)
+
+    @classmethod
+    def evaluate(cls, x, y, amplitude, x_0, y_0, radius):
+        """Two dimensional Airy model function"""
+        # Since r can be zero, we have to take care to treat that case
+        # separately so as not to raise a numpy warning
+        r = np.sqrt((x - x_0) ** 2 + (y - y_0) ** 2)
+        z = np.ones(r.shape)
+        mask = r > 0
+        rt = r[mask] * (np.pi * RZ / radius)
+        z[mask] = (2.0 * j1(rt) / rt) ** 2
+        z *= amplitude
+        return z
+
+
+class EllipticalMoffat2D(Fittable2DModel):
+    """
+    Two dimensional Moffat model.
+
+    Parameters
+    ----------
+    amplitude : float
+        Amplitude of the model.
+    x_0 : float
+        x position of the maximum of the Moffat model.
+    y_0 : float
+        y position of the maximum of the Moffat model.
+    gamma : float
+        Core width of the Moffat model.
+    alpha : float
+        Power index of the Moffat model.
+
+    See Also
+    --------
+    Gaussian2D, Box2D
+
+    Notes
+    -----
+    Model formula:
+
+    .. math::
+
+        f(x, y) = A \\left(1 + \\frac{\\left(x - x_{0}\\right)^{2} +
+        \\left(y - y_{0}\\right)^{2}}{\\gamma^{2}}\\right)^{- \\alpha}
+    """
+
+    # TODO: implement this...
+    fit_deriv = None
+
+    amplitude = Parameter(default=1)
+    x_0 = Parameter(default=0)
+    y_0 = Parameter(default=0)
+    x_gamma = Parameter(default=1)
+    y_gamma = Parameter(default=1)
+    alpha = Parameter(default=1)
+    theta = Parameter(default=0)
+
+    @property
+    def x_fwhm(self):
+        """Moffat full width at half maximum."""
+        return 2.0 * self.x_gamma * np.sqrt(2.0 ** (1.0 / self.alpha) - 1.0)
+
+    @property
+    def y_fwhm(self):
+        """Moffat full width at half maximum."""
+        return 2.0 * self.y_gamma * np.sqrt(2.0 ** (1.0 / self.alpha) - 1.0)
+
+    @staticmethod
+    def evaluate(x, y, amplitude, x_0, y_0, x_gamma, y_gamma, alpha, theta):
+        """Two dimensional Moffat model function"""
+
+        cost2 = np.cos(theta) ** 2
+        sint2 = np.sin(theta) ** 2
+        sin2t = np.sin(2. * theta)
+        xstd2 = x_gamma ** 2
+        ystd2 = y_gamma ** 2
+        xdiff = x - x_0
+        ydiff = y - y_0
+
+        a = ((cost2 / xstd2) + (sint2 / ystd2))
+        b = ((sin2t / xstd2) - (sin2t / ystd2))
+        c = ((sint2 / xstd2) + (cost2 / ystd2))
+
+        rr_gg = (a * xdiff ** 2) + (b * xdiff * ydiff) + (c * ydiff ** 2)
+        return amplitude * (1 + rr_gg) ** (-alpha)
+
+    @property
+    def input_units(self):
+        if self.x_0.unit is None:
+            return None
+        else:
+            return {'x': self.x_0.unit,
+                    'y': self.y_0.unit}
+
+    def _parameter_units_for_data_units(self, inputs_unit, outputs_unit):
+        # Note that here we need to make sure that x and y are in the same
+        # units otherwise this can lead to issues since rotation is not well
+        # defined.
+        if inputs_unit['x'] != inputs_unit['y']:
+            raise u.UnitsError("Units of 'x' and 'y' inputs should match")
+        return OrderedDict([('x_0', inputs_unit['x']),
+                            ('y_0', inputs_unit['x']),
+                            ('x_gamma', inputs_unit['x']),
+                            ('y_gamma', inputs_unit['x']),
+                            ('amplitude', outputs_unit['z'])])
