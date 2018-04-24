@@ -133,24 +133,10 @@ def init_mphd_model(shape, lbda, R_0=None, verbose=False, with_bounds=False,
 
 
 def get_fit_params(fit):
-    if fit.n_submodels() > 1:
-        params = {}
-        for model in fit:
-            pars = dict(zip((f'{model.name}_{n}' for n in model.param_names),
-                            model.parameters))
-            if model.name in ('Mpeak', 'Mhalo'):
-                pars[f'{model.name}_fwhm'] = model.fwhm
-            if model.name != 'Mpeak':
-                pars = {k: v for k, v in pars.items()
-                        if not k.endswith(('x_0', 'y_0'))}
-            params.update(pars)
-    else:
-        params = dict(zip(fit.param_names, fit.parameters))
-        params['Mpeak_fwhm'] = moffat_to_fwhm(fit.Mpeak_alpha.value,
-                                              fit.Mpeak_gamma.value)
-        params['Mhalo_fwhm'] = moffat_to_fwhm(BETA_H,
-                                              fit.Mhalo_gamma.value)
-
+    params = dict(zip(fit.param_names, fit.parameters))
+    params['Mpeak_fwhm'] = moffat_to_fwhm(fit.Mpeak_alpha.value,
+                                          fit.Mpeak_gamma.value)
+    params['Mhalo_fwhm'] = moffat_to_fwhm(BETA_H, fit.Mhalo_gamma.value)
     return params
 
 
@@ -190,6 +176,14 @@ def fit_mphd(img, lbda, use_var=False, maxiter=2000, with_ellipticity=False,
     else:
         params = get_fit_params(fit)
         params.update({k: fit_info[k] for k in ('ierr', 'nfev')})
+
+        params['lbda'] = lbda
+
+        ah = params['Mpeak_gamma']
+        kappa = lbda * 1e-10 * FOC / PIX
+        r0 = (BETA_H - 1) * ah ** (2 * (BETA_H - 1)) / (0.072 * kappa)
+        params['r0'] = r0 ** (-3 / 5)
+
         return params, fit(xx, yy)
 
 
@@ -210,7 +204,6 @@ def fit_mphd_cube(cube, center, size, ind=None, use_var=True, verbose=False,
             figname = f'{outdir}/{center[0]}-{center[1]}-{int(l)}.png'
             params, fitres = fit_mphd(im, l, use_var=use_var, verbose=verbose,
                                       maxiter=maxiter, savefig=figname, R_c=r)
-            params['lbda'] = l
             res.append((params, fitres))
 
     params, images = zip(*res)
@@ -228,7 +221,8 @@ def fit_mphd_cube_all_stars(cube_name, img_name, outdir, nstars=1, R_c=None,
                             fitsize=(80, 80), maxiter=2000, step=None):
     white = Image(img_name)
     mean, std = white.background()
-    peaks = find_peaks(white.data, mean + 15*std, npeaks=nstars)
+    peaks = find_peaks(white.data.filled(-np.inf), mean + 15*std,
+                       npeaks=nstars, mask=white.mask)
     peaks['starid'] = np.arange(len(peaks))
 
     if os.path.exists(outdir):
@@ -356,6 +350,8 @@ def plot_all_results(filename, plot_bad_fits=False):
         res = t[t['starid'] == i]
         ax.plot(res['lbda'], res['Mhalo_fwhm'], '--o', alpha=0.6, label=str(i))
     ax.legend()
+    if t['Mhalo_fwhm'].max() > 100:
+        ax.set_ylim((0, 100))
     ax.set_title('$M_{halo}\ FWHM$')
 
     # amplitudes
@@ -390,3 +386,11 @@ def plot_all_results(filename, plot_bad_fits=False):
                 label=str(i))
     ax.legend()
     ax.set_title('$Airy_{radius}$')
+
+    # r0
+    ax = next(axit)
+    for i in starids:
+        res = t[t['starid'] == i]
+        ax.plot(res['lbda'], res['r0'], '-.^', alpha=0.6, label=str(i))
+    ax.legend()
+    ax.set_title('$r_0$')
