@@ -3,8 +3,6 @@
 # mpdaf documentation build configuration file, created by
 # sphinx-quickstart on Fri Jun 22 10:03:09 2012.
 
-from __future__ import print_function
-
 import os
 import re
 import sys
@@ -86,7 +84,6 @@ numpydoc_show_class_members = False
 
 ipython_savefig_dir = '_static/_generated'
 ipython_execlines = """\
-from __future__ import division, print_function
 import os, sys
 import numpy as np
 import matplotlib as mpl

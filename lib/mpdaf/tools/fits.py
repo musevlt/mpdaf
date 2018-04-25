@@ -33,8 +33,6 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from __future__ import absolute_import
-
 import astropy.units as u
 import fnmatch
 import logging
@@ -42,7 +40,6 @@ import numpy as np
 import os
 
 from astropy.io import fits
-from six.moves import range
 
 from ..version import __version__
 

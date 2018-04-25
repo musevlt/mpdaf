@@ -31,8 +31,6 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from __future__ import absolute_import, division
-
 import astropy.units as u
 import numpy as np
 import os
@@ -45,7 +43,7 @@ from astropy.io import fits
 from astropy.table import Table
 from mpdaf.obj import Cube, Image
 from mpdaf.sdetect import Source
-from mpdaf.tools import ASTROPY_LT_1_1, MpdafWarning
+from mpdaf.tools import MpdafWarning
 from numpy.testing import assert_array_equal, assert_almost_equal
 
 from ...tests.utils import get_data_file
@@ -136,7 +134,6 @@ def test_pickle(filename):
                 assert list(attr_ref.keys()) == list(attr_new.keys())
 
 
-@pytest.mark.skipif(ASTROPY_LT_1_1, reason="requires Astropy 1.1+")
 def test_loc(source1):
     assert source1.z.primary_key == ('Z_DESC', )
     assert source1.mag.primary_key == ('BAND', )

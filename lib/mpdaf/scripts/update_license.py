@@ -31,10 +31,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from __future__ import print_function
-
 import os
-import six
 import sys
 from collections import OrderedDict
 from subprocess import check_output
@@ -78,9 +75,6 @@ GIT_CMD = ("git log --date=format:%Y --format='%ad %aN <%aE>' --date-order "
 EXCLUDES = (
     'lib/mpdaf/_githash.py',
     'lib/mpdaf/obj/wavelet1D.py',
-    'lib/mpdaf/tools/astropycompat.py',
-    'lib/mpdaf/tools/numpycompat.py',
-    'lib/mpdaf/tools/tests/test_astropycompat.py'
 )
 
 ADDITIONAL_COPYRIGHTS = {
@@ -136,8 +130,7 @@ if __name__ == "__main__":
         authors = OrderedDict()
         for l in check_output(GIT_CMD.format(filename),
                               shell=True).splitlines():
-            if not six.PY2:
-                l = l.decode()
+            l = l.decode()
             year, author = l.split(' ', 1)
             if author in authors:
                 authors[author].append(year)

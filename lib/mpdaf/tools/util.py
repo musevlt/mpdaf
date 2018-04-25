@@ -30,8 +30,6 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-from __future__ import absolute_import, print_function, unicode_literals
-from six import string_types
 
 from collections import OrderedDict, MutableMapping
 import functools
@@ -45,8 +43,6 @@ from astropy.units import UnitsWarning
 from contextlib import contextmanager
 from functools import wraps
 from time import time
-
-from .numpycompat import broadcast_to
 
 __all__ = ('MpdafWarning', 'MpdafUnitsWarning', 'deprecated', 'chdir',
            'timeit', 'timer', 'broadcast_to_cube', 'LowercaseOrderedDict')
@@ -137,7 +133,7 @@ def broadcast_to_cube(arr, shape):
             raise ValueError(excmsg % (arr.shape[0], shape[0]))
         arr = arr[:, np.newaxis, np.newaxis]
 
-    return broadcast_to(arr, shape)
+    return np.broadcast_to(arr, shape)
 
 
 # Here we inherit unncessarily from OrderDict.
@@ -155,7 +151,7 @@ class LowercaseOrderedDict(MutableMapping, OrderedDict):
 
     @staticmethod
     def _convert(key):
-        if isinstance(key, string_types):
+        if isinstance(key, str):
             return key.lower()
         else:
             return key
@@ -168,7 +164,7 @@ class LowercaseOrderedDict(MutableMapping, OrderedDict):
 
     def __delitem__(self, key):
         del self._d[self._convert(key)]
-            
+
     def __iter__(self):
         return iter(self._d)
 

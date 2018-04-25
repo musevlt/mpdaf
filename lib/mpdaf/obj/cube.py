@@ -34,8 +34,6 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from __future__ import absolute_import, division
-
 import astropy.units as u
 import multiprocessing
 import numpy as np
@@ -48,7 +46,6 @@ import warnings
 from astropy.io import fits
 from matplotlib.path import Path
 from numpy import ma
-from six.moves import range
 from scipy import integrate, interpolate, signal, ndimage as ndi
 
 from .arithmetic import ArithmeticMixin

@@ -32,11 +32,8 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from __future__ import absolute_import, division
-
 import logging
 import numpy as np
-import six
 import warnings
 
 from astropy import units as u
@@ -47,7 +44,7 @@ from numpy import ma
 from .coords import WCS, WaveCoord, determine_refframe
 from .objs import UnitMaskedArray, UnitArray, is_int
 from ..tools import (MpdafUnitsWarning, fix_unit_read, is_valid_fits_file,
-                     copy_header, read_slice_from_fits, write_hdulist_to)
+                     copy_header, read_slice_from_fits)
 
 __all__ = ('DataArray', )
 
@@ -314,7 +311,7 @@ class DataArray(object):
                     self._var_ext = 'STAT'
             elif isinstance(ext, (list, tuple, np.ndarray)):
                 self._data_ext, self._var_ext = ext
-            elif isinstance(ext, (int, str, six.text_type)):
+            elif isinstance(ext, (int, str)):
                 self._data_ext = ext
                 self._var_ext = None
 
@@ -1150,8 +1147,8 @@ class DataArray(object):
                 name='DQ', header=datahdu.header.copy(),
                 data=np.uint8(self.data.mask)))
 
-        write_hdulist_to(hdulist, filename, overwrite=True,
-                         output_verify='silentfix', checksum=checksum)
+        hdulist.writeto(filename, overwrite=True,
+                        output_verify='silentfix', checksum=checksum)
         self.filename = filename
 
     def sqrt(self, out=None):

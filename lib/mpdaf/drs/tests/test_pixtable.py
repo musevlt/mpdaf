@@ -30,8 +30,6 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from __future__ import absolute_import
-
 import astropy.units as u
 import io
 import numpy as np
@@ -44,7 +42,6 @@ from contextlib import contextmanager
 from mpdaf.drs import PixTable, pixtable, PixTableMask, PixTableAutoCalib
 from numpy.testing import assert_array_equal, assert_allclose
 from os.path import exists, join, basename
-from six.moves import range
 
 from ...tests.utils import DATADIR
 

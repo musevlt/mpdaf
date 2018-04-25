@@ -31,15 +31,12 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from __future__ import absolute_import, division
-
 import astropy.units as u
 import numpy as np
 
 from astropy.modeling.models import Moffat2D, Gaussian2D
 from astropy.stats import gaussian_fwhm_to_sigma
 from scipy import special
-from six.moves import range
 
 
 class LSF(object):

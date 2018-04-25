@@ -35,8 +35,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # See README.rst for details on how to install MPDAF.
 
-from __future__ import print_function
-
 import os
 import subprocess
 import sys
@@ -45,7 +43,8 @@ from setuptools import setup, find_packages, Extension
 from setuptools.command.build_ext import build_ext as _build_ext
 from setuptools.command.test import test as TestCommand
 
-PY2 = sys.version_info[0] == 2
+if sys.version_info[:2] < (3, 5):
+    sys.exit('MPDAF supports Python 3.5+ only')
 
 # Check if Cython is available
 try:
@@ -68,8 +67,7 @@ except OSError:
           'and in your $PATH and rebuild MPDAF if you need them.')
     HAVE_PKG_CONFIG = False
 else:
-    if not PY2:
-        out = out.decode(encoding='utf-8', errors='replace')
+    out = out.decode(encoding='utf-8', errors='replace')
     print('Found pkg-config {}'.format(out.strip('\n')))
     del out
     HAVE_PKG_CONFIG = True
@@ -168,14 +166,12 @@ def options(*packages, **kw):
             print(msg)
             raise Exception(msg)
         else:
-            if not PY2:
-                out = out.decode('utf8')
+            out = out.decode('utf8')
             print('Found {} {}'.format(package, out.strip('\n')))
 
     for token in subprocess.check_output(["pkg-config", "--libs", "--cflags",
                                           ' '.join(packages)]).split():
-        if not PY2:
-            token = token.decode('utf8')
+        token = token.decode('utf8')
         if token[:2] in flag_map:
             kw.setdefault(flag_map.get(token[:2]), []).append(token[2:])
         else:  # throw others to extra_link_args
@@ -230,8 +226,9 @@ setup(
     long_description=README + '\n' + CHANGELOG,
     license='BSD',
     url='https://git-cral.univ-lyon1.fr/MUSE/mpdaf',
-    setup_requires=['numpy'],
-    install_requires=['numpy', 'scipy', 'matplotlib', 'astropy>=1.0', 'six'],
+    python_requires='>=3.5',
+    setup_requires=['numpy>=1.10.0'],
+    install_requires=['numpy>=1.10.0', 'scipy', 'matplotlib', 'astropy>=1.0'],
     extras_require={
         'all': ['numexpr', 'fitsio', 'adjustText'],
     },
@@ -259,11 +256,7 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: C',
         'Programming Language :: Cython',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: Implementation :: CPython',

@@ -33,8 +33,6 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import matplotlib.pyplot as plt
 import numpy as np
 import types
@@ -44,7 +42,6 @@ from astropy.stats import gaussian_sigma_to_fwhm, gaussian_fwhm_to_sigma
 from os.path import join, abspath, dirname
 from scipy import interpolate, signal
 from scipy.optimize import leastsq
-from six.moves import range
 
 from . import ABmag_filters, wavelet1D
 from .arithmetic import ArithmeticMixin

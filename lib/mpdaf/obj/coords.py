@@ -32,8 +32,6 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from __future__ import absolute_import, division
-
 import astropy.units as u
 import astropy.wcs as pywcs
 import logging
@@ -42,7 +40,6 @@ import numpy as np
 
 from astropy.coordinates import Angle
 from astropy.io import fits
-from six.moves import range
 
 from .objs import UnitArray
 from ..tools import fix_unit_read

@@ -32,25 +32,19 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from __future__ import absolute_import, division
-
 import astropy.units as u
 import numpy as np
 import pytest
-import six
 
 from astropy.io import fits
 from mpdaf.obj import Spectrum, Image, Cube, iter_spe, iter_ima, WCS, WaveCoord
 from numpy import ma
 from numpy.testing import (assert_almost_equal, assert_array_equal,
                            assert_allclose)
+from operator import add, sub, mul, truediv as div
 
 from ...tests.utils import (generate_cube, generate_image, generate_spectrum,
                             assert_masked_allclose)
-if six.PY2:
-    from operator import add, sub, mul, div
-else:
-    from operator import add, sub, mul, truediv as div
 
 
 def test_copy(cube):

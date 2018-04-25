@@ -31,7 +31,6 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-from __future__ import absolute_import, division
 
 import astropy.units as u
 import io
@@ -46,11 +45,10 @@ import sys
 from astropy.io import fits
 from astropy.table import Table
 from os.path import join
-from six.moves import range
 
 from ..obj import Cube, Image
 from ..sdetect import Source, SourceList
-from ..tools import chdir, write_hdulist_to, write_fits_to
+from ..tools import chdir
 
 __version__ = 2.1
 
@@ -184,7 +182,7 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
         hdulist = fits.HDUList([fits.PrimaryHDU(),
                                 fits.ImageHDU(name='DATA', data=imnb,
                                               header=hdr)])
-        write_hdulist_to(hdulist, 'nb/nb%04d.fits' % k, overwrite=True)
+        hdulist.writeto('nb/nb%04d.fits' % k, overwrite=True)
 
         if nbcube:
             outnbcube[k, :, :] = imnb[:, :]
@@ -204,8 +202,8 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
 
     if nbcube:
         outnbcubename = 'NB_' + os.path.basename(cubename)
-        write_fits_to(outnbcubename, outnbcube, header=data_header,
-                      overwrite=True)
+        fits.writeto(outnbcubename, outnbcube, header=data_header,
+                     overwrite=True)
 
 
 def step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta):

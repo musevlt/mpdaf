@@ -32,20 +32,15 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from __future__ import absolute_import, division
-
-from copy import deepcopy
 import glob
 import logging
 import numpy as np
 import os
-import six
 import sys
 
 from astropy.coordinates import SkyCoord
 from astropy.table import Table, Column, MaskedColumn, hstack, vstack, join
 from astropy import units as u
-from six.moves import range, zip
 from matplotlib.patches import Circle, Rectangle, Ellipse
 
 from ..tools import deprecated, LowercaseOrderedDict
@@ -593,8 +588,7 @@ class Catalog(Table):
         # So for now we just remove .format and .description in this case.
         # https://github.com/astropy/astropy/issues/7181
         if (kwargs.get('format') == 'fits' or (
-                isinstance(args[0], six.string_types) and
-                args[0].endswith('.fits'))):
+                isinstance(args[0], str) and args[0].endswith('.fits'))):
             t = self.copy()
             for col in t.itercols():
                 col.format = None
@@ -800,7 +794,7 @@ class Catalog(Table):
         """
         if not isinstance(coord, SkyCoord):
             ra, dec = coord
-            if isinstance(ra, six.string_types) and ':' in ra:
+            if isinstance(ra, str) and ':' in ra:
                 unit = (u.hourangle, u.deg)
             else:
                 unit = (u.deg, u.deg)
