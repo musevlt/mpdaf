@@ -12,7 +12,6 @@ MPDAF has the following strict requirements:
 - Scipy_ version 0.14 or above
 - Matplotlib_ version 1.4 or above
 - Astropy_ version 1.0 or above
-- Six_
 
 Several additional packages can be installed for optional features:
 
@@ -120,7 +119,6 @@ To run the unit tests on an installed version of MPDAF::
 .. _Scipy: http://www.scipy.org/
 .. _Matplotlib: http://matplotlib.org/
 .. _Astropy: http://www.astropy.org/
-.. _Six: https://pypi.python.org/pypi/six
 .. _Pytest: http://pytest.org/
 .. _Numexpr: http://pypi.python.org/pypi/numexpr
 .. _fitsio: https://pypi.python.org/pypi/fitsio

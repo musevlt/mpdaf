@@ -33,23 +33,19 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import astropy.units as u
 import datetime
 import logging
 import numpy as np
 import warnings
-import six
 
 from astropy.io import fits
 from astropy.io.fits import Column, ImageHDU
 from astropy.table import Table
 from os.path import basename
-from six.moves import range
 
 from ..obj import Image, Spectrum, WaveCoord, WCS
-from ..tools import add_mpdaf_method_keywords, copy_header, write_hdulist_to
+from ..tools import add_mpdaf_method_keywords, copy_header
 
 try:
     import numexpr
@@ -140,7 +136,7 @@ class PixTableMask(object):
             name='maskcol', data=np.int32(self.maskcol.reshape((nrows, 1)))))
         hdu = fits.HDUList(hdulist)
         hdu[1].header['BUNIT'] = 'boolean'
-        write_hdulist_to(hdu, filename, overwrite=True, output_verify='fix')
+        hdu.writeto(filename, overwrite=True, output_verify='fix')
 
 
 class PixTableAutoCalib(object):
@@ -248,7 +244,7 @@ class PixTableAutoCalib(object):
             ImageHDU(name='npts', data=np.int32(self.npts.reshape(shape))),
             ImageHDU(name='corr', data=np.float64(self.corr.reshape(shape)))]
         hdu = fits.HDUList(hdulist)
-        write_hdulist_to(hdu, filename, overwrite=True, output_verify='fix')
+        hdu.writeto(filename, overwrite=True, output_verify='fix')
         warnings.simplefilter("default")
 
 
@@ -322,8 +318,7 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
         tbhdu = fits.TableHDU(fits.FITS_rec.from_columns(coltab))
         hdu = fits.HDUList([prihdu, tbhdu])
 
-    write_hdulist_to(hdu, filename, overwrite=True, output_verify='fix')
-
+    hdu.writeto(filename, overwrite=True, output_verify='fix')
     warnings.simplefilter("default")
 
 
@@ -1829,8 +1824,7 @@ class PixTable(object):
 
         if logfile is None:
             logfile = ''
-        if six.PY3:
-            logfile = logfile.encode('utf8')
+        logfile = logfile.encode('utf8')
 
         ctools.mpdaf_slice_median(
             result, result_stat, corr, npts, ifu, sli, data, stat, lbda,

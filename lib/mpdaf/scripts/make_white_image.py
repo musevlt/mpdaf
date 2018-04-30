@@ -32,9 +32,6 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-
-from __future__ import absolute_import, print_function
-
 import argparse
 import sys
 from mpdaf.obj import Cube
@@ -49,7 +46,7 @@ def make_white_image(inputfile, outputfile, verbose=False):
         sys.exit('Input and output files are identical')
 
     print('Creating white light image {}'.format(outputfile))
-    cube = Cube(inputfile)
+    cube = Cube(inputfile, convert_float64=False)
     if verbose:
         cube.info()
 

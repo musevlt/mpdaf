@@ -31,10 +31,8 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-from __future__ import absolute_import, print_function
 
 import numpy as np
-import six
 from astropy.table import Table
 
 from ..obj import vactoair
@@ -101,7 +99,7 @@ emlines = np.array([
     ('CAG', 4305.61, 4305.61, 4305.61, 'is', 0, 0),
     ('MG5177', 5176.7, 5176.7, 5176.7, 'is', 0, 0),
     ('NAD', 5891.9399, 5881.0, 5906.0, 'is', 0, 0),
-], dtype=[('id', 'S20' if six.PY2 else 'U20'), ('c', '<f4'), ('lo', '<f4'),
+], dtype=[('id', 'U20'), ('c', '<f4'), ('lo', '<f4'),
           ('up', '<f4'), ('tp', 'S2'), ('s', '<i4'), ('d', '<f4')])
 
 

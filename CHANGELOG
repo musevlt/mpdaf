@@ -3,6 +3,8 @@
 
 Development version.
 
+- Remove Python 2 support. MPDAF now requires Python 3.5+.
+
 2.5.1 (16/03/2018)
 ------------------
 

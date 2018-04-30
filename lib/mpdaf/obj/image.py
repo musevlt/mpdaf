@@ -36,8 +36,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from __future__ import absolute_import, division, print_function
-
+import logging
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy import ma
@@ -45,12 +44,12 @@ from numpy import ma
 import astropy.units as u
 from astropy.io import fits
 from astropy.stats import gaussian_sigma_to_fwhm, gaussian_fwhm_to_sigma
+from astropy.visualization import ZScaleInterval
 from matplotlib.path import Path
 from scipy import interpolate, signal
 from scipy import ndimage as ndi
 from scipy.ndimage.interpolation import affine_transform
 from scipy.optimize import leastsq
-from six.moves import range, zip
 
 from .arithmetic import ArithmeticMixin
 from .coords import WCS
@@ -3400,8 +3399,8 @@ class Image(ArithmeticMixin, DataArray):
             pixcrd = self.wcs.sky2pix([coord[0], coord[1]], unit=unit)[0]
         else:
             pixcrd = coord
-        if (pixcrd >= -self.wcs.get_step(unit=unit)/100).all() and \
-                (pixcrd < self.shape + self.wcs.get_step(unit=unit)/100).all():
+        if (pixcrd >= -self.wcs.get_step(unit=unit) / 100).all() and \
+                (pixcrd < self.shape + self.wcs.get_step(unit=unit) / 100).all():
             return True
         else:
             return False
@@ -3664,8 +3663,8 @@ class Image(ArithmeticMixin, DataArray):
             raise IOError('Operation forbidden')
 
     def plot(self, title=None, scale='linear', vmin=None, vmax=None,
-             zscale=False, colorbar=None, var=False, show_xlabel=True,
-             show_ylabel=True, ax=None, unit=u.deg, use_wcs=False, **kwargs):
+             zscale=False, colorbar=None, var=False, show_xlabel=False,
+             show_ylabel=False, ax=None, unit=u.deg, use_wcs=False, **kwargs):
         """Plot the image with axes labeled in pixels.
 
         If either axis has just one pixel, plot a line instead of an image.
@@ -3770,6 +3769,9 @@ class Image(ArithmeticMixin, DataArray):
                 ylabel = 'dec'
             else:
                 ax = plt.gca()
+        elif use_wcs:
+            self._logger.warning(
+                'use_wcs does not work when giving also an axis (ax)')
 
         if var:
             data_plot = self.var
@@ -3791,10 +3793,10 @@ class Image(ArithmeticMixin, DataArray):
             ylabel = self.unit
         else:
             # Plot a 2D image.
-            
+
             # get image normalization
-            norm = get_plot_norm(data_plot, vmin=vmin, vmax=vmax, zscale=zscale,
-                    scale=scale)
+            norm = get_plot_norm(data_plot, vmin=vmin, vmax=vmax,
+                                 zscale=zscale, scale=scale)
 
             # Display the image.
             cax = ax.imshow(data_plot, interpolation='nearest',
@@ -3986,12 +3988,14 @@ class Image(ArithmeticMixin, DataArray):
             rot = self.wcs.get_rot()
         self._spflims = SpatialFrequencyLimits(newfmax, rot)
 
+
 class FormatCoord(object):
     """Alter mouse-over coordinates displayed by plt.show()"""
+
     def __init__(self, image, data):
         self.image = image
         self.data = data
-        
+
     def __call__(self, x, y):  # pragma: no cover
         """Tell the interactive plotting window how to display the sky
         coordinates and pixel values of an image.
@@ -4016,8 +4020,8 @@ class FormatCoord(object):
 
         # Is the mouse pointer within the image?
         im = self.image
-        if (im.wcs is not None and row >= 0 and row < im.shape[0] 
-            and col >= 0 and col < im.shape[1]):
+        if (im.wcs is not None and row >= 0 and row < im.shape[0]
+                and col >= 0 and col < im.shape[1]):
             yc, xc = im.wcs.pix2sky([row, col], unit=im._unit)[0]
             val = self.data[row, col]
             if np.isscalar(val):
@@ -4027,26 +4031,25 @@ class FormatCoord(object):
         else:
             return 'x=%1.4f, y=%1.4f' % (x, y)
 
-    
-def get_plot_norm(data, vmin=None, vmax=None, zscale=False,
-                   scale='linear'):
+
+def get_plot_norm(data, vmin=None, vmax=None, zscale=False, scale='linear'):
     from astropy import visualization as viz
     from astropy.visualization.mpl_normalize import ImageNormalize
 
     # Choose vmin and vmax automatically?
     if zscale:
-        from ..tools.astropycompat import zscale as plt_zscale
+        interval = ZScaleInterval()
         if data.dtype == np.float64:
             try:
-                vmin, vmax = plt_zscale(data.filled(np.nan))
+                vmin, vmax = interval.get_limits(data.filled(np.nan))
             except:
-                #catch failure on all NaN
+                # catch failure on all NaN
                 if np.all(np.isnan(data.filled(np.nan))):
                     vmin, vmax = (np.nan, np.nan)
                 else:
                     raise
         else:
-            vmin, vmax = plt_zscale(data.filled(0))
+            vmin, vmax = interval.get_limits(data.filled(0))
 
     # How are values between vmin and vmax mapped to corresponding
     # positions along the colorbar?
@@ -4069,12 +4072,12 @@ def get_plot_norm(data, vmin=None, vmax=None, zscale=False,
 
 
 def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
-             zscale=False, show_xlabel=True, show_ylabel=True, ax=None,
+             zscale=False, show_xlabel=False, show_ylabel=False, ax=None,
              unit=u.deg, use_wcs=False, **kwargs):
     """Plot the RGB composite image with axes labeled in pixels.
 
     For each color, final intensity values are assigned to each pixel as
-    follows. First each pixel value, ``pv``, is normalized over the range 
+    follows. First each pixel value, ``pv``, is normalized over the range
     ``vmin`` to ``vmax``, to have a value ``nv``, that goes from 0 to 1, as
     follows::
 
@@ -4153,11 +4156,10 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
     Returns
     -------
     ax : matplotlib AxesImage
-    images_aligned : [`~mpdaf.obj.Image`, `~mpdaf.obj.Image`, `~mpdaf.obj.Image`]
+    images_aligned : `~mpdaf.obj.Image`, `~mpdaf.obj.Image`, `~mpdaf.obj.Image`
         The input images, but all aligned to that with the highest resolution.
 
     """
-
     if vmin is None:
         vmin = [None, None, None]
 
@@ -4170,14 +4172,17 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
 
     if ax is None:
         if use_wcs:
-            ax = plt.subplot(projection=self.wcs.wcs)
+            ax = plt.subplot(projection=images[0].wcs.wcs)
             xlabel = 'ra'
             ylabel = 'dec'
         else:
             ax = plt.gca()
+    elif use_wcs:
+        logging.getLogger(__name__).warning(
+            'use_wcs does not work when giving also an axis (ax)')
 
-    #find which image has the highest pixel resolution
-    #also find bbox that encloses all 3 images
+    # find which image has the highest pixel resolution
+    # also find bbox that encloses all 3 images
     steps = np.full([3, 2], np.nan, dtype=float)
     corners = np.full([3, 4, 2], np.nan, dtype=float)
     for i_im, im in enumerate(images):
@@ -4189,28 +4194,27 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
         corners[i_im] = corn
 
     idx_best_res = np.argmin(np.mean(np.abs(steps), 1))
-    im_best_res = images[idx_best_res] # image with highest res
+    im_best_res = images[idx_best_res]  # image with highest res
 
     # get bounding pixel coords in best image
     corners = np.vstack(corners)
     corners = im_best_res.wcs.wcs.all_world2pix(corners, 0)
-    new_shape = np.array([[np.min(corners[:,0]), np.max(corners[:,0])],
-                          [np.min(corners[:,1]), np.max(corners[:,1])]])
+    new_shape = np.array([[np.min(corners[:, 0]), np.max(corners[:, 0])],
+                          [np.min(corners[:, 1]), np.max(corners[:, 1])]])
     new_shape = np.around(new_shape).astype(int)
 
-    new_dim = new_shape[:,1] - new_shape[:,0] + 1
-    new_start = new_shape[:,0].reshape(1,2)
+    new_dim = new_shape[:, 1] - new_shape[:, 0] + 1
+    new_start = new_shape[:, 0].reshape(1, 2)
     new_start = im_best_res.wcs.wcs.all_pix2world(new_start, 0)[0]
 
-    new_dim = new_dim[::-1] #naxis2, naxis1
-    new_start = new_start[::-1] #dec, ra
+    new_dim = new_dim[::-1]  # naxis2, naxis1
+    new_start = new_start[::-1]  # dec, ra
     old_inc = im_best_res.get_axis_increments(unit=u.deg)
 
     # expand the reference image so that it now covers the footprints of the
     # other 2 images
     im_best_res = im_best_res.resample(new_dim, new_start, old_inc,
-                        unit_step=u.deg)
-
+                                       unit_step=u.deg)
 
     # create BGR stack
     data_stack = np.full(im_best_res.shape + (3,), np.nan, dtype=float)
@@ -4224,23 +4228,22 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
         data = im.data
 
         norm = get_plot_norm(data, vmin=vmin[i], vmax=vmax[i], zscale=zscale,
-                scale=scale)
-        
+                             scale=scale)
+
         data = norm(data)
 
-        data_stack[:,:,i] = data
+        data_stack[:, :, i] = data
 
-    
     data_stack = np.ma.clip(data_stack, 0, 1)
     data_stack = data_stack.filled(np.nan)
 
     # reverse BGR to RGB order
-    data_stack = data_stack[:,:,::-1]
+    data_stack = data_stack[:, :, ::-1]
 
     # mask all NaNs and plot transparent
     mask = np.all(np.isnan(data_stack), axis=2)
-    alpha = ~mask * 1. #no transparency where data is good
-    data_stack = np.concatenate([data_stack, alpha[...,np.newaxis]], axis=2)
+    alpha = ~mask * 1.  # no transparency where data is good
+    data_stack = np.concatenate([data_stack, alpha[..., np.newaxis]], axis=2)
 
     # Display the RGBA image.
     ax.imshow(data_stack, interpolation='nearest', origin='lower', **kwargs)
@@ -4258,7 +4261,6 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
     if title is not None:
         ax.set_title(title)
 
-
     # Change the way that plt.show() displays coordinates when the pointer
     # is over the image, such that world coordinates are displayed with the
     # specified unit, and pixel values are displayed with their native
@@ -4267,7 +4269,6 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
     for im in images_aligned:
         im._unit = unit
     return ax, images_aligned
-
 
 
 def gauss_image(shape=(101, 101), wcs=None, factor=1, gauss=None,

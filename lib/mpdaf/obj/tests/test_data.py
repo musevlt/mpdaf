@@ -31,8 +31,6 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from __future__ import absolute_import, division
-
 import astropy.units as u
 import numpy as np
 import pickle
@@ -97,6 +95,23 @@ def test_fits_spectrum():
     with pytest.raises(ValueError):
         Image(testspe, ext=0)
 
+
+def test_float_conversion():
+    # check that int are not converted to float
+    testimg = get_data_file('obj', 'a370II.fits')
+    data = DataArray(filename=testimg)
+    assert str(data.data.dtype) == '>i2'
+
+    # by default float32 is converted to float64
+    testspe = get_data_file('obj', 'Spectrum_Variance.fits')
+    data = DataArray(filename=testspe, ext=(0, 1))
+    assert data.data.dtype == np.float64
+    assert data.var.dtype == np.float64
+
+    # avoid float64 conversion
+    data = DataArray(filename=testspe, ext=(0, 1), convert_float64=False)
+    assert str(data.data.dtype) == '>f4'
+    assert str(data.var.dtype) == '>f4'
 
 def test_invalid_file():
     """DataArray class: Testing invalid file reading"""

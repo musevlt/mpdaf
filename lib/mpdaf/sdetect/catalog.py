@@ -32,21 +32,17 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from __future__ import absolute_import, division
-
-from copy import deepcopy
 import glob
 import logging
 import numpy as np
 import os
-import six
 import sys
 
 from astropy.coordinates import SkyCoord
 from astropy.table import Table, Column, MaskedColumn, hstack, vstack, join
 from astropy import units as u
-from six.moves import range, zip
 from matplotlib.patches import Circle, Rectangle, Ellipse, RegularPolygon
+
 
 from ..tools import deprecated, LowercaseOrderedDict
 
@@ -72,7 +68,7 @@ class Catalog(Table):
 
     # These are default column names to be used if not provided by metadata.
     # They are not stored in the meta directly, and therefore not written when
-    # the catalog is writen to disk. 
+    # the catalog is writen to disk.
     _idname_default = 'ID'
     _raname_default = 'RA'
     _decname_default = 'DEC'
@@ -112,7 +108,6 @@ class Catalog(Table):
         if decname is not None:
             self.meta['decname'] = decname
 
-
     @staticmethod
     def _merge_meta(catalogs, join_keys=None, suffix=None):
         """Returns a metadata object combined from a set of catalogs.
@@ -143,7 +138,7 @@ class Catalog(Table):
             s = suffix[i_cat]
             for key, value in cat.meta.items():
                 out[key+s] = value
-        
+
         # special treatment for keys that identify columns
         col_keys = ['idname', 'raname', 'decname']
         for i_cat, cat in enumerate(catalogs):
@@ -178,7 +173,6 @@ class Catalog(Table):
                 pass
 
         return out
-
 
     @classmethod
     def from_sources(cls, sources, fmt='default'):
@@ -595,8 +589,7 @@ class Catalog(Table):
         # So for now we just remove .format and .description in this case.
         # https://github.com/astropy/astropy/issues/7181
         if (kwargs.get('format') == 'fits' or (
-                isinstance(args[0], six.string_types) and
-                args[0].endswith('.fits'))):
+                isinstance(args[0], str) and args[0].endswith('.fits'))):
             t = self.copy()
             for col in t.itercols():
                 col.format = None
@@ -635,7 +628,7 @@ class Catalog(Table):
         if not isinstance(cat2, Catalog):
             cat2 = Catalog(cat2, copy=False)
 
-        #suppress metadata conflict warnings 
+        #suppress metadata conflict warnings
         kwargs['metadata_conflicts'] = 'silent'
         stacked = hstack([self, cat2], **kwargs)
         stacked.meta = self._merge_meta([self, cat2])
@@ -663,7 +656,7 @@ class Catalog(Table):
         if not isinstance(cat2, Catalog):
             cat2 = Catalog(cat2, copy=False)
 
-        #suppress metadata conflict warnings 
+        #suppress metadata conflict warnings
         keys = kwargs.get('keys', None)
         kwargs['metadata_conflicts'] = 'silent'
         joined = join(self, cat2, **kwargs)
@@ -684,7 +677,7 @@ class Catalog(Table):
             Matching size in arcsec (default 1).
         colc1: tuple
             ('RA','DEC') name of ra,dec columns of input table
-            
+
         colc2: tuple
             ('RA','DEC') name of ra,dec columns of cat2
         full_output: bool
@@ -718,7 +711,7 @@ class Catalog(Table):
 
         col1_ra = colc1[0] or self.meta.get('raname', self._raname_default)
         col1_dec = colc1[1] or self.meta.get('decname', self._decname_default)
-        
+
         col2_ra = colc2[0] or cat2.meta.get('raname', cat2._raname_default)
         col2_dec = colc2[1] or cat2.meta.get('decname', cat2._decname_default)
 
@@ -802,7 +795,7 @@ class Catalog(Table):
         """
         if not isinstance(coord, SkyCoord):
             ra, dec = coord
-            if isinstance(ra, six.string_types) and ':' in ra:
+            if isinstance(ra, str) and ':' in ra:
                 unit = (u.hourangle, u.deg)
             else:
                 unit = (u.deg, u.deg)
@@ -888,7 +881,7 @@ class Catalog(Table):
 
         col2_ra = colc2[0] or cat2.meta.get('raname', cat2._raname_default)
         col2_dec = colc2[1] or cat2.meta.get('decname', cat2._decname_default)
-        
+
         # rename all catalogs columns with _1 or _2
         self._logger.debug('Rename Catalog columns with %s or %s suffix',
                            suffix[0], suffix[1])

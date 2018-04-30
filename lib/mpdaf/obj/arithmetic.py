@@ -36,7 +36,6 @@ from numpy import ma
 
 from .data import DataArray
 from .objs import UnitMaskedArray, UnitArray
-from ..tools.numpycompat import broadcast_to
 
 
 # Docstring templates for add, subtract, multiply, divide methods.
@@ -108,7 +107,7 @@ def _arithmetic_var(operation, a, b, newshape=None):
         if b.var is None:
             return a.var
         elif a.var is None:
-            return broadcast_to(var, a.shape)
+            return np.broadcast_to(var, a.shape)
         else:
             return a.var + var
     elif operation in (ma.multiply, ma.divide):

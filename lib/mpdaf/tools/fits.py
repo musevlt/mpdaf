@@ -33,8 +33,6 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from __future__ import absolute_import
-
 import astropy.units as u
 import fnmatch
 import logging
@@ -42,7 +40,6 @@ import numpy as np
 import os
 
 from astropy.io import fits
-from six.moves import range
 
 from ..version import __version__
 
@@ -202,7 +199,7 @@ def is_valid_fits_file(filename):
 
 
 def read_slice_from_fits(filename_or_hdu, item=None, ext='DATA', mask_ext=None,
-                         dtype=None):
+                         dtype=None, convert_float64=True):
     """Read data from a FITS file."""
 
     try:
@@ -218,7 +215,7 @@ def read_slice_from_fits(filename_or_hdu, item=None, ext='DATA', mask_ext=None,
             data = data[item]
         data = np.asarray(data, dtype=dtype)
         # Force data to be in double instead of float
-        if data.dtype.type == np.float32:
+        if convert_float64 and data.dtype.type == np.float32:
             data = data.astype(np.float64)
 
         # mask extension

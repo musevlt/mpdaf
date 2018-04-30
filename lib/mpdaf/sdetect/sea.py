@@ -47,8 +47,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # Please contact Jarle for more info at jarle@strw.leidenuniv.nl
 
-from __future__ import absolute_import, division
-
 from astropy.io import fits
 import astropy.units as u
 
@@ -56,12 +54,11 @@ import logging
 import numpy as np
 import os
 import shutil
-import six
 import subprocess
 import warnings
 
 from ..obj import Image, Spectrum
-from ..tools import write_hdulist_to, broadcast_to_cube, MpdafWarning
+from ..tools import broadcast_to_cube, MpdafWarning
 
 __version__ = 1.0
 
@@ -240,7 +237,7 @@ def segmentation(source, tags, DIR, remove):
         step_ima = ima.get_step(unit=u.arcsec)
         rot_ima = ima.get_rot()
         prihdu = fits.PrimaryHDU()
-        hdulist = [prihdu]
+        hdulist = fits.HDUList([prihdu])
         if ima.shape[0] == dim[0] and ima.shape[1] == dim[1] and \
                 start_ima[0] == start[0] and start_ima[1] == start[1] and \
                 step_ima[0] == step[0] and step_ima[1] == step[1] and \
@@ -254,8 +251,7 @@ def segmentation(source, tags, DIR, remove):
             ima2 = ima2.resample(dim, start, step, flux=True)
             data_hdu = ima2.get_data_hdu(name='DATA', savemask='nan')
         hdulist.append(data_hdu)
-        hdu = fits.HDUList(hdulist)
-        write_hdulist_to(hdu, fname, overwrite=True, output_verify='fix')
+        hdulist.writeto(fname, overwrite=True, output_verify='fix')
 
         catalogFile = 'cat-' + fname
         segFile = 'seg-' + fname
@@ -281,7 +277,7 @@ def segmentation(source, tags, DIR, remove):
 
     # Save segmentation maps
     if len(maps) > 0:
-        for tag, data in six.iteritems(maps):
+        for tag, data in maps.items():
             ima = Image(wcs=wcs, data=data, dtype=np.uint8, copy=False)
             source.images['SEG_' + tag] = ima
 
