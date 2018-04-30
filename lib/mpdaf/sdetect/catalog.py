@@ -46,7 +46,7 @@ from astropy.coordinates import SkyCoord
 from astropy.table import Table, Column, MaskedColumn, hstack, vstack, join
 from astropy import units as u
 from six.moves import range, zip
-from matplotlib.patches import Circle, Rectangle, Ellipse
+from matplotlib.patches import Circle, Rectangle, Ellipse, RegularPolygon
 
 from ..tools import deprecated, LowercaseOrderedDict
 
@@ -1053,7 +1053,8 @@ class Catalog(Table):
 
     def plot_symb(self, ax, wcs, label=False, esize=0.8, lsize=None, etype='o',
                   ltype=None, ra=None, dec=None, id=None, ecol='k', lcol=None,
-                  alpha=1.0, fill=False, fontsize=8, expand=1.7, **kwargs):
+                  alpha=1.0, fill=False, fontsize=8, expand=1.7, ledgecol=None, lfacecol=None,
+                  npolygon=3, **kwargs):
         """This function plots the sources location from the catalog.
 
         Parameters
@@ -1069,7 +1070,7 @@ class Catalog(Table):
         lsize : str
             Column name containing the size in arcsec.
         etype : str
-            Type of symbol: o (circle, size=diameter), s (square) used only
+            Type of symbol: o (circle, size=diameter), s (square, size=length), p (polygon, size=diameter) used only
             if ltype is not set.
         ltype : str
             Name of column that contain the symbol to use.
@@ -1089,6 +1090,10 @@ class Catalog(Table):
             If True filled symbol are used.
         expand: float
             Expand factor to write label.
+        ledgecol: str
+            Name of the column that contains the edge color.
+        lfacecol: str
+            Name of the column that contains the fqce color.
         **kwargs
             kwargs can be used to set additional plotting properties.
 
@@ -1097,7 +1102,7 @@ class Catalog(Table):
         dec = dec or self.meta.get('decname', self._decname_default)
         id = id or self.meta.get('idname', self._idname_default)
 
-        if (ltype is None) and (etype not in ['o', 's']):
+        if (ltype is None) and (etype not in ['o', 's', 'p']):
             raise IOError('Unknown symbol %s' % etype)
         if (ltype is not None) and (ltype not in self.colnames):
             raise IOError('column %s not found in catalog' % ltype)
@@ -1105,6 +1110,10 @@ class Catalog(Table):
             raise IOError('column %s not found in catalog' % lsize)
         if (lcol is not None) and (lcol not in self.colnames):
             raise IOError('column %s not found in catalog' % lcol)
+        if (ledgecol is not None) and (ledgecol not in self.colnames):
+            raise IOError('column %s not found in catalog' % ledgecol)
+        if (lfacecol is not None) and (lfacecol not in self.colnames):
+            raise IOError('column %s not found in catalog' % lfacecol)
         if ra not in self.colnames:
             raise IOError('column %s not found in catalog' % ra)
         if dec not in self.colnames:
@@ -1126,17 +1135,49 @@ class Catalog(Table):
             vsize = esize if lsize is None else src[lsize]
             pixsize = vsize / step[0]
             vtype = etype if ltype is None else src[ltype]
-            vcol = ecol if lcol is None else src[lcol]
+            vcol = None
+            vedgecol = 'none'
+            vfacecol = 'none'
+            vfill = True
+            if (lcol is None) and (ledgecol is None) and (lfacecol is None):
+                vcol = ecol
+                vfill = fill
+            if lcol is not None:
+                vcol = src[lcol]
+            if ledgecol is not None:
+                vcol = None
+                vfill = False
+                vedgecol = src[ledgecol]
+            if lfacecol is not None:
+                vfill = True
+                vcol = None
+                vfacecol = src[lfacecol]
             if vtype == 'o':
-                s = Circle((xx, yy), 0.5 * pixsize, fill=fill, ec=vcol,
-                           alpha=alpha, **kwargs)
+                if vcol is not None:
+                    s = Circle((xx, yy), 0.5 * pixsize, fill=fill, ec=vcol.rstrip(),
+                               alpha=alpha, **kwargs)
+                else:
+                    s = Circle((xx, yy), 0.5 * pixsize, fill=vfill, edgecolor=vedgecol.rstrip(), facecolor=vfacecol.rstrip(),
+                                               alpha=alpha, **kwargs)                    
             elif vtype == 's':
-                s = Rectangle((xx - pixsize / 2, yy - pixsize / 2),
-                              pixsize, pixsize, fill=fill, ec=vcol,
-                              alpha=alpha, **kwargs)
+                if vcol is not None:
+                    s = Rectangle((xx - pixsize / 2, yy - pixsize / 2),
+                                  pixsize, pixsize, fill=fill, ec=vcol.rstrip(),
+                                  alpha=alpha, **kwargs)
+                else:
+                    s = Rectangle((xx - pixsize / 2, yy - pixsize / 2),
+                                                  pixsize, pixsize, fill=vfill, edgecolor=vedgecol.rstrip(), facecolor=vfacecol.rstrip(),
+                                                  alpha=alpha, **kwargs)  
+            elif vtype == 'p':
+                if vcol is not None:
+                    s = RegularPolygon((xx, yy), npolygon,  0.5 * pixsize, fill=fill, ec=vcol.rstrip(), alpha=alpha, **kwargs)
+                else:
+                    s = RegularPolygon((xx, yy), npolygon,  0.5 * pixsize,
+                                                  fill=vfill, edgecolor=vedgecol.rstrip(), facecolor=vfacecol.rstrip(),
+                                                  alpha=alpha, **kwargs)                    
             ax.add_artist(s)
             if label and (not np.ma.is_masked(src[id])):
-                texts.append((ax.text(xx, yy, src[id], ha='center', color=vcol,
+                texts.append((ax.text(xx, yy, src[id], ha='center', 
                                       fontsize=fontsize), cen[1], cen[0]))
             s.set_clip_box(ax.bbox)
 
