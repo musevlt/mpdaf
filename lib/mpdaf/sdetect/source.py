@@ -1835,7 +1835,7 @@ class Source(object):
         z, errz, nlines, wl, flux, lnames = crackz(nlines, wl, flux, eml,
                                                    zguess)
         # observed wavelengths
-        wl = vactoair(wl)
+        wl = vactoair(np.array(wl))
 
         if nlines > 0:
             if nlines < nline_max:
