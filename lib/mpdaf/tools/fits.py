@@ -153,8 +153,8 @@ def copy_header(srchdr, dsthdr=None, exclude=(), unit=None):
             continue
         try:
             card.verify('fix')
-            dsthdr[card.keyword] = (card.value, card.comment)
-        except:
+            dsthdr.append(card, end=True)
+        except Exception:
             try:
                 if isinstance(card.value, str):
                     n = 80 - len(card.keyword) - 14
@@ -162,7 +162,7 @@ def copy_header(srchdr, dsthdr=None, exclude=(), unit=None):
                 else:
                     s = card.value
                 dsthdr['hierarch %s' % card.keyword] = (s, card.comment)
-            except:
+            except Exception:
                 logger.warning("%s not copied in data header", card.keyword)
 
     if unit is not None:
