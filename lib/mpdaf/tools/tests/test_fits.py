@@ -33,7 +33,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import re
 from astropy.io import fits
-from mpdaf.tools.fits import (add_mpdaf_method_keywords,
+
+from ...tests.utils import get_data_file
+
+from mpdaf.tools.fits import (copy_header, add_mpdaf_method_keywords,
                               add_mpdaf_keywords_to_file)
 from mpdaf.version import __version__
 
@@ -80,3 +83,12 @@ def test_add_mpdaf_keywords_to_file(tmpdir):
     hdrlines = hdrtxt.splitlines()
     for ref, line in zip(REFHDR.splitlines(), [l.strip() for l in hdrlines]):
         assert re.match(ref, line) is not None
+
+
+def test_copy_header():
+    hdr = fits.getheader(get_data_file('sdetect', 'a478hst-cutout.fits'))[:50]
+    hdr2 = copy_header(hdr)
+
+    for c, c2 in zip(hdr.cards, hdr2.cards):
+        assert ((c.keyword, c.value, c.comment) ==
+                (c2.keyword, c2.value, c2.comment))
