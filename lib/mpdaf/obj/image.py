@@ -1523,18 +1523,19 @@ class Image(ArithmeticMixin, DataArray):
 
         """
         if self.mask is np.ma.nomask:
-            meshgrid = np.meshgrid(np.arange(self.shape[0]),
-                                   np.arange(self.shape[1]), indexing='ij')
-            x = meshgrid[0].ravel()
-            y = meshgrid[1].ravel()
+            # meshgrid = np.meshgrid(np.arange(self.shape[0]),
+            #                        np.arange(self.shape[1]), indexing='ij')
+            # x = meshgrid[0].ravel()
+            # y = meshgrid[1].ravel()
+            x, y = np.mgrid[:self.shape[0], :self.shape[1]].reshape(2, -1)
             data = self._data
         else:
-            ksel = np.where(self._mask == False)
-            x = ksel[0]
-            y = ksel[1]
-            data = self._data[ksel]
-        npoints = np.shape(data)[0]
+            x, y = np.where(self._mask == False)
+            # x = ksel[0]
+            # y = ksel[1]
+            data = self._data[x, y]
 
+        npoints = np.shape(data)[0]
         grid = np.array(grid)
         n = np.shape(grid)[0]
 
@@ -1549,9 +1550,6 @@ class Image(ArithmeticMixin, DataArray):
 
             tck = interpolate.bisplrep(x, y, data, w=weight)
             res = interpolate.bisplev(grid[:, 0], grid[:, 1], tck)
-            # res = np.zeros(n,dtype=float)
-            # for i in range(n):
-            #     res[i] = interpolate.bisplev(grid[i,0],grid[i,1],tck)
             return res
         else:
             # scipy 0.9 griddata
