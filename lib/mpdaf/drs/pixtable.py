@@ -36,6 +36,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import astropy.units as u
 import datetime
 import logging
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 import numpy as np
 import warnings
 
@@ -52,7 +54,8 @@ try:
 except ImportError:
     numexpr = False
 
-__all__ = ('PixTable', 'PixTableMask', 'PixTableAutoCalib')
+__all__ = ('PixTable', 'PixTableMask', 'PixTableAutoCalib',
+           'plot_autocal_factors')
 
 NIFUS = 24
 NSLICES = 48
@@ -320,6 +323,68 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
 
     hdu.writeto(filename, overwrite=True, output_verify='fix')
     warnings.simplefilter("default")
+
+
+def plot_autocal_factors(filename, savefig=None, plot_rejected=False,
+                         sharex=True, sharey=True, figsize=4, cmap='Spectral',
+                         plot_npts=False):
+    """Plot the corrections computed by `PixTable.selfcalibrate`.
+
+    This also works for the AUTOCAL_FACTORS table from the DRS.
+
+    Parameters
+    ----------
+    filename : str, `astropy.table.Table`
+        The corrections table, either MPDAF's PixTableAutoCalib, or
+        the DRS AUTOCAL_FACTORS.
+    savefig : str
+        File to which the plot is saved.
+    plot_rejected : bool
+        Also plot the rejected corrections. This only works with the DRS
+        AUTOCAL_FACTORS table.
+    sharex, sharey : bool
+        Controls sharing of properties among x/y axes.
+    figsize : float
+        Size of an individual plot.
+    cmap : str
+        Colormap.
+
+    """
+    t = Table.read(filename) if isinstance(filename, str) else filename
+    fig, axes = plt.subplots(6, 4, figsize=(4 * figsize, 6 * figsize),
+                             sharex=sharex, sharey=sharey)
+    base = plt.cm.get_cmap(cmap)
+    palette = base(np.linspace(0, 1, 48)).tolist()
+    cm = base.from_list('Custom cmap', palette, len(palette))
+    key = 'npts' if plot_npts else 'corr'
+
+    for ifu in range(1, 25):
+        ax = axes.flat[ifu - 1]
+        tt = t[t['ifu'] == ifu]
+        for sl in range(1, 49):
+            ts = tt[tt['sli'] == sl]
+            ax.plot(ts['quad'], ts[key], color=palette[sl - 1])
+            if plot_rejected and not plot_npts and \
+                    not np.isnan(ts['corr_orig']).all():
+                ax.scatter(ts['quad'], ts['corr_orig'], s=20,
+                           color=palette[sl - 1])
+        ax.set_title('IFU %s' % ifu)
+        ax.grid(True)
+
+    title = 'Number of points' if plot_npts else 'Correction factor'
+    fig.suptitle('{} (y) for each wavelength segment (x), each slice (color) '
+                 'and each IFU'.format(title), fontsize=16)
+
+    bounds = np.linspace(0, 48, 49)
+    norm = mpl.colors.BoundaryNorm(bounds, cm.N)
+    ax2 = fig.add_axes([0.1, 0.96, 0.8, 0.01])
+    mpl.colorbar.ColorbarBase(
+        ax2, cmap=cm, norm=norm, spacing='proportional', ticks=bounds + .5,
+        boundaries=bounds, format='%1i', orientation='horizontal')
+
+    fig.tight_layout(rect=(0, 0, 1, 0.95))
+    if savefig:
+        fig.savefig(savefig)
 
 
 class PixTable(object):
