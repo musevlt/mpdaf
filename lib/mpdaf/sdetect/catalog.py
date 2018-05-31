@@ -897,9 +897,14 @@ class Catalog(Table):
         linecolc2 = [col + suffix[1] for col in linecolc2]
 
         self._logger.debug('Performing spatial match')
-        match, unmatch1, unmatch2 = tcat1.match(
-            tcat2, radius=spatial_radius, colc1=colc1, colc2=colc2,
-            full_output=full_output, **kwargs)
+        if full_output:
+            match, unmatch1, unmatch2 = tcat1.match(
+                tcat2, radius=spatial_radius, colc1=colc1, colc2=colc2,
+                full_output=full_output, **kwargs)
+        else:
+            match = tcat1.match(
+                tcat2, radius=spatial_radius, colc1=colc1, colc2=colc2,
+                full_output=full_output, **kwargs)            
         match.meta = self._merge_meta([tcat1, tcat2], suffix=suffix)
 
         tcat1._logger.debug('Performing line match')
