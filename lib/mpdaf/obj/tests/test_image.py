@@ -304,13 +304,25 @@ def test_mask():
     image1 = Image(data=data, wcs=wcs)
     image1.mask_region((2.1, 1.8), (1, 1), inside=False, unit_center=None,
                        unit_radius=None)
-    expected_mask = np.array([[True, True, True, True, True],
-                              [True, True, True, True, True],
-                              [True, False, False, True, True],
-                              [True, False, False, True, True],
-                              [True, True, True, True, True],
-                              [True, True, True, True, True]], dtype=bool)
+    expected_mask = np.array([[1, 1, 1, 1, 1],
+                              [1, 1, 1, 1, 1],
+                              [1, 0, 0, 1, 1],
+                              [1, 0, 0, 1, 1],
+                              [1, 1, 1, 1, 1],
+                              [1, 1, 1, 1, 1]], dtype=bool)
     assert_array_equal(image1._mask, expected_mask)
+
+    # Test that inside=True gives the opposite result
+    image1.unmask()
+    image1.mask_region((2.1, 1.8), (1, 1), inside=True, unit_center=None,
+                       unit_radius=None)
+    assert_array_equal(image1._mask, ~expected_mask)
+
+    # And test with a rotation, 90° so should give the same result
+    image1.unmask()
+    image1.mask_region((2.1, 1.8), (1, 1), inside=True, unit_center=None,
+                       unit_radius=None, posangle=90)
+    assert_array_equal(image1._mask, ~expected_mask)
 
     # Try exactly the same experiment as the above, except that the center
     # and size of the region are specified in world-coordinates instead of
@@ -319,6 +331,12 @@ def test_mask():
     image1 = Image(data=data, wcs=wcs)
     image1.mask_region(wcs.pix2sky([2.1, 1.8]), (3600, 3600), inside=False)
     assert_array_equal(image1._mask, expected_mask)
+
+    # And same with a rotation
+    image1.unmask()
+    image1.mask_region(wcs.pix2sky([2.1, 1.8]), (3600, 3600), inside=True,
+                       posangle=90)
+    assert_array_equal(image1._mask, ~expected_mask)
 
     # Mask around a region of half-width and half-height 1.1 pixels,
     # specified in arcseconds, centered close to pixel 2.4,3.8. This
@@ -331,12 +349,12 @@ def test_mask():
     # the X axis.
     image1.unmask()
     image1.mask_region(wcs.pix2sky([2.4, 3.8]), 1.1 * 3600.0, inside=False)
-    expected_mask = np.array([[True, True, True, True, True],
-                              [True, True, True, True, True],
-                              [True, True, True, False, False],
-                              [True, True, True, False, False],
-                              [True, True, True, True, True],
-                              [True, True, True, True, True]], dtype=bool)
+    expected_mask = np.array([[1, 1, 1, 1, 1],
+                              [1, 1, 1, 1, 1],
+                              [1, 1, 1, 0, 0],
+                              [1, 1, 1, 0, 0],
+                              [1, 1, 1, 1, 1],
+                              [1, 1, 1, 1, 1]], dtype=bool)
     assert_array_equal(image1._mask, expected_mask)
 
     # Mask outside an elliptical region centered at pixel 3.5,3.5.
@@ -347,14 +365,14 @@ def test_mask():
     image1.mask_ellipse([3.5, 3.5], (2.5, 3.5), 45.0, unit_radius=None,
                         unit_center=None, inside=False)
     expected_mask = np.array([
-        [True, True, True, True, True, True, True, True],
-        [True, True, True, False, False, False, True, True],
-        [True, True, False, False, False, False, False, True],
-        [True, False, False, False, False, False, False, True],
-        [True, False, False, False, False, False, False, True],
-        [True, False, False, False, False, False, True, True],
-        [True, True, False, False, False, True, True, True],
-        [True, True, True, True, True, True, True, True]],
+        [1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 0, 0, 0, 1, 1],
+        [1, 1, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 1, 1],
+        [1, 1, 0, 0, 0, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1]],
         dtype=bool)
     assert_array_equal(image1._mask, expected_mask)
 
@@ -364,6 +382,12 @@ def test_mask():
     image1.unmask()
     image1.mask_selection(ksel)
     assert_array_equal(image1._mask, expected_mask)
+
+    # Check inside=True
+    image1.unmask()
+    image1.mask_ellipse([3.5, 3.5], (2.5, 3.5), 45.0, unit_radius=None,
+                        unit_center=None, inside=True)
+    assert_array_equal(image1._mask, ~expected_mask)
 
 
 def test_background(a370II):
