@@ -795,3 +795,22 @@ def test_align_with_image(hdfs_muse_image, hdfs_hst_image):
     assert (sx.start, sx.stop - 1) == tuple(corners[1])
 
     assert_array_equal(hst_orig.data, hst.data)
+
+
+def test_prepare_data():
+    image = generate_image(data=2.0)
+    image[1, 1] = np.ma.masked
+    image[3:5, 2:4] = np.ma.masked
+
+    data = image._prepare_data()
+    assert not np.ma.is_masked(data)
+    assert np.allclose(data, 2.0)
+
+    data = image._prepare_data(interp='linear')
+    assert not np.ma.is_masked(data)
+    assert np.allclose(data, 2.0)
+
+    # FIXME: wheck why this doesn't work
+    # data = image._prepare_data(interp='spline')
+    # assert not np.ma.is_masked(data)
+    # assert np.allclose(data, 2.0)

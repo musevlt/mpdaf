@@ -1513,32 +1513,24 @@ class Image(ArithmeticMixin, DataArray):
             x, y = np.where(~self._mask)
             data = self._data[x, y]
 
-        npoints = np.shape(data)[0]
         grid = np.array(grid)
-        n = np.shape(grid)[0]
 
         if spline:
             if self.var is not None:
                 var = self.var.filled(np.inf)
-                weight = np.empty(n, dtype=float)
-                for i in range(npoints):
-                    weight[i] = 1 / np.sqrt(np.abs(var[x[i], y[i]]))
+                weight = 1 / np.sqrt(np.abs(var[x, y]))
             else:
                 weight = None
 
             tck = interpolate.bisplrep(x, y, data, w=weight)
-            res = interpolate.bisplev(grid[:, 0], grid[:, 1], tck)
+            res = interpolate.bisplev(grid[0], grid[1], tck)
             return res
         else:
             # FIXME - check if this is still needed :
             # scipy 0.9 griddata - interpolate.interp2d segfaults when there
             # are too many data points
             # f = interpolate.interp2d(x, y, data)
-            points = np.empty((npoints, 2), dtype=float)
-            points[:, 0] = x
-            points[:, 1] = y
-            res = interpolate.griddata(points, data, (grid[:, 0], grid[:, 1]),
-                                       method='linear')
+            res = interpolate.griddata((x, y), data, grid.T, method='linear')
             return res
 
     def _interp_data(self, spline=False):
