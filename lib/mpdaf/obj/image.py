@@ -45,7 +45,6 @@ import astropy.units as u
 from astropy.io import fits
 from astropy.stats import gaussian_sigma_to_fwhm, gaussian_fwhm_to_sigma
 from astropy.visualization import ZScaleInterval
-from matplotlib.path import Path
 from scipy import interpolate, signal
 from scipy import ndimage as ndi
 from scipy.ndimage.interpolation import affine_transform
@@ -331,20 +330,19 @@ class Image(ArithmeticMixin, DataArray):
 
         # Treat rotated rectangles as polygons.
         if not np.isclose(posangle, 0.0):
-            c = np.cos(np.radians(posangle))
-            s = np.sin(np.radians(posangle))
-            hw = radius[0]
-            hh = radius[1]
-            poly = np.array([[-hw * s - hh * c, -hw * c + hh * s],
-                             [-hw * s + hh * c, -hw * c - hh * s],
-                             [+hw * s + hh * c, +hw * c - hh * s],
-                             [+hw * s - hh * c, +hw * c + hh * s]]) / step + center
-            return self.mask_polygon(poly, unit=None, inside=inside)
+            cos = np.cos(np.radians(posangle))
+            sin = np.sin(np.radians(posangle))
+            hw, hh = radius
+            poly = np.array([[-hw * sin - hh * cos, -hw * cos + hh * sin],
+                             [-hw * sin + hh * cos, -hw * cos - hh * sin],
+                             [+hw * sin + hh * cos, +hw * cos - hh * sin],
+                             [+hw * sin - hh * cos, +hw * cos + hh * sin]])
+            return self.mask_polygon(poly / step + center, unit=None,
+                                     inside=inside)
 
         # Get Y-axis and X-axis slice objects that bound the rectangular area.
-        [sy, sx], _, _ = bounding_box(
-            form="rectangle", center=center, radii=radius,
-            shape=self.shape, step=step)
+        sy, sx = bounding_box(form="rectangle", center=center,
+                              radii=radius, shape=self.shape, step=step)[0]
 
         if inside:
             self.data[sy, sx] = np.ma.masked
@@ -468,28 +466,17 @@ class Image(ArithmeticMixin, DataArray):
                  self.wcs.sky2pix((val[0], val[1]), unit=unit)[0][1]]
                 for val in poly])
 
-        P, Q = np.meshgrid(list(range(self.shape[0])),
-                           list(range(self.shape[1])))
-        b = np.dstack([P.ravel(), Q.ravel()])
+        b = np.mgrid[:self.shape[0], :self.shape[1]].reshape(2, -1).T
 
-        # Use a matplotlib method to create a path, which is the polygon we
-        # want to use.
+        # Use a matplotlib method to create a polygon path and check if points
+        # are within the polygon. The ouput is a boolean table.
+        from matplotlib.path import Path
         polymask = Path(poly)
-
-        # Go through all pixels in the image to see if they are within the
-        # polygon. The ouput is a boolean table.
-        c = polymask.contains_points(b[0])
-
-        # Invert the boolean table to mask pixels outside the polygon?
+        c = polymask.contains_points(b)
         if not inside:
-            c = ~np.array(c)
+            c = ~c
 
-        # Convert the boolean table into a matrix.
-        c = c.reshape(self.shape[1], self.shape[0])
-        c = c.T
-
-        # Combine the previous mask with the new one.
-        self._mask = np.logical_or(c, self._mask)
+        self._mask |= c.reshape(self.shape)
         return poly
 
     def truncate(self, y_min, y_max, x_min, x_max, mask=True, unit=u.deg,
@@ -570,12 +557,9 @@ class Image(ArithmeticMixin, DataArray):
         # then the rectangular sub-image that contains this will has
         # some pixels outside this region. Should these be masked?
         if mask:
-
             # Get the indexes of all of the pixels in the "out" array,
             # ordered like: [[0,0], [0,1], [1,0], [1,1], [2,0], [2,1]...]
-            py, px = np.meshgrid(np.arange(0, out.shape[0]),
-                                 np.arange(0, out.shape[1]), indexing='ij')
-            pixcrd = np.column_stack((np.ravel(py), np.ravel(px)))
+            pixcrd = np.mgrid[:out.shape[0], :out.shape[1]].reshape(2, -1).T
 
             if unit is None:
                 skycrd = pixcrd
@@ -1523,49 +1507,30 @@ class Image(ArithmeticMixin, DataArray):
 
         """
         if self.mask is np.ma.nomask:
-            meshgrid = np.meshgrid(np.arange(self.shape[0]),
-                                   np.arange(self.shape[1]), indexing='ij')
-            x = meshgrid[0].ravel()
-            y = meshgrid[1].ravel()
+            x, y = np.mgrid[:self.shape[0], :self.shape[1]].reshape(2, -1)
             data = self._data
         else:
-            ksel = np.where(self._mask == False)
-            x = ksel[0]
-            y = ksel[1]
-            data = self._data[ksel]
-        npoints = np.shape(data)[0]
+            x, y = np.where(~self._mask)
+            data = self._data[x, y]
 
         grid = np.array(grid)
-        n = np.shape(grid)[0]
 
         if spline:
-            var = self.var
-            if var is not None:
-                weight = np.empty(n, dtype=float)
-                for i in range(npoints):
-                    weight[i] = 1. / np.sqrt(np.abs(var[x[i], y[i]].filled(np.inf)))
+            if self.var is not None:
+                var = self.var.filled(np.inf)
+                weight = 1 / np.sqrt(np.abs(var[x, y]))
             else:
                 weight = None
 
             tck = interpolate.bisplrep(x, y, data, w=weight)
-            res = interpolate.bisplev(grid[:, 0], grid[:, 1], tck)
-            # res = np.zeros(n,dtype=float)
-            # for i in range(n):
-            #     res[i] = interpolate.bisplev(grid[i,0],grid[i,1],tck)
+            res = interpolate.bisplev(grid[0], grid[1], tck)
             return res
         else:
-            # scipy 0.9 griddata
-            # interpolate.interp2d segfaults when there are too many data points
+            # FIXME - check if this is still needed :
+            # scipy 0.9 griddata - interpolate.interp2d segfaults when there
+            # are too many data points
             # f = interpolate.interp2d(x, y, data)
-            points = np.empty((npoints, 2), dtype=float)
-            points[:, 0] = x
-            points[:, 1] = y
-            res = interpolate.griddata(points, data,
-                                       (grid[:, 0], grid[:, 1]),
-                                       method='linear')
-            # res = np.zeros(n,dtype=float)
-            # for i in range(n):
-            #     res[i] = interpolate.griddata(points, data, (grid[i,0],grid[i,1]), method='linear')
+            res = interpolate.griddata((x, y), data, grid.T, method='linear')
             return res
 
     def _interp_data(self, spline=False):
@@ -1583,7 +1548,7 @@ class Image(ArithmeticMixin, DataArray):
         if not self._mask.any():
             return self._data
         else:
-            ksel = np.where(self._mask == True)
+            ksel = np.where(self._mask)
             data = self._data.__copy__()
             data[ksel] = self._interp(ksel, spline)
             return data
@@ -1683,7 +1648,7 @@ class Image(ArithmeticMixin, DataArray):
         if N == 0:
             raise ValueError('empty sub-image')
         data = ima.data.compressed()
-        p, q = np.where(ima._mask == False)
+        p, q = np.where(~ima._mask)
 
         # weight
         if ima.var is not None and weight:
