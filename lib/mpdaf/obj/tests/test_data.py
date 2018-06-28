@@ -113,6 +113,7 @@ def test_float_conversion():
     assert str(data.data.dtype) == '>f4'
     assert str(data.var.dtype) == '>f4'
 
+
 def test_invalid_file():
     """DataArray class: Testing invalid file reading"""
     with pytest.raises(IOError) as e:
@@ -281,25 +282,28 @@ def test_clone_with_data():
     assert cube2.var.mask is cube2.mask
 
 
-def test_pickle(cube):
-    c = pickle.loads(pickle.dumps(cube))
-    assert cube.wcs.isEqual(c.wcs)
-    assert cube.wave.isEqual(c.wave)
-    assert_array_equal(cube.data, c.data)
-    assert_array_equal(cube.var, c.var)
-    assert list(cube.primary_header.items()) == list(c.primary_header.items())
-    assert list(cube.data_header.items()) == list(c.data_header.items())
+def test_pickle(cube, minicube):
+    cube3 = Cube(get_data_file('obj', 'CUBE.fits'))
+    del cube3.data_header['WCSAXES']
+    for cube_ref in (cube, minicube, cube3):
+        for obj in (cube_ref, cube_ref[1], cube_ref[:, 2, 2]):
+            c = pickle.loads(pickle.dumps(obj))
 
+            if obj.wcs is None:
+                assert c.wcs is None
+            else:
+                assert obj.wcs.isEqual(c.wcs)
 
-def test_pickle2(minicube):
-    cube = minicube
-    c = pickle.loads(pickle.dumps(cube))
-    assert cube.wcs.isEqual(c.wcs)
-    assert cube.wave.isEqual(c.wave)
-    assert_array_equal(cube.data, c.data)
-    assert_array_equal(cube.var, c.var)
-    assert list(cube.primary_header.items()) == list(c.primary_header.items())
-    assert list(cube.data_header.items()) == list(c.data_header.items())
+            if obj.wave is None:
+                assert c.wave is None
+            else:
+                assert obj.wave.isEqual(c.wave)
+
+            assert_array_equal(obj.data, c.data)
+            assert_array_equal(obj.var, c.var)
+
+            assert (list(obj.primary_header.items()) ==
+                    list(c.primary_header.items()))
 
 
 def test_set_var():
