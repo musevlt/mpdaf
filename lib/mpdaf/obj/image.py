@@ -1858,7 +1858,7 @@ class Image(ArithmeticMixin, DataArray):
                 leastsq(e_gauss_fit, v0[:], args=(p, q, data, wght),
                         maxfev=maxiter, full_output=1)
 
-        if success != 1:
+        if success not in [1, 2, 3, 4]:
             self._logger.info(mesg)
 
         # calculate the errors from the estimated covariance matrix
@@ -2206,8 +2206,8 @@ class Image(ArithmeticMixin, DataArray):
                         args=(p, q, data, wght),
                         maxfev=maxiter, full_output=1)
 
-        if success != 1:
-            self._logger.debug(mesg)
+        if success not in [1, 2, 3, 4]:
+            self._logger.warning(mesg)
 
         # calculate the errors from the estimated covariance matrix
         chisq = sum(info["fvec"] * info["fvec"])
