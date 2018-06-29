@@ -403,7 +403,8 @@ class DataArray(object):
         if (self.data_header.get('WCSAXES') is None and
                 ((self._has_wcs and self.wcs is not None) or
                  (self._has_wave and self.wave is not None))):
-            state['data_header'].update(self.get_wcs_header())
+            hdu = self.get_data_hdu(convert_float32=False)
+            state['data_header'] = hdu.header
 
         return state
 
