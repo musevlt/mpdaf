@@ -1051,8 +1051,8 @@ class Catalog(Table):
 
     def plot_symb(self, ax, wcs, label=False, esize=0.8, lsize=None, etype='o',
                   ltype=None, ra=None, dec=None, id=None, ecol='k', lcol=None,
-                  alpha=1.0, fill=False, fontsize=8, expand=1.7, ledgecol=None, lfacecol=None,
-                  npolygon=3, **kwargs):
+                  alpha=1.0, fill=False, fontsize=8, expand=1.7, ledgecol=None,
+                  lfacecol=None, npolygon=3, **kwargs):
         """This function plots the sources location from the catalog.
 
         Parameters
@@ -1068,8 +1068,8 @@ class Catalog(Table):
         lsize : str
             Column name containing the size in arcsec.
         etype : str
-            Type of symbol: o (circle, size=diameter), s (square, size=length), p (polygon, size=diameter) used only
-            if ltype is not set.
+            Type of symbol: o (circle, size=diameter), s (square, size=length),
+            p (polygon, size=diameter) used only if ltype is not set.
         ltype : str
             Name of column that contain the symbol to use.
         ra : str
@@ -1152,30 +1152,37 @@ class Catalog(Table):
                 vfacecol = src[lfacecol]
             if vtype == 'o':
                 if vcol is not None:
-                    s = Circle((xx, yy), 0.5 * pixsize, fill=fill, ec=vcol.rstrip(),
-                               alpha=alpha, **kwargs)
+                    s = Circle((xx, yy), 0.5 * pixsize, fill=fill,
+                               ec=vcol.rstrip(), alpha=alpha, **kwargs)
                 else:
-                    s = Circle((xx, yy), 0.5 * pixsize, fill=vfill, edgecolor=vedgecol.rstrip(), facecolor=vfacecol.rstrip(),
-                                               alpha=alpha, **kwargs)                    
+                    s = Circle((xx, yy), 0.5 * pixsize, fill=vfill,
+                               edgecolor=vedgecol.rstrip(),
+                               facecolor=vfacecol.rstrip(),
+                               alpha=alpha, **kwargs)
             elif vtype == 's':
                 if vcol is not None:
                     s = Rectangle((xx - pixsize / 2, yy - pixsize / 2),
-                                  pixsize, pixsize, fill=fill, ec=vcol.rstrip(),
-                                  alpha=alpha, **kwargs)
+                                  pixsize, pixsize, fill=fill,
+                                  ec=vcol.rstrip(), alpha=alpha, **kwargs)
                 else:
                     s = Rectangle((xx - pixsize / 2, yy - pixsize / 2),
-                                                  pixsize, pixsize, fill=vfill, edgecolor=vedgecol.rstrip(), facecolor=vfacecol.rstrip(),
-                                                  alpha=alpha, **kwargs)  
+                                  pixsize, pixsize, fill=vfill,
+                                  edgecolor=vedgecol.rstrip(),
+                                  facecolor=vfacecol.rstrip(),
+                                  alpha=alpha, **kwargs)
             elif vtype == 'p':
                 if vcol is not None:
-                    s = RegularPolygon((xx, yy), npolygon,  0.5 * pixsize, fill=fill, ec=vcol.rstrip(), alpha=alpha, **kwargs)
+                    s = RegularPolygon((xx, yy), npolygon, 0.5 * pixsize,
+                                       fill=fill, ec=vcol.rstrip(),
+                                       alpha=alpha, **kwargs)
                 else:
-                    s = RegularPolygon((xx, yy), npolygon,  0.5 * pixsize,
-                                                  fill=vfill, edgecolor=vedgecol.rstrip(), facecolor=vfacecol.rstrip(),
-                                                  alpha=alpha, **kwargs)                    
+                    s = RegularPolygon((xx, yy), npolygon, 0.5 * pixsize,
+                                       fill=vfill, edgecolor=vedgecol.rstrip(),
+                                       facecolor=vfacecol.rstrip(),
+                                       alpha=alpha, **kwargs)
             ax.add_artist(s)
             if label and (not np.ma.is_masked(src[id])):
-                texts.append((ax.text(xx, yy, src[id], ha='center', 
+                texts.append((ax.text(xx, yy, src[id], ha='center',
                                       fontsize=fontsize), cen[1], cen[0]))
             s.set_clip_box(ax.bbox)
 
