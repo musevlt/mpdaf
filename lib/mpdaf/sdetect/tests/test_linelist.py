@@ -42,7 +42,7 @@ def test_linelist():
     assert len(em) == 6
 
     em = get_emlines(z=0, vac=False, lbrange=(4750, 9350), margin=20, sel=0,
-                     ltype=b'is')
+                     ltype='is')
     assert len(em) == 2
 
 

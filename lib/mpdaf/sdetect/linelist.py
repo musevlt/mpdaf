@@ -43,7 +43,7 @@ __all__ = ['get_emlines']
 
 # list of useful emission lines
 # name (id), vacuum wave A (c), lower limit (lo), upper limit (up), type (tp),
-# main line(1/0) (s), doublet (averge/0) (d)
+# main line(1/0) (s), doublet (average/0) (d)
 emlines = np.array([
     ('LYALPHA', 1215.67, 1204.0, 1226.0, 'em', 1, 0),
     ('CIV1546', 1545.86, 1536.0, 1556.0, 'em', 0, 0),
@@ -100,7 +100,7 @@ emlines = np.array([
     ('MG5177', 5176.7, 5176.7, 5176.7, 'is', 0, 0),
     ('NAD', 5891.9399, 5881.0, 5906.0, 'is', 0, 0),
 ], dtype=[('id', 'U20'), ('c', '<f4'), ('lo', '<f4'),
-          ('up', '<f4'), ('tp', 'S2'), ('s', '<i4'), ('d', '<f4')])
+          ('up', '<f4'), ('tp', 'U2'), ('s', '<i4'), ('d', '<f4')])
 
 
 def get_emlines(iden=None, z=0, vac=True, lbrange=None, margin=25, sel=None,
