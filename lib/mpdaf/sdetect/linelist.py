@@ -100,7 +100,7 @@ emlines = np.array([
     ('MG5177', 5176.7, 5176.7, 5176.7, 'is', 0, 0),
     ('NAD', 5891.9399, 5881.0, 5906.0, 'is', 0, 0),
 ], dtype=[('id', 'U20'), ('c', '<f4'), ('lo', '<f4'),
-          ('up', '<f4'), ('tp', 'S2'), ('s', '<i4'), ('d', '<f4')])
+          ('up', '<f4'), ('tp', 'U2'), ('s', '<i4'), ('d', '<f4')])
 
 
 def get_emlines(iden=None, z=0, vac=True, lbrange=None, margin=25, sel=None,
