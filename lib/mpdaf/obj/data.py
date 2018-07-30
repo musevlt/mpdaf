@@ -1264,6 +1264,9 @@ class DataArray(object):
             ksel = np.where(~mask)[0]
             item.append(slice(ksel[0], ksel[-1] + 1, None))
 
+        # numpy 1.15: indexing needs a tuple instead of list
+        item = tuple(item)
+
         self._data = self._data[item]
         if self._var is not None:
             self._var = self._var[item]
@@ -1433,6 +1436,8 @@ class DataArray(object):
             # If there is only one axis, extract the single slice from slices.
             if len(slices) == 1:
                 slices = slices[0]
+            else:
+                slices = tuple(slices)
 
             # Get a sliced copy of the input object.
             tmp = res[slices]

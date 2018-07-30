@@ -4588,7 +4588,7 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
         return data, oldfmax
 
     # Get the extent of the input image as a pair of slices.
-    image_slice = [slice(0, data.shape[0]), slice(0, data.shape[1])]
+    image_slice = (slice(0, data.shape[0]), slice(0, data.shape[1]))
 
     # FFT algorithms can be extremely slow for arrays whose
     # dimensions are not powers of 2. The conventional way to avoid this

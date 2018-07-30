@@ -1839,9 +1839,9 @@ class Cube(ArithmeticMixin, DataArray):
 
         # Calculate the slices where the clipped subcube should go in
         # the new arrays.
-        slices = [slice(0, shape[0]),
+        slices = (slice(0, shape[0]),
                   slice(sy.start - uy.start, sy.stop - uy.start),
-                  slice(sx.start - ux.start, sx.stop - ux.start)]
+                  slice(sx.start - ux.start, sx.stop - ux.start))
 
         # Copy the clipped subcube into unclipped arrays.
         data[slices] = res._data[:]
