@@ -58,12 +58,31 @@ def colored(text, color):
     return COLOR_SEQ.format(color, text, RESET_SEQ)
 
 
-def setup_logging(name='mpdaf', level=logging.DEBUG, color=False,
-                  fmt='[%(levelname)s] %(message)s', stream=None):
-    """Setup logging to stdout."""
+def setup_logging(name='mpdaf', level='DEBUG', color=False, stream=None,
+                  fmt='[%(levelname)s] %(message)s', clear_handlers=True):
+    """Setup stream handler for a given logger.
+
+    Parameters
+    ----------
+    name : str
+        Logger name.
+    level : str
+        Level for the stream handler (default: DEBUG).
+    color : bool
+        Use colored output (default: True). Used only if a compatible
+        stream or tty is used.
+    stream : {sys.stdout, sys.stderr}
+        Used stream (default: stderr)
+    fmt : str
+        Messages format.
+    clear_handlers : bool
+        Tell if other handlers must be removed (default: True).
+
+    """
     logger = logging.getLogger(name)
-    logger.handlers = []
     logger.setLevel(level)
+    if clear_handlers:
+        logger.handlers.clear()
 
     steam_handler = logging.StreamHandler(stream)
     steam_handler.setLevel(level)
@@ -93,12 +112,17 @@ def setup_logging(name='mpdaf', level=logging.DEBUG, color=False,
 
 def setup_logfile(name='mpdaf', level=logging.DEBUG, logfile='mpdaf.log',
                   fmt='%(asctime)s [%(levelname)s] {%(name)s:%(lineno)d} '
-                      '%(message)s'):
+                      '%(message)s', rotating=True):
     """Setup logging to file."""
-    from logging.handlers import RotatingFileHandler
+
     logger = logging.getLogger(name)
     formatter = logging.Formatter(fmt)
-    file_handler = RotatingFileHandler(logfile, 'a', 1000000, 1)
+    if rotating:
+        from logging.handlers import RotatingFileHandler
+        file_handler = RotatingFileHandler(logfile, 'a', 1000000, 1)
+    else:
+        file_handler = logging.FileHandler(logfile, 'a')
+
     file_handler.setLevel(level)
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
