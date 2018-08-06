@@ -358,14 +358,21 @@ def plot_autocal_factors(filename, savefig=None, plot_rejected=False,
     cm = base.from_list('Custom cmap', palette, len(palette))
     key = 'npts' if plot_npts else 'corr'
 
+    # Handle the old format from MPDAF (columns have been renamed in the DRS
+    # version)
+    if 'slice' in t.colnames:
+        t.rename_column('slice', 'sli')
+    if 'correction' in t.colnames:
+        t.rename_column('correction', 'corr')
+
     for ifu in range(1, 25):
         ax = axes.flat[ifu - 1]
         tt = t[t['ifu'] == ifu]
         for sl in range(1, 49):
             ts = tt[tt['sli'] == sl]
             ax.plot(ts['quad'], ts[key], color=palette[sl - 1])
-            if plot_rejected and not plot_npts and \
-                    not np.isnan(ts['corr_orig']).all():
+            if 'corr_orig' in ts.colnames and plot_rejected and \
+                    not plot_npts and not np.isnan(ts['corr_orig']).all():
                 ax.scatter(ts['quad'], ts['corr_orig'], s=20,
                            color=palette[sl - 1])
         ax.set_title('IFU %s' % ifu)
