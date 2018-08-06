@@ -1,0 +1,9 @@
+astropy
+numpy
+scipy
+cython
+matplotlib
+psutil
+ipython
+numpydoc
+sphinx_automodapi
