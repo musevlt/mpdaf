@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import astropy.units as u
-import io
 import logging
 import numpy as np
 import os
@@ -63,7 +62,7 @@ def setup_config_files():
         try:
             if not os.path.isfile(f):
                 shutil.copy(join(DATADIR, f), f)
-        except:
+        except Exception:
             pass
 
 
@@ -72,7 +71,7 @@ def setup_config_files_nb():
         try:
             if not os.path.isfile(f[3:]):
                 shutil.copy(join(DATADIR, f), f[3:])
-        except:
+        except Exception:
             pass
 
 
@@ -85,7 +84,7 @@ def remove_files():
     for f in files:
         try:
             os.remove(f)
-        except:
+        except Exception:
             pass
     shutil.rmtree('nb')
 
@@ -135,7 +134,7 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
 
     try:
         os.mkdir("nb")
-    except:
+    except Exception:
         pass
 
     if nbcube:
@@ -208,8 +207,8 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
 
 def step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta):
     logger = logging.getLogger(__name__)
-    logger.info("muselet - Opening: " + cubename)
-    c = Cube(cubename, copy=False, dtype=np.float32)
+    logger.info("muselet - Opening: %s", cubename)
+    c = Cube(cubename, copy=False, convert_float64=False)
 
     #mvar=c.var.filled(np.inf)
     mvar=c.var
@@ -221,7 +220,7 @@ def step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta):
     if not expmapcube:
         expmap = None
     else:
-        logger.info("muselet - Opening exposure map cube: " + expmapcube)
+        logger.info("muselet - Opening exposure map cube: %s", expmapcube)
         expmap = Cube(expmapcube)
 
     logger.info("muselet - STEP 1: creates white light, variance, RGB and "
@@ -274,7 +273,7 @@ def step2(cmd_sex):
         os.chmod('dosex', st.st_mode | stat.S_IEXEC)
         out = subprocess.check_output('./dosex', shell=True,
                                       stderr=subprocess.STDOUT)
-        with io.open('dosex.log', 'w', encoding='utf8') as f:
+        with open('dosex.log', 'w', encoding='utf8') as f:
             f.write(out.decode('utf-8'))
 
 
@@ -299,7 +298,7 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max):
 
     cleanlimit = clean * np.ma.median(fullvar.data)
 
-    logger.info("muselet - cleaning below inverse variance " + str(cleanlimit))
+    logger.info("muselet - cleaning below inverse variance %s", cleanlimit)
 
     tBGR = Table.read('BGR.cat', format='ascii.fixed_width_two_line')
 
@@ -589,7 +588,7 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max):
             flags[i] = 1
 
     if len(single_lines) > 0:
-        logger.info("muselet - %d single lines detected" % len(single_lines))
+        logger.info("muselet - %d single lines detected", len(single_lines))
     else:
         logger.info("muselet - no single lines detected")
 
@@ -705,7 +704,7 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
 
     try:
         fw = np.array(fw, dtype=float)
-    except:
+    except Exception:
         logger.error('muselet - fw is not an array of float')
 
     try:
