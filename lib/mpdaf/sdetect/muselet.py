@@ -89,27 +89,27 @@ def remove_files():
     shutil.rmtree('nb')
 
 
-def write_white(data, mvar, size1, wcs, unit):
-    weight_data = np.ma.average(data[1:size1 - 1, :, :],
-                                weights=1. / mvar[1:size1 - 1, :, :], axis=0)
+def write_white(data, mvar, wcs, unit):
+    weight_data = np.ma.average(data[1:-1, :, :],
+                                weights=1. / mvar[1:-1, :, :], axis=0)
     weight = Image(wcs=wcs, data=np.ma.filled(weight_data, np.nan), unit=unit,
                    copy=False)
     weight.write('white.fits', savemask='nan')
 
 
-def write_inv_variance(expmap, mvar, size1, wcs, unit):
+def write_inv_variance(expmap, mvar, wcs, unit):
     if not expmap:
-        mcentralvar = mvar[2: size1 - 3, :, :]
-        fullvar_data = np.ma.masked_invalid(1.0 / np.ma.mean(mcentralvar,axis=0))
-        fullvar = Image(wcs=wcs, data=np.ma.filled(fullvar_data, np.nan),
+        mcentralvar = mvar[2:-3, :, :]
+        fullvar_data = 1.0 / np.ma.mean(mcentralvar, axis=0)
+        fullvar = Image(wcs=wcs, data=fullvar_data,
                         unit=u.Unit(1) / (unit**2), copy=False)
     else:
         fullvar = expmap.mean(axis=0)
     fullvar.write('inv_variance.fits', savemask='nan')
 
 
-def write_rgb(data, mvar, size1, wcs, unit):
-    nsfilter = int(size1 / 3.0)
+def write_rgb(data, mvar, wcs, unit):
+    nsfilter = int(data.shape[0] / 3.0)
     bdata = np.ma.average(data[1:nsfilter, :, :],
                           weights=1. / mvar[1:nsfilter, :, :], axis=0)
     bdata = np.ma.filled(bdata, np.nan)
@@ -117,8 +117,8 @@ def write_rgb(data, mvar, size1, wcs, unit):
                           weights=1. / mvar[nsfilter:2 * nsfilter, :, :],
                           axis=0)
     gdata = np.ma.filled(gdata, np.nan)
-    rdata = np.ma.average(data[2 * nsfilter:size1 - 1, :, :],
-                          weights=1. / mvar[2 * nsfilter:size1 - 1, :, :],
+    rdata = np.ma.average(data[2 * nsfilter:-1, :, :],
+                          weights=1. / mvar[2 * nsfilter:-1, :, :],
                           axis=0)
     rdata = np.ma.filled(rdata, np.nan)
     r = Image(wcs=wcs, data=rdata, unit=unit, copy=False)
@@ -129,7 +129,7 @@ def write_rgb(data, mvar, size1, wcs, unit):
     b.write('whiteb.fits', savemask='nan')
 
 
-def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
+def write_nb(data, mvar, expmap, fw, nbcube, delta, wcs,
              unit, cmd_sex, cubename, data_header):
 
     try:
@@ -142,10 +142,8 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
 
     f2 = open("nb/dosex", 'w')
 
-    fwcube = np.ones((5, size2, size3)) * fw[:, np.newaxis, np.newaxis]
-
+    size1 = data.shape[0]
     hdr = wcs.to_header()
-
     data0 = np.ma.filled(data, 0)
 
     for k in range(2, size1 - 3):
@@ -154,8 +152,9 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
         leftmax = k - 2
         rightmin = k + 3
         rightmax = min(size1, k + 3 + delta)
-        imslice = np.ma.average(data[k - 2:k + 3, :, :],
-                                weights=fwcube / mvar[k - 2:k + 3, :, :],
+
+        weights = fw[:, np.newaxis, np.newaxis] / mvar[k - 2:k + 3, :, :]
+        imslice = np.ma.average(data[k - 2:k + 3, :, :], weights=weights,
                                 axis=0)
 
         if leftmax == 1:
@@ -184,7 +183,7 @@ def write_nb(data, mvar, expmap, size1, size2, size3, fw, nbcube, delta, wcs,
         hdulist.writeto('nb/nb%04d.fits' % k, overwrite=True)
 
         if nbcube:
-            outnbcube[k, :, :] = imnb[:, :]
+            outnbcube[k, :, :] = imnb
 
         if expmap is None:
             f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' +
@@ -215,8 +214,6 @@ def step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta):
     #mvar[mvar <= 0] = np.inf
     c._var = None
 
-    size1, size2, size3 = c.shape
-
     if not expmapcube:
         expmap = None
     else:
@@ -226,10 +223,10 @@ def step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta):
     logger.info("muselet - STEP 1: creates white light, variance, RGB and "
                 "narrow-band images")
 
-    write_white(c.data, mvar, size1, c.wcs, c.unit)
-    write_inv_variance(expmap, mvar, size1, c.wcs, c.unit)
-    write_rgb(c.data, mvar, size1, c.wcs, c.unit)
-    write_nb(c.data, mvar, expmap, size1, size2, size3, fw, nbcube, delta,
+    write_white(c.data, mvar, c.wcs, c.unit)
+    write_inv_variance(expmap, mvar, c.wcs, c.unit)
+    write_rgb(c.data, mvar, c.wcs, c.unit)
+    write_nb(c.data, mvar, expmap, fw, nbcube, delta,
              c.wcs, c.unit, cmd_sex, cubename, c.data_header)
 
 
@@ -283,10 +280,7 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max):
                 "redshifts")
 
     c = Cube(cubename)
-    if 'CUBE_V' in c.primary_header:
-        cubevers = '%s' % c.primary_header['CUBE_V']
-    else:
-        cubevers = ''
+    cubevers = str(c.primary_header.get('CUBE_V', ''))
 
     wlmin = c.wave.get_start(unit=u.angstrom)
     dw = c.wave.get_step(unit=u.angstrom)
