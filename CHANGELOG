@@ -5,6 +5,43 @@ Development version.
 
 - Remove Python 2 support. MPDAF now requires Python 3.5+.
 
+- Add rgb plotting function ``mpdaf.obj.plot_rgb`` and a method to Source
+  objects. [!123]
+
+- Adds parameter to avoid the float32/float64 conversions: by default arrays in
+  Spectrum/Image/Cube are converted to float32 when saving, to save some disk
+  space. This can be avoided with ``convert_float32=False``. And when reading
+  files, a float64 conversion can now be avoided with ``convert_float64=False``.
+  [!126, !!135]
+
+- Support the use of metadata in ``Source`` tables and ``Catalog``. Keywords
+  IDNAME, RANAME and DECNAME can be used to specify the column names for the ID,
+  RA and DEC columns that are used in several ``Catalog`` methods. [!124]
+
+- Remove duplicate air/vacuum conversion functions. [!127]
+
+- Fix subcube when using ``np.ma.nomask`` [!128].
+
+- Check that FITS file's naxis is compatible with the class [#505, !129]
+
+- Speedup get_FSF_from_cube_keywords. [!131]
+
+- Add ``cube.min()``. [!133]
+
+- Correct bug in source crackz execution.
+
+- Fix the copy of FITS header to respect the initial order of keywords. [!137]
+
+- Add function to plot the autocalib corrections. [!138]
+
+- Correct bug in match to return only one catalog when option full_output is
+  False. [!139]
+
+- Fix pickling of MPDAF objects when the header does not match the data. [!141]
+
+- Fix ``get_emlines`` to use unicode for line type. [!142]
+
+
 2.5.1 (16/03/2018)
 ------------------
 
