@@ -101,7 +101,7 @@ def write_white(data, mvar, size1, wcs, unit):
 def write_inv_variance(expmap, mvar, size1, wcs, unit):
     if not expmap:
         mcentralvar = mvar[2: size1 - 3, :, :]
-        fullvar_data = np.ma.masked_invalid(1.0 / mcentralvar.mean(axis=0))
+        fullvar_data = np.ma.masked_invalid(1.0 / np.ma.mean(mcentralvar,axis=0))
         fullvar = Image(wcs=wcs, data=np.ma.filled(fullvar_data, np.nan),
                         unit=u.Unit(1) / (unit**2), copy=False)
     else:
@@ -211,8 +211,9 @@ def step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta):
     logger.info("muselet - Opening: " + cubename)
     c = Cube(cubename, copy=False, dtype=np.float32)
 
-    mvar = c.var.filled(np.inf)
-    mvar[mvar <= 0] = np.inf
+    #mvar=c.var.filled(np.inf)
+    mvar=c.var
+    #mvar[mvar <= 0] = np.inf
     c._var = None
 
     size1, size2, size3 = c.shape
