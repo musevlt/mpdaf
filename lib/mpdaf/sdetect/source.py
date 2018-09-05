@@ -58,8 +58,8 @@ from ..obj.objs import is_int, is_float, bounding_box
 from ..tools import deprecated
 from ..MUSE import FieldsMap, FSF
 from ..MUSE.PSF import MOFFAT1, create_psf_cube
-from ..sdetect.sea import segmentation, mask_creation, findCentralDetection
-from ..sdetect.sea import union, intersection, compute_optimal_spectrum
+from ..sdetect.sea import (segmentation, mask_creation, findCentralDetection,
+                           union, intersection, compute_optimal_spectrum)
 
 
 __all__ = ('Source', 'SourceList', 'matchlines', 'crackz')
@@ -1290,7 +1290,7 @@ class Source(object):
     def add_narrow_band_images(self, cube, z_desc, eml=None, size=None,
                                unit_size=u.arcsec, width=8, is_sum=False,
                                subtract_off=True, margin=10., fband=3.):
-        """Create narrow band images from a redshift value and a catalog of
+        """Create narrow-band images from a redshift value and a catalog of
         lines.
 
         Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl)
@@ -1348,7 +1348,7 @@ class Source(object):
 
         """
         if self.z is None:
-            self._logger.warning('Cannot generate narrow band image if the '
+            self._logger.warning('Cannot generate narrow-band image if the '
                                  'redshift is None.')
             return
 
@@ -1391,14 +1391,14 @@ class Source(object):
                                       unit_size=u.arcsec, width=8,
                                       is_sum=False, subtract_off=True,
                                       margin=10., fband=3.):
-        """Create narrow band image around an observed wavelength value.
+        """Create narrow-band image around an observed wavelength value.
 
         Parameters
         ----------
         cube : `~mpdaf.obj.Cube`
             MUSE data cube.
         tag : str
-            key used to identify the new narrow band image in the images
+            key used to identify the new narrow-band image in the images
             dictionary.
         lbda : float
             Observed wavelength value in angstrom.
@@ -1619,28 +1619,25 @@ class Source(object):
         ``self.spectra['MUSE_TOT']``.
 
         The weighted spectra are computed as the sum of the subcube weighted by
-        the corresponding narrow bands image.  They are saved in
-        ``self.spectra[nb_ima]`` (for nb_ima in tags_to_try).
+        the corresponding narrow-band image. They are saved in
+        ``self.spectra[nb_ima] for nb_ima in tags_to_try``.
 
-        If psf:
+        For the weighted spectra, with the psf and narrow-band images, the
+        optimal extraction algorithm for CCD spectroscopy Horne, K. 1986 is
+        used. See `mpdaf.sdetect.compute_optimal_spectrum` for more detail.
+
+        If ``psf`` is True:
             The potential PSF weighted spectrum is computed as the sum of the
-            subcube weighted by mutliplication of the mask of the objetct and
+            subcube weighted by multiplication of the mask of the object and
             the PSF. It is saved in self.spectra['MUSE_PSF']
 
-        If skysub:
+        If ``skysub`` is True:
             The local sky spectrum is computed as the average of the subcube
             weighted by the sky mask image.
             It is saved in ``self.spectra['MUSE_SKY']``
 
             The other spectra are computed on the sky-subtracted subcube and
             they are saved in ``self.spectra['*_SKYSUB']``.
-
-        Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl)
-
-        The weighted sum conserves the flux by :
-
-        - Taking into account bad pixels in the addition.
-        - Normalizing with the median value of weighting sum/no-weighting sum
 
         Parameters
         ----------
@@ -1651,7 +1648,7 @@ class Source(object):
         sky_mask : str
             Name of the sky mask image.
         tags_to_try : list of str
-            List of narrow bands images.
+            List of narrow-band images.
         skysub : bool
             If True, a local sky subtraction is done.
         psf : numpy.ndarray

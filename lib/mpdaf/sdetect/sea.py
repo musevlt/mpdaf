@@ -60,7 +60,9 @@ import warnings
 from ..obj import Image, Spectrum
 from ..tools import broadcast_to_cube, MpdafWarning
 
-__version__ = 1.0
+__all__ = ('findCentralDetection', 'union', 'intersection', 'findSkyMask',
+           'segmentation', 'mask_creation', 'compute_spectrum',
+           'compute_optimal_spectrum')
 
 DEFAULT_SEX_FILES = ['default.nnw', 'default.param', 'default.sex',
                      'gauss_5.0_9x9.conv']

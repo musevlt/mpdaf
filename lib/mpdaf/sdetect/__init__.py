@@ -31,7 +31,8 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from .source import *
 from .catalog import Catalog
-from .muselet import muselet
+from .source import *
 from .linelist import *
+from .muselet import muselet
+from .sea import *
