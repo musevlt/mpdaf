@@ -9,6 +9,10 @@
 #include <omp.h>
 #endif
 
+#ifndef NAN
+    #define NAN (0.0/0.0)
+#endif
+
 #define MAX_PTS_PER_SLICE 2e5
 #define NIFUS 24
 #define NSLICES 48
