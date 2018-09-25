@@ -51,8 +51,10 @@ try:
     from Cython.Build import cythonize
 except ImportError:
     HAVE_CYTHON = False
+    CYTHON_TRACE = False
 else:
     HAVE_CYTHON = True
+    CYTHON_TRACE = os.getenv('CYTHON_TRACE', False) == '1'
     print('Cython detected, building from sources.')
 
 # Check if pkg-config is available
@@ -195,10 +197,14 @@ with open('CHANGELOG') as f:
     CHANGELOG = f.read()
 
 ext = '.pyx' if HAVE_CYTHON else '.c'
+define_macros = []
+if CYTHON_TRACE:
+    print('CYTHON_TRACE enabled')
+    define_macros.append(('CYTHON_TRACE', '1'))
 ext_modules = [
     Extension('obj.merging',
               ['src/tools.c', './lib/mpdaf/obj/merging' + ext],
-              include_dirs=['numpy']),
+              include_dirs=['numpy'], define_macros=define_macros),
 ]
 
 if HAVE_PKG_CONFIG:
@@ -212,8 +218,12 @@ if HAVE_PKG_CONFIG:
         pass
 
 if HAVE_CYTHON:
+    compiler_directives = {'language_level': 3}
+    if CYTHON_TRACE:
+        compiler_directives['linetrace'] = True
+        compiler_directives['binding'] = True
     ext_modules = cythonize(ext_modules,
-                            compiler_directives={'language_level': 3})
+                            compiler_directives=compiler_directives)
 
 print('Configuration done, now running setup() ...\n')
 
