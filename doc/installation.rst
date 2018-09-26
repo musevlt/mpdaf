@@ -120,8 +120,8 @@ To run the unit tests on an installed version of MPDAF::
 .. _Matplotlib: http://matplotlib.org/
 .. _Astropy: http://www.astropy.org/
 .. _Pytest: http://pytest.org/
-.. _Numexpr: http://pypi.python.org/pypi/numexpr
-.. _fitsio: https://pypi.python.org/pypi/fitsio
+.. _Numexpr: https://pypi.org/project/numexpr/
+.. _fitsio: https://pypi.org/project/fitsio/
 .. _pkg-config: https://pkgconfig.freedesktop.org/
 .. _CFITSIO: http://heasarc.gsfc.nasa.gov/fitsio/
 .. _OpenMP: http://openmp.org
