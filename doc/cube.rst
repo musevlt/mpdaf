@@ -111,7 +111,7 @@ in this examples contains an observation of a single galaxy.
 
   In [1]: ima1 = obj1.sum(axis=0)
 
-  In [2]: plt.figure()
+  In [2]: plt.figure(figsize=(8, 4))
 
   @savefig Cube1.png width=4in
   In [3]: ima1.plot(scale='arcsinh', colorbar='v')
@@ -350,6 +350,8 @@ the Hα line and the continuum mean flux at the same location:
 
   In [7]: print(fline, cline, ew)
 
+  In [4]: plt.close("all")
+
 Finally we repeat this for all datacube spectra, and we save the Hα flux and
 equivalent width in two images.  We start by creating two images with identical
 shapes and world-coordinates for the reconstructed image and then use the
@@ -376,26 +378,18 @@ spectrum iterator `~mpdaf.obj.iter_spe`:
      ...:     ha_flux[p,q] = fline
      ...:     ha_ew[p,q] = ew
 
-  In [5]: plt.figure()
-
-  @savefig Cube11.png width=2in
-  In [6]: cont_flux.plot(title="continuum mean flux (%s)"%cont_flux.unit, colorbar='v')
-
   In [7]: ha_flux.unit = sp.unit * sp.wave.unit
-
-  In [8]: plt.figure()
-
-  @savefig Cube12.png width=2in
-  In [9]: ha_flux.plot(title="H$\\alpha$ line total flux (%s)"%ha_flux.unit, colorbar='v')
 
   In [10]: ha_ew.mask_selection(np.where((ima1.data)<4000))
 
   In [11]: ha_ew.unit = ha_flux.unit / cont_flux.unit
 
-  In [12]: plt.figure()
+  In [5]: fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 4))
 
-  @savefig Cube13.png width=2in
-  In [13]: ha_ew.plot(title="H$\\alpha$ line ew (%s)"%ha_ew.unit, colorbar='v')
+  @savefig Cube11.png width=10in
+  In [6]: cont_flux.plot(ax=ax1, title="continuum mean flux (%s)"%cont_flux.unit, colorbar='v')
+     ...: ha_flux.plot(ax=ax2, title="H$\\alpha$ line total flux (%s)"%ha_flux.unit, colorbar='v')
+     ...: ha_ew.plot(ax=ax3, title="H$\\alpha$ line ew (%s)"%ha_ew.unit, colorbar='v')
 
   @suppress
   In [14]: ha_flux = None ; cont_flux = None ; ha_ew = None
@@ -447,12 +441,12 @@ We then plot the results:
   In [1]: plt.figure()
 
   @savefig Cube14.png width=3.5in
-  In [2]: cube.sum(axis=0).plot(title='before Gaussian filter')
+  In [2]: cube.sum(axis=0).plot(title='before Gaussian filter', scale='log')
 
   In [1]: plt.figure()
 
   @savefig Cube15.png width=3.5in
-  In [3]: cube2.sum(axis=0).plot(title='after Gaussian filter')
+  In [3]: cube2.sum(axis=0).plot(title='after Gaussian filter', scale='log')
 
   @suppress
   In [5]: cube2 = None
