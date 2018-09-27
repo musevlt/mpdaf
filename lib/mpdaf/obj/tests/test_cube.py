@@ -44,7 +44,7 @@ from numpy.testing import (assert_almost_equal, assert_array_equal,
 from operator import add, sub, mul, truediv as div
 
 from ...tests.utils import (generate_cube, generate_image, generate_spectrum,
-                            assert_masked_allclose)
+                            assert_masked_allclose, get_data_file)
 
 
 def test_copy(cube):
@@ -645,6 +645,21 @@ def test_get_image():
     ima = cube1.get_image(wave=lrange, method='sum', subtract_off=False)
     assert ima[0, 0] == cube1[lslice, 0, 0].sum()[0]
     assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].sum()[0])
+
+
+def test_get_band_image():
+    c = Cube(get_data_file('obj', 'CUBE.fits'))
+
+    # Test unknown filter
+    with pytest.raises(ValueError):
+        c.get_band_image('foo')
+
+    # Test non-overlapping filter
+    with pytest.raises(ValueError):
+        c.get_band_image('Johnson_B')
+
+    im = c.get_band_image('Cousins_I')
+    assert im.data.count() == 200
 
 
 @pytest.mark.parametrize('mask', (None, ma.nomask))
