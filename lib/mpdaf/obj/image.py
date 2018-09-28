@@ -701,8 +701,8 @@ class Image(ArithmeticMixin, DataArray):
 
         # Calculate the slices where the clipped subcube should go in
         # the new arrays.
-        slices = [slice(sy.start - uy.start, sy.stop - uy.start),
-                  slice(sx.start - ux.start, sx.stop - ux.start)]
+        slices = (slice(sy.start - uy.start, sy.stop - uy.start),
+                  slice(sx.start - ux.start, sx.stop - ux.start))
 
         # Copy the clipped subcube into unclipped arrays.
         data[slices] = res._data[:]
