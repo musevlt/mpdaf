@@ -511,6 +511,29 @@ the mean or sum of a given wavelenth band.  `~mpdaf.obj.Cube.bandpass_image`
 sums the images of a cube after multiplying the cube by a given spectral
 bandpass curve.
 
+`~mpdaf.obj.Cube.get_band_image` can be used to create an image with the
+filters included in MPDAF:
+
+.. ipython::
+   :okwarning:
+
+   In [6]: cube = Cube('sdetect/minicube.fits')
+
+   In [1]: imV = cube.get_band_image('Johnson_V')
+
+   In [1]: imR = cube.get_band_image('Cousins_R')
+
+   In [1]: imI = cube.get_band_image('Cousins_I')
+
+   In [5]: fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
+
+   @savefig Cube21.png width=10in
+   In [6]: imV.plot(ax=ax1, title="Johnson_V")
+      ...: imR.plot(ax=ax2, title="Cousins_R")
+      ...: imI.plot(ax=ax3, title="Cousins_I")
+
+The filters are taken from the ``filter_list.fits`` file from the MUSE DRS:
+
 .. ipython::
 
    In [1]: plt.figure()
