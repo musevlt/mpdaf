@@ -38,6 +38,7 @@ import numpy as np
 import types
 
 import astropy.units as u
+from astropy.io import fits
 from astropy.stats import gaussian_sigma_to_fwhm, gaussian_fwhm_to_sigma
 from os.path import join, abspath, dirname
 from scipy import interpolate, signal
@@ -1152,14 +1153,16 @@ class Spectrum(ArithmeticMixin, DataArray):
             (l0, lmin, lmax, tck) = ABmag_filters.mag_RJohnson()
             return self._filter(l0, lmin, lmax, tck)
         else:
-            DATADIR = join(abspath(dirname(__file__)), 'filters')
-            filenames = {'F606W': 'wfc_F606W.dat',
-                         'F775W': 'wfc_F775W.dat',
-                         'F814W': 'wfc_F814W.dat',
-                         'F850LP': 'wfc_F850LP.dat'}
-            lbda, thr = np.loadtxt(join(DATADIR, filenames[name]),
-                                   dtype=float, delimiter=' ',
-                                   unpack=True)
+            FILTERS = join(abspath(dirname(__file__)), 'filters',
+                           'filter_list.fits')
+            filtname = 'ACS_' + name
+
+            with fits.open(FILTERS) as hdul:
+                if filtname not in hdul:
+                    raise ValueError("filter '{}' not found".format(filtname))
+                lbda = hdul[filtname].data['lambda']
+                thr = hdul[filtname].data['throughput']
+
             return self.abmag_filter(lbda, thr)
 
     def abmag_filter(self, lbda, eff):
