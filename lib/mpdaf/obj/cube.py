@@ -1518,21 +1518,53 @@ class Cube(ArithmeticMixin, DataArray):
         # add input in header
         unit = 'pix' if unit_wave is None else str(unit_wave)
         f = '' if self.filename is None else os.path.basename(self.filename)
-        add_mpdaf_method_keywords(ima.primary_header,
-                                  "cube.get_image",
-                                  ['cube', 'lbda1', 'lbda2', 'method',
-                                   'subtract_off', 'margin', 'fband'],
-                                  [f, l1, l2,
-                                   method, subtract_off, margin, fband],
-                                  ['cube',
-                                   'min wavelength (%s)' % str(unit),
-                                   'max wavelength (%s)' % str(unit),
-                                   'aggregation method',
-                                   'subtracting off nearby data',
-                                   'off-band margin',
-                                   'off_band size'])
+        add_mpdaf_method_keywords(
+            ima.primary_header, "cube.get_image",
+            ['cube', 'lbda1', 'lbda2', 'method', 'subtract_off', 'margin',
+             'fband'],
+            [f, l1, l2, method, subtract_off, margin, fband],
+            ['cube', 'min wavelength (%s)' % str(unit),
+             'max wavelength (%s)' % str(unit), 'aggregation method',
+             'subtracting off nearby data', 'off-band margin', 'off_band size']
+        )
 
         return ima
+
+    def get_band_image(self, name):
+        """Generate an image using a known filter.
+
+        Parameters
+        ----------
+        name : str
+            Filter name. Must exist in the filter file taken from the MUSE DRS
+            (`lib/mpdaf/obj/filters/filter_list.fits`).  Available filters:
+            Johnson_B, Johnson_V, Cousins_R, Cousins_I, SDSS_u, SDSS_g, SDSS_r,
+            SDSS_i, SDSS_z, ACS_F475W, ACS_F550M, ACS_F555W, ACS_F606W,
+            ACS_F625W, ACS_F775W, ACS_F814W, WFPC2_F555W, WFPC2_F675W,
+            WFPC2_F814W, WFC3_F502N, WFC3_F555W, WFC3_F606W, WFC3_F625W,
+            WFC3_F656N, WFC3_F775W, WFC3_F814W, Kron_V
+
+        """
+        FILTERS = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                               'filters', 'filter_list.fits')
+
+        with fits.open(FILTERS) as hdul:
+            if name not in hdul:
+                filter_names = ', '.join(hdu.name for hdu in hdul[1:])
+                raise ValueError("requested filter '{}' not found. Available "
+                                 "filters: {}".format(name, filter_names))
+            wave = hdul[name].data['lambda']
+            throughput = hdul[name].data['throughput']
+
+        im = self.bandpass_image(wave, throughput, unit_wave=u.angstrom,
+                                 interpolation="linear")
+        # as we use the DRS filters, add the same keyword allowing to find
+        # which filter was used.
+        im.primary_header['ESO DRS MUSE FILTER NAME'] = (name,
+                                                         'filter name used')
+        add_mpdaf_method_keywords(im.primary_header, "cube.get_band_image",
+                                  ['name'], [name], ['filter name used'])
+        return im
 
     def bandpass_image(self, wavelengths, sensitivities, unit_wave=u.angstrom,
                        interpolation="linear"):

@@ -502,6 +502,61 @@ Finally, we compare the results for one of the slices:
   @suppress
   In [5]: cube2 = None ; cube = None
 
+Creation of images
+==================
+
+The `~mpdaf.obj.Cube` class contains several methods to create images from
+a specific part of the cube.  `~mpdaf.obj.Cube.get_image` extracts an image as
+the mean or sum of a given wavelenth band.  `~mpdaf.obj.Cube.bandpass_image`
+sums the images of a cube after multiplying the cube by a given spectral
+bandpass curve.
+
+`~mpdaf.obj.Cube.get_band_image` can be used to create an image with the
+filters included in MPDAF:
+
+.. ipython::
+   :okwarning:
+
+   In [6]: cube = Cube('sdetect/minicube.fits')
+
+   In [1]: imV = cube.get_band_image('Johnson_V')
+
+   In [1]: imR = cube.get_band_image('Cousins_R')
+
+   In [1]: imI = cube.get_band_image('Cousins_I')
+
+   In [5]: fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
+
+   @savefig Cube21.png width=10in
+   In [6]: imV.plot(ax=ax1, title="Johnson_V")
+      ...: imR.plot(ax=ax2, title="Cousins_R")
+      ...: imI.plot(ax=ax3, title="Cousins_I")
+
+The filters are taken from the ``filter_list.fits`` file from the MUSE DRS:
+
+.. ipython::
+
+   In [1]: plt.figure()
+
+   In [1]: from astropy.io import fits
+
+   @savefig Cube18.png width=8in
+   In [4]: with fits.open('../obj/filters/filter_list.fits') as hdul:
+      ...:     fig, axes = plt.subplots(2, 2, figsize=(12, 12))
+      ...:     axes = axes.ravel()
+      ...:     for hdu in hdul[1:]:
+      ...:         if hdu.name.startswith('SDSS'):
+      ...:             ax = axes[1]
+      ...:         elif hdu.name.startswith('ACS'):
+      ...:             ax = axes[2]
+      ...:         elif hdu.name.startswith('WF'):
+      ...:             ax = axes[3]
+      ...:         else:
+      ...:             ax = axes[0]
+      ...:         ax.plot(hdu.data['lambda'], hdu.data['throughput'], label=hdu.name)
+      ...:     for ax in axes:
+      ...:         ax.legend()
+
 Sub-cube extraction
 ===================
 
@@ -511,11 +566,6 @@ Sub-cube extraction
 
 
 `~mpdaf.obj.Cube.select_lambda` returns the sub-cube corresponding to a wavelength range.
-
-`~mpdaf.obj.Cube.get_image` extracts an image around a position in the datacube.
-
-`~mpdaf.obj.Cube.bandpass_image` sums the images
-of a cube after multiplying the cube by the spectral bandpass curve of another instrument.
 
 `~mpdaf.obj.Cube.subcube` extracts a sub-cube around a position.
 
