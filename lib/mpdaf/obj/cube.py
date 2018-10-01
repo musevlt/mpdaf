@@ -1556,8 +1556,15 @@ class Cube(ArithmeticMixin, DataArray):
             wave = hdul[name].data['lambda']
             throughput = hdul[name].data['throughput']
 
-        return self.bandpass_image(wave, throughput, unit_wave=u.angstrom,
-                                   interpolation="linear")
+        im = self.bandpass_image(wave, throughput, unit_wave=u.angstrom,
+                                 interpolation="linear")
+        # as we use the DRS filters, add the same keyword allowing to find
+        # which filter was used.
+        im.primary_header['ESO DRS MUSE FILTER NAME'] = (name,
+                                                         'filter name used')
+        add_mpdaf_method_keywords(im.primary_header, "cube.get_band_image",
+                                  ['name'], [name], ['filter name used'])
+        return im
 
     def bandpass_image(self, wavelengths, sensitivities, unit_wave=u.angstrom,
                        interpolation="linear"):

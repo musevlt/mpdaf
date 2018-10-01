@@ -660,6 +660,7 @@ def test_get_band_image():
 
     im = c.get_band_image('Cousins_I')
     assert im.data.count() == 200
+    assert im.primary_header['ESO DRS MUSE FILTER NAME'] == 'Cousins_I'
 
 
 @pytest.mark.parametrize('mask', (None, ma.nomask))
