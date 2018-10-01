@@ -4,8 +4,8 @@ before_script:
   - export LC_ALL=C.UTF-8
   - export LANG=C.UTF-8
   - eval "$(pyenv init -)"
-  # - pyenv local 3.6.4
-  - pip install tox tox-pyenv
+  - pyenv local 3.5.5 3.6.4 3.7.0
+  - pip install -U tox tox-pyenv
   - pwd
 
 py35:
