@@ -5,6 +5,11 @@ Development version.
 
 MPDAF now requires Python 3.5 or later.
 
+-  The self-calibration method is deprecated, as it is available in the DRS
+   since version 2.4, with the ``autocalib="deepfield"`` parameter.
+
+- Add function to plot the autocalib corrections. [!138]
+
 - Add rgb plotting function ``mpdaf.obj.plot_rgb`` and a method to Source
   objects. [!123]
 
@@ -31,8 +36,6 @@ MPDAF now requires Python 3.5 or later.
 - Correct bug in source crackz execution.
 
 - Fix the copy of FITS header to respect the initial order of keywords. [!137]
-
-- Add function to plot the autocalib corrections. [!138]
 
 - Correct bug in match to return only one catalog when option full_output is
   False. [!139]

@@ -363,11 +363,12 @@ Self-calibration method for empty fields
 ========================================
 
 .. note::
-   This self-calibration method is available in the DRS since version 2.4, with
+   The self-calibration method is available in the DRS since version 2.4, with
    the ``autocalib="deepfield"`` parameter. This should be prefered as it is
    more efficient (no need to save the Pixtable to read it in MPDAF), includes
    a few bug fixes, and allows to use the DRS sky-subtraction after the
-   autocalib.
+   autocalib. New DRS versions may also include more features. The
+   implementation in MPDAF will be removed in the future.
 
 The `~mpdaf.drs.PixTable` class has a `~mpdaf.drs.PixTable.selfcalibrate`
 method, which can be used to apply a self-calibration method on a pixel table

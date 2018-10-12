@@ -47,7 +47,7 @@ from astropy.table import Table
 from os.path import basename
 
 from ..obj import Image, Spectrum, WaveCoord, WCS
-from ..tools import add_mpdaf_method_keywords, copy_header
+from ..tools import add_mpdaf_method_keywords, copy_header, deprecated
 
 try:
     import numexpr
@@ -1723,6 +1723,8 @@ class PixTable(object):
         return PixTableMask(maskfile=maskfile, maskcol=mask,
                             pixtable=self.filename)
 
+    @deprecated('This method was used for the old auto-calibration algorithm '
+                'and is now useless.')
     def sky_ref(self, pixmask=None, dlbda=1.0, nmax=2, nclip=5.0, nstop=2,
                 lmin=None, lmax=None):
         """Compute the reference sky spectrum using sigma clipped median.
@@ -1808,6 +1810,10 @@ class PixTable(object):
     def divide_slice_median(self, skyref, pixmask):
         raise AttributeError('This method was replaced with .selfcalibrate')
 
+    @deprecated('The self-calibration method is available in the DRS since '
+                'version 2.4, with the ``autocalib="deepfield"`` parameter. '
+                'This should be prefered as it is more efficient, and includes'
+                ' some bugfixes and new features.')
     def selfcalibrate(self, pixmask=None, corr_clip=15.0, logfile=None):
         """Correct the background level of the slices.
 
