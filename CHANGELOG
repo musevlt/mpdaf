@@ -5,10 +5,24 @@ Development version.
 
 MPDAF now requires Python 3.5 or later.
 
+Pixtable
+~~~~~~~~
+
 -  The self-calibration method is deprecated, as it is available in the DRS
    since version 2.4, with the ``autocalib="deepfield"`` parameter.
 
 - Add function to plot the autocalib corrections. [!138]
+
+Muselet
+~~~~~~~
+
+- Fix Muselet issue with AO cubes. [#513]
+
+Cube, Image, Spectrum
+~~~~~~~~~~~~~~~~~~~~~
+
+- Add ``Cube.get_band_image`` to create images with the same filters as the
+  DRS (this includes HST, SDSS, or other filters). [!146]
 
 - Add rgb plotting function ``mpdaf.obj.plot_rgb`` and a method to Source
   objects. [!123]
@@ -19,32 +33,36 @@ MPDAF now requires Python 3.5 or later.
   files, a float64 conversion can now be avoided with ``convert_float64=False``.
   [!126, !!135]
 
-- Support the use of metadata in ``Source`` tables and ``Catalog``. Keywords
-  IDNAME, RANAME and DECNAME can be used to specify the column names for the ID,
-  RA and DEC columns that are used in several ``Catalog`` methods. [!124]
-
 - Remove duplicate air/vacuum conversion functions. [!127]
 
 - Fix subcube when using ``np.ma.nomask`` [!128].
 
 - Check that FITS file's naxis is compatible with the class [#505, !129]
 
-- Speedup get_FSF_from_cube_keywords. [!131]
+- Fix the copy of FITS header to respect the initial order of keywords. [!137]
+
+Source, Catalog
+~~~~~~~~~~~~~~~
+
+- Support the use of metadata in ``Source`` tables and ``Catalog``. Keywords
+  IDNAME, RANAME and DECNAME can be used to specify the column names for the ID,
+  RA and DEC columns that are used in several ``Catalog`` methods. [!124]
+
+- Speedup ``get_FSF_from_cube_keywords``. [!131]
 
 - Add ``cube.min()``. [!133]
 
 - Correct bug in source crackz execution.
 
-- Fix the copy of FITS header to respect the initial order of keywords. [!137]
-
-- Correct bug in match to return only one catalog when option full_output is
-  False. [!139]
-
-- Fix pickling of MPDAF objects when the header does not match the data. [!141]
+- Correct bug in match to return only one catalog when option ``full_output``
+  is False. [!139]
 
 - Fix ``get_emlines`` to use unicode for line type. [!142]
 
-- Fix Muselet issue with AO cubes. [#513]
+Misc
+~~~~
+
+- Fix pickling of MPDAF objects when the header does not match the data. [!141]
 
 - Fix warnings with recent Numpy versions.
 
