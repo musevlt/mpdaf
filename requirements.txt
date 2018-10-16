@@ -4,6 +4,6 @@ scipy
 cython
 matplotlib
 psutil
-ipython
+ipython<7.0
 numpydoc
 sphinx_automodapi
