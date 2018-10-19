@@ -8,10 +8,11 @@ MPDAF now requires Python 3.5 or later.
 Pixtable
 ~~~~~~~~
 
--  The self-calibration method is deprecated, as it is available in the DRS
-   since version 2.4, with the ``autocalib="deepfield"`` parameter.
+- The self-calibration method is deprecated, as it is available in the DRS
+  since version 2.4, with the ``autocalib="deepfield"`` parameter.
 
-- Add function to plot the autocalib corrections. [!138]
+- Add the `~mpdaf.drs.plot_autocal_factors` function to plot the autocalib
+  corrections. [!138]
 
 Muselet
 ~~~~~~~
@@ -21,11 +22,11 @@ Muselet
 Cube, Image, Spectrum
 ~~~~~~~~~~~~~~~~~~~~~
 
-- Add ``Cube.get_band_image`` to create images with the same filters as the
-  DRS (this includes HST, SDSS, or other filters). [!146]
+- Add `mpdaf.obj.Cube.get_band_image` to create images with the same filters as
+  the DRS (this includes HST, SDSS, or other filters). [!146]
 
-- Add rgb plotting function ``mpdaf.obj.plot_rgb`` and a method to Source
-  objects. [!123]
+- Add rgb plotting function `~mpdaf.obj.plot_rgb` and a method to Source
+  objects (`mpdaf.sdetect.Source.show_rgb`). [!123]
 
 - Adds parameter to avoid the float32/float64 conversions: by default arrays in
   Spectrum/Image/Cube are converted to float32 when saving, to save some disk
@@ -33,7 +34,8 @@ Cube, Image, Spectrum
   files, a float64 conversion can now be avoided with ``convert_float64=False``.
   [!126, !!135]
 
-- Remove duplicate air/vacuum conversion functions. [!127]
+- Remove duplicate air/vacuum conversion functions, now available as
+  `mpdaf.obj.airtovac` and `mpdaf.obj.vactoair`. [!127]
 
 - Fix subcube when using ``np.ma.nomask`` [!128].
 
