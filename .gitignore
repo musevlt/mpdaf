@@ -13,6 +13,7 @@ build/
 dist/
 doc/api/
 doc/_build/
+doc/_static/_generated/
 htmlcov/
 lib/mpdaf/_githash.py
 lib/mpdaf/data/extern

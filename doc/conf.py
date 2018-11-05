@@ -7,8 +7,10 @@ import os
 import re
 import sys
 import warnings
+from astropy.utils import minversion
 
-sys.path.insert(0, os.path.abspath('./ext'))
+IPYTHON_LT_7_1 = not minversion('IPython', '7.1.0')
+
 sys.setrecursionlimit(1500)
 
 # -- General configuration ----------------------------------------------------
@@ -41,10 +43,15 @@ extensions = [
     'sphinx.ext.viewcode',
     'numpydoc',
     'IPython.sphinxext.ipython_console_highlighting',
-    'ipython_directive',
     'sphinx_automodapi.automodapi',
     'sphinx_automodapi.smart_resolver'
 ]
+if IPYTHON_LT_7_1:
+    # before IPython 7.1 use own custom version of the extension
+    sys.path.insert(0, os.path.abspath('./ext'))
+    extensions.append('ipython_directive')
+else:
+    extensions.append('IPython.sphinxext.ipython_directive')
 
 try:
     import matplotlib.sphinxext.plot_directive
@@ -54,7 +61,7 @@ try:
 # generator, even if we're not building the docs.
 except (ImportError, AttributeError):
     warnings.warn(
-        "matplotlib's plot_directive could not be imported. " +
+        "matplotlib's plot_directive could not be imported. "
         "Inline plots will not be included in the output")
 
 intersphinx_mapping = {
@@ -83,6 +90,7 @@ numpydoc_show_class_members = False
 # numpydoc_use_plots = True
 
 ipython_savefig_dir = '_static/_generated'
+ipython_warning_is_error = False
 ipython_execlines = """\
 import os, sys
 import numpy as np
