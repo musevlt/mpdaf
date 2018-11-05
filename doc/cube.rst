@@ -40,6 +40,7 @@ There are two common ways to obtain a `~mpdaf.obj.Cube` object:
   arrays in which bad pixels have been masked. For example:
 
 .. ipython::
+  :okwarning:
 
   In [2]: wcs1 = WCS(crval=0, cdelt=0.2)
 
@@ -108,6 +109,7 @@ along the wavelength axis. This converts the 3D cube into a 2D image. The cube
 in this examples contains an observation of a single galaxy.
 
 .. ipython::
+  :okwarning:
 
   In [1]: ima1 = obj1.sum(axis=0)
 
@@ -176,6 +178,7 @@ Cube object. In the following example this is used to iteratively extract the
 six spectra of a small 2 x 3 pixel sub-cube, and determine their peak values:
 
 .. ipython::
+  :okwarning:
 
   In [1]: from mpdaf.obj import iter_spe
 
@@ -229,6 +232,7 @@ of the two continuum cubes over the wavelength axis and displays the resulting
 white-light images of the continuum:
 
 .. ipython::
+  :okwarning:
 
   In [1]: rec1 = cont1.sum(axis=0)
 
