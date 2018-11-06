@@ -3956,7 +3956,7 @@ class Image(ArithmeticMixin, DataArray):
         self._spflims = SpatialFrequencyLimits(newfmax, rot)
 
 
-class FormatCoord(object):
+class FormatCoord:
     """Alter mouse-over coordinates displayed by plt.show()"""
 
     def __init__(self, image, data):
@@ -4704,7 +4704,7 @@ def _find_quadratic_peak(y):
     return -b / (2 * a)
 
 
-class SpatialFrequencyLimits(object):
+class SpatialFrequencyLimits:
 
     """Allow to keep track of the spatial frequency limits of an image.
 

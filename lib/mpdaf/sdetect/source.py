@@ -458,7 +458,7 @@ class ExtLoader(collections.abc.MutableMapping):
         return self.data.keys()
 
 
-class Source(object):
+class Source:
 
     """This class contains a Source object.
 

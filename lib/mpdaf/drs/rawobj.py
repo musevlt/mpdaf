@@ -52,7 +52,7 @@ OVERSCAN = 32  # overscan width in pixel
 SLIT_POSITION = np.array([9, 8, 1, 10, 7, 2, 11, 6, 3, 12, 5, 4])
 
 
-class Channel(object):
+class Channel:
 
     """Channel object corresponds to an extension of a MUSE raw FITS file.
 
@@ -288,7 +288,7 @@ class Channel(object):
         return ima
 
 
-class RawFile(object):
+class RawFile:
 
     """RawFile class manages input/output for raw FITS file.
 

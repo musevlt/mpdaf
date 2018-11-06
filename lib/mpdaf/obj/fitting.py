@@ -36,7 +36,7 @@ import logging
 __all__ = ('Gauss1D', 'Gauss2D', 'Moffat2D')
 
 
-class Gauss1D(object):
+class Gauss1D:
 
     """This class stores 1D Gaussian parameters.
 
@@ -98,7 +98,7 @@ class Gauss1D(object):
         info('Gaussian continuum = %g', self.cont)
 
 
-class Gauss2D(object):
+class Gauss2D:
 
     """This class stores 2D gaussian parameters.
 
@@ -170,7 +170,7 @@ class Gauss2D(object):
         info('Gaussian continuum = %g (error:%g)', self.cont, self.err_cont)
 
 
-class Moffat2D(object):
+class Moffat2D:
 
     """This class stores 2D moffat parameters.
 

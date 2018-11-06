@@ -73,7 +73,7 @@ def create_fields_map(imglist, refimg, outfile):
     maskim.write(outfile, savemask='none')
 
 
-class FieldsMap(object):
+class FieldsMap:
 
     def __init__(self, filename=None, nfields=None, **kwargs):
         """Class to work with the mosaic field map.

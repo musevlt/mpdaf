@@ -256,7 +256,7 @@ rejmap: `~mpdaf.obj.Cube`
 """ % '\n'.join(_combine_doc.splitlines()[1:])
 
 
-class CubeList(object):
+class CubeList:
 
     """Manages a list of cubes and handles the combination.
 

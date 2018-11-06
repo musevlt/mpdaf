@@ -49,7 +49,7 @@ from ..tools import (MpdafUnitsWarning, fix_unit_read, is_valid_fits_file,
 __all__ = ('DataArray', )
 
 
-class LazyData(object):
+class LazyData:
 
     def __init__(self, label):
         self.label = label
@@ -99,7 +99,7 @@ class LazyData(object):
         obj.__dict__[label] = val
 
 
-class DataArray(object):
+class DataArray:
 
     """Parent class for `~mpdaf.obj.Cube`, `~mpdaf.obj.Image` and
     `~mpdaf.obj.Spectrum`.

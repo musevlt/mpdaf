@@ -158,7 +158,7 @@ def _arithmetic(operation, a, b):
     )
 
 
-class ArithmeticMixin(object):
+class ArithmeticMixin:
 
     def __add__(self, other):
         if not isinstance(other, DataArray):

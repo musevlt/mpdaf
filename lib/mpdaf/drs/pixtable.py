@@ -72,7 +72,7 @@ def _get_file_basename(f):
     return '' if f is None else basename(f)
 
 
-class PixTableMask(object):
+class PixTableMask:
 
     """PixTableMask class.
 
@@ -142,7 +142,7 @@ class PixTableMask(object):
         hdu.writeto(filename, overwrite=True, output_verify='fix')
 
 
-class PixTableAutoCalib(object):
+class PixTableAutoCalib:
 
     """PixTableAutoCalib class.
 
@@ -394,7 +394,7 @@ def plot_autocal_factors(filename, savefig=None, plot_rejected=False,
         fig.savefig(savefig)
 
 
-class PixTable(object):
+class PixTable:
 
     """PixTable class.
 

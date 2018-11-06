@@ -39,7 +39,7 @@ from astropy.stats import gaussian_fwhm_to_sigma
 from scipy import special
 
 
-class LSF(object):
+class LSF:
 
     """This class offers Line Spread Function models for MUSE.
 
@@ -225,7 +225,7 @@ def MOFFAT1(lbda, step_arcsec, Nfsf, beta, a, b):
     return PSF_Moffat, fwhm_pix, fwhm_arcsec
 
 
-class FSF(object):
+class FSF:
     """This class offers Field Spread Function (FSF) models for MUSE.
 
     The only supported model currently is "MOFFAT1".

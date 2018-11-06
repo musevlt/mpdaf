@@ -137,7 +137,7 @@ def iter_ima(cube, index=False):
             yield cube[l, :, :]
 
 
-class _MultiprocessReporter(object):
+class _MultiprocessReporter:
     """ A class that is used by loop_ima_multiprocessing and
     loop_spe_multiprocessing to make periodic completion reports to
     the terminal while tasks are being performed by external processes.

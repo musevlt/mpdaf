@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 
-class Slicer(object):
+class Slicer:
 
     """Convert slice number between the various numbering schemes.
 

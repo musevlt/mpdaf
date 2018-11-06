@@ -41,7 +41,7 @@ from numpy.testing import assert_allclose, assert_array_equal
 from ...tests.utils import get_data_file
 
 
-class TestWCS(object):
+class TestWCS:
 
     def test_init(self):
         wcs = WCS()
@@ -143,7 +143,7 @@ class TestWCS(object):
         assert wcs2.get_crval2(unit=2*u.pix) == -2.0
 
 
-class TestWaveCoord(object):
+class TestWaveCoord:
 
     def test_from_hdr(self):
         """WaveCoord class: testing constructor """

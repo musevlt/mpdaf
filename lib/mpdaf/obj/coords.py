@@ -384,7 +384,7 @@ def determine_refframe(phdr):
         return None, None
 
 
-class WCS(object):
+class WCS:
 
     """The WCS class manages the world coordinates of the spatial axes of
     MPDAF images, using the pywcs package.
@@ -1532,7 +1532,7 @@ class WCS(object):
         return hdr
 
 
-class WaveCoord(object):
+class WaveCoord:
 
     """WaveCoord class manages world coordinates in spectral direction.
 
