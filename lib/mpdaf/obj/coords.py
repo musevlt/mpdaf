@@ -580,19 +580,45 @@ class WCS(object):
 
     @property
     def naxis1(self):
-        return self.wcs._naxis1
+        try:
+            if self.wcs.pixel_shape is not None:
+                return self.wcs.pixel_shape[0]
+            else:
+                return 0
+        except AttributeError:
+            # This way to get naxis is deprecated with Astropy 3.1
+            return self.wcs._naxis1
 
     @naxis1.setter
     def naxis1(self, value):
-        self.wcs._naxis1 = value
+        try:
+            if self.wcs.pixel_shape is not None:
+                self.wcs.pixel_shape = [value, self.wcs.pixel_shape[1]]
+            else:
+                self.wcs.pixel_shape = [value, 0]
+        except AttributeError:
+            self.wcs._naxis1 = value
 
     @property
     def naxis2(self):
-        return self.wcs._naxis2
+        try:
+            if self.wcs.pixel_shape is not None:
+                return self.wcs.pixel_shape[1]
+            else:
+                return 0
+        except AttributeError:
+            # This way to get naxis is deprecated with Astropy 3.1
+            return self.wcs._naxis2
 
     @naxis2.setter
     def naxis2(self, value):
-        self.wcs._naxis2 = value
+        try:
+            if self.wcs.pixel_shape is not None:
+                self.wcs.pixel_shape = [self.wcs.pixel_shape[0], value]
+            else:
+                self.wcs.pixel_shape = [0, value]
+        except AttributeError:
+            self.wcs._naxis2 = value
 
     def copy(self):
         """Return a copy of a WCS object."""

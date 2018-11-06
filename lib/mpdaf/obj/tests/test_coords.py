@@ -43,6 +43,15 @@ from ...tests.utils import get_data_file
 
 class TestWCS(object):
 
+    def test_init(self):
+        wcs = WCS()
+        assert wcs.naxis1 == 0
+        assert wcs.naxis2 == 0
+
+        wcs.naxis1 = 10
+        assert wcs.naxis1 == 10
+        assert wcs.naxis2 == 0
+
     def test_from_hdr(self):
         """WCS class: testing constructor """
         h = fits.getheader(get_data_file('obj', 'a370II.fits'))
