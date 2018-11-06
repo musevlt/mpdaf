@@ -37,7 +37,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import astropy.units as u
-import collections
+import collections.abc
 import datetime
 import glob
 import logging
@@ -397,7 +397,7 @@ _ATTRIBUTES_TO_EXTNAME = {
 _EXTNAME_TO_ATTRIBUTES = {v: k for k, v in _ATTRIBUTES_TO_EXTNAME.items()}
 
 
-class ExtLoader(collections.MutableMapping):
+class ExtLoader(collections.abc.MutableMapping):
     """Handles loading of FITS extensions.
 
     To avoid loading all the extensions of a source FITS file, this class
