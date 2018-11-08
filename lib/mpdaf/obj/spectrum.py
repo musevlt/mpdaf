@@ -959,7 +959,7 @@ class Spectrum(ArithmeticMixin, DataArray):
 
             # If the wavelength units of the flux weren't recognized,
             # simply return the units unchanged.
-            except:
+            except Exception:
                 out_unit = self.unit * unit
 
         # Integrate the spectrum by multiplying the value of each pixel
@@ -1329,7 +1329,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             i1 = np.interp(f2, d[k1:k1 + 2], [k1, k1 + 1])
             fwhm = (i2 - i1) * step
             return fwhm
-        except:
+        except Exception:
             try:
                 k2 = np.argwhere(d[k0:-1] > f2)[0][0] + k0
                 i2 = np.interp(f2, d[k2:k2 - 2:-1], [k2, k2 - 1])
@@ -1337,7 +1337,7 @@ class Spectrum(ArithmeticMixin, DataArray):
                 i1 = np.interp(f2, d[k1:k1 + 2], [k1, k1 + 1])
                 fwhm = (i2 - i1) * step
                 return fwhm
-            except:
+            except Exception:
                 raise ValueError('Error in fwhm estimation')
 
     def gauss_fit(self, lmin, lmax, lpeak=None, flux=None, fwhm=None,
@@ -1429,7 +1429,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         if fwhm is None:
             try:
                 fwhm = spec.fwhm(lpeak, cont0, spline, unit=unit)
-            except:
+            except Exception:
                 lpeak2 = l[data.argmin()]
                 fwhm = spec.fwhm(lpeak2, cont0, spline, unit=unit)
         sigma = fwhm * gaussian_fwhm_to_sigma
@@ -1669,7 +1669,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         if fwhm is None:
             try:
                 fwhm = spec.fwhm(lpeak_1, cont0, spline, unit=unit)
-            except:
+            except Exception:
                 lpeak_1 = l[data.argmin()]
                 fwhm = spec.fwhm(lpeak_1, cont0, spline, unit=unit)
         sigma = fwhm * gaussian_fwhm_to_sigma
@@ -1859,7 +1859,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         if fwhm is None:
             try:
                 fwhm = spec.fwhm(lpeak, cont0, spline, unit=unit)
-            except:
+            except Exception:
                 lpeak = l[data.argmin()]
                 fwhm = spec.fwhm(lpeak, cont0, spline, unit=unit)
         sigma = fwhm * gaussian_fwhm_to_sigma
@@ -2205,12 +2205,12 @@ class Spectrum(ArithmeticMixin, DataArray):
                                                     mode='same')
         except IOError as e:
             raise e
-        except:
+        except Exception:
             try:
                 res._data = signal.correlate(res._data, other, mode='same')
                 if res._var is not None:
                     res._var = signal.correlate(res._var, other, mode='same')
-            except:
+            except Exception:
                 raise IOError('Operation forbidden')
         return res
 
@@ -2294,7 +2294,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         else:
             try:
                 f = getattr(lsf, 'get_LSF')
-            except:
+            except Exception:
                 raise ValueError('lsf parameter is not valid')
 
         data = np.empty(len(self._data) + 2 * k)

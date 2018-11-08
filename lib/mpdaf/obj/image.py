@@ -1252,7 +1252,7 @@ class Image(ArithmeticMixin, DataArray):
             try:
                 _str = 'center (%g,%g) radius (%g,%g) dpix %i peak: %g %g' % \
                     (center[0], center[1], radius[0], radius[1], dpix, jc, ic)
-            except:
+            except Exception:
                 _str = 'dpix %i peak: %g %g' % (dpix, ic, jc)
             self._ax.title(_str)
 
@@ -1937,7 +1937,7 @@ class Image(ArithmeticMixin, DataArray):
                 if fit_back:
                     try:
                         err_cont = err[6]
-                    except:
+                    except Exception:
                         err_cont = err[5]
                 else:
                     err_cont = 0
@@ -1951,7 +1951,7 @@ class Image(ArithmeticMixin, DataArray):
 
                 try:
                     err_rot = err[4] * 180.0 / np.pi
-                except:
+                except Exception:
                     err_rot = 0
             err_p_fwhm = err_p_width * gaussian_sigma_to_fwhm
             err_q_fwhm = err_q_width * gaussian_sigma_to_fwhm
@@ -4009,7 +4009,7 @@ def get_plot_norm(data, vmin=None, vmax=None, zscale=False, scale='linear'):
         if data.dtype == np.float64:
             try:
                 vmin, vmax = interval.get_limits(data.filled(np.nan))
-            except:
+            except Exception:
                 # catch failure on all NaN
                 if np.all(np.isnan(data.filled(np.nan))):
                     vmin, vmax = (np.nan, np.nan)

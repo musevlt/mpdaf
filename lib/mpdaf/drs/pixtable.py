@@ -514,12 +514,12 @@ class PixTable:
                 cunit = u.Unit(self.primary_header["CUNIT1"])
                 self.xc = (self.primary_header[keyx] * cunit).to(u.deg).value
                 self.yc = (self.primary_header[keyy] * cunit).to(u.deg).value
-            except:
+            except Exception:
                 try:
                     # center in pixels
                     self.xc = self.primary_header[keyx]
                     self.yc = self.primary_header[keyy]
-                except:
+                except Exception:
                     pass
 
     def __repr__(self):
@@ -606,7 +606,7 @@ class PixTable:
                           hdr.comments["%s WCS" % KEYWORD])
         try:
             self._logger.info(self.hdulist.info())
-        except:
+        except Exception:
             self._logger.info('No\tName\tType\tDim')
             self._logger.info('0\tPRIMARY\tcard\t()')
             # print "1\t\tTABLE\t(%iR,%iC)" % (self.nrows,self.ncols)
@@ -989,7 +989,7 @@ class PixTable:
                 first = self.get_keyword("EXP%i FIRST" % i)
                 last = self.get_keyword("EXP%i LAST" % i)
                 exp[first:last + 1] = i
-        except:
+        except Exception:
             exp = None
         return exp
 

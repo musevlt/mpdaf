@@ -428,7 +428,7 @@ class Catalog(Table):
                                 subtab1 = source.lines[source.lines['LINE'] != ""]
                                 subtab2 = source.lines[source.lines['LINE'] == ""]
                                 lines = vstack([subtab1, subtab2])
-                            except:
+                            except Exception:
                                 lines = source.lines
                             n = len(lines)
                             for key, typ in zip(names_lines, dtype_lines):

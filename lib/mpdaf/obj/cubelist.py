@@ -76,7 +76,7 @@ def _pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
 
     try:
         from .merging import sigma_clip
-    except:
+    except Exception:
         self._logger.error('The `merging` module must have been compiled '
                            'to use this method')
         raise

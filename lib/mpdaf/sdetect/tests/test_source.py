@@ -415,7 +415,7 @@ def test_SEA(minicube, a478hst):
         z = float(obj['Z'])
         try:
             errz = (float(obj['Z_MAX']) - float(obj['Z_MIN'])) / 2.0
-        except:
+        except Exception:
             errz = np.nan
         source.add_z('CAT', z, errz)
         # create white image
