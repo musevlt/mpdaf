@@ -303,7 +303,7 @@ def _mask_invalid(tables):
                 try:
                     tab[name] = ma.masked_invalid(col)
                     tab[name] = ma.masked_equal(col, -9999)
-                except:
+                except Exception:
                     pass
 
 
@@ -341,7 +341,7 @@ def _read_table(hdulist, extname, **kwargs):
     for i in range(h['TFIELDS']):
         try:
             t.columns[i].unit = h['TUNIT%d' % (i + 1)]
-        except:
+        except Exception:
             pass
     return t
 
@@ -897,7 +897,7 @@ class Source:
         else:
             try:
                 zmin, zmax = errz
-            except:
+            except Exception:
                 raise ValueError('Wrong type for errz in add_z')
 
         if self.z is None:
