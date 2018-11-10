@@ -268,6 +268,9 @@ class TestBasicPixTable(unittest.TestCase):
                 assert_allclose(getattr(p, 'get_' + name)(),
                                 getattr(self, name))
 
+        pix1.hdulist.close()
+        pix2.hdulist.close()
+
 
 @pytest.mark.skipif(not SUPP_FILES_PATH, reason='Missing test data')
 def test_autocalib(tmpdir):

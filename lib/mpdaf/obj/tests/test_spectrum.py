@@ -39,6 +39,7 @@ from astropy import units as u
 from astropy.io import ascii, fits
 from mpdaf.log import setup_logging
 from mpdaf.obj import Spectrum, Image, Cube, WCS, WaveCoord, airtovac, vactoair
+from mpdaf.tools import MpdafWarning
 from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_almost_equal, assert_allclose)
 
@@ -195,8 +196,9 @@ def test_gauss_fit(capsys, cont):
     assert_almost_equal(gauss.fwhm, 20, 2)
     assert_allclose(spem.fwhm(gauss.lpeak, cont=contval), 20, atol=0.2)
 
-    gauss = spem.line_gauss_fit(lmin=(4500, 4800), lmax=(5200, 6000),
-                                lpeak=5000, cont=cont, unit=u.angstrom)
+    with pytest.warns(MpdafWarning):
+        gauss = spem.line_gauss_fit(lmin=(4500, 4800), lmax=(5200, 6000),
+                                    lpeak=5000, cont=cont, unit=u.angstrom)
     assert_almost_equal(gauss.flux, 1200, 2)
     assert_almost_equal(gauss.fwhm, 20, 2)
     assert_allclose(spem.fwhm(gauss.lpeak, cont=contval), 20, atol=0.2)

@@ -263,7 +263,6 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
     save_as_ima : bool
         If True, pixtable is saved as multi-extension FITS
     """
-    fits.conf.extension_name_case_sensitive = True
     warnings.simplefilter("ignore")
 
     if primary_header is not None:
