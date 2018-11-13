@@ -43,6 +43,7 @@ import warnings
 
 from astropy.io import fits
 from astropy.io.fits import Column, ImageHDU
+from astropy.stats import sigma_clip
 from astropy.table import Table
 from os.path import basename
 
@@ -55,7 +56,7 @@ except ImportError:
     numexpr = False
 
 __all__ = ('PixTable', 'PixTableMask', 'PixTableAutoCalib',
-           'plot_autocal_factors')
+           'plot_autocal_factors', 'merge_autocal_factors')
 
 NIFUS = 24
 NSLICES = 48
@@ -391,6 +392,57 @@ def plot_autocal_factors(filename, savefig=None, plot_rejected=False,
     fig.tight_layout(rect=(0, 0, 1, 0.95))
     if savefig:
         fig.savefig(savefig)
+
+
+def merge_autocal_factors(flist, outfile=None, nquad=19):
+    """Merge corrections from AUTOCAL_FACTORS files, with sigma clipped mean.
+
+    Parameters
+    ----------
+    flist : str
+        List of AUTOCAL_FACTORS files.
+    outfile : str
+        Output file.
+    nquad : int
+        Number of wavelength bins. (TODO: guess this from the header)
+
+    """
+    # load all correction tables
+    corr = []
+    for f in flist:
+        tbl = Table.read(f)
+        assert len(tbl) == NIFUS * NSLICES * nquad
+        tbl['corr'][tbl['npts'] == 0] = np.nan
+        # create a cube of corrections
+        cube = np.full((NIFUS, NSLICES, nquad), np.nan)
+        cube[tbl['ifu'] - 1, tbl['sli'] - 1, tbl['quad'] - 1] = tbl['corr']
+        corr.append(cube)
+
+    # stack corrections in a big cube (4D) and compute its clipped mean/std
+    corr = np.ma.masked_invalid(corr)
+    scorr = sigma_clip(corr, axis=0)
+    nkeep = np.count_nonzero(~scorr.mask, axis=0)
+    nrej = np.count_nonzero(scorr.mask, axis=0)
+    meancorr = np.ma.mean(scorr, axis=0)
+    stdcorr = np.ma.std(scorr, axis=0)
+
+    # use the first one to create the output table
+    tab = Table.read(flist[0])
+    tab.remove_columns(['npts', 'corr_orig'])
+    ifu, sli, quad = zip(*np.ndindex(meancorr.shape))
+    tab['std_corr'] = stdcorr.filled(np.nan).ravel()
+    tab['corr'] = meancorr.filled(np.nan).ravel()
+    tab['nkeep'] = nkeep.ravel()
+    tab['nrej'] = nrej.ravel()
+
+    if outfile:
+        out = fits.HDUList()
+        with fits.open(flist[0]) as hdul:
+            out.append(hdul[0].copy())
+        out.append(fits.table_to_hdu(tab))
+        out.writeto(outfile, overwrite=True)
+
+    return tab
 
 
 class PixTable:
