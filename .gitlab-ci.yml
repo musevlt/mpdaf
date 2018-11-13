@@ -10,15 +10,15 @@ before_script:
 
 py35:
   script:
-    - tox -v -e py35
+    - tox -v -e py35 -- --pyargs mpdaf
 
 py36:
   script:
-    - tox -v -e py36
+    - tox -v -e py36 -- --pyargs mpdaf
 
 py37:
   script:
-    - tox -v -e py37 -- -m \'\'
+    - tox -v -e py37 -- -m \'\' --pyargs mpdaf
 
 check-setup:
   script: tox -v -e check
