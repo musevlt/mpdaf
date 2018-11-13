@@ -18,7 +18,7 @@ py36:
 
 py37:
   script:
-    - tox -v -e py37 -- -m ''
+    - tox -v -e py37 -- -m \'\'
 
 check-setup:
   script: tox -v -e check
