@@ -59,7 +59,6 @@ except OSError:  # pragma: no cover
     logging.getLogger(__name__).error(
         "MPDAF's C extension is missing, probably it was not compiled because "
         "of missing dependencies.\n Try rebuilding MPDAF.")
-    raise
 else:
     # define argument types
     charptr = ctypes.POINTER(ctypes.c_char)

@@ -39,7 +39,7 @@ import unittest
 
 from mpdaf.obj import CubeList, CubeMosaic
 from numpy.testing import assert_array_equal
-from ...tests.utils import generate_cube
+from mpdaf.tests.utils import generate_cube
 
 try:
     import fitsio  # noqa
@@ -50,7 +50,8 @@ else:
 
 try:
     import mpdaf.tools.ctools  # noqa
-except OSError:
+    mpdaf.tools.ctools.ctools  # noqa
+except (OSError, AttributeError):
     HAS_CFITSIO = False
 else:
     HAS_CFITSIO = True

@@ -38,7 +38,7 @@ from astropy.io import fits
 from mpdaf.obj import WCS, WaveCoord, deg2sexa, sexa2deg, determine_refframe
 from numpy.testing import assert_allclose, assert_array_equal
 
-from ...tests.utils import get_data_file
+from mpdaf.tests.utils import get_data_file
 
 
 class TestWCS:

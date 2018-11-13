@@ -46,7 +46,7 @@ from mpdaf.sdetect import Source
 from mpdaf.tools import MpdafWarning
 from numpy.testing import assert_array_equal, assert_almost_equal
 
-from ...tests.utils import get_data_file
+from mpdaf.tests.utils import get_data_file
 
 try:
     subprocess.check_call(['sex', '-v'])

@@ -37,7 +37,7 @@ from mpdaf.obj import Image, Cube
 from mpdaf.sdetect import Source
 from mpdaf.MUSE import create_psf_cube, get_FSF_from_cube_keywords
 from numpy.testing import assert_almost_equal
-from ...tests.utils import get_data_file
+from mpdaf.tests.utils import get_data_file
 
 
 def test_create_psf_cube():

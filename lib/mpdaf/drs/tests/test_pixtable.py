@@ -43,7 +43,7 @@ from mpdaf.drs import PixTable, pixtable, PixTableMask, PixTableAutoCalib
 from numpy.testing import assert_array_equal, assert_allclose
 from os.path import exists, join, basename
 
-from ...tests.utils import DATADIR
+from mpdaf.tests.utils import DATADIR
 
 MUSE_ORIGIN_SHIFT_XSLICE = 24
 MUSE_ORIGIN_SHIFT_YPIX = 11

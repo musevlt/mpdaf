@@ -43,7 +43,7 @@ from mpdaf.tools import MpdafWarning
 from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_almost_equal, assert_allclose)
 
-from ...tests.utils import (get_data_file, generate_spectrum)
+from mpdaf.tests.utils import (get_data_file, generate_spectrum)
 
 
 def test_copy(spec_var):

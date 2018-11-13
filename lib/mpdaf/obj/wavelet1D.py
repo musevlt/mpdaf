@@ -19,6 +19,8 @@
 import numpy as np
 from scipy.ndimage import convolve1d
 
+__all__ = ('wavelet_transform', 'wavelet_backTransform', 'cleanSignal')
+
 # See book by Starck
 H_COEFFICIENTS_LIST = np.array([1 / 16.0, 1 / 4.0, 3 / 8.0, 1 / 4.0, 1 / 16.0])
 

@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import re
 from astropy.io import fits
 
-from ...tests.utils import get_data_file
+from mpdaf.tests.utils import get_data_file
 
 from mpdaf.tools.fits import (copy_header, add_mpdaf_method_keywords,
                               add_mpdaf_keywords_to_file)

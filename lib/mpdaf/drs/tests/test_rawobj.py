@@ -36,7 +36,7 @@ from os.path import join, exists
 from mpdaf.drs import RawFile
 from numpy.testing import assert_array_equal
 
-from ...tests.utils import DATADIR
+from mpdaf.tests.utils import DATADIR
 
 EXTERN_DATADIR = join(DATADIR, 'extern')
 SERVER_DATADIR = '/home/gitlab-runner/mpdaf-test-data'

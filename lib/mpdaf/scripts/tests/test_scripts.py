@@ -34,8 +34,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
 import pytest
 import shutil
-from ..make_white_image import main
-from ...tests.utils import get_data_file
+from mpdaf.scripts.make_white_image import main
+from mpdaf.tests.utils import get_data_file
 
 
 def test_make_white_image(tmpdir):

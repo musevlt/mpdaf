@@ -39,3 +39,4 @@ from .fitting import *
 from .image import *
 from .objs import *
 from .spectrum import *
+from .wavelet1D import *

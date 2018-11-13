@@ -40,7 +40,7 @@ from astropy.coordinates import SkyCoord
 from mpdaf.sdetect import Catalog
 from numpy.testing import assert_array_equal, assert_almost_equal
 
-from ...tests.utils import get_data_file
+from mpdaf.tests.utils import get_data_file
 
 
 def test_catalog():

@@ -43,7 +43,7 @@ from numpy.testing import (assert_almost_equal, assert_array_equal,
                            assert_allclose)
 from operator import add, sub, mul, truediv as div
 
-from ...tests.utils import (generate_cube, generate_image, generate_spectrum,
+from mpdaf.tests.utils import (generate_cube, generate_image, generate_spectrum,
                             assert_masked_allclose, get_data_file)
 
 

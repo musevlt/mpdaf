@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 from numpy.testing import assert_allclose
-from ..linelist import get_emlines
+from mpdaf.sdetect import get_emlines
 
 
 def test_linelist():
