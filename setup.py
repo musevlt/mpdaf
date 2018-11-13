@@ -212,7 +212,8 @@ if HAVE_PKG_CONFIG:
         pass
 
 if HAVE_CYTHON:
-    ext_modules = cythonize(ext_modules)
+    ext_modules = cythonize(ext_modules,
+                            compiler_directives={'language_level': 3})
 
 print('Configuration done, now running setup() ...\n')
 
