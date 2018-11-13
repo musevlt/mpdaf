@@ -547,10 +547,7 @@ class PixTable:
 
         if self.nrows != 0:
             # Merged IFUs that went into this pixel tables
-            try:
-                self.nifu = self.get_keyword("MERGED")
-            except KeyError:
-                self.nifu = 1
+            self.nifu = self.get_keyword("MERGED", 1)
 
             projection = self.projection
             if projection == 'projected':  # spheric coordinates
@@ -585,18 +582,12 @@ class PixTable:
     @property
     def fluxcal(self):
         """If True, this pixel table was flux-calibrated."""
-        try:
-            return self.get_keyword("FLUXCAL")
-        except KeyError:
-            return False
+        return self.get_keyword("FLUXCAL", False)
 
     @property
     def skysub(self):
         """If True, this pixel table was sky-subtracted."""
-        try:
-            return self.get_keyword("SKYSUB")
-        except KeyError:
-            return False
+        return self.get_keyword("SKYSUB", False)
 
     @property
     def projection(self):
@@ -1008,10 +999,7 @@ class PixTable:
         -------
         out : numpy.array
         """
-        try:
-            wght = self.get_keyword("WEIGHTED")
-        except KeyError:
-            wght = False
+        wght = self.get_keyword("WEIGHTED", False)
         return self.get_column('weight', ksel=ksel) if wght else None
 
     def set_weight(self, weight, ksel=None):
@@ -1635,7 +1623,7 @@ class PixTable:
         else:
             return self._get_pos_sky(xpos, ypos)
 
-    def get_keyword(self, key):
+    def get_keyword(self, key, default=None):
         """Return the keyword value corresponding to key, adding the keyword
         prefix (``'HIERARCH ESO DRS MUSE PIXTABLE'``).
 
@@ -1649,7 +1637,13 @@ class PixTable:
         out : keyword value
 
         """
-        return self.primary_header['{} {}'.format(KEYWORD, key)]
+        try:
+            return self.primary_header['{} {}'.format(KEYWORD, key)]
+        except KeyError:
+            if default is not None:
+                return default
+            else:
+                raise
 
     def set_keyword(self, key, val):
         """Set the keyword value corresponding to key, adding the keyword
