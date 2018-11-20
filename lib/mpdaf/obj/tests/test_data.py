@@ -756,7 +756,7 @@ def test_write(tmpdir):
     var = data / 10.0
     mask = data.astype(int) % 10 == 0
     cube = generate_cube(data=data, var=var, mask=mask, wcs=WCS(deg=True),
-                         wave=WaveCoord(cunit=u.angstrom))
+                         wave=WaveCoord(cunit=u.angstrom), unit='ct')
 
     testfile = str(tmpdir.join('cube.fits'))
     cube.write(testfile, savemask='dq', checksum=True)
@@ -767,6 +767,7 @@ def test_write(tmpdir):
     assert_masked_allclose(cube2.var, cube.var)
     assert cube2.wcs.isEqual(cube.wcs)
     assert cube2.wave.isEqual(cube.wave)
+    assert cube2.unit == cube.unit
 
     for k in ('DATASUM', 'CHECKSUM'):
         for hdr in (cube2.primary_header, cube2.data_header):

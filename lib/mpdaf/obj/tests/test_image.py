@@ -83,7 +83,7 @@ def test_arithmetic_scalar(image):
 
 
 def test_arithmetic_cubes():
-    image2 = generate_image(data=1, unit=u.Unit('2 ct'))
+    image2 = generate_image(data=1, unit='2 ct')
     cube1 = generate_cube(data=0.5, unit=u.Unit('2 ct'))
 
     for op in (add, sub, mul, div):

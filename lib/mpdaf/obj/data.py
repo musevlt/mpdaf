@@ -273,7 +273,7 @@ class DataArray:
         self.wave = None
         self._dtype = dtype
         self._var_dtype = np.float64 if convert_float64 else None
-        self.unit = unit
+        self.unit = u.Unit(unit)
         self.data_header = data_header or fits.Header()
         self.primary_header = primary_header or fits.Header()
 
