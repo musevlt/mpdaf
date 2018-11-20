@@ -394,7 +394,7 @@ def plot_autocal_factors(filename, savefig=None, plot_rejected=False,
         fig.savefig(savefig)
 
 
-def merge_autocal_factors(flist, outfile=None, nquad=19):
+def merge_autocal_factors(flist, outfile=None):
     """Merge corrections from AUTOCAL_FACTORS files, with sigma clipped mean.
 
     Parameters
@@ -403,22 +403,30 @@ def merge_autocal_factors(flist, outfile=None, nquad=19):
         List of AUTOCAL_FACTORS files.
     outfile : str
         Output file.
-    nquad : int
-        Number of wavelength bins. (TODO: guess this from the header)
 
     """
+    logger = logging.getLogger(__name__)
+
+    hdr = fits.getheader(flist[0])
+    nquad = len(hdr['ESO DRS MUSE LAMBDA* MIN'])
+    logger.info('first file has %d lambda bins', nquad)
+
     # load all correction tables
     corr = []
     for f in flist:
+        # The DRS stores the corrections in a column with a fixed order for the
+        # ifu/quad/slices columns, so we suppose here that this order is always
+        # the same and we just combine the correction columns
         tbl = Table.read(f)
         assert len(tbl) == NIFUS * NSLICES * nquad
         tbl['corr'][tbl['npts'] == 0] = np.nan
-        # create a cube of corrections
-        cube = np.full((NIFUS, NSLICES, nquad), np.nan)
-        cube[tbl['ifu'] - 1, tbl['sli'] - 1, tbl['quad'] - 1] = tbl['corr']
-        corr.append(cube)
+        corr.append(tbl['corr'])
+        # Another way to proceed: create a cube of corrections
+        # cube = np.full((NIFUS, NSLICES, nquad), np.nan)
+        # cube[tbl['ifu'] - 1, tbl['sli'] - 1, tbl['quad'] - 1] = tbl['corr']
+        # corr.append(cube)
 
-    # stack corrections in a big cube (4D) and compute its clipped mean/std
+    # stack corrections and compute its clipped mean/std
     corr = np.ma.masked_invalid(corr)
     scorr = sigma_clip(corr, axis=0)
     nkeep = np.count_nonzero(~scorr.mask, axis=0)
@@ -429,7 +437,6 @@ def merge_autocal_factors(flist, outfile=None, nquad=19):
     # use the first one to create the output table
     tab = Table.read(flist[0])
     tab.remove_columns(['npts', 'corr_orig'])
-    ifu, sli, quad = zip(*np.ndindex(meancorr.shape))
     tab['std_corr'] = stdcorr.filled(np.nan).ravel()
     tab['corr'] = meancorr.filled(np.nan).ravel()
     tab['nkeep'] = nkeep.ravel()
