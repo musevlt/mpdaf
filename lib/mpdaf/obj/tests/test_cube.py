@@ -78,8 +78,9 @@ def test_arithmetic():
     im1 = image1.data.data[np.newaxis, :, :] * image1.unit
     for op in (add, sub, mul, div):
         cube3 = op(cube1, image1)
-        assert_almost_equal((cube3.data.data * cube3.unit).value,
-                            op(cube1.data.data * cube1.unit, im1).value)
+        assert_almost_equal(
+            cube3._data,
+            op(cube1._data * cube1.unit, im1).to(cube3.unit).value)
 
     cube2 = cube1 / 25.3
     assert_almost_equal(cube2.data, cube1.data / 25.3)

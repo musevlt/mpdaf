@@ -480,9 +480,8 @@ class DataArray:
         elif var is False:
             var = None
         kwargs = dict(filename=obj.filename, data=data, unit=obj.unit, var=var,
-                      dtype=obj.dtype, copy=copy,
                       ext=(obj._data_ext, obj._var_ext, obj._dq_ext),
-                      data_header=obj.data_header.copy(),
+                      copy=copy, data_header=obj.data_header.copy(),
                       primary_header=obj.primary_header.copy())
         if cls._has_wcs:
             kwargs['wcs'] = obj.wcs
