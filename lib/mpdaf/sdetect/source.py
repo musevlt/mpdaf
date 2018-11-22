@@ -1185,18 +1185,28 @@ class Source:
         self.images['MUSE_WHITE'] = subcub.mean(axis=0)
 
     def add_FSF(self, cube, fieldmap=None):
-        """Compute the mean FSF using the FSF keywords presents in the FITS
-        header of the mosaic cube.
+        """Add FSF keywords from the cube FSF keywords.
+
+        For mosaic, when multiple fields are mixed with different FSF, the mean
+        FSF is computed using a fieldmap.
+
+        The cube header must contain the FSFMODE keyword, and currently only
+        the MOFFAT1 mode is handled. If there are multiple fields (keyword
+        NFIELDS>1), then a fieldmap is required. It can be found either in
+        a FIELDMAP extension in the cube file, or provided with the
+        ``fieldmap`` parameter. Then the keywords ``FSFxxBET``, ``FSFxxFWA``,
+        and ``FSFxxFWB`` where xx is the field index (00 for one field), are
+        used to get the Moffat parameters, and are written in the source
+        header.
 
         Parameters
         ----------
         cube : `~mpdaf.obj.Cube`
             Input cube MPDAF object.
-
-        fieldmap: str
+        fieldmap : str
             Name for the FITS file containing the field map. The field map
             must be on the same WCS as the cube. If None, the field map is
-            taken for the cube.
+            taken from the FIELDMAP extension in the cube file.
 
         """
         hdr = cube.primary_header
@@ -1227,14 +1237,26 @@ class Source:
 
             center = cube.wcs.sky2pix((self.dec, self.ra), unit=u.deg)[0]
             radius = int(white.shape[0] + 0.5) / 2.
-            [sy, sx], _, _ = bounding_box(form="rectangle", center=center,
-                                          radii=radius, shape=cube.shape[1:])
+            (sy, sx), (uy, ux), _ = bounding_box(
+                form="rectangle", center=center, radii=radius,
+                shape=cube.shape[1:])
 
             # compute corresponding sub field map
             subfmap = fmap[sy, sx]
+
+            # check if submap has been trimmed, when source is on the edge.
+            # if this is the case, we need to extract the same part of the
+            # white image
+            if uy != sy or ux != sx:
+                slices = (slice(sy.start - uy.start, sy.stop - uy.start),
+                          slice(sx.start - ux.start, sx.stop - ux.start))
+                white_data = white._data[slices]
+            else:
+                white_data = white._data
+
             # weights
             w = np.array(subfmap.compute_weights())
-            w *= white._data[np.newaxis, :, :]
+            w *= white_data[np.newaxis, :, :]
             w = np.ma.sum(np.ma.masked_invalid(w), axis=(1, 2))
             w /= np.ma.sum(np.ma.masked_invalid(w))
             w = w.data
