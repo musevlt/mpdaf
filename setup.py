@@ -201,6 +201,8 @@ define_macros = []
 if CYTHON_TRACE:
     print('CYTHON_TRACE enabled')
     define_macros.append(('CYTHON_TRACE', '1'))
+    define_macros.append(('CYTHON_TRACE_NOGIL', '1'))
+
 ext_modules = [
     Extension('obj.merging',
               ['src/tools.c', './lib/mpdaf/obj/merging' + ext],
