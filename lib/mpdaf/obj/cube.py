@@ -795,7 +795,11 @@ class Cube(ArithmeticMixin, DataArray):
         return self.wcs.get_rot(unit)
 
     def sum(self, axis=None, weights=None):
-        """Return a sum over the given axis.
+        """Return a weighted or unweighted sum over a given axis or axes.
+
+        If the weights option is None, the variance is the sum of variances.
+        Otherwise the weighted sum is computed with the `Cube.mean` method,
+        whose result is multiplied by the number of elements.
 
         Parameters
         ----------
