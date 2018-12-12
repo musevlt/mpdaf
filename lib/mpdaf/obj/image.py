@@ -684,7 +684,7 @@ class Image(ArithmeticMixin, DataArray):
         # Since the subimage is smaller than requested, due to clipping,
         # create new data and variance arrays of the required size.
         shape = (uy.stop - uy.start, ux.stop - ux.start)
-        data = np.zeros(shape)
+        data = np.zeros(shape, dtype=self.data.dtype)
         if self._var is None:
             var = None
         else:
@@ -695,7 +695,8 @@ class Image(ArithmeticMixin, DataArray):
         # initially flags all pixels.
         if self._mask is ma.nomask:
             mask = ma.nomask
-            data[:] = np.nan
+            data[:] = (np.nan if self.dtype.kind == 'f' 
+                       else self.data.fill_value)
             if var is not None:
                 var[:] = np.nan
         else:
