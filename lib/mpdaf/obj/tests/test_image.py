@@ -534,6 +534,11 @@ def test_subimage(a370II):
                              unit_size=None)
     assert subima.peak()['data'] == 3035.0
 
+    subima = a370II.subimage(center=(10, 10), size=40, unit_center=None,
+                             unit_size=None)
+    assert subima.peak()['data'] == 2042
+    assert subima.data.dtype == a370II.data.dtype
+
 
 def test_ee():
     """Image class: testing ensquared energy."""
