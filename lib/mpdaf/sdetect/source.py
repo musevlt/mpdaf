@@ -45,6 +45,7 @@ import numpy as np
 import os
 import re
 import shutil
+import warnings
 
 from astropy.io import fits as pyfits
 from astropy.table import Table, MaskedColumn, vstack
@@ -57,7 +58,7 @@ from scipy.optimize import leastsq
 from ..obj import Cube, Image, Spectrum, vactoair, airtovac
 from ..obj.image import plot_rgb
 from ..obj.objs import is_int, is_float, bounding_box
-from ..tools import deprecated
+from ..tools import deprecated, MpdafWarning
 from ..MUSE import FieldsMap, FSF
 from ..MUSE.PSF import MOFFAT1, create_psf_cube
 from ..sdetect.sea import (segmentation, mask_creation, findCentralDetection,
@@ -1313,7 +1314,8 @@ class Source:
 
     def add_narrow_band_images(self, cube, z_desc, eml=None, size=None,
                                unit_size=u.arcsec, width=8, is_sum=False,
-                               subtract_off=True, margin=10., fband=3.):
+                               subtract_off=True, margin=10., fband=3.,
+                               method="mean"):
         """Create narrow-band images from a redshift value and a catalog of
         lines.
 
@@ -1349,17 +1351,18 @@ class Source:
             Narrow-band width(in angstrom).
         is_sum : bool
             if True the image is computed as the sum over the wavelength axis,
-            otherwise this is the average.
+            otherwise this is the average. Deprecated, use "sum" as aggregation
+            method.
         subtract_off : bool
             If True, subtracting off nearby data.
             The method computes the subtracted flux by using the algorithm
             from Jarle Brinchmann (jarle@strw.leidenuniv.nl)::
 
-                # if is_sum is False
+                # if method = "mean"
                 sub_flux = mean(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
                                 flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2])
 
-                # or if is_sum is True:
+                # or if method = "sum":
                 sub_flux = sum(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
                                 flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2]) /fband
 
@@ -1369,8 +1372,18 @@ class Source:
         fband : float
             The size of the off-band is ``fband x narrow-band width`` (in
             angstrom).
+        method: string
+            Name of the Cube method used to aggregate the data. This method
+            must accept the axis=0 parameter and return an image. Example:
+            mean, sum, max.
 
         """
+        if is_sum:
+            warnings.warn(
+                "The 'is_sum' parameter is deprecated. Use method='sum' "
+                "instead. Aggregation function set to sum.", MpdafWarning)
+            method = "sum"
+
         if self.z is None:
             self._logger.warning('Cannot generate narrow-band image if the '
                                  'redshift is None.')
@@ -1407,14 +1420,14 @@ class Source:
                     # self._logger.debug('Generate narrow band image for NB_%s'
                     #                   ' with z=%s', tag, z[0])
                     self.images['NB_' + tag] = subcub.get_image(
-                        wave=(l1, l2), method='sum' if is_sum else 'mean',
+                        wave=(l1, l2), method=method,
                         subtract_off=subtract_off, margin=margin,
                         fband=fband, unit_wave=u.angstrom)
 
     def add_narrow_band_image_lbdaobs(self, cube, tag, lbda, size=None,
                                       unit_size=u.arcsec, width=8,
                                       is_sum=False, subtract_off=True,
-                                      margin=10., fband=3.):
+                                      margin=10., fband=3., method="mean"):
         """Create narrow-band image around an observed wavelength value.
 
         Parameters
@@ -1437,7 +1450,8 @@ class Source:
             Angstrom total width
         is_sum : bool
             if True the image is computed as the sum over the wavelength axis,
-            otherwise this is the average.
+            otherwise this is the average. Deprecated, use "sum" as aggregation
+            method.
         subtract_off : bool
             If True, subtracting off nearby data.
         margin : float
@@ -1445,8 +1459,18 @@ class Source:
             angstrom).
         fband : float
             The size of the off-band is fband*narrow-band width (in angstrom).
+        method: string
+            Name of the Cube method used to aggregate the data. This method
+            must accept the axis=0 parameter and return an image. Example:
+            mean, sum, max.
 
         """
+        if is_sum:
+            warnings.warn(
+                "The 'is_sum' parameter is deprecated. Use method='sum' "
+                "instead. Aggregation function set to sum.", MpdafWarning)
+            method = "sum"
+
         if size is None:
             size = self.default_size
             unit_size = u.arcsec
@@ -1457,7 +1481,7 @@ class Source:
         subcub = cube.subcube(center=(self.dec, self.ra), size=size,
                               unit_center=u.deg, unit_size=unit_size)
         self.images[tag] = subcub.get_image(wave=(l1, l2),
-                                            method='sum' if is_sum else 'mean',
+                                            method=method,
                                             subtract_off=subtract_off,
                                             margin=margin, fband=fband,
                                             unit_wave=u.angstrom)
