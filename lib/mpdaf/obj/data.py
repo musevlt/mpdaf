@@ -1095,10 +1095,23 @@ class DataArray:
         # world coordinates
         if header is None:
             header = self.get_wcs_header()
+            header = copy_header(self.data_header, header,
+                                 exclude=('CD*', 'PC*'), unit=self.unit**2)
+        else:
+            header = header.copy()
+            unit = self.unit**2
+            header['BUNIT'] = (unit.to_string('fits'), 'data unit type')
 
-        header = copy_header(self.data_header, header,
-                             exclude=('CD*', 'PC*'), unit=self.unit**2)
         return fits.ImageHDU(name=name, data=var, header=header)
+
+    def get_dq_hdu(self, name='DQ', header=None):
+        """Return an ImageHDU corresponding to the DQ (mask) extension."""
+        if np.ma.count_masked(self.data) != 0:
+            if header is not None:
+                header = header.copy()
+                header.remove('BUNIT', ignore_missing=True)
+            return fits.ImageHDU(name=name, header=header,
+                                 data=np.uint8(self.data.mask))
 
     def write(self, filename, savemask='dq', checksum=False,
               convert_float32=True):
@@ -1143,10 +1156,10 @@ class DataArray:
                                              convert_float32=convert_float32))
 
         # create DQ extension
-        if savemask == 'dq' and np.ma.count_masked(self.data) != 0:
-            hdulist.append(fits.ImageHDU(
-                name='DQ', header=datahdu.header.copy(),
-                data=np.uint8(self.data.mask)))
+        if savemask == 'dq':
+            hdu = self.get_dq_hdu(header=datahdu.header)
+            if hdu:
+                hdulist.append(hdu)
 
         hdulist.writeto(filename, overwrite=True,
                         output_verify='silentfix', checksum=checksum)
