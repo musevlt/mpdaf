@@ -56,9 +56,9 @@ class LazyData:
 
     def read_data(self, obj):
         obj_dict = obj.__dict__
-        data, mask = read_slice_from_fits(obj.filename, ext=obj._data_ext,
-                                          mask_ext='DQ', dtype=obj.dtype,
-                                          convert_float64=obj._convert_float64)
+        data, mask = read_slice_from_fits(
+            obj.filename, ext=obj._data_ext, mask_ext=obj._dq_ext,
+            dtype=obj.dtype, convert_float64=obj._convert_float64)
         if mask is None:
             mask = ~(np.isfinite(data))
         obj_dict['_data'] = data
@@ -265,6 +265,7 @@ class DataArray:
         self._loaded_data = False
         self._data_ext = None
         self._var_ext = None
+        self._dq_ext = None
         self._convert_float64 = convert_float64
 
         self.filename = filename
@@ -309,11 +310,15 @@ class DataArray:
 
                 if 'STAT' in hdulist:
                     self._var_ext = 'STAT'
+                if 'DQ' in hdulist:
+                    self._dq_ext = 'DQ'
             elif isinstance(ext, (list, tuple, np.ndarray)):
-                self._data_ext, self._var_ext = ext
+                if len(ext) == 2:
+                    self._data_ext, self._var_ext = ext
+                elif len(ext) == 3:
+                    self._data_ext, self._var_ext, self._dq_ext = ext
             elif isinstance(ext, (int, str)):
                 self._data_ext = ext
-                self._var_ext = None
 
             self.primary_header = hdulist[0].header
             self.data_header = hdr = hdulist[self._data_ext].header
@@ -477,7 +482,7 @@ class DataArray:
             var = None
         kwargs = dict(filename=obj.filename, data=data, unit=obj.unit, var=var,
                       dtype=obj.dtype, copy=copy,
-                      ext=(obj._data_ext, obj._var_ext),
+                      ext=(obj._data_ext, obj._var_ext, obj._dq_ext),
                       data_header=obj.data_header.copy(),
                       primary_header=obj.primary_header.copy())
         if cls._has_wcs:
@@ -805,8 +810,9 @@ class DataArray:
         elif self.filename is not None:
             with fits.open(self.filename) as hdu:
                 data, mask = read_slice_from_fits(
-                    hdu, ext=self._data_ext, mask_ext='DQ', dtype=self.dtype,
-                    item=item, convert_float64=self._convert_float64)
+                    hdu, ext=self._data_ext, mask_ext=self._dq_ext,
+                    dtype=self.dtype, item=item,
+                    convert_float64=self._convert_float64)
                 if self._var_ext is not None:
                     var = read_slice_from_fits(
                         hdu, ext=self._var_ext, dtype=self._var_dtype,

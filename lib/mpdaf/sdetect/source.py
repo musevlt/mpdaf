@@ -666,8 +666,19 @@ class Source:
                     elif end == 'DATA':
                         name = extname[4:-5]
                         stat_ext = '%s_%s_STAT' % (start, name)
-                        ext = ((extname, stat_ext) if stat_ext in hdulist
-                               else extname)
+                        ext = [extname]
+                        if stat_ext in hdulist:
+                            ext.append(stat_ext)
+
+                        dq_ext = '%s_%s_dq' % (start, name)
+                        if dq_ext in hdulist:
+                            ext.append(dq_ext)
+
+                        if len(ext) == 1:
+                            ext = ext[0]
+                        else:
+                            ext = tuple(ext)
+
                         if start == 'SPE':
                             spectra[name] = ext
                         elif start == 'IMA':
