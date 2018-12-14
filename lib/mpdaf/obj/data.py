@@ -201,9 +201,9 @@ class DataArray:
         they use the mask.
     var : numpy.ndarray or list
         Variance array, passed to `numpy.ma.MaskedArray`.
-    ext : int or (int,int) or str or (str,str)
-        Number/name of the data extension or numbers/names of the data and
-        variance extensions.
+    ext : int or tuple of int or str or tuple of str
+        Number/name of the data extension, or numbers/names of the data,
+        variance, and optionally mask extensions.
     unit : `astropy.units.Unit`
         Physical units of the data values, default to u.dimensionless_unscaled.
     copy : bool

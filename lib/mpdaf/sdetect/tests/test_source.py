@@ -46,7 +46,7 @@ from mpdaf.sdetect import Source
 from mpdaf.tools import MpdafWarning
 from numpy.testing import assert_array_equal, assert_almost_equal
 
-from mpdaf.tests.utils import get_data_file
+from mpdaf.tests.utils import get_data_file, assert_masked_allclose
 
 try:
     subprocess.check_call(['sex', '-v'])
@@ -295,7 +295,7 @@ def test_add_cube(source2, minicube, tmpdir):
                        source2.images['MUSE_WHITE'].data)
 
 
-def test_add_image(source2, a478hst, a370II):
+def test_add_image(tmpdir, source2, a478hst, a370II):
     """Source class: testing add_image method"""
     minicube = Cube(get_data_file('sdetect', 'minicube.fits'), dtype=float)
     source2.add_white_image(minicube)
@@ -340,6 +340,24 @@ def test_add_image(source2, a478hst, a370II):
 
     # Trying to add image not overlapping with Source
     assert source2.add_image(a370II, 'ERROR') is None
+
+    white = source2.images['MUSE_WHITE']
+    mean, std = white.background()
+    mask = white.data > (mean + 2 * std)
+    mask = Image.new_from_obj(white, data=mask.astype(int))
+    mask.data = mask.data.astype(int)
+    source2.add_image(mask, 'MYMASK')
+
+    filename = str(tmpdir.join('source.fits'))
+    source2.write(filename)
+    src = Source.from_file(filename)
+    assert src.images['MYMASK'].data.dtype == '>i8'
+    assert_masked_allclose(mask.data, src.images['MYMASK'].data)
+
+    with fits.open(filename) as hdul:
+        'IMA_MYMASK_DQ' in hdul
+        assert (np.count_nonzero(hdul['IMA_MYMASK_DQ'].data) ==
+                np.count_nonzero(white.mask))
 
 
 @pytest.mark.skipif(not HAS_SEX, reason="requires sextractor")

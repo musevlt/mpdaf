@@ -43,8 +43,9 @@ from numpy import ma
 from mpdaf.obj import DataArray, WaveCoord, WCS, Cube, Image, Spectrum
 from numpy.testing import assert_array_equal, assert_allclose
 
-from mpdaf.tests.utils import (generate_image, generate_cube, generate_spectrum,
-                            assert_masked_allclose, get_data_file)
+from mpdaf.tests.utils import (
+    generate_image, generate_cube, generate_spectrum, assert_masked_allclose,
+    get_data_file)
 
 
 def test_fits_img():
