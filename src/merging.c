@@ -15,7 +15,7 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX_FILES 500
 #define MAX_FILE_LENGTH 500
-#define MAX_FILES_PER_THREAD 300
+#define MAX_FILES_PER_THREAD 500
 
 #ifndef NAN
     #define NAN (0.0/0.0)
