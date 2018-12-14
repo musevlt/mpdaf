@@ -364,13 +364,20 @@ def _insert_or_update_hdu(hdulist, name, hdu):
 
 def _write_mpdaf_obj(obj, type_, name, hdulist):
     ext_name = '{}_{}_DATA'.format(type_, name)
-    hdu = obj.get_data_hdu(name=ext_name, savemask='nan')
-    _insert_or_update_hdu(hdulist, ext_name, hdu)
+    savemask = 'nan' if obj.data.dtype.kind == 'f' else 'dq'
+    datahdu = obj.get_data_hdu(name=ext_name, savemask=savemask)
+    _insert_or_update_hdu(hdulist, ext_name, datahdu)
 
     ext_name = '{}_{}_STAT'.format(type_, name)
-    hdu = obj.get_stat_hdu(name=ext_name)
+    hdu = obj.get_stat_hdu(name=ext_name, header=datahdu.header)
     if hdu is not None:
         _insert_or_update_hdu(hdulist, ext_name, hdu)
+
+    if savemask == 'dq':
+        ext_name = '{}_{}_DQ'.format(type_, name)
+        hdu = obj.get_dq_hdu(name=ext_name, header=datahdu.header)
+        if hdu is not None:
+            _insert_or_update_hdu(hdulist, ext_name, hdu)
 
 
 def _write_table(table, name, hdulist):
@@ -660,8 +667,19 @@ class Source:
                     elif end == 'DATA':
                         name = extname[4:-5]
                         stat_ext = '%s_%s_STAT' % (start, name)
-                        ext = ((extname, stat_ext) if stat_ext in hdulist
-                               else extname)
+                        ext = [extname]
+                        if stat_ext in hdulist:
+                            ext.append(stat_ext)
+
+                        dq_ext = '%s_%s_dq' % (start, name)
+                        if dq_ext in hdulist:
+                            ext.append(dq_ext)
+
+                        if len(ext) == 1:
+                            ext = ext[0]
+                        else:
+                            ext = tuple(ext)
+
                         if start == 'SPE':
                             spectra[name] = ext
                         elif start == 'IMA':
