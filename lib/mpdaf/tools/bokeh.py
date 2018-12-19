@@ -11,7 +11,7 @@ from bokeh.palettes import Category10
 # from bokeh.io import export_png, reset_output, export_svgs, curdoc
 # from bokeh.layouts import gridplot, layout, row, column
 from bokeh.models import Range1d, Span, Label, LabelSet, Legend
-from bokeh.models import ColorBar, LinearColorMapper
+from bokeh.models import ColorBar, LinearColorMapper, RangeTool
 # from bokeh.palettes import viridis, Category10
 from bokeh.plotting import figure, ColumnDataSource
 # from bokeh.themes import built_in_themes
@@ -177,7 +177,8 @@ def plot_lines(p, src, lines_from_src=True):
 
 
 def plot_spectrum(src, size=(800, 350), axis_labels=True, lbrange=None,
-                  show_legend=True, lines_from_src=True,
+                  show_legend=True, lines_from_src=True, zoom_nlines=0,
+                  zoom_size=(350, 350),
                   spectra_names=('MUSE_TOT_SKYSUB', 'MUSE_PSF_SKYSUB',
                                  'MUSE_WHITE_SKYSUB')):
     """Plot spectra from a Source.
@@ -207,19 +208,46 @@ def plot_spectrum(src, size=(800, 350), axis_labels=True, lbrange=None,
     # plot lines
     plot_lines(p, src, lines_from_src=lines_from_src)
 
-    # plot spectra
-    legend_items = []
+    data = {}
     smin, smax = np.inf, -np.inf
     for i, sname in enumerate(spectra_names):
         sp = src.spectra[sname]
+        if i == 0:
+            data['wave'] = sp.wave.coord()
+            data['var'] = sp.var.filled(np.nan)
+        data[sname] = sp.data.filled(np.nan)
         smin = min(smin, sp.data.min())
         smax = max(smax, sp.data.max())
-        if lbrange:
-            sp = sp.subspec(lbrange[0], lbrange[1])
-        line = p.line(sp.wave.coord(), sp.data, color=palette[i])
+
+    data = ColumnDataSource(data=data)
+
+    zooms = []
+    if zoom_nlines:
+        src.lines.sort('FLUX_REF')
+        lines = src.lines[-zoom_nlines:]
+        for i, line in enumerate(lines):
+            zooms.append(figure(
+                plot_width=zoom_size[0], plot_height=zoom_size[1],
+                title=line['LINE'],
+                x_range=Range1d(line['LBDA_OBS'] - 25, line['LBDA_OBS'] + 25)
+            ))
+            plot_lines(zooms[-1], src, lines_from_src=lines_from_src)
+
+            if i == 0:
+                range_rool = RangeTool(x_range=zooms[-1].x_range)
+                range_rool.overlay.fill_color = "navy"
+                range_rool.overlay.fill_alpha = 0.2
+                p.add_tools(range_rool)
+
+    # plot spectra
+    legend_items = []
+    for i, sname in enumerate(spectra_names):
+        line = p.line('wave', sname, source=data, color=palette[i])
         legend_items.append((sname.lstrip('MUSE_'), [line]))
-        if i > 0:
-            line.visible = False
+        line.visible = (i == 0)
+        for z in zooms:
+            line = z.line('wave', sname, source=data, color=palette[i])
+            line.visible = (i == 0)
 
     # add variance with an extra axis
     p.extra_y_ranges = {"var": Range1d(start=0, end=sp.var.max())}
@@ -244,7 +272,7 @@ def plot_spectrum(src, size=(800, 350), axis_labels=True, lbrange=None,
         p.xaxis.axis_label = f'Wavelength ({sp.wave.unit})'
         p.yaxis.axis_label = f'Flux ({sp.unit})'
 
-    return p
+    return [p] + zooms
 
 
 def plot_spectrum_lines(src, spname='MUSE_TOT_SKYSUB', size=(250, 250),
