@@ -36,8 +36,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import astropy.units as u
 import datetime
 import logging
-import matplotlib as mpl
-import matplotlib.pyplot as plt
 import numpy as np
 import warnings
 
@@ -350,6 +348,7 @@ def plot_autocal_factors(filename, savefig=None, plot_rejected=False,
         Colormap.
 
     """
+    import matplotlib.pyplot as plt
     t = Table.read(filename) if isinstance(filename, str) else filename
     fig, axes = plt.subplots(6, 4, figsize=(4 * figsize, 6 * figsize),
                              sharex=sharex, sharey=sharey)
@@ -382,6 +381,7 @@ def plot_autocal_factors(filename, savefig=None, plot_rejected=False,
     fig.suptitle('{} (y) for each wavelength segment (x), each slice (color) '
                  'and each IFU'.format(title), fontsize=16)
 
+    import matplotlib as mpl
     bounds = np.linspace(0, 48, 49)
     norm = mpl.colors.BoundaryNorm(bounds, cm.N)
     ax2 = fig.add_axes([0.1, 0.96, 0.8, 0.01])

@@ -33,12 +33,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import logging
-import matplotlib.pyplot as plt
 import numpy as np
 import os
 
 from astropy.io import fits
-from scipy.integrate import quad
 
 from ..obj import Image, WCS
 
@@ -429,6 +427,7 @@ class RawFile:
             Additional options passed to ``Image.plot``.
 
         """
+        import matplotlib.pyplot as plt
         fig = plt.figure(figsize=figsize)
         fig.subplots_adjust(wspace=0.02, hspace=0.01)
 
@@ -484,6 +483,7 @@ class RawFile:
         if channels == "all":
             channels = self.get_channels_extname_list()
 
+        from scipy.integrate import quad
         raw_mask = RawFile(mask)
         white_ima = np.zeros((12 * 24, 300))
 
@@ -545,6 +545,8 @@ class RawFile:
         # plot channel
         ymin = NB_SLICES * (24 - ifu) - 0.5
         ymax = ymin + NB_SLICES
+
+        import matplotlib.pyplot as plt
         plt.plot(np.arange(-0.5, 299.5), np.ones(300) * ymin, 'b-')
         plt.plot(np.arange(-0.5, 299.5), np.ones(300) * ymax, 'b-')
         plt.annotate('%02d' % ifu, xy=(0, (ymin + ymax) / 2.0),
@@ -585,6 +587,7 @@ class RawFile:
         if yend > (mhdr["ESO DET CHIP NY"] / 2.0):
             yend -= 2 * OVERSCAN
 
+        import matplotlib.pyplot as plt
         plt.plot(np.arange(xstart, xend + 1),
                  np.ones(xend + 1 - xstart) * ystart, 'r-')
         plt.plot(np.arange(xstart, xend + 1),
@@ -604,6 +607,7 @@ class RawFile:
         if event.button != 1:
             if event.inaxes is not None:
                 if (event.x < self.fig.canvas.get_width_height()[0] // 2):
+                    import matplotlib.pyplot as plt
                     p = event.ydata
                     q = event.xdata
                     ifu = 24 - int(p + 0.5) // NB_SLICES
@@ -660,7 +664,9 @@ class RawFile:
                                                      channels=channels)
         # highlighted ifu
         selected_ifu = 12
+
         # plot white image
+        import matplotlib.pyplot as plt
         self.fig = plt.figure()
         plt.subplot(1, 2, 1)
         self._plot_ifu_slice_on_white_image(selected_ifu, 1)

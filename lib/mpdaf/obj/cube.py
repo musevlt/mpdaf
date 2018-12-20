@@ -44,9 +44,8 @@ import types
 import warnings
 
 from astropy.io import fits
-from matplotlib.path import Path
 from numpy import ma
-from scipy import integrate, interpolate, signal, ndimage as ndi
+from scipy import interpolate, signal, ndimage as ndi
 
 from .arithmetic import ArithmeticMixin
 from .data import DataArray
@@ -556,6 +555,7 @@ class Cube(ArithmeticMixin, DataArray):
 
         # Use a matplotlib method to create a path, which is the polygon we
         # want to use.
+        from matplotlib.path import Path
         polymask = Path(poly)
 
         # Go through all pixels in the image to see if they are within the
@@ -1639,6 +1639,7 @@ class Cube(ArithmeticMixin, DataArray):
             of the filter curve.
 
         """
+        from scipy import integrate
 
         wavelengths = np.asarray(wavelengths, dtype=float)
         sensitivities = np.asarray(sensitivities, dtype=float)

@@ -38,7 +38,6 @@ import logging
 import numbers
 import numpy as np
 
-from astropy.coordinates import Angle
 from astropy.io import fits
 
 from .objs import UnitArray
@@ -128,6 +127,7 @@ def deg2hms(x):
         form, hours:minutes:seconds.
 
     """
+    from astropy.coordinates import Angle
     ac = Angle(x, unit='degree')
     hms = ac.to_string(unit='hour', sep=':', pad=True)
     return str(hms)
@@ -147,6 +147,7 @@ def hms2deg(x):
         The angle as a number of degrees.
 
     """
+    from astropy.coordinates import Angle
     ac = Angle(x, unit='hour')
     deg = float(ac.to_string(unit='degree', decimal=True))
     return deg
@@ -166,6 +167,7 @@ def deg2dms(x):
         The input angle as a string, written as degrees:minutes:seconds.
 
     """
+    from astropy.coordinates import Angle
     ac = Angle(x, unit='degree')
     dms = ac.to_string(unit='degree', sep=':', pad=True)
     return str(dms)
@@ -185,6 +187,7 @@ def dms2deg(x):
         The input angle as a number of degrees.
 
     """
+    from astropy.coordinates import Angle
     ac = Angle(x, unit='degree')
     deg = float(ac.to_string(unit='degree', decimal=True))
     return deg
@@ -343,6 +346,7 @@ def axis_increments_from_cd(cd):
 
     # Wrap the difference east-north into the range -pi to pi radians.
 
+    from astropy.coordinates import Angle
     delta = Angle((east - north) * u.rad).wrap_at(np.pi * u.rad).value
 
     # If east is anticlockwise of north make the X-axis pixel increment
