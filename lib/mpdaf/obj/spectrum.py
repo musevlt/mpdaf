@@ -34,7 +34,6 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-import matplotlib.pyplot as plt
 import numpy as np
 import types
 
@@ -1500,6 +1499,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             err = [np.nan] * len(v)
 
         if plot:
+            import matplotlib.pyplot as plt
             xxx = np.arange(l[0], l[-1], (l[1] - l[0]) / plot_factor)
             ccc = gaussfit(v, xxx)
             plt.plot(xxx, ccc, 'r--')
@@ -1724,8 +1724,8 @@ class Spectrum(ArithmeticMixin, DataArray):
         else:
             err = None
 
-        # plot
         if plot:
+            import matplotlib.pyplot as plt
             xxx = np.arange(l[0], l[-1], (l[1] - l[0]) / plot_factor)
             ccc = gaussfit(v, xxx)
             plt.plot(xxx, ccc, 'r--')
@@ -1916,7 +1916,8 @@ class Spectrum(ArithmeticMixin, DataArray):
             err = None
 
         if plot:
-            # Same wavelenght grid as input spectrum
+            # Same wavelength grid as input spectrum
+            import matplotlib.pyplot as plt
             xxx = np.arange(l[0], l[-1], (l[1] - l[0]) / plot_factor)
             ccc = asymfit(v, xxx)
             if ax is None:
@@ -2366,6 +2367,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         """
 
         # Create an Axes instance for the plot?
+        import matplotlib.pyplot as plt
         if ax is None:
             ax = plt.gca()
 

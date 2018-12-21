@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import astropy.units as u
 import numpy as np
 
-from astropy.modeling.models import Moffat2D, Gaussian2D
 from astropy.stats import gaussian_fwhm_to_sigma
 from scipy import special
 
@@ -175,6 +174,7 @@ def Moffat(step_arcsec, Nfsf, beta, fwhm):
     center = Nfsf // 2
     yy, xx = np.mgrid[:Nfsf, :Nfsf]
 
+    from astropy.modeling.models import Moffat2D
     if np.isscalar(alpha):
         moffat = Moffat2D(amplitude, center, center, alpha, beta)
         PSF_Moffat = moffat(xx, yy)
@@ -395,6 +395,7 @@ def create_psf_cube(shape, fwhm, beta=None, wcs=None, unit_fwhm=u.arcsec):
     if unit_fwhm is not None:
         fwhm = fwhm / wcs.get_step(unit=unit_fwhm)[0]
 
+    from astropy.modeling.models import Moffat2D, Gaussian2D
     if beta is None:
         # a Gaussian expected.
         stddev = fwhm * gaussian_fwhm_to_sigma

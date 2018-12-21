@@ -42,8 +42,6 @@ import sys
 from astropy.coordinates import SkyCoord
 from astropy.table import Table, Column, MaskedColumn, hstack, vstack, join
 from astropy import units as u
-from matplotlib.patches import Circle, Rectangle, Ellipse, RegularPolygon
-
 
 from ..tools import deprecated, LowercaseOrderedDict
 
@@ -1120,10 +1118,9 @@ class Catalog(Table):
         if label and (id not in self.colnames):
             raise IOError('column %s not found in catalog' % id)
 
+        from matplotlib.patches import Circle, Rectangle, RegularPolygon
         texts = []
-
         step = wcs.get_step(unit=u.arcsec)
-
         arr = np.vstack([self[dec].data, self[ra].data]).T
         arr = wcs.sky2pix(arr, unit=u.deg)
 
@@ -1238,6 +1235,7 @@ class Catalog(Table):
         if iden not in self.colnames:
             raise IOError('column %s not found in catalog' % iden)
 
+        from matplotlib.patches import Ellipse
         ellipse_kwargs = ellipse_kwargs or {}
         cat = self.select(wcs, ra, dec)
         size = 2 * symb / wcs.get_step(unit=u.arcsec)[0]

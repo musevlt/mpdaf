@@ -39,14 +39,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import logging
-import matplotlib.pyplot as plt
 import numpy as np
 from numpy import ma
 
 import astropy.units as u
 from astropy.io import fits
 from astropy.stats import gaussian_sigma_to_fwhm, gaussian_fwhm_to_sigma
-from astropy.visualization import ZScaleInterval
 from scipy import interpolate, signal
 from scipy import ndimage as ndi
 from scipy.ndimage.interpolation import affine_transform
@@ -3725,6 +3723,7 @@ class Image(ArithmeticMixin, DataArray):
         out : matplotlib AxesImage
 
         """
+        import matplotlib.pyplot as plt
         cax = None
         # Default X and Y axes are labeled in pixels.
         xlabel = 'q (pixel)'
@@ -4006,7 +4005,7 @@ def get_plot_norm(data, vmin=None, vmax=None, zscale=False, scale='linear'):
 
     # Choose vmin and vmax automatically?
     if zscale:
-        interval = ZScaleInterval()
+        interval = viz.ZScaleInterval()
         if data.dtype == np.float64:
             try:
                 vmin, vmax = interval.get_limits(data.filled(np.nan))
@@ -4139,6 +4138,7 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
     ylabel = 'p (pixel)'
 
     if ax is None:
+        import matplotlib.pyplot as plt
         if use_wcs:
             ax = plt.subplot(projection=images[0].wcs.wcs)
             xlabel = 'ra'

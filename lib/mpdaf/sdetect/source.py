@@ -50,8 +50,6 @@ import warnings
 from astropy.io import fits as pyfits
 from astropy.table import Table, MaskedColumn, vstack
 from functools import partial
-from matplotlib import cm
-from matplotlib.patches import Ellipse
 from numpy import ma
 from scipy.optimize import leastsq
 
@@ -1953,7 +1951,7 @@ class Source:
             self.lines = vstack([subtab1, subtab2[0:n2]])
 
     def show_ima(self, ax, name, showcenter=None,
-                 cuts=None, cmap=cm.gray_r, **kwargs):
+                 cuts=None, cmap='gray_r', **kwargs):
         """Show image.
 
         Parameters
@@ -1985,6 +1983,7 @@ class Source:
             kwargs['title'] = '%s' % (name)
         zima.plot(vmin=vmin, vmax=vmax, cmap=cmap, ax=ax, **kwargs)
         if showcenter is not None:
+            from matplotlib.patches import Ellipse
             rad, col = showcenter
             pix = zima.wcs.sky2pix((self.DEC, self.RA))[0]
             rpix = rad / zima.wcs.get_step(unit=u.arcsec)[0]
@@ -2038,9 +2037,10 @@ class Source:
             kwargs['title'] = ' '.join(names)
 
         _, images_aligned = plot_rgb(images, vmin=vmin, vmax=vmax, ax=ax,
-                                    **kwargs)
+                                     **kwargs)
 
         if showcenter is not None:
+            from matplotlib.patches import Ellipse
             rad, col = showcenter
             pix = images_aligned[0].wcs.sky2pix((self.DEC, self.RA))[0]
             rpix = rad / images_aligned[0].wcs.get_step(unit=u.arcsec)[0]
