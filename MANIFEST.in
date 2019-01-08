@@ -2,6 +2,7 @@ include README.rst
 include CHANGELOG
 include LICENSE
 include tox.ini
+include pyproject.toml
 
 graft doc
 graft lib
