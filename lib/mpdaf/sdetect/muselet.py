@@ -279,7 +279,7 @@ def step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta, dir_=None, n_cpu=1):
                 "narrow-band images")
 
     write_bb_images(cube, cube_exp, dir_, n_cpu=n_cpu)
-   # write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=n_cpu)
+    write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=n_cpu)
 
 
 def step2(cmd_sex):
@@ -681,7 +681,7 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max):
 def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
             radius=4.0, ima_size=21, nlines_max=25, clean=0.5, nbcube=True,
             expmapcube=None, skyclean=((5573.5, 5578.8), (6297.0, 6300.5)),
-            del_sex=False, workdir='.', n_cpu=1):
+            del_sex=False, workdir=None, n_cpu=1):
     """MUSELET (for MUSE Line Emission Tracker) is a simple SExtractor-based
     python tool to detect emission lines in a datacube. It has been developed
     by Johan Richard (johan.richard@univ-lyon1.fr)
@@ -765,7 +765,11 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
         except OSError:
             raise OSError('SExtractor not found')
 
-    workdir = Path(workdir)
+    if workdir is None:
+        workdir = Path.cwd()
+    else:
+        workdir = Path(workdir)
+
     if step == 1:
         step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta,
                 workdir, n_cpu)
