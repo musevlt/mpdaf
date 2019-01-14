@@ -32,18 +32,20 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-import astropy.units as u
 import logging
-import numpy as np
 import os
+from os.path import join
+from pathlib import Path
+import multiprocessing as mp
 import shutil
 import subprocess
 import stat
 import sys
 
+import numpy as np
 from astropy.io import fits
 from astropy.table import Table
-from os.path import join
+import astropy.units as u
 
 from ..obj import Cube, Image
 from ..sdetect import Source, SourceList
@@ -89,44 +91,70 @@ def remove_files():
     shutil.rmtree('nb')
 
 
-def write_white(data, mvar, wcs, unit):
-    weight_data = np.ma.average(data[1:-1, :, :],
-                                weights=1. / mvar[1:-1, :, :], axis=0)
-    weight = Image(wcs=wcs, data=np.ma.filled(weight_data, np.nan), unit=unit,
-                   copy=False)
-    weight.write('white.fits', savemask='nan')
+def create_white_image(cube):
+
+    data = np.ma.average(cube.data, weights=1./cube.var, axis=0)
+    image = Image(data=data, wcs=cube.wcs, unit=cube.unit, copy=False)
+
+    return image
 
 
-def write_inv_variance(expmap, mvar, wcs, unit):
-    if not expmap:
-        mcentralvar = mvar[2:-3, :, :]
-        fullvar_data = 1.0 / np.ma.mean(mcentralvar, axis=0)
-        fullvar = Image(wcs=wcs, data=fullvar_data,
-                        unit=u.Unit(1) / (unit**2), copy=False)
+def create_weight_image(cube, cube_exp=None):
+
+    if cube_exp is None:
+        data = 1. / np.ma.mean(cube.var, axis=0)
+        unit = u.Unit(1) / cube.unit ** 2.
+        image = Image(data=data, wcs=cube.wcs, unit=unit, copy=False)
+
     else:
-        fullvar = expmap.mean(axis=0)
-    fullvar.write('inv_variance.fits', savemask='nan')
+        image = cube_exp.mean(axis=0)
+
+    return image
 
 
-def write_rgb(data, mvar, wcs, unit):
-    nsfilter = int(data.shape[0] / 3.0)
-    bdata = np.ma.average(data[1:nsfilter, :, :],
-                          weights=1. / mvar[1:nsfilter, :, :], axis=0)
-    bdata = np.ma.filled(bdata, np.nan)
-    gdata = np.ma.average(data[nsfilter:2 * nsfilter, :, :],
-                          weights=1. / mvar[nsfilter:2 * nsfilter, :, :],
-                          axis=0)
-    gdata = np.ma.filled(gdata, np.nan)
-    rdata = np.ma.average(data[2 * nsfilter:-1, :, :],
-                          weights=1. / mvar[2 * nsfilter:-1, :, :],
-                          axis=0)
-    rdata = np.ma.filled(rdata, np.nan)
-    r = Image(wcs=wcs, data=rdata, unit=unit, copy=False)
-    g = Image(wcs=wcs, data=gdata, unit=unit, copy=False)
-    b = Image(wcs=wcs, data=bdata, unit=unit, copy=False)
-    r.write('whiter.fits', savemask='nan')
-    g.write('whiteg.fits', savemask='nan')
-    b.write('whiteb.fits', savemask='nan')
+def create_rgb_images(cube):
+
+    #split datacube into 3 equal regions
+    idx = np.round(np.linspace(0, cube.shape[0], 4)).astype(int)
+    cube_b = cube[:idx[1]]
+    cube_g = cube[idx[1]:idx[2]]
+    cube_r = cube[idx[2]:]
+
+    data_b = np.ma.average(cube_b.data, weights=1./cube_b.var, axis=0)
+    data_g = np.ma.average(cube_g.data, weights=1./cube_g.var, axis=0)
+    data_r = np.ma.average(cube_r.data, weights=1./cube_r.var, axis=0)
+
+    im_r = Image(data=data_b, wcs=cube.wcs, unit=cube.unit)
+    im_g = Image(data=data_g, wcs=cube.wcs, unit=cube.unit)
+    im_b = Image(data=data_r, wcs=cube.wcs, unit=cube.unit)
+
+    return im_b, im_g, im_r
+
+
+def write_bb_images(cube, cube_exp, dir_, n_cpu=1):
+
+    if n_cpu == 1: #enables nicer traceback for debugging
+        im_white = create_white_image(cube)
+        im_weight = create_weight_image(cube, cube_exp)
+        im_b, im_g, im_r = create_rgb_images(cube)
+
+    else:
+        pool = mp.Pool(n_cpu)
+        r1 = pool.apply_async(create_white_image, (cube,))
+        r2 = pool.apply_async(create_weight_image, (cube, cube_exp))
+        r3 = pool.apply_async(create_rgb_images, (cube,))
+        pool.close()
+
+        timeout = 999999 #needed for traceback
+        im_white = r1.get(timeout)
+        im_weight = r2.get(timeout)
+        im_b, im_g, im_r = r3.get(timeout)
+
+    im_white.write(dir_ / 'im_white.fits', savemask='nan')
+    im_weight.write(dir_ / 'im_weight.fits', savemask='nan')
+    im_b.write(dir_ / 'im_b.fits', savemask='nan')
+    im_g.write(dir_ / 'im_g.fits', savemask='nan')
+    im_r.write(dir_ / 'im_r.fits', savemask='nan')
 
 
 def write_nb(data, mvar, expmap, fw, nbcube, delta, wcs,
@@ -204,30 +232,54 @@ def write_nb(data, mvar, expmap, fw, nbcube, delta, wcs,
                      overwrite=True)
 
 
-def step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta):
+def _write_nb_single(cube_on, cube_off1, cube_off2, cube_exp, fw, delta):
+    pass
+
+
+def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1):
+    
+    try:
+        os.mkdir(dir_ / 'nb')
+    except OSError:
+        pass
+
+    size1 = data.shape[0]
+    hdr = wcs.to_header()
+    data0 = np.ma.filled(data, 0)
+
+    for k in range(2, size1 - 3):
+        sys.stdout.write("Narrow band:%d/%d\r" % (k, size1 - 3))
+        leftmin = max(0, k - 2 - delta)
+        leftmax = k - 2
+        rightmin = k + 3
+        rightmax = min(size1, k + 3 + delta)
+
+def step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta, dir_=None, n_cpu=1):
+
     logger = logging.getLogger(__name__)
     logger.info("muselet - Opening: %s", cubename)
-    c = Cube(cubename, copy=False, convert_float64=False)
 
-    #mvar=c.var.filled(np.inf)
-    mvar=c.var
-    #mvar[mvar <= 0] = np.inf
-    c._var = None
+    if dir_ is None:
+        dir_ = Path.cwd()
+    
+    cube = Cube(cubename)
 
-    if not expmapcube:
-        expmap = None
+#    #mvar=c.var.filled(np.inf)
+#    mvar=c.var
+#    #mvar[mvar <= 0] = np.inf
+#    c._var = None
+
+    if expmapcube is None:
+        cube_exp = None
     else:
         logger.info("muselet - Opening exposure map cube: %s", expmapcube)
-        expmap = Cube(expmapcube)
+        cube_exp = Cube(expmapcube)
 
     logger.info("muselet - STEP 1: creates white light, variance, RGB and "
                 "narrow-band images")
 
-    write_white(c.data, mvar, c.wcs, c.unit)
-    write_inv_variance(expmap, mvar, c.wcs, c.unit)
-    write_rgb(c.data, mvar, c.wcs, c.unit)
-    write_nb(c.data, mvar, expmap, fw, nbcube, delta,
-             c.wcs, c.unit, cmd_sex, cubename, c.data_header)
+    write_bb_images(cube, cube_exp, dir_, n_cpu=n_cpu)
+   # write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=n_cpu)
 
 
 def step2(cmd_sex):
@@ -629,7 +681,7 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max):
 def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
             radius=4.0, ima_size=21, nlines_max=25, clean=0.5, nbcube=True,
             expmapcube=None, skyclean=((5573.5, 5578.8), (6297.0, 6300.5)),
-            del_sex=False, workdir='.'):
+            del_sex=False, workdir='.', n_cpu=1):
     """MUSELET (for MUSE Line Emission Tracker) is a simple SExtractor-based
     python tool to detect emission lines in a datacube. It has been developed
     by Johan Richard (johan.richard@univ-lyon1.fr)
@@ -673,6 +725,8 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
         are removed.
     workdir : str
         Working directory, default is the current directory.
+    n_cpu : int
+        max number of CPU cores to use in parallel
 
     Returns
     -------
@@ -711,21 +765,23 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
         except OSError:
             raise OSError('SExtractor not found')
 
-    with chdir(workdir):
-        if step == 1:
-            step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta)
+    workdir = Path(workdir)
+    if step == 1:
+        step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta,
+                workdir, n_cpu)
 
-        if step <= 2:
-            step2(cmd_sex)
+   # with chdir(workdir):
+   #     if step <= 2:
+   #         step2(cmd_sex)
 
-        if step <= 3:
-            continuum_lines, single_lines, raw_catalog = step3(
-                cubename, ima_size, clean, skyclean, radius, nlines_max)
+   #     if step <= 3:
+   #         continuum_lines, single_lines, raw_catalog = step3(
+   #             cubename, ima_size, clean, skyclean, radius, nlines_max)
 
-        if del_sex:
-            remove_files()
+   #     if del_sex:
+   #         remove_files()
 
-    return continuum_lines, single_lines, raw_catalog
+   # return continuum_lines, single_lines, raw_catalog
 
 #             t = Catalog.from_sources(continuum_lines)
 #             t.write('continuum_lines_z2.cat', format='ascii')
