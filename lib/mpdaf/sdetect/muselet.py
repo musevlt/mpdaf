@@ -32,6 +32,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
+from ctypes import c_float, c_bool
 import logging
 import os
 from os.path import join
@@ -57,6 +58,32 @@ DATADIR = join(os.path.abspath(os.path.dirname(__file__)), 'muselet_data')
 CONFIG_FILES = ('default.sex', 'default.conv', 'default.nnw', 'default.param')
 CONFIG_FILES_NB = ('nb_default.sex', 'nb_default.conv', 'nb_default.nnw',
                    'nb_default.param')
+
+shared_args = {} #global for multiprocessing
+
+
+class ProgressCounter(object):
+    
+    def __init__(self, total, msg='', every=1):
+        self.count = 0
+        self.total = total
+        self.msg = msg
+        self.every = every
+        self.update_display()
+
+    def increment(self):
+        self.count += 1
+        self.update_display()
+
+    def update_display(self):
+       if ((self.count % self.every) == 0) or (self.count == self.total):
+           sys.stdout.write("{}{}/{}\r".format(self.msg, self.count,
+                                                self.total))
+
+    def close(self):
+        sys.stdout.write("\n")
+        sys.stdout.flush()
+        
 
 
 def setup_config_files():
@@ -157,84 +184,113 @@ def write_bb_images(cube, cube_exp, dir_, n_cpu=1):
     im_r.write(dir_ / 'im_r.fits', savemask='nan')
 
 
-def write_nb(data, mvar, expmap, fw, nbcube, delta, wcs,
-             unit, cmd_sex, cubename, data_header):
+def write_nb(i, data, var, left, right, exp, fw, hdr, dir_):
 
-    try:
-        os.mkdir("nb")
-    except Exception:
-        pass
+    weight = fw[:,np.newaxis,np.newaxis] / var
+    im_center = np.ma.average(data, weights=weight, axis=0)
 
-    if nbcube:
-        outnbcube = np.empty(data.shape, dtype=np.float32)
+    im_left = np.median(left, axis=0)
+    im_right = np.median(right, axis=0)
 
-    f2 = open("nb/dosex", 'w')
+    im_center = np.ma.filled(im_center, np.nan)
 
-    size1 = data.shape[0]
-    hdr = wcs.to_header()
-    data0 = np.ma.filled(data, 0)
+    n_l = len(left)
+    n_r = len(right)
 
-    for k in range(2, size1 - 3):
-        sys.stdout.write("Narrow band:%d/%d\r" % (k, size1 - 3))
-        leftmin = max(0, k - 2 - delta)
-        leftmax = k - 2
-        rightmin = k + 3
-        rightmax = min(size1, k + 3 + delta)
+    if (n_l + n_r):
+        im_cont = (n_l*im_left + n_r*im_right) / (n_l + n_r)
+        im_nb = im_center - im_cont
+    else:
+        im_nb = im_center
 
-        weights = fw[:, np.newaxis, np.newaxis] / mvar[k - 2:k + 3, :, :]
-        imslice = np.ma.average(data[k - 2:k + 3, :, :], weights=weights,
-                                axis=0)
+    hdu = fits.ImageHDU(im_nb, header=hdr)
+    file_ = dir_ / 'nb/nb{0:04d}.fits'.format(i)
+    hdu.writeto(file_, overwrite=True)
 
-        if leftmax == 1:
-            contleft = data0[0, :, :]
-        elif leftmax > leftmin + 1:
-            contleft = np.median(data0[leftmin:leftmax, :, :], axis=0)
-        elif rightmax == size1:
-            contleft = data0[-1, :, :]
+    if exp is not None:
+        if exp.ndim == 3:
+            im_exp  = np.average(exp, weights=fw, axis=0)
         else:
-            contleft = data0[0, :, :]
+            im_exp = exp
+        hdu = fits.ImageHDU(im_exp, header=hdr)
+    else:
+        im_var = np.ma.sum((weight * data) ** 2.)
+        hdu = fits.ImageHDU(1./im_var, header=hdr)
 
-        if rightmax > rightmin:
-            contright = np.median(data0[rightmin:rightmax, :, :], axis=0)
-        else:
-            contright = data0[0, :, :]
+    file_ = dir_ / 'nb/nb{0:04d}-weight.fits'.format(i)
+    hdu.writeto(file_, overwrite=True)
 
-        sizeleft = leftmax - leftmin
-        sizeright = rightmax - rightmin
-        contmean = ((sizeleft * contleft + sizeright * contright) /
-                    (sizeleft + sizeright))
-        kstr = "%04d" % k
-        imnb = np.ma.filled(imslice, np.nan) - contmean
-        hdulist = fits.HDUList([fits.PrimaryHDU(),
-                                fits.ImageHDU(name='DATA', data=imnb,
-                                              header=hdr)])
-        hdulist.writeto('nb/nb%04d.fits' % k, overwrite=True)
-
-        if nbcube:
-            outnbcube[k, :, :] = imnb
-
-        if expmap is None:
-            f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' +
-                     kstr + '.cat nb' + kstr + '.fits\n')
-        else:
-            expmap[k, :, :].write('nb/exp' + kstr + '.fits', savemask='nan')
-            f2.write(cmd_sex + ' -CATALOG_TYPE ASCII_HEAD -CATALOG_NAME nb' +
-                     kstr + '.cat -WEIGHT_IMAGE exp' + kstr + '.fits nb' +
-                     kstr + '.fits\n')
-
-    sys.stdout.write("\n")
-    sys.stdout.flush()
-    f2.close()
-
-    if nbcube:
-        outnbcubename = 'NB_' + os.path.basename(cubename)
-        fits.writeto(outnbcubename, outnbcube, header=data_header,
-                     overwrite=True)
+    return im_nb
 
 
-def _write_nb_single(cube_on, cube_off1, cube_off2, cube_exp, fw, delta):
-    pass
+def init_write_nb_multi(data, data_shape, var, var_shape,
+        mask, mask_shape, exp, exp_shape, cube_nb, cube_nb_shape):
 
+    shared_args['data'] = data
+    shared_args['data_shape'] = data_shape
+    shared_args['var'] = var
+    shared_args['var_shape'] = var_shape
+    shared_args['mask'] = mask
+    shared_args['mask_shape'] = mask_shape
+    shared_args['exp'] = exp
+    shared_args['exp_shape'] = exp_shape
+    shared_args['cube_nb'] = cube_nb
+    shared_args['cube_nb_shape'] = cube_nb_shape
+
+
+def write_nb_multi(i, delta, fw, hdr, dir_):
+    
+    # "load" shared arrays
+
+    data = np.frombuffer(shared_args['data'], dtype='=f4')
+    data = data.reshape(shared_args['data_shape'])
+
+    var = np.frombuffer(shared_args['var'], dtype='=f4')
+    var = var.reshape(shared_args['var_shape'])
+
+    mask = np.frombuffer(shared_args['mask'], dtype='|b1')
+    mask = mask.reshape(shared_args['mask_shape'])
+
+    if shared_args['exp'] is not None:
+        exp = np.frombuffer(shared_args['exp'], dtype='=f4')
+        exp = exp.reshape(shared_args['exp_shape'])
+    else:
+        exp = None
+
+    cube_nb = np.frombuffer(shared_args['cube_nb'], dtype='=f4')
+    cube_nb = cube_nb.reshape(shared_args['cube_nb_shape'])
+
+    n_w, n_y, n_x = data.shape
+    c_min, c_max = np.clip([i-2, i+3], 0, n_w)
+    l_min, l_max = np.clip([i-2-delta, i-2], 0, n_w)
+    r_min, r_max = np.clip([i+3, i+3+delta], 0, n_w)
+
+    d = np.ma.MaskedArray(data[c_min:c_max], mask=mask[c_min:c_max])
+    v = np.ma.MaskedArray(var[c_min:c_max], mask=mask[c_min:c_max])
+
+    if exp is not None:
+        e = exp[i]
+    else:
+        e = None
+
+    if l_max == 0:
+        l = data[0].reshape([1, n_y, n_x])
+        l[:, mask[0]] = 0.
+    else:
+        l = data[l_min:l_max]
+        l[mask[l_min:l_max]] = 0.
+
+    if r_min == n_w:
+        r = data[-1].reshape([1, n_y, n_x])
+        r[:,mask[-1]] = 0.
+    else:
+        r = data[r_min:r_max]
+        r[mask[r_min:r_max]] = 0.
+
+    im_nb = write_nb(i, d, v, l, r, e, fw, hdr, dir_)
+
+    cube_nb[i] = im_nb #output
+    
 
 def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1):
     
@@ -243,16 +299,116 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1):
     except OSError:
         pass
 
-    size1 = data.shape[0]
-    hdr = wcs.to_header()
-    data0 = np.ma.filled(data, 0)
+    n_w = cube.shape[0]
+    hdr = cube.wcs.to_header()
+    data = cube.data
+    var = cube.var
+    if cube_exp is not None:
+        exp = cube_exp.data.filled(0)
+    else:
+        exp = None
+    
+    if n_cpu == 1:
+        cube_nb = np.zeros(cube.shape, dtype=np.float32)
+        data0 = data.filled(0.) #for computing continuum
+    
+        progress = ProgressCounter(n_w-5, msg='Narrow band:', every=1)
+        for i in range(2, n_w-3):
 
-    for k in range(2, size1 - 3):
-        sys.stdout.write("Narrow band:%d/%d\r" % (k, size1 - 3))
-        leftmin = max(0, k - 2 - delta)
-        leftmax = k - 2
-        rightmin = k + 3
-        rightmax = min(size1, k + 3 + delta)
+            n_w, n_y, n_x = data.shape
+            c_min, c_max = np.clip([i-2, i+3], 0, n_w)
+            l_min, l_max = np.clip([i-2-delta, i-2], 0, n_w)
+            r_min, r_max = np.clip([i+3, i+3+delta], 0, n_w)
+
+            d = data[c_min:c_max]
+            v = var[c_min:c_max]
+
+            if exp is not None:
+                e = exp[i]
+            else:
+                e = None
+
+            if l_max == 0:
+                l = data0[0].reshape([1, n_y, n_x])
+            else:
+                l = data0[l_min:l_max]
+
+            if r_min == n_w:
+                r = data0[-1].reshape([1, n_y, n_x])
+            else:
+                r = data0[r_min:r_max]
+
+            im_nb = write_nb(i, d, v, l, r, e, fw, hdr, dir_)
+            cube_nb[i] = im_nb
+
+            progress.increment()
+
+    else: #parallel
+
+        #setup shared arrays (no locks needed!), this can be slow
+        shape = data.shape
+        data_raw = mp.RawArray(c_float, int(np.prod(shape)))
+        data_np = np.frombuffer(data_raw, dtype='=f4').reshape(shape)
+        data_shape = shape
+        data_np[:] = data.data
+
+        shape = var.shape
+        var_raw = mp.RawArray(c_float, int(np.prod(shape)))
+        var_np = np.frombuffer(var_raw, dtype='=f4').reshape(shape)
+        var_shape = shape
+        var_np[:] = var.data
+
+        shape = data.mask.shape
+        mask_raw = mp.RawArray(c_bool, int(np.prod(shape)))
+        mask_np = np.frombuffer(mask_raw, dtype='|b1').reshape(shape)
+        mask_shape = shape
+        mask_np[:] = data.mask
+
+        if exp is not None:
+            shape = exp.shape
+            exp_raw = mp.RawArray(c_float, int(np.prod(shape)))
+            exp_np = np.frombuffer(exp_raw, dtype='=f4').reshape(shape)
+            exp_np[:] = exp
+            exp_shape = shape
+        else:
+            exp_raw = None
+            exp_shape = None
+
+        #output shared
+        shape = data.shape
+        cube_nb_raw = mp.RawArray(c_float, int(np.prod(shape)))
+        cube_nb = np.frombuffer(cube_nb_raw, dtype='=f4').reshape(shape)
+        cube_nb_shape = shape
+
+        initargs = (data_raw, data_shape, var_raw, var_shape, mask_raw,
+                mask_shape, exp_raw, exp_shape, cube_nb_raw, cube_nb_shape)
+
+        pool = mp.Pool(n_cpu, initializer=init_write_nb_multi,
+                        initargs=initargs)
+
+        results = []
+        progress = ProgressCounter(n_w-5, msg='Narrow band:', every=1)
+        for i in range(2, n_w-3):
+
+            res = pool.apply_async(write_nb_multi, (i, delta, fw, hdr, dir_),
+                        callback=lambda x: progress.increment())
+          #  for debugging
+          #  init_write_nb_multi(*initargs)
+          #  res = write_nb_multi(i, delta, fw, hdr, dir_)
+            results.append(res)
+
+        pool.close()
+
+        [res.get(999999) for res in results]
+        
+    progress.close()
+    
+    cube_nb = Cube(data=cube_nb, wcs=cube.wcs, wave=cube.wave)
+
+
+    
+    return cube_nb
+
 
 def step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta, dir_=None, n_cpu=1):
 
@@ -262,8 +418,8 @@ def step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta, dir_=None, n_cpu=1):
     if dir_ is None:
         dir_ = Path.cwd()
     
-    cube = Cube(cubename)
-
+    cube = Cube(str(cubename))
+    
 #    #mvar=c.var.filled(np.inf)
 #    mvar=c.var
 #    #mvar[mvar <= 0] = np.inf
@@ -273,13 +429,17 @@ def step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta, dir_=None, n_cpu=1):
         cube_exp = None
     else:
         logger.info("muselet - Opening exposure map cube: %s", expmapcube)
-        cube_exp = Cube(expmapcube)
+        cube_exp = Cube(str(expmapcube))
 
     logger.info("muselet - STEP 1: creates white light, variance, RGB and "
                 "narrow-band images")
 
     write_bb_images(cube, cube_exp, dir_, n_cpu=n_cpu)
-    write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=n_cpu)
+    cube_nb = write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=n_cpu)
+
+    if nbcube:
+        file_ = dir_ / ('NB_' + cubename.name)
+        cube_nb.write(file_, savemask='nan')
 
 
 def step2(cmd_sex):
@@ -770,10 +930,13 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
     else:
         workdir = Path(workdir)
 
+    cubename = Path(cubename)
+    if expmapcube is not None:
+        expmapcube = Path(expmapcube)
+
     if step == 1:
         step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta,
                 workdir, n_cpu)
-
    # with chdir(workdir):
    #     if step <= 2:
    #         step2(cmd_sex)
