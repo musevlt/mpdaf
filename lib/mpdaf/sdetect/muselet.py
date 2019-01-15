@@ -90,7 +90,7 @@ def setup_config_files():
     for f in CONFIG_FILES:
         try:
             if not os.path.isfile(f):
-                shutil.copy(join(DATADIR, f), f)
+                shutil.copy(join(DATADIR, f), dir_ / f)
         except Exception:
             pass
 
@@ -294,10 +294,7 @@ def write_nb_multi(i, delta, fw, hdr, dir_):
 
 def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1):
     
-    try:
-        os.mkdir(dir_ / 'nb')
-    except OSError:
-        pass
+    os.makedirs(dir_ / 'nb', exist_ok=True)
 
     n_w = cube.shape[0]
     hdr = cube.wcs.to_header()
@@ -442,13 +439,14 @@ def step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta, dir_=None, n_cpu=1):
         cube_nb.write(file_, savemask='nan')
 
 
-def step2(cmd_sex):
+def step2(cmd_sex, dir_):
+
     logger = logging.getLogger(__name__)
     logger.info("muselet - STEP 2: runs SExtractor on white light, RGB and "
                 "narrow-band images")
     # tests here if the files default.sex, default.conv, default.nnw and
     # default.param exist.  Otherwise copy them
-    setup_config_files()
+    setup_config_files(dir_)
 
     subprocess.call(cmd_sex + ' white.fits', shell=True)
     subprocess.call(cmd_sex + ' -CATALOG_NAME R.cat -CATALOG_TYPE ASCII_HEAD white.fits,whiter.fits', shell=True)
@@ -929,18 +927,20 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
         workdir = Path.cwd()
     else:
         workdir = Path(workdir)
+        os.makedirs(workdir, exist_ok=True)
 
     cubename = Path(cubename)
     if expmapcube is not None:
         expmapcube = Path(expmapcube)
 
+
     if step == 1:
         step1(cubename, expmapcube, fw, nbcube, cmd_sex, delta,
                 workdir, n_cpu)
-   # with chdir(workdir):
-   #     if step <= 2:
-   #         step2(cmd_sex)
+    if step <= 2:
+        step2(cmd_sex)
 
+   # with chdir(workdir):
    #     if step <= 3:
    #         continuum_lines, single_lines, raw_catalog = step3(
    #             cubename, ima_size, clean, skyclean, radius, nlines_max)
