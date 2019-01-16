@@ -430,7 +430,12 @@ def step1(cubename, expmapcube, fw, nbcube, delta, dir_=None, n_cpu=1):
         cube_nb.writeto(file_, overwrite=True)
 
 
-def step2(cmd_sex, dir_, n_cpu=1):
+def run_sex_nb(cmd, dir_):
+    p = subprocess.Popen(cmd, cwd=(dir_ / 'nb'))
+    p.wait()
+
+
+def step2(cubename, cmd_sex, dir_, n_cpu=1):
 
     logger = logging.getLogger(__name__)
     logger.info("muselet - STEP 2: runs SExtractor on white light, RGB and "
@@ -443,17 +448,17 @@ def step2(cmd_sex, dir_, n_cpu=1):
     p = subprocess.Popen([cmd_sex, 'im_white.fits'], cwd=dir_)
     processes = [p]
     for band in ['b', 'g', 'r']:
-        cmd = [cmd_sex, '-CATALOG_NAME', '{}.cat'.format(band.upper()),
-                '-CATALOG_TYPE', 'ASCII_HEAD',
+        cmd = [cmd_sex,
+                '-CATALOG_NAME', '{}.cat'.format(band.upper()),
                 'im_white.fits,im_{}.fits'.format(band)]
         p = subprocess.Popen(cmd, cwd=dir_)
         processes.append(p)
     for p in processes:
         p.wait()
 
-    tB = Table.read('B.cat', format='ascii.sextractor')
-    tG = Table.read('G.cat', format='ascii.sextractor')
-    tR = Table.read('R.cat', format='ascii.sextractor')
+    tB = Table.read(dir_ / 'B.cat', format='ascii.sextractor')
+    tG = Table.read(dir_ / 'G.cat', format='ascii.sextractor')
+    tR = Table.read(dir_ / 'R.cat', format='ascii.sextractor')
 
     names = ('NUMBER', 'X_IMAGE', 'Y_IMAGE',
              'MAG_APER_B', 'MAGERR_APER_B',
@@ -463,22 +468,55 @@ def step2(cmd_sex, dir_, n_cpu=1):
                   tB['MAG_APER'], tB['MAGERR_APER'],
                   tG['MAG_APER'], tG['MAGERR_APER'],
                   tR['MAG_APER'], tR['MAGERR_APER']], names=names)
-    tBGR.write('BGR.cat', format='ascii.fixed_width_two_line')
+    tBGR.write(dir_ / 'BGR.cat', format='ascii.fixed_width_two_line')
 
-    os.remove('B.cat')
-    os.remove('G.cat')
-    os.remove('R.cat')
+    os.remove(dir_ / 'B.cat')
+    os.remove(dir_ / 'G.cat')
+    os.remove(dir_ / 'R.cat')
 
     # tests here if the files default.sex, default.conv, default.nnw and
     # default.param exist.  Otherwise copy them
     setup_config_files_nb(dir_ / 'nb')
-    shutil.copy('../inv_variance.fits', 'inv_variance.fits')
-    st = os.stat('dosex')
-    os.chmod('dosex', st.st_mode | stat.S_IEXEC)
-    out = subprocess.check_output('./dosex', shell=True,
-                                  stderr=subprocess.STDOUT)
-    with open('dosex.log', 'w', encoding='utf8') as f:
-        f.write(out.decode('utf-8'))
+
+    cube = Cube(str(cubename))
+    n_w = cube.shape[0]
+
+
+    #generate sextractor commands
+    commands = []
+    for i in range(2, n_w-3):
+        cmd = [cmd_sex,
+                '-CATALOG_NAME', 'cat{0:04d}.dat'.format(i),
+                '-WEIGHT_IMAGE', 'nb{0:04d}-weight.fits'.format(i),
+                '-CHECKIMAGE_NAME', 'seg{0:04d}.fits'.format(i),
+                'nb{0:04d}.fits'.format(i)]
+        commands.append(cmd)
+
+    if n_cpu == 1:
+
+        progress = ProgressCounter(len(commands), msg='Narrow band:', every=1)
+
+        for cmd in commands:
+            run_sex_nb(cmd, dir_)
+            progress.increment()
+
+        progress.close()
+
+
+    else:
+        progress = ProgressCounter(len(commands), msg='Narrow band:', every=10)
+
+        pool = mp.Pool(n_cpu)
+        results = []
+        for cmd in commands:
+            res = pool.apply_async(run_sex_nb, (cmd, dir_),
+                            callback=lambda x: progress.increment())
+            results.append(res)
+        pool.close()
+
+        [res.get(999999) for res in results]
+
+        progress.close()
 
 
 def step3(cubename, ima_size, clean, skyclean, radius, nlines_max):
@@ -934,7 +972,7 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
     if step == 1:
         step1(cubename, expmapcube, fw, nbcube, delta, workdir, n_cpu)
     if step <= 2:
-        step2(cmd_sex, workdir, n_cpu)
+        step2(cubename, cmd_sex, workdir, n_cpu)
 
    # with chdir(workdir):
    #     if step <= 3:
