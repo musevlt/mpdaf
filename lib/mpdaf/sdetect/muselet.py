@@ -42,6 +42,7 @@ import shutil
 import subprocess
 import stat
 import sys
+import time
 
 import numpy as np
 from astropy.io import fits
@@ -52,24 +53,30 @@ from ..obj import Cube, Image
 from ..sdetect import Source, SourceList
 from ..tools import chdir
 
-__version__ = 2.1
+__version__ = 3.0
 
-DATADIR = join(os.path.abspath(os.path.dirname(__file__)), 'muselet_data')
-CONFIG_FILES = ('default.sex', 'default.conv', 'default.nnw', 'default.param')
+DATADIR = Path(__file__).parent.resolve() / 'muselet_data'
+CONFIG_FILES = {'config': 'default.sex', 'filter': 'default.conv',
+                'nnw': 'default.nnw', 'param': 'default.param'}
 CONFIG_FILES_NB = ('nb_default.sex', 'nb_default.conv', 'nb_default.nnw',
                    'nb_default.param')
+CONFIG_FILES_NB = {'config': 'nb_default.sex', 'filter': 'nb_default.conv',
+                    'nnw': 'nb_default.nnw', 'param': 'nb_default.param'}
 
-shared_args = {} #global for multiprocessing
+shared_args = {} #global variable storage needed for multiprocessing
 
 
 class ProgressCounter(object):
-    
+
     def __init__(self, total, msg='', every=1):
         self.count = 0
         self.total = total
         self.msg = msg
         self.every = every
         self.update_display()
+
+    def __del__(self):
+        self.close()
 
     def increment(self):
         self.count += 1
@@ -83,28 +90,28 @@ class ProgressCounter(object):
     def close(self):
         sys.stdout.write("\n")
         sys.stdout.flush()
-        
 
 
-def setup_config_files(dir_):
+def setup_config_files(dir_, params):
     for f in CONFIG_FILES:
         try:
             if not os.path.isfile(f):
                 shutil.copy(join(DATADIR, f), dir_ / f)
-        except Exception:
+        except FileExistsError:
             pass
 
 
-def setup_config_files_nb(dir_):
+def setup_config_files_nb(dir_, params):
     for f in CONFIG_FILES_NB:
         try:
             if not os.path.isfile(f[3:]):
                 shutil.copy(join(DATADIR, f), dir_ / f[3:])
-        except Exception:
+        except FileExistsError:
             pass
 
 
 def remove_files():
+
     files = ['default.sex', 'default.conv', 'default.nnw', 'default.param',
              'emlines', 'emlines_small', 'BGR.cat', 'inv_variance.fits',
              'segment.fits', 'white.fits', 'whiteb.fits', 'whiteg.fits',
@@ -113,32 +120,45 @@ def remove_files():
     for f in files:
         try:
             os.remove(f)
-        except Exception:
+        except FileNotFoundError:
             pass
     shutil.rmtree('nb')
 
 
 def create_white_image(cube, dir_):
 
+    logger = logging.getLogger(__name__)
+
     data = np.ma.average(cube.data, weights=1./cube.var, axis=0)
     image = Image(data=data, wcs=cube.wcs, unit=cube.unit, copy=False)
-    image.write(dir_ / 'im_white.fits', savemask='nan')
+
+    file_ = dir_ / 'im_white.fits'
+    logger.debug('writing white light image to {}'.format(file_))
+    image.write(file_, savemask='nan')
 
 
 def create_weight_image(cube, cube_exp, dir_):
 
+    logger = logging.getLogger(__name__)
+
     if cube_exp is None:
+        logger.info("calculating weight image from variance cube")
         data = 1. / np.ma.mean(cube.var, axis=0)
         unit = u.Unit(1) / cube.unit ** 2.
         image = Image(data=data, wcs=cube.wcs, unit=unit, copy=False)
 
     else:
+        logger.info("calculating weight image from exposure cube")
         image = cube_exp.mean(axis=0)
 
-    image.write(dir_ / 'im_weight.fits', savemask='nan')
+    file_ = dir_ / 'im_weight.fits'
+    logger.debug("writing weight image to {}".format(file_))
+    image.write(file_, savemask='nan')
 
 
 def create_rgb_images(cube, dir_):
+
+    logger = logging.getLogger(__name__)
 
     #split datacube into 3 equal regions
     idx = np.round(np.linspace(0, cube.shape[0], 4)).astype(int)
@@ -154,20 +174,37 @@ def create_rgb_images(cube, dir_):
     im_g = Image(data=data_g, wcs=cube.wcs, unit=cube.unit, copy=False)
     im_r = Image(data=data_r, wcs=cube.wcs, unit=cube.unit, copy=False)
 
-    im_b.write(dir_ / 'im_b.fits', savemask='nan')
-    im_g.write(dir_ / 'im_g.fits', savemask='nan')
-    im_r.write(dir_ / 'im_r.fits', savemask='nan')
+    file_ = dir_ / 'im_b.fits'
+    logger.debug("writing blue image to {}".format(file_))
+    im_b.write(file_, savemask='nan')
+
+    file_ = dir_ / 'im_g.fits'
+    logger.debug("writing green image to {}".format(file_))
+    im_g.write(file_, savemask='nan')
+
+    file_ = dir_ / 'im_r.fits'
+    logger.debug("writing red image to {}".format(file_))
+    im_r.write(file_, savemask='nan')
+
 
 
 def write_bb_images(cube, cube_exp, dir_, n_cpu=1):
 
+    logger = logging.getLogger(__name__)
+
     if n_cpu == 1: #enables nicer traceback for debugging
+        logger.info("creating broad-band images using 1 CPU")
+            
         create_white_image(cube, dir_)
         create_weight_image(cube, cube_exp, dir_)
         create_rgb_images(cube, dir_)
 
+
     else:
-        pool = mp.Pool(n_cpu)
+        use_cpu = min(3, n_cpu) #at most 3CPUs
+        logger.info("creating broad-band images using "
+                    "{} CPUs".format(use_cpu))
+        pool = mp.Pool(use_cpu)
         r1 = pool.apply_async(create_white_image, (cube, dir_))
         r2 = pool.apply_async(create_weight_image, (cube, cube_exp, dir_))
         r3 = pool.apply_async(create_rgb_images, (cube, dir_))
@@ -231,7 +268,7 @@ def init_write_nb_multi(data, data_shape, var, var_shape,
 
 
 def write_nb_multi(i, delta, fw, hdr, dir_):
-    
+
     # "load" shared arrays
 
     data = np.frombuffer(shared_args['data'], dtype='=f4')
@@ -282,10 +319,12 @@ def write_nb_multi(i, delta, fw, hdr, dir_):
     im_nb = write_nb(i, d, v, l, r, e, fw, hdr, dir_)
 
     cube_nb[i] = im_nb #output
-    
+
 
 def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1):
-    
+
+    logger = logging.getLogger(__name__)
+
     os.makedirs(dir_ / 'nb', exist_ok=True)
 
     n_w = cube.shape[0]
@@ -296,11 +335,13 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1):
         exp = cube_exp.data.filled(0)
     else:
         exp = None
-    
+
     if n_cpu == 1:
+        logger.info("creating narrow-band images using 1 CPU")
+
         cube_nb = np.zeros(cube.shape, dtype=np.float32)
         data0 = data.filled(0.) #for computing continuum
-    
+
         progress = ProgressCounter(n_w-5, msg='Narrow band:', every=1)
         for i in range(2, n_w-3):
 
@@ -333,20 +374,27 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1):
             progress.increment()
 
     else: #parallel
+        logger.info("creating narrow-band images using {} CPUs".format(n_cpu))
 
-        #setup shared arrays (no locks needed!), this can be slow
+        #setup shared arrays (no locks needed!), this can take some time
+        logger.debug("allocating shared arrays for multiprocessing")
+        t0_allocate = time.time()
+
+        logger.debug("allocating shared data cube")
         shape = data.shape
         data_raw = mp.RawArray(c_float, int(np.prod(shape)))
         data_np = np.frombuffer(data_raw, dtype='=f4').reshape(shape)
         data_shape = shape
         data_np[:] = data.data
 
+        logger.debug("allocating shared variance cube")
         shape = var.shape
         var_raw = mp.RawArray(c_float, int(np.prod(shape)))
         var_np = np.frombuffer(var_raw, dtype='=f4').reshape(shape)
         var_shape = shape
         var_np[:] = var.data
 
+        logger.debug("allocating shared mask cube")
         shape = data.mask.shape
         mask_raw = mp.RawArray(c_bool, int(np.prod(shape)))
         mask_np = np.frombuffer(mask_raw, dtype='|b1').reshape(shape)
@@ -354,6 +402,7 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1):
         mask_np[:] = data.mask
 
         if exp is not None:
+            logger.debug("allocating shared exposure cube")
             shape = exp.shape
             exp_raw = mp.RawArray(c_float, int(np.prod(shape)))
             exp_np = np.frombuffer(exp_raw, dtype='=f4').reshape(shape)
@@ -363,6 +412,7 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1):
             exp_raw = None
             exp_shape = None
 
+        logger.debug("allocating shared nb cube")
         #output shared
         shape = data.shape
         cube_nb_raw = mp.RawArray(c_float, int(np.prod(shape)))
@@ -374,7 +424,10 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1):
 
         pool = mp.Pool(n_cpu, initializer=init_write_nb_multi,
                         initargs=initargs)
+        t_allocate = time.time() - t0_allocate
+        logger.debug("all data allocated in {0:.1f} seconds".format(t_allocate))
 
+        logger.debug("starting multiprocessing")
         results = []
         progress = ProgressCounter(n_w-5, msg='Narrow band:', every=10)
         for i in range(2, n_w-3):
@@ -389,25 +442,25 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1):
         pool.close()
 
         [res.get(999999) for res in results]
-        
+
     progress.close()
-    
+
     hdr = cube.wcs.to_cube_header(cube.wave)
     cube_nb = fits.ImageHDU(cube_nb, header=hdr)
-    
+
     return cube_nb
 
 
-def step1(cubename, expmapcube, fw, nbcube, delta, dir_=None, n_cpu=1):
+def step1(cubename, expmapcube, fw, delta, dir_=None, nbcube=False, n_cpu=1):
 
     logger = logging.getLogger(__name__)
-    logger.info("muselet - Opening: %s", cubename)
+    logger.info("Opening: %s", cubename)
 
     if dir_ is None:
         dir_ = Path.cwd()
-    
+
     cube = Cube(str(cubename))
-    
+
 #    #mvar=c.var.filled(np.inf)
 #    mvar=c.var
 #    #mvar[mvar <= 0] = np.inf
@@ -416,10 +469,10 @@ def step1(cubename, expmapcube, fw, nbcube, delta, dir_=None, n_cpu=1):
     if expmapcube is None:
         cube_exp = None
     else:
-        logger.info("muselet - Opening exposure map cube: %s", expmapcube)
+        logger.info("Opening exposure map cube: %s", expmapcube)
         cube_exp = Cube(str(expmapcube))
 
-    logger.info("muselet - STEP 1: creates white light, variance, RGB and "
+    logger.info("STEP 1: creates white light, variance, RGB and "
                 "narrow-band images")
 
     write_bb_images(cube, cube_exp, dir_, n_cpu=n_cpu)
@@ -427,6 +480,7 @@ def step1(cubename, expmapcube, fw, nbcube, delta, dir_=None, n_cpu=1):
 
     if nbcube:
         file_ = dir_ / ('NB_' + cubename.name)
+        logger.debug("writing narrow-band cube to {}".format(file_))
         cube_nb.writeto(file_, overwrite=True)
 
 
@@ -435,30 +489,35 @@ def run_sex_nb(cmd, dir_):
     p.wait()
 
 
-def step2(cubename, cmd_sex, dir_, n_cpu=1):
+def step2(cubename, cmd_sex, sex_params=None, sex_params_nb=None, dir_=None,
+        apercube=False, n_cpu=1):
 
     logger = logging.getLogger(__name__)
-    logger.info("muselet - STEP 2: runs SExtractor on white light, RGB and "
-                "narrow-band images")
-    # tests here if the files default.sex, default.conv, default.nnw and
-    # default.param exist.  Otherwise copy them
+    logger.info("STEP 2: runs SExtractor on broad-band images")
 
-    setup_config_files(dir_)
+    # replace existing config files in work dirs
+    setup_config_files(dir_, sex_params)
+    setup_config_files_nb((dir_ / 'nb'), sex_params_nb)
 
+    if dir_ is None:
+        dir_ = Path.cwd()
+
+    logger.info("running SExtractor on white light and RGB images") 
     p = subprocess.Popen([cmd_sex, 'im_white.fits'], cwd=dir_)
     processes = [p]
     for band in ['b', 'g', 'r']:
         cmd = [cmd_sex,
-                '-CATALOG_NAME', '{}.cat'.format(band.upper()),
+                '-CATALOG_NAME', 'cat_{}.dat'.format(band.upper()),
                 'im_white.fits,im_{}.fits'.format(band)]
         p = subprocess.Popen(cmd, cwd=dir_)
         processes.append(p)
     for p in processes:
         p.wait()
 
-    tB = Table.read(dir_ / 'B.cat', format='ascii.sextractor')
-    tG = Table.read(dir_ / 'G.cat', format='ascii.sextractor')
-    tR = Table.read(dir_ / 'R.cat', format='ascii.sextractor')
+    logger.debug("combining catalogs") 
+    tB = Table.read(dir_ / 'cat_B.dat', format='ascii.sextractor')
+    tG = Table.read(dir_ / 'cat_G.dat', format='ascii.sextractor')
+    tR = Table.read(dir_ / 'cat_R.dat', format='ascii.sextractor')
 
     names = ('NUMBER', 'X_IMAGE', 'Y_IMAGE',
              'MAG_APER_B', 'MAGERR_APER_B',
@@ -468,19 +527,21 @@ def step2(cubename, cmd_sex, dir_, n_cpu=1):
                   tB['MAG_APER'], tB['MAGERR_APER'],
                   tG['MAG_APER'], tG['MAGERR_APER'],
                   tR['MAG_APER'], tR['MAGERR_APER']], names=names)
-    tBGR.write(dir_ / 'BGR.cat', format='ascii.fixed_width_two_line')
+    logger.info("{} continiuum objects detected".format(len(tBGR)))
 
-    os.remove(dir_ / 'B.cat')
-    os.remove(dir_ / 'G.cat')
-    os.remove(dir_ / 'R.cat')
+    file_ = dir_ / 'cat_BGR.dat'
+    logger.debug("writing catalog to {}".format(file_))
+    tBGR.write(file_, format='ascii.fixed_width_two_line')
 
-    # tests here if the files default.sex, default.conv, default.nnw and
-    # default.param exist.  Otherwise copy them
-    setup_config_files_nb(dir_ / 'nb')
+    import pdb; pdb.set_trace()
+    for file_ in ['cat_B.dat', 'cat_G.dat', 'cat_R.dat']:
+        file_ = dir_ / file_
+        logger.debug("removing {}".format(file_))
+        os.remove(file_)
+
 
     cube = Cube(str(cubename))
     n_w = cube.shape[0]
-
 
     #generate sextractor commands
     commands = []
@@ -493,18 +554,19 @@ def step2(cubename, cmd_sex, dir_, n_cpu=1):
         commands.append(cmd)
 
     if n_cpu == 1:
+        logger.info("running SExtractor on narrow-band images using 1 CPU")
 
-        progress = ProgressCounter(len(commands), msg='Narrow band:', every=1)
+        progress = ProgressCounter(len(commands), msg='SExtractor:', every=1)
 
         for cmd in commands:
             run_sex_nb(cmd, dir_)
             progress.increment()
 
-        progress.close()
-
-
     else:
-        progress = ProgressCounter(len(commands), msg='Narrow band:', every=10)
+        logger.info("running SExtractor on narrow-band images using "
+                    "{} CPUs".format(n_cpu))
+
+        progress = ProgressCounter(len(commands), msg='SExtractor:', every=10)
 
         pool = mp.Pool(n_cpu)
         results = []
@@ -516,12 +578,13 @@ def step2(cubename, cmd_sex, dir_, n_cpu=1):
 
         [res.get(999999) for res in results]
 
-        progress.close()
+    progress.close()
 
 
 def step3(cubename, ima_size, clean, skyclean, radius, nlines_max):
+
     logger = logging.getLogger(__name__)
-    logger.info("muselet - STEP 3: merge SExtractor catalogs and measure "
+    logger.info("STEP 3: merge SExtractor catalogs and measure "
                 "redshifts")
 
     c = Cube(cubename)
@@ -537,7 +600,7 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max):
 
     cleanlimit = clean * np.ma.median(fullvar.data)
 
-    logger.info("muselet - cleaning below inverse variance %s", cleanlimit)
+    logger.info("cleaning below inverse variance %s", cleanlimit)
 
     tBGR = Table.read('BGR.cat', format='ascii.fixed_width_two_line')
 
@@ -719,10 +782,10 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max):
             continuum_lines.append(s)
 
     if len(continuum_lines) > 0:
-        logger.info("muselet - %d continuum lines detected",
+        logger.info("%d continuum lines detected",
                     len(continuum_lines))
     else:
-        logger.info("muselet - no continuum lines detected")
+        logger.info("no continuum lines detected")
 
     singflags = np.ones(nS)
     S2_ll = []
@@ -827,9 +890,9 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max):
             flags[i] = 1
 
     if len(single_lines) > 0:
-        logger.info("muselet - %d single lines detected", len(single_lines))
+        logger.info("%d single lines detected", len(single_lines))
     else:
-        logger.info("muselet - no single lines detected")
+        logger.info("no single lines detected")
 
     # redshift of continuum objects
     if not os.path.isfile('emlines'):
@@ -844,7 +907,7 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max):
                            dtype={'names': ('lambda', 'lname'),
                                   'formats': ('f', 'S20')}))
 
-    logger.info("muselet - estimating the best redshift")
+    logger.info("estimating the best redshift")
     for source in continuum_lines:
         if(len(source.lines) > 3):
             source.crack_z(eml)
@@ -858,7 +921,7 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max):
             source.crack_z(eml2, 20)
         source.sort_lines(nlines_max)
 
-#         logger.info("muselet - cleaning narrow-band images")
+#         logger.info("cleaning narrow-band images")
 #         if(nbcube):
 #             filelist = glob('nb/nb*.fits')
 #             for f in filelist:
@@ -934,19 +997,19 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
     logger = logging.getLogger(__name__)
 
     if step not in (1, 2, 3):
-        logger.error("muselet - ERROR: step must be 1, 2 or 3")
-        logger.error("muselet - STEP 1: creates images from cube")
-        logger.error("muselet - STEP 2: runs SExtractor")
-        logger.error("muselet - STEP 3: merge catalogs and measure redshifts")
+        logger.error("ERROR: step must be 1, 2 or 3")
+        logger.error("STEP 1: creates images from cube")
+        logger.error("STEP 2: runs SExtractor")
+        logger.error("STEP 3: merge catalogs and measure redshifts")
         return
 
     if len(fw) != 5:
-        logger.error("muselet - len(fw) != 5")
+        logger.error("len(fw) != 5")
 
     try:
         fw = np.array(fw, dtype=float)
     except Exception:
-        logger.error('muselet - fw is not an array of float')
+        logger.error('fw is not an array of float')
 
     try:
         subprocess.check_call(['sex', '-v'])
@@ -966,13 +1029,17 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
 
     cubename = Path(cubename)
     if expmapcube is not None:
+        logger.debug("No exposure cube provided")
         expmapcube = Path(expmapcube)
 
 
     if step == 1:
-        step1(cubename, expmapcube, fw, nbcube, delta, workdir, n_cpu)
+        step1(cubename, expmapcube, fw, delta, dir_=workdir, nbcube=nbcube,
+                n_cpu=n_cpu)
     if step <= 2:
-        step2(cubename, cmd_sex, workdir, n_cpu)
+        step2(cubename, cmd_sex, sex_params=sex_params,
+                sex_params_nb=sex_params_nb, dir_=workdir,
+                apercube=True, n_cpu=n_cpu)
 
    # with chdir(workdir):
    #     if step <= 3:
