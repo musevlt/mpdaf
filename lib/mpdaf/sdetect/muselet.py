@@ -452,6 +452,7 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1,
         logger.debug("allocating shared arrays for multiprocessing")
         t0_allocate = time.time()
 
+        #shared inputs
         logger.debug("allocating shared data cube")
         shape = data.shape
         data_raw = mp.RawArray(c_float, int(np.prod(shape)))
@@ -484,8 +485,8 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1,
             exp_raw = None
             exp_shape = None
 
+        #shared output
         logger.debug("allocating shared nb cube")
-        #output shared
         shape = data.shape
         cube_nb_raw = mp.RawArray(c_float, int(np.prod(shape)))
         cube_nb = np.frombuffer(cube_nb_raw, dtype='=f4').reshape(shape)
