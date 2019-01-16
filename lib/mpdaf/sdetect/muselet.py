@@ -146,7 +146,7 @@ def setup_config_files(dir_, config, nb=False):
     else:
         #use user supplied file
         f1 = Path(config['conv'])
-        msg = "{} detection will use supplied convolution kernel: {}"
+        msg = "{} detection with user supplied convolution kernel: {}"
         logger.info(msg.format(name, f1))
     f2 = dir_ / 'default.conv'
     try:
@@ -163,11 +163,11 @@ def setup_config_files(dir_, config, nb=False):
     for k in default_config.keys():
         try:
             v = config[k]
-            msg = "{} detection will use user value for {}: {}"
+            msg = "{} detection with {}: {}"
             logger.info(msg.format(name, k, v))
         except KeyError:
             v = config_out[k]
-            msg = "{} detection will use default value for {}: {}"
+            msg = "{} detection with {}: {} (default)"
             logger.debug(msg.format(name, k, v))
 
     with open(dir_ / 'default.sex', 'w') as fh:
@@ -197,7 +197,7 @@ def create_white_image(cube, dir_):
     image = Image(data=data, wcs=cube.wcs, unit=cube.unit, copy=False)
 
     file_ = dir_ / 'im_white.fits'
-    logger.debug('writing white light image to {}'.format(file_))
+    logger.debug('writing white light image: {}'.format(file_))
     image.write(file_, savemask='nan')
 
 
@@ -216,7 +216,7 @@ def create_weight_image(cube, cube_exp, dir_):
         image = cube_exp.mean(axis=0)
 
     file_ = dir_ / 'im_weight.fits'
-    logger.debug("writing weight image to {}".format(file_))
+    logger.debug("writing weight image: {}".format(file_))
     image.write(file_, savemask='nan')
 
 
@@ -239,15 +239,15 @@ def create_rgb_images(cube, dir_):
     im_r = Image(data=data_r, wcs=cube.wcs, unit=cube.unit, copy=False)
 
     file_ = dir_ / 'im_b.fits'
-    logger.debug("writing blue image to {}".format(file_))
+    logger.debug("writing blue image: {}".format(file_))
     im_b.write(file_, savemask='nan')
 
     file_ = dir_ / 'im_g.fits'
-    logger.debug("writing green image to {}".format(file_))
+    logger.debug("writing green image: {}".format(file_))
     im_g.write(file_, savemask='nan')
 
     file_ = dir_ / 'im_r.fits'
-    logger.debug("writing red image to {}".format(file_))
+    logger.debug("writing red image: {}".format(file_))
     im_r.write(file_, savemask='nan')
 
 
@@ -554,7 +554,7 @@ def step1(cubename, expmapcube, fw, delta, dir_=None, nbcube=False, n_cpu=1,
 
     if nbcube:
         file_ = dir_ / ('NB_' + cubename.name)
-        logger.debug("writing narrow-band cube to {}".format(file_))
+        logger.debug("writing narrow-band cube: {}".format(file_))
         cube_nb.writeto(file_, overwrite=True)
 
 
@@ -608,7 +608,7 @@ def step2(cubename, cmd_sex, config=None, config_nb=None, dir_=None,
     logger.info("{} continiuum objects detected".format(len(tBGR)))
 
     file_ = dir_ / 'cat_BGR.dat'
-    logger.debug("writing catalog to {}".format(file_))
+    logger.debug("writing catalog: {}".format(file_))
     tBGR.write(file_, format='ascii.fixed_width_two_line')
 
     for file_ in ['cat_B.dat', 'cat_G.dat', 'cat_R.dat']:
