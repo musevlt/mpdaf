@@ -252,11 +252,11 @@ def create_rgb_images(cube, dir_):
 
 
 
-def write_bb_images(cube, cube_exp, dir_, n_cpu=1):
+def write_bb_images(cube, cube_exp, dir_, n_cpu=1, limit_ram=False):
 
     logger = logging.getLogger(__name__)
 
-    if n_cpu == 1: #enables nicer traceback for debugging
+    if (n_cpu == 1) or limit_ram: #enables nicer traceback for debugging
         logger.info("creating broad-band images using 1 CPU")
             
         create_white_image(cube, dir_)
@@ -265,7 +265,7 @@ def write_bb_images(cube, cube_exp, dir_, n_cpu=1):
 
 
     else:
-        use_cpu = min(3, n_cpu) #at most 3CPUs
+        use_cpu = np.clip(n_cpu, None, 3) #at most 3CPUs
         logger.info("creating broad-band images using "
                     "{} CPUs".format(use_cpu))
         pool = mp.Pool(use_cpu)
@@ -385,7 +385,8 @@ def write_nb_multi(i, delta, fw, hdr, dir_):
     cube_nb[i] = im_nb #output
 
 
-def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1):
+def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1,
+            limit_ram=False):
 
     logger = logging.getLogger(__name__)
 
@@ -404,7 +405,10 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1):
         logger.info("creating narrow-band images using 1 CPU")
 
         cube_nb = np.zeros(cube.shape, dtype=np.float32)
-        data0 = data.filled(0.) #for computing continuum
+        if not limit_ram:
+            data0 = data.filled(0.) #for computing continuum
+        else:
+            data0 = data #delay filling until have sliced data
 
         progress = ProgressCounter(n_w-5, msg='Narrow band:', every=1)
         for i in range(2, n_w-3):
@@ -431,6 +435,10 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1):
                 r = data0[-1].reshape([1, n_y, n_x])
             else:
                 r = data0[r_min:r_max]
+
+            if limit_ram:
+                l = l.filled(0.)
+                r = r.filled(0.)
 
             im_nb = write_nb(i, d, v, l, r, e, fw, hdr, dir_)
             cube_nb[i] = im_nb
@@ -515,7 +523,8 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1):
     return cube_nb
 
 
-def step1(cubename, expmapcube, fw, delta, dir_=None, nbcube=False, n_cpu=1):
+def step1(cubename, expmapcube, fw, delta, dir_=None, nbcube=False, n_cpu=1,
+        limit_ram=False):
 
     logger = logging.getLogger(__name__)
     logger.info("Opening: %s", cubename)
@@ -539,8 +548,9 @@ def step1(cubename, expmapcube, fw, delta, dir_=None, nbcube=False, n_cpu=1):
     logger.info("STEP 1: creates white light, variance, RGB and "
                 "narrow-band images")
 
-    write_bb_images(cube, cube_exp, dir_, n_cpu=n_cpu)
-    cube_nb = write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=n_cpu)
+    write_bb_images(cube, cube_exp, dir_, n_cpu=n_cpu, limit_ram=limit_ram)
+    cube_nb = write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=n_cpu,
+                        limit_ram=limit_ram)
 
     if nbcube:
         file_ = dir_ / ('NB_' + cubename.name)
