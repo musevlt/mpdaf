@@ -189,7 +189,7 @@ def remove_files():
     shutil.rmtree('nb')
 
 
-def create_white_image(cube, dir_):
+def write_white_image(cube, dir_):
 
     logger = logging.getLogger(__name__)
 
@@ -201,7 +201,7 @@ def create_white_image(cube, dir_):
     image.write(file_, savemask='nan')
 
 
-def create_weight_image(cube, cube_exp, dir_):
+def write_weight_image(cube, cube_exp, dir_):
 
     logger = logging.getLogger(__name__)
 
@@ -220,7 +220,7 @@ def create_weight_image(cube, cube_exp, dir_):
     image.write(file_, savemask='nan')
 
 
-def create_rgb_images(cube, dir_):
+def write_rgb_images(cube, dir_):
 
     logger = logging.getLogger(__name__)
 
@@ -259,9 +259,9 @@ def write_bb_images(cube, cube_exp, dir_, n_cpu=1, limit_ram=False):
     if (n_cpu == 1) or limit_ram: #enables nicer traceback for debugging
         logger.info("creating broad-band images using 1 CPU")
             
-        create_white_image(cube, dir_)
-        create_weight_image(cube, cube_exp, dir_)
-        create_rgb_images(cube, dir_)
+        write_white_image(cube, dir_)
+        write_weight_image(cube, cube_exp, dir_)
+        write_rgb_images(cube, dir_)
 
 
     else:
@@ -269,9 +269,9 @@ def write_bb_images(cube, cube_exp, dir_, n_cpu=1, limit_ram=False):
         logger.info("creating broad-band images using "
                     "{} CPUs".format(use_cpu))
         pool = mp.Pool(use_cpu)
-        r1 = pool.apply_async(create_white_image, (cube, dir_))
-        r2 = pool.apply_async(create_weight_image, (cube, cube_exp, dir_))
-        r3 = pool.apply_async(create_rgb_images, (cube, dir_))
+        r1 = pool.apply_async(write_white_image, (cube, dir_))
+        r2 = pool.apply_async(write_weight_image, (cube, cube_exp, dir_))
+        r3 = pool.apply_async(write_rgb_images, (cube, dir_))
         pool.close()
 
         [r.get(999999) for r in [r1, r2, r3]]
@@ -492,6 +492,7 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1,
         cube_nb = np.frombuffer(cube_nb_raw, dtype='=f4').reshape(shape)
         cube_nb_shape = shape
 
+        logger.debug("initializing process pool")
         initargs = (data_raw, data_shape, var_raw, var_shape, mask_raw,
                 mask_shape, exp_raw, exp_shape, cube_nb_raw, cube_nb_shape)
 
@@ -546,7 +547,7 @@ def step1(cubename, expmapcube, fw, delta, dir_=None, nbcube=False, n_cpu=1,
         logger.info("Opening exposure map cube: %s", expmapcube)
         cube_exp = Cube(str(expmapcube))
 
-    logger.info("STEP 1: creates white light, variance, RGB and "
+    logger.info("STEP 1: create white light, variance, RGB and "
                 "narrow-band images")
 
     write_bb_images(cube, cube_exp, dir_, n_cpu=n_cpu, limit_ram=limit_ram)
@@ -559,9 +560,16 @@ def step1(cubename, expmapcube, fw, delta, dir_=None, nbcube=False, n_cpu=1,
         cube_nb.writeto(file_, overwrite=True)
 
 
-def run_sex_nb(cmd, dir_):
-    p = subprocess.Popen(cmd, cwd=(dir_ / 'nb'))
+def run_sex(cmd, dir_):
+    p = subprocess.Popen(cmd, cwd=dir_, stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT)
     p.wait()
+    if p.returncode != 0:
+        stdout = p.communicate()[0].decode('utf-8')
+        logger = logging.getLogger(__name__)
+        logger.error("Dumping output from SExtractor:" + stdout)
+        msg = "Error in call: '{}'".format(' '.join(cmd))
+        raise Exception(msg)
 
 
 def step2(cubename, cmd_sex, config=None, config_nb=None, dir_=None,
@@ -569,34 +577,33 @@ def step2(cubename, cmd_sex, config=None, config_nb=None, dir_=None,
 
     if config is None:
         config = {}
+
     if config_nb is None:
         config_nb = {}
-
-    logger = logging.getLogger(__name__)
-    logger.info("STEP 2: runs SExtractor on broad-band images")
-
-    # replace existing config files in work dir
-    setup_config_files(dir_, config)
 
     if dir_ is None:
         dir_ = Path.cwd()
 
+    logger = logging.getLogger(__name__)
+    logger.info("STEP 2: run SExtractor on broad-band and narrow-band images")
+
+    # replace existing config files in work dir
+    setup_config_files(dir_, config)
+
+
     logger.info("running SExtractor on white light and RGB images") 
-    p = subprocess.Popen([cmd_sex, 'im_white.fits'], cwd=dir_)
-    processes = [p]
+
+    run_sex([cmd_sex, 'im_white.fits'], dir_)
     for band in ['b', 'g', 'r']:
         cmd = [cmd_sex,
-                '-CATALOG_NAME', 'cat_{}.dat'.format(band.upper()),
+                '-CATALOG_NAME', 'cat_{}.dat'.format(band),
                 'im_white.fits,im_{}.fits'.format(band)]
-        p = subprocess.Popen(cmd, cwd=dir_)
-        processes.append(p)
-    for p in processes:
-        p.wait()
+        run_sex(cmd, dir_)
 
     logger.debug("combining catalogs") 
-    tB = Table.read(dir_ / 'cat_B.dat', format='ascii.sextractor')
-    tG = Table.read(dir_ / 'cat_G.dat', format='ascii.sextractor')
-    tR = Table.read(dir_ / 'cat_R.dat', format='ascii.sextractor')
+    tB = Table.read(dir_ / 'cat_b.dat', format='ascii.sextractor')
+    tG = Table.read(dir_ / 'cat_g.dat', format='ascii.sextractor')
+    tR = Table.read(dir_ / 'cat_r.dat', format='ascii.sextractor')
 
     names = ('NUMBER', 'X_IMAGE', 'Y_IMAGE',
              'MAG_APER_B', 'MAGERR_APER_B',
@@ -608,12 +615,12 @@ def step2(cubename, cmd_sex, config=None, config_nb=None, dir_=None,
                   tR['MAG_APER'], tR['MAGERR_APER']], names=names)
     logger.info("{} continiuum objects detected".format(len(tBGR)))
 
-    file_ = dir_ / 'cat_BGR.dat'
+    file_ = dir_ / 'cat_bgr.dat'
     logger.debug("writing catalog: {}".format(file_))
     tBGR.write(file_, format='ascii.fixed_width_two_line')
 
-    for file_ in ['cat_B.dat', 'cat_G.dat', 'cat_R.dat']:
-        file_ = dir_ / file_
+    for band in ['b', 'g', 'r']:
+        file_ = dir_ / 'cat_{}.dat'.format(band)
         logger.debug("removing file {}".format(file_))
         os.remove(file_)
 
@@ -639,7 +646,7 @@ def step2(cubename, cmd_sex, config=None, config_nb=None, dir_=None,
         progress = ProgressCounter(len(commands), msg='SExtractor:', every=1)
 
         for cmd in commands:
-            run_sex_nb(cmd, dir_)
+            run_sex(cmd, dir_ / 'nb')
             progress.increment()
 
     else:
@@ -651,7 +658,7 @@ def step2(cubename, cmd_sex, config=None, config_nb=None, dir_=None,
         pool = mp.Pool(n_cpu)
         results = []
         for cmd in commands:
-            res = pool.apply_async(run_sex_nb, (cmd, dir_),
+            res = pool.apply_async(run_sex, (cmd, dir_ / 'nb'),
                             callback=lambda x: progress.increment())
             results.append(res)
         pool.close()
@@ -1079,8 +1086,8 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
 
     if step not in (1, 2, 3):
         logger.error("ERROR: step must be 1, 2 or 3")
-        logger.error("STEP 1: creates images from cube")
-        logger.error("STEP 2: runs SExtractor")
+        logger.error("STEP 1: create images from cube")
+        logger.error("STEP 2: run SExtractor")
         logger.error("STEP 3: merge catalogs and measure redshifts")
         return
 
