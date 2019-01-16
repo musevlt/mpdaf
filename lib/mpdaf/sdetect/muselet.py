@@ -163,6 +163,7 @@ def setup_config_files(dir_, config, nb=False):
     for k in default_config.keys():
         try:
             v = config[k]
+            config_out[k] = v
             msg = "{} detection with {}: {}"
             logger.info(msg.format(name, k, v))
         except KeyError:
@@ -1095,7 +1096,7 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
         logger.error("len(fw) != 5")
 
     try:
-        fw = np.array(fw, dtype=float)
+        fw = np.array(fw, dtype=np.float32)
     except Exception:
         logger.error('fw is not an array of float')
 
