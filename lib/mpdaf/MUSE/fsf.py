@@ -1,12 +1,11 @@
 import astropy.units as u
 import numpy as np
-from abc import ABCMeta, abstractmethod
 from astropy.io import fits
 from astropy.modeling.models import Moffat2D as astMoffat2D
 
 from ..obj import Cube, WCS
 
-__all__ = ['Moffat2D', 'FSFModel', 'Moffat1']
+__all__ = ['Moffat2D', 'FSFModel', 'Moffat1Model']
 
 
 def all_subclasses(cls):
@@ -55,35 +54,8 @@ def Moffat2D(fwhm, beta, shape):
     return PSF_Moffat
 
 
-class FSFModelABC(metaclass=ABCMeta):
-    """Base class for FSF models.
-
-    This defines the interface that FSF models should implement.
-    """
-
-    @classmethod
-    @abstractmethod
-    def from_header(cls, hdr, pixstep):
-        """Read FSF parameters from a FITS header"""
-
-    @abstractmethod
-    def to_header(self, hdr):
-        """Write FSF parameters to a FITS header"""
-
-    @abstractmethod
-    def get_fwhm(self, lbda):
-        """Return FWHM for the given wavelengths."""
-
-    @abstractmethod
-    def get_image(self, lbda):
-        """Return FSF image at the given wavelength."""
-
-    @abstractmethod
-    def get_cube(self, lbda):
-        """Return FSF cube at the given wavelengths."""
-
-
-class FSFModel(FSFModelABC):
+class FSFModel:
+    """Base class for FSF models."""
 
     @classmethod
     def read(cls, cube):
@@ -119,8 +91,32 @@ class FSFModel(FSFModelABC):
         step = wcs.get_step(unit=u.arcsec)[0]
         return klass.from_header(cube.primary_header, step)
 
+    @classmethod
+    def from_header(cls, hdr, pixstep):
+        """Read FSF parameters from a FITS header"""
+        raise NotImplementedError
 
-class Moffat1(FSFModel):
+    def __repr__(self):
+        return "<{}(model={})>".format(self.__class__.__name__, self.model)
+
+    def to_header(self, hdr):
+        """Write FSF parameters to a FITS header"""
+        raise NotImplementedError
+
+    def get_fwhm(self, lbda):
+        """Return FWHM for the given wavelengths."""
+        raise NotImplementedError
+
+    def get_image(self, lbda):
+        """Return FSF image at the given wavelength."""
+        raise NotImplementedError
+
+    def get_cube(self, lbda):
+        """Return FSF cube at the given wavelengths."""
+        raise NotImplementedError
+
+
+class Moffat1Model(FSFModel):
     """Moffat FSF with fixed beta and FWHM varying with wavelength."""
 
     model = 'MOFFAT1'
@@ -162,3 +158,27 @@ class Moffat1(FSFModel):
     def get_cube(self, lbda, shape):
         """Return FSF cube at the given wavelengths."""
         return Moffat2D(self.get_fwhm(lbda, unit='pix'), self.beta, lbda)
+
+
+class GaussianModel(FSFModel):
+
+    model = 0
+    name = "Circular GAUSS fwhm=poly(lbda)"
+
+
+class MoffatModel(FSFModel):
+
+    model = 1
+    name = "Circular MOFFAT beta=cste fwhm=poly(lbda)"
+
+
+class MoffatBetaVarModel(FSFModel):
+
+    model = 2
+    name = "Circular MOFFAT beta=poly(lbda) fwhm=poly(lbda)"
+
+
+class EllipticalMoffatModel(FSFModel):
+
+    model = 3
+    name = "Elliptical MOFFAT beta=poly(lbda) fwhmx,y=polyx,y(lbda) pa=cste"
