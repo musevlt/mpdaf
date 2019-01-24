@@ -2,12 +2,19 @@ import astropy.units as u
 import numpy as np
 from abc import ABCMeta, abstractmethod
 from astropy.io import fits
-from astropy.modeling.models import Moffat2D
+from astropy.modeling.models import Moffat2D as astMoffat2D
 
-from ..obj import Cube
+from ..obj import Cube, WCS
+
+__all__ = ['Moffat2D', 'FSFModel', 'Moffat1']
 
 
-def Moffat(fwhm, beta, shape):
+def all_subclasses(cls):
+    return set(cls.__subclasses__()).union(
+        [s for c in cls.__subclasses__() for s in all_subclasses(c)])
+
+
+def Moffat2D(fwhm, beta, shape):
     """Compute Moffat for a value or array of values of FWHM and beta.
 
     Parameters
@@ -32,14 +39,14 @@ def Moffat(fwhm, beta, shape):
     xx, yy = np.mgrid[:shape[0], :shape[1]]
 
     if np.isscalar(alpha):
-        moffat = Moffat2D(amplitude, x0, y0, alpha, beta)
+        moffat = astMoffat2D(amplitude, x0, y0, alpha, beta)
         PSF_Moffat = moffat(xx, yy)
         # Normalization
         # PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat)
     else:
         Nz = alpha.shape[0]
-        moffat = Moffat2D(amplitude, [x0] * Nz, [y0] * Nz,
-                          alpha, [beta] * Nz, n_models=Nz)
+        moffat = astMoffat2D(amplitude, [x0] * Nz, [y0] * Nz,
+                             alpha, [beta] * Nz, n_models=Nz)
         PSF_Moffat = moffat(xx, yy, model_set_axis=False)
         # Normalization
         # PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat, axis=(1, 2))\
@@ -53,13 +60,6 @@ class FSFModelABC(metaclass=ABCMeta):
 
     This defines the interface that FSF models should implement.
     """
-
-    @classmethod
-    def from_cube(cls, cube):
-        if isinstance(cube, str):
-            cube = Cube(cube)
-        step = cube.wcs.get_step(unit=u.arcsec)[0]
-        return cls.from_header(cube.primary_header, step)
 
     @classmethod
     @abstractmethod
@@ -83,7 +83,44 @@ class FSFModelABC(metaclass=ABCMeta):
         """Return FSF cube at the given wavelengths."""
 
 
-class MoffatFSF(FSFModelABC):
+class FSFModel(FSFModelABC):
+
+    @classmethod
+    def read(cls, cube):
+        """Read the FSF model from a file, cube, or header.
+
+        Parameters
+        ----------
+        cube : str, `mpdaf.obj.Cube`, or `astropy.io.fits.Header`
+            Must contain a header with a FSF model.
+
+        """
+        if isinstance(cube, str):
+            # filename
+            cube = Cube(cube)
+
+        if isinstance(cube, Cube):
+            wcs = cube.wcs
+            hdr = cube.primary_header
+        elif isinstance(cube, fits.Header):
+            hdr = cube
+            wcs = WCS(hdr=hdr)
+
+        if 'FSFMODE' not in hdr:
+            raise ValueError('FSFMODE keyword not found')
+
+        for klass in all_subclasses(cls):
+            if klass.model == hdr['FSFMODE']:
+                break
+        else:
+            raise ValueError('FSFMODE {} is not implemented'
+                             .format(hdr['FSFMODE']))
+
+        step = wcs.get_step(unit=u.arcsec)[0]
+        return klass.from_header(cube.primary_header, step)
+
+
+class Moffat1(FSFModel):
     """Moffat FSF with fixed beta and FWHM varying with wavelength."""
 
     model = 'MOFFAT1'
@@ -96,8 +133,6 @@ class MoffatFSF(FSFModelABC):
 
     @classmethod
     def from_header(cls, hdr, pixstep):
-        if 'FSFMODE' not in hdr:
-            raise ValueError('FSFMODE keyword not found')
         for field in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 99):
             if 'FSF%02dBET' % field in hdr:
                 beta = hdr['FSF%02dBET' % field]
@@ -122,8 +157,8 @@ class MoffatFSF(FSFModelABC):
 
     def get_image(self, lbda, shape):
         """Return FSF image at the given wavelength."""
-        return Moffat(self.get_fwhm(lbda, unit='pix'), self.beta, lbda)
+        return Moffat2D(self.get_fwhm(lbda, unit='pix'), self.beta, lbda)
 
     def get_cube(self, lbda, shape):
         """Return FSF cube at the given wavelengths."""
-        return Moffat(self.get_fwhm(lbda, unit='pix'), self.beta, lbda)
+        return Moffat2D(self.get_fwhm(lbda, unit='pix'), self.beta, lbda)
