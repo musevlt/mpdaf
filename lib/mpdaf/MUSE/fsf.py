@@ -20,7 +20,7 @@ def Moffat2D(fwhm, beta, shape):
     ----------
     fwhm : float or array of float
         Moffat fwhm in pixels.
-    beta : float
+    beta : float or array of float
         Power index of the Moffat.
     shape : tuple
         Spatial dimension of the FSF.
@@ -37,15 +37,25 @@ def Moffat2D(fwhm, beta, shape):
     x0, y0 = np.array(shape) / 2
     xx, yy = np.mgrid[:shape[0], :shape[1]]
 
-    if np.isscalar(alpha):
+    if np.isscalar(alpha) and np.isscalar(beta):
         moffat = astMoffat2D(amplitude, x0, y0, alpha, beta)
         PSF_Moffat = moffat(xx, yy)
         # Normalization
         # PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat)
     else:
-        Nz = alpha.shape[0]
+        if np.isscalar(beta):
+            Nz = alpha.shape[0]
+            beta = [beta] * Nz
+        elif np.isscalar(alpha):
+            Nz = beta.shape[0]
+            alpha = [alpha] * Nz
+        else:
+            Nz = alpha.shape[0]
+            if beta.shape[0] != Nz:
+                #raise ValueError, 'alpha and beta must have the same dimension' 
+                raise ValueError
         moffat = astMoffat2D(amplitude, [x0] * Nz, [y0] * Nz,
-                             alpha, [beta] * Nz, n_models=Nz)
+                             alpha, beta, n_models=Nz)
         PSF_Moffat = moffat(xx, yy, model_set_axis=False)
         # Normalization
         # PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat, axis=(1, 2))\
