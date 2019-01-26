@@ -41,7 +41,7 @@ def Moffat2D(fwhm, beta, shape):
         moffat = astMoffat2D(amplitude, x0, y0, alpha, beta)
         PSF_Moffat = moffat(xx, yy)
         # Normalization
-        # PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat)
+        PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat)
     else:
         if np.isscalar(beta):
             Nz = alpha.shape[0]
@@ -58,8 +58,8 @@ def Moffat2D(fwhm, beta, shape):
                              alpha, beta, n_models=Nz)
         PSF_Moffat = moffat(xx, yy, model_set_axis=False)
         # Normalization
-        # PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat, axis=(1, 2))\
-        #     [:, np.newaxis, np.newaxis]
+        PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat, axis=(1, 2))\
+             [:, np.newaxis, np.newaxis]
 
     return PSF_Moffat
 
