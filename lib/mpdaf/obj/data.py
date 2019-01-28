@@ -405,9 +405,8 @@ class DataArray:
         # Try to determine if the object has some wcs/wave information but not
         # available in the FITS header. In this case we add the wcs info in the
         # data header.
-        if (self.data_header.get('WCSAXES') is None and
-                ((self._has_wcs and self.wcs is not None) or
-                 (self._has_wave and self.wave is not None))):
+        if ((self._has_wcs and self.wcs is not None) or
+                (self._has_wave and self.wave is not None)):
             hdu = self.get_data_hdu(convert_float32=False)
             state['data_header'] = hdu.header
 
