@@ -453,7 +453,7 @@ class DataArray:
             self.wave = WaveCoord(hdr)
 
     @classmethod
-    def new_from_obj(cls, obj, data=None, var=None, copy=False):
+    def new_from_obj(cls, obj, data=None, var=None, copy=False, unit=None):
         """Create a new object from another one, copying its attributes.
 
         Parameters
@@ -479,7 +479,11 @@ class DataArray:
             var = obj._var
         elif var is False:
             var = None
-        kwargs = dict(filename=obj.filename, data=data, unit=obj.unit, var=var,
+
+        if unit is None:
+            unit = obj.unit
+
+        kwargs = dict(filename=obj.filename, data=data, unit=unit, var=var,
                       ext=(obj._data_ext, obj._var_ext, obj._dq_ext),
                       copy=copy, data_header=obj.data_header.copy(),
                       primary_header=obj.primary_header.copy())

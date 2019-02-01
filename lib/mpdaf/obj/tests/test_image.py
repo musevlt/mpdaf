@@ -43,8 +43,8 @@ from numpy.testing import (assert_array_equal, assert_allclose,
                            assert_array_almost_equal)
 from operator import add, sub, mul, truediv as div
 
-from mpdaf.tests.utils import (assert_image_equal, generate_image, generate_cube,
-                            assert_masked_allclose)
+from mpdaf.tests.utils import (assert_image_equal, generate_image,
+                               generate_cube, assert_masked_allclose)
 
 
 def test_copy(image):
@@ -61,9 +61,10 @@ def test_arithmetic_images(image):
 
     for op in (add, sub, mul, div):
         image3 = op(image, image2)
-        assert_allclose((image3.data.data * image3.unit).value,
-                        op(image.data.data * image.unit,
-                           (image2.data.data * image2.unit).to(u.ct)).value)
+        assert_allclose(
+            image3._data,
+            op(image._data * image.unit, image2._data * image2.unit)
+            .to(image3.unit).value)
 
 
 def test_arithmetic_scalar(image):
