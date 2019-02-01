@@ -273,7 +273,7 @@ class DataArray:
         self.wave = None
         self._dtype = dtype
         self._var_dtype = np.float64 if convert_float64 else None
-        self.unit = unit
+        self.unit = u.Unit(unit)
         self.data_header = data_header or fits.Header()
         self.primary_header = primary_header or fits.Header()
 
@@ -453,7 +453,7 @@ class DataArray:
             self.wave = WaveCoord(hdr)
 
     @classmethod
-    def new_from_obj(cls, obj, data=None, var=None, copy=False):
+    def new_from_obj(cls, obj, data=None, var=None, copy=False, unit=None):
         """Create a new object from another one, copying its attributes.
 
         Parameters
@@ -479,10 +479,13 @@ class DataArray:
             var = obj._var
         elif var is False:
             var = None
-        kwargs = dict(filename=obj.filename, data=data, unit=obj.unit, var=var,
-                      dtype=obj.dtype, copy=copy,
+
+        if unit is None:
+            unit = obj.unit
+
+        kwargs = dict(filename=obj.filename, data=data, unit=unit, var=var,
                       ext=(obj._data_ext, obj._var_ext, obj._dq_ext),
-                      data_header=obj.data_header.copy(),
+                      copy=copy, data_header=obj.data_header.copy(),
                       primary_header=obj.primary_header.copy())
         if cls._has_wcs:
             kwargs['wcs'] = obj.wcs

@@ -31,6 +31,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
+import astropy.units as u
 import numpy as np
 from numpy import ma
 
@@ -151,8 +152,15 @@ def _arithmetic(operation, a, b):
         _check_compatible_shapes(a, b)
         newshape = None
 
+    if operation is ma.multiply:
+        unit = a.unit ** 2
+    elif operation is ma.divide:
+        unit = u.dimensionless_unscaled
+    else:
+        unit = a.unit
+
     return a.__class__.new_from_obj(
-        a, copy=False,
+        a, copy=False, unit=unit,
         data=_arithmetic_data(operation, a, b, newshape=newshape),
         var=_arithmetic_var(operation, a, b, newshape=newshape)
     )
