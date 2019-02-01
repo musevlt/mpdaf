@@ -3,6 +3,16 @@
 
 Development version, not released yet.
 
+- Compatibility with Astropy 3.1 for wcs shape.
+- Add function to merge ``AUTOCAL_FACTORS`` files.
+- Fix bug in `mpdaf.sdetect.Source.add_FSF` when source is close to the edge.
+- Fix `mpdaf.obj.Image.subimage` to keep the same dtype as the input data.
+- Increase the number of files that can be combined with `mpdaf.obj.CubeList`.
+- Support method parameter in `mpdaf.sdetect.Source.add_narrow_band_images`.
+- Fix writing sources with non-float extensions.
+- Fix pickle issue, making sure that ``data_header`` always match the object
+  state.
+
 
 3.0 (10/19/2018)
 ----------------
