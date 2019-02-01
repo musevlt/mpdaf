@@ -45,6 +45,13 @@ from numpy.testing import (assert_array_almost_equal, assert_array_equal,
 
 from mpdaf.tests.utils import (get_data_file, generate_spectrum)
 
+try:
+    import specutils  # noqa
+except ImportError:
+    HAS_SPECUTILS = False
+else:
+    HAS_SPECUTILS = True
+
 
 def test_copy(spec_var):
     """Spectrum class: testing copy method."""
@@ -565,3 +572,10 @@ H-alpha 6562.801 6564.614
         assert_allclose(airtovac(row['air']), row['vacuum'], atol=1e-2)
 
     assert_allclose(vactoair(row['vacuum']), row['air'], atol=1e-2)
+
+
+@pytest.mark.skipif(not HAS_SPECUTILS, reason="requires specutils")
+def test_to_spectrum1d(spec_var):
+    sp = spec_var.to_spectrum1d()
+    assert sp.flux.unit == spec_var.unit
+    assert_allclose(sp.flux.value, spec_var._data)

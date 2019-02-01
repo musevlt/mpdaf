@@ -2457,6 +2457,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         self._plot_id = len(ax.lines) - 1
 
     def to_spectrum1d(self, unit_wave=u.angstrom):
+        """Return a ``specutils.Spectrum1D`` object."""
         from astropy.nddata import StdDevUncertainty
         try:
             from specutils import Spectrum1D
