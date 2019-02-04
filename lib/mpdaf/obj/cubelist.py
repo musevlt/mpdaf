@@ -65,6 +65,14 @@ KEYWORDS_TO_COPY = (
 )
 
 
+def _compute_expnb(expmap):
+    """Estimate the most frequent exposure number."""
+    from scipy import stats
+    data = expmap[expmap > 0]
+    mode = stats.mode(data)
+    return mode.mode[np.argmax(mode.count)]
+
+
 def _pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
                header=None, mad=False, pos=None, shapes=None, method=''):
     """Common implementation used by CubeList and CubeMosaic."""
@@ -197,7 +205,7 @@ def _pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
         ('var', var, 'type of variance'),
         ('mad', mad, 'use of MAD')
     ]
-    kwargs = dict(expnb=np.nanmedian(expmap), header=header,
+    kwargs = dict(expnb=_compute_expnb(expmap), header=header,
                   keywords=keywords, method=method)
     cube = self.save_combined_cube(cube, var=vardata, **kwargs)
     expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
@@ -446,8 +454,8 @@ class CubeList:
         stat_pix = Table([self.files, no_valid_pix],
                          names=['FILENAME', 'NPIX_NAN'])
 
-        kwargs = dict(expnb=np.nanmedian(expmap), method='obj.cubelist.median',
-                      header=header)
+        kwargs = dict(expnb=_compute_expnb(expmap),
+                      method='obj.cubelist.median', header=header)
         expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
                                          **kwargs)
         cube = self.save_combined_cube(data, **kwargs)
@@ -507,7 +515,7 @@ class CubeList:
                     ('nclip_up', nclip_up, 'upper clipping parameter'),
                     ('nstop', nstop, 'clipping minimum number'),
                     ('var', var, 'type of variance')]
-        kwargs = dict(expnb=np.nanmedian(expmap), keywords=keywords,
+        kwargs = dict(expnb=_compute_expnb(expmap), keywords=keywords,
                       header=header, method='obj.cubelist.merging')
         expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
                                          **kwargs)
@@ -541,7 +549,7 @@ class CubeList:
         stat_pix = Table([self.files, no_valid_pix],
                          names=['FILENAME', 'NPIX_NAN'])
 
-        kwargs = dict(expnb=np.nanmedian(expmap), header=header,
+        kwargs = dict(expnb=_compute_expnb(expmap), header=header,
                       method='obj.cubelist.pymedian')
         expmap = self.save_combined_cube(expmap, unit=u.dimensionless_unscaled,
                                          **kwargs)
