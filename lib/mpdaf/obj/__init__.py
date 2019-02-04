@@ -37,6 +37,7 @@ from .cubelist import *
 from .data import *
 from .fitting import *
 from .image import *
+from .masking import *
 from .objs import *
 from .plot import *
 from .spectrum import *
