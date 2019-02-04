@@ -38,5 +38,6 @@ from .data import *
 from .fitting import *
 from .image import *
 from .objs import *
+from .plot import *
 from .spectrum import *
 from .wavelet1D import *

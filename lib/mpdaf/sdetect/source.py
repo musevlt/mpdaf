@@ -53,8 +53,7 @@ from functools import partial
 from numpy import ma
 from scipy.optimize import leastsq
 
-from ..obj import Cube, Image, Spectrum, vactoair, airtovac
-from ..obj.image import plot_rgb
+from ..obj import Cube, Image, Spectrum, vactoair, airtovac, plot_rgb
 from ..obj.objs import is_int, is_float, bounding_box
 from ..tools import deprecated, MpdafWarning
 from ..MUSE import FieldsMap, FSF
