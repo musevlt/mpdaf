@@ -3,11 +3,14 @@ import numpy as np
 from astropy.io import fits
 from astropy.modeling.models import Moffat2D as astMoffat2D
 from mpdaf.obj import Image
+from astropy.stats import sigma_clip
+import logging
 
 from ..obj import Cube, WCS
 
 __all__ = ['Moffat2D', 'FSFModel', 'OldMoffatModel', 'MoffatModel2']
 
+logger = logging.getLogger(__name__)
 
 def all_subclasses(cls):
     return set(cls.__subclasses__()).union(
@@ -138,7 +141,13 @@ class FSFModel:
     @classmethod
     def from_header(cls, hdr, pixstep):
         """Read FSF parameters from a FITS header"""
-        raise NotImplementedError
+        for klass in all_subclasses(cls):
+            if klass.model == hdr['FSFMODE']:
+                break
+        else:
+            raise ValueError('FSFMODE {} is not implemented'
+                             .format(hdr['FSFMODE']))
+        return klass.from_header(hdr, pixstep)
     
     @classmethod
     def from_psfrec(cls, rawfilename):  
@@ -146,9 +155,9 @@ class FSFModel:
         raise NotImplementedError  
     
     @classmethod
-    def from_starfit(cls, cube, pos, size=5, nslice=20, lbrange=(5000,9000), **kwargs): 
+    def from_starfit(cls, cube, pos, size=5, nslice=20, fwhmdeg=3, betadeg=3, lbrange=(5000,9000)): 
         """Compute FSF by fitting a point source on a datacube"""
-        raise NotImplementedError 
+        return MoffatModel2.from_starfit(cube, pos, size, nslice, fwhmdeg, betadeg, lbrange)
     
     @classmethod
     def from_hstconv(cls, cube, hstimages, lbrange=(5000,9000), **kwargs): 
@@ -208,6 +217,9 @@ class OldMoffatModel(FSFModel):
                 b = hdr['FSF%02dFWB' % field]
                 return cls(a, b, beta, pixstep)
             
+    def info(self):
+        logger.info('Model %s Beta %f FWHM a %f b %f Step %f', self.model, self.beta, self.a, self.b, self.pixstep)
+            
 
     def to_header(self, hdr, field_idx=0):
         """Write FSF parameters to a FITS header"""
@@ -233,13 +245,15 @@ class OldMoffatModel(FSFModel):
     def get_3darray(self, lbda, shape):
         """Return FSF 3D array at the given wavelengths."""
         return Moffat2D(self.get_fwhm(lbda, unit='pix'), self.beta, shape)
-
-
-class MoffatModel1(FSFModel):
-
-    model = 1
-    name = "Circular MOFFAT beta=cste fwhm=poly(lbda)"
-
+    
+    def convert(self):
+        lbrange = (5000,9000)
+        l1,l2 = lbrange
+        beta_pol = [self.beta]
+        a = self.b*(l2-l1)
+        b = self.a + a*(l1/(l2-l1) + 0.5)
+        fwhm_pol = [a, b]
+        return MoffatModel2(fwhm_pol, beta_pol, lbrange, self.pixstep)
 
 class MoffatModel2(FSFModel):
    
@@ -254,7 +268,7 @@ class MoffatModel2(FSFModel):
 
     @classmethod
     def from_header(cls, hdr, pixstep):
-        if 'FSFLB1' not in fsfkeys or 'FSFLB2' not in hdr:
+        if ('FSFLB1' not in hdr) or ('FSFLB2' not in hdr):
             logger.error('Missing FSFLB1 and/or FSFLB2 keywords in file header')
             return None 
         lbrange = (hdr['FSFLB1'],hdr['FSFLB2'])
@@ -270,19 +284,19 @@ class MoffatModel2(FSFModel):
                 beta_pol = [hdr['FSF%02dB%02d'%(field,k)] for k in range(ncb)]
                 return cls(fwhm_pol, beta_pol, lbrange, pixstep)
 
-    def to_header(self, field_idx):
+    def to_header(self, hdr, field_idx):
         """Write FSF parameters to a FITS header"""
-        hdr = fits.header() 
+        name = "Circular MOFFAT beta=poly(lbda) fwhm=poly(lbda)" 
         hdr['FSFMODE'] = (self.model, name)
         hdr['FSFLB1'] = (self.lbrange[0], 'FSF Blue Ref Wave (A)')
         hdr['FSFLB2'] = (self.lbrange[1], 'FSF Red Ref Wave (A)') 
         hdr['FSF%02dFNC' % field_idx] = (len(self.fwhm_pol), f'FSF{field_idx:02d} FWHM Poly Ncoef')
-        for k,coef in enumerate(self.fwhmpoly):
+        for k,coef in enumerate(self.fwhm_pol):
             hdr['FSF%02dF%02d'%(field_idx,k)] = (coef, f'FSF{field_idx:02d} FWHM Poly C{k:02d}')        
         hdr['FSF%02dBNC' % field_idx] = (len(self.beta_pol), f'FSF{field_idx:02d} BETA Poly Ncoef')
-        for k,coef in enumerate(self.betapoly):
+        for k,coef in enumerate(self.beta_pol):
             hdr['FSF%02dB%02d'%(field_idx,k)] = (coef, f'FSF{field_idx:02d} BETA Poly C{k:02d}')            
-        return hdr
+        return
     
     @classmethod
     def from_psfrec(cls, rawfilename):
@@ -298,7 +312,7 @@ class MoffatModel2(FSFModel):
         return fsf   
     
     @classmethod
-    def from_starfit(cls, cube, pos, size=5, nslice=20, fwhmdegm=3, betadeg=3, lbrange=(5000,9000)):
+    def from_starfit(cls, cube, pos, size=5, nslice=20, fwhmdeg=3, betadeg=3, lbrange=(5000,9000)):
         """
         Fit a FSF model on a point source
         cube: input datacube
@@ -312,9 +326,9 @@ class MoffatModel2(FSFModel):
         """
         dec, ra = pos    
         logger.info('FSF from star fit at Ra: %.5f Dec: %.5f Size %.1f Nslice %d FWHM poly deg %d BETA poly deg %d',
-                            model,pos[1],pos[0],size,nslice,fwhmdeg,betadeg)    
+                            pos[1],pos[0],size,nslice,fwhmdeg,betadeg)    
         white,lbda,imalist = get_images(cube, pos, size=size, nslice=nslice)
-        lbdanorm = norm_lbda(lbda, lbdarange[0], lbdarange[-1])
+        lbdanorm = norm_lbda(lbda, lbrange[0], lbrange[1])
 
         logger.debug('-- First fit on white light image')
         fit1 = white.moffat_fit(fwhm=(0.8, 0.8), n=2.5, circular=True, fit_back=True, verbose=False)
@@ -337,7 +351,7 @@ class MoffatModel2(FSFModel):
             f2 = ima.moffat_fit(fwhm=fit1.fwhm[0], n=beta_pval[k], center=fit1.center, fit_n=False, circular=True, fit_back=True, verbose=False)
             logger.debug('RA: %.5f DEC: %.5f FWHM %.2f BETA %.2f PEAK %.1f BACK %.1f',f2.center[1],f2.center[0],f2.fwhm[0],f2.n,f2.peak,f2.cont)
             fit3.append(f2) 
-        fwhm_fit = np.array([f.fwhm for f in fit3])     
+        fwhm_fit = np.array([f.fwhm[0] for f in fit3])     
             
         logger.debug('-- Polynomial fit of FWHM(lbda)')          
         fwhm_pol,fwhm_pval,fwhm_err = fit_poly(lbdanorm, fwhm_fit, fwhmdeg)
@@ -345,12 +359,22 @@ class MoffatModel2(FSFModel):
 
             
         logger.debug('-- return FSF model')
-        fsf = cls(model, lbrange=lbdarange, fwhmpoly=fwhm_pol, beta=beta_pol, pixstep=cube.get_step())
+        fsf = cls(lbrange=lbrange, fwhm_pol=fwhm_pol, beta_pol=beta_pol, pixstep=cube.get_step()[0])
         fsf.fit = {'center':np.array([f.center for f in fit3]), 'wave':lbda, 'fwhmfit':fwhm_fit, 'fwhmpol':fwhm_pval,
-                   'fwhmerr':fwhm_err, 'center0':fit1.center, 'fwhm0':fit1.fwhm[0], 'beta0':fit1.n,
-                   'betafit':np.array([f.n for f in fit2]), 'ima':imalist}        
+                   'fwhmerr':fwhm_err, 'betafit':beta_fit, 'betapol':beta_pval, 'betaerr':beta_err, 
+                   'center0':fit1.center, 'fwhm0':fit1.fwhm[0], 'beta0':fit1.n,
+                   'ima':imalist}        
       
-        return fsf        
+        return fsf 
+    
+    def info(self):
+        logger.info('Wavelength range: {}-{}'.format(self.lbrange[0],self.lbrange[1]))
+        logger.info('FWHM Poly: {}'.format(self.fwhm_pol))
+        fwhm = self.get_fwhm(np.array(self.lbrange))
+        logger.info('FWHM (arcsec): {:.2f}-{:.2f}'.format(fwhm[0],fwhm[1]))
+        logger.info('Beta Poly: {}'.format(self.beta_pol))
+        beta = self.get_beta(np.array(self.lbrange))
+        logger.info('Beta values: {:.2f}-{:.2f}'.format(beta[0],beta[1]))    
 
     def get_fwhm(self, lbda, unit='arcsec'):
         """Return FWHM at the given wavelengths"""
@@ -364,17 +388,18 @@ class MoffatModel2(FSFModel):
         """Return BETA at the given wavelengths"""
         lb = norm_lbda(lbda,self.lbrange[0],self.lbrange[1])
         beta = np.polyval(self.beta_pol, lb)        
-        return beta    
-
-    def get_image(self, lbda, shape):
-        """Return FSF image at the given wavelength."""
+        return beta  
+    
+    def get_2darray(self, lbda, shape):
+        """Return FSF 2D array at the given wavelength."""
         if not np.isscalar(lbda):
-            raise ValueError        
-        return Moffat2D(self.get_fwhm(lbda, unit='pix'), self.get_beta(lbda), lbda)
+            raise ValueError
+        return Moffat2D(self.get_fwhm(lbda, unit='pix'), self.get_beta(lbda), shape)    
 
-    def get_cube(self, lbda, shape):
-        """Return FSF cube at the given wavelengths."""
-        return Moffat2D(self.get_fwhm(lbda, unit='pix'), self.get_beta(lbda), lbda)    
+    def get_3darray(self, lbda, shape):
+        """Return FSF 3D array at the given wavelengths."""
+        return Moffat2D(self.get_fwhm(lbda, unit='pix'), self.get_beta(lbda), shape)    
+
 
 
 class EllipticalMoffatModel(FSFModel):
