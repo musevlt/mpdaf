@@ -40,7 +40,7 @@ from ..obj import vactoair
 from ..obj import airtovac  # noqa - for backward compatibility
 
 
-__all__ = ['get_emlines']
+__all__ = ['get_emlines', 'z_from_linepos']
 
 # list of useful emission lines
 # name (id), vacuum wave A (c), lower limit (lo), upper limit (up), type (tp),
@@ -173,3 +173,38 @@ def get_emlines(iden=None, z=0, vac=True, lbrange=None, margin=25, sel=None,
             data=[em['id'], em['c'], em['lo'], em['up'], em['tp'], em['d']],
             names=['LINE', 'LBDA_OBS', 'LBDA_LOW', 'LBDA_UP', 'TYPE',
                    'DOUBLET'])
+
+
+def z_from_linepos(iden, wavelength, vac=True):
+    """Returns the redshift at which a line has the given position.
+
+    Parameters
+    ----------
+    iden : str
+        Identifier of the line.
+    wavelength : float
+        Position of the line in Angstrom.
+    vac : bool, optional
+        If True, the position is given in vacuum, else it is given in air.
+
+    Returns
+    -------
+    redshift: float
+
+    Raises
+    ------
+    ValueError is `iden` does not refer to a known line.
+
+    """
+    if not vac:
+        wavelength = airtovac(wavelength)
+
+    em = get_emlines(iden)
+
+    if em is None:
+        raise ValueError("The line is unknown.")
+
+    restframe_wavelenth = em['c'][0]
+    redshift = wavelength / restframe_wavelenth - 1
+
+    return redshift
