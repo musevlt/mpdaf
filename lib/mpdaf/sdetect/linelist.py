@@ -193,7 +193,7 @@ def z_if_linepos(iden, wavelength, vac=True):
 
     Raises
     ------
-    KeyError is `iden` does not refer to a known line.
+    ValueError is `iden` does not refer to a known line.
 
     """
     if not vac:
@@ -202,7 +202,7 @@ def z_if_linepos(iden, wavelength, vac=True):
     em = get_emlines(iden)
 
     if em is None:
-        raise KeyError("The line is unknown.")
+        raise ValueError("The line is unknown.")
 
     restframe_wavelenth = em['c'][0]
     redshift = wavelength / restframe_wavelenth - 1
