@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 from numpy.testing import assert_allclose
-from mpdaf.sdetect import get_emlines, z_if_linepos
+from mpdaf.sdetect import get_emlines, z_from_linepos
 
 
 def test_linelist():
@@ -66,10 +66,10 @@ def test_table():
 
 
 def test_z_linepos():
-    assert_allclose(z_if_linepos(iden='LYALPHA', wavelength=4862.68), 3)
+    assert_allclose(z_from_linepos(iden='LYALPHA', wavelength=4862.68), 3)
 
 
 def test_z_linepos_air():
     assert_allclose(
-        z_if_linepos(iden='LYALPHA', wavelength=4861.32, vac=False),
+        z_from_linepos(iden='LYALPHA', wavelength=4861.32, vac=False),
         3, atol=0.1)

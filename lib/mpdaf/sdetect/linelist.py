@@ -40,7 +40,7 @@ from ..obj import vactoair
 from ..obj import airtovac  # noqa - for backward compatibility
 
 
-__all__ = ['get_emlines', 'z_if_linepos']
+__all__ = ['get_emlines', 'z_from_linepos']
 
 # list of useful emission lines
 # name (id), vacuum wave A (c), lower limit (lo), upper limit (up), type (tp),
@@ -175,7 +175,7 @@ def get_emlines(iden=None, z=0, vac=True, lbrange=None, margin=25, sel=None,
                    'DOUBLET'])
 
 
-def z_if_linepos(iden, wavelength, vac=True):
+def z_from_linepos(iden, wavelength, vac=True):
     """Returns the redshift at which a line has the given position.
 
     Parameters
