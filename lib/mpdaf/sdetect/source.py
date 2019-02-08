@@ -243,54 +243,55 @@ def crackz(nlines, wl, flux, eml, zguess=None):
 
     """
     errmin = 3.0
-    zstep = 0.0002
-    if zguess:
-        zmin = zguess
-        zmax = zguess + zstep
-    else:
-        zmin = 0.0
-        zmax = 7.0
+    found=0
+
+    lnames = np.array(list(eml.values()))
+    lbdas = np.array(list(eml.keys()))
+
     if(nlines == 0):
         return -9999.0, -9999.0, 0, [], [], []
-    lnames = np.array(list(eml.values()))
     if(nlines == 1):
-        if zguess:
-            (error, jfound) = matchlines(nlines, wl, zguess, eml)
-            if(error < errmin):
-                return zguess, -9999.0, 1, wl, flux, list(lnames[jfound[0]])
-            else:
-                return zguess, -9999.0, 1, [], [], []
+        return -9999.0, -9999.0, 1, wl, flux, ["Lya/[OII]"]
+
+    if zguess:
+        (error, jfound) = matchlines(nlines, wl, zguess, eml)
+        if(error < errmin):
+             return zguess, -9999.0, 1, wl, flux, list(lnames[jfound[0]])
         else:
-            return -9999.0, -9999.0, 1, wl, flux, ["Lya/[OII]"]
-    if(nlines > 1):
-        found = 0
-        lbdas = np.array(list(eml.keys()))
-        for z in np.arange(zmin, zmax, zstep):
-            (error, jfound) = matchlines(nlines, wl, z, eml)
-            if(error < errmin):
-                errmin = error
-                found = 1
-                zfound = z
-                jfinal = jfound.copy()
-        if((found == 0) and zguess):
-            return zguess, -9999.0, 0, [], [], []
-        if(found == 1):
-            jfinal = np.array(jfinal).astype(int)
-            return zfound, errmin / np.min(lbdas[jfinal]), nlines, \
+             return zguess, -9999.0, 1, [], [], []
+
+    #test all redshift combinations
+    for n in range(nlines):
+        for p in range(lbdas.shape[0]):
+            ztest=wl[n]/lbdas[p]-1.0
+            if(ztest>=0):
+                (error,jfound)=matchlines(nlines,wl,ztest,eml)
+                if(error < errmin):
+                    errmin = error
+                    found = 1
+                    zfound = ztest
+                    jfinal = jfound.copy()
+    if(found == 1):
+        jfinal = np.array(jfinal).astype(int)
+        return zfound, errmin / np.min(lbdas[jfinal]), nlines, \
                 wl, flux, list(lnames[jfinal[0:nlines]])
-        else:
-            if(nlines > 3):
-                # keep the three brightest
-                ksel = np.argsort(flux)[-1:-4:-1]
-                return crackz(3, wl[ksel], flux[ksel], eml)
-            if(nlines == 3):
-                # keep the two brightest
-                ksel = np.argsort(flux)[-1:-3:-1]
-                return crackz(2, wl[ksel], flux[ksel], eml)
-            if(nlines == 2):
-                # keep the brightest
-                ksel = np.argsort(flux)[-1]
-                return crackz(1, [wl[ksel]], [flux[ksel]], eml)
+    else:
+        if(nlines > 3):
+            # keep the three brightest
+            ksel = np.argsort(flux)[-1:-4:-1]
+            return crackz(3, wl[ksel], flux[ksel], eml)
+        if(nlines == 3):
+            # keep the two brightest
+            ksel = np.argsort(flux)[-1:-3:-1]
+            return crackz(2, wl[ksel], flux[ksel], eml)
+        if(nlines == 2):
+            # keep the brightest
+            ksel = np.argsort(flux)[-1]
+            return crackz(1, [wl[ksel]], [flux[ksel]], eml)
+        return -9999.0, -9999.0, 0, [], [], []
+
+
+
 
 
 def _mask_invalid(tables):
@@ -1912,7 +1913,7 @@ class Source:
                                        description='line name')
                     self.lines.add_column(col)
                 for w, name in zip(wl, lnames):
-                    self.lines['LINE'][self.lines[col_lbda] == w] = name
+                    self.lines['LINE'][np.where(abs(self.lines[col_lbda]-w)<0.01)] = name
                 self._logger.info('crack_z: lines')
                 for l in self.lines.pformat():
                     self._logger.info(l)
