@@ -45,8 +45,10 @@ import sys
 import time
 
 import numpy as np
+from scipy.ndimage import binary_dilation
+from scipy.spatial import cKDTree
 from astropy.io import fits
-from astropy.table import Table
+from astropy import table
 import astropy.units as u
 
 from ..obj import Cube, Image
@@ -165,7 +167,7 @@ def setup_config_files(dir_, config, nb=False):
             v = config[k]
             config_out[k] = v
             msg = "{} detection with {}: {}"
-            logger.info(msg.format(name, k, v))
+            logger.debug(msg.format(name, k, v))
         except KeyError:
             v = config_out[k]
             msg = "{} detection with {}: {} (default)"
@@ -214,6 +216,7 @@ def write_weight_image(cube, cube_exp, dir_):
 
     else:
         logger.info("calculating weight image from exposure cube")
+        cube_exp.data = cube_exp.data.astype(np.float32)
         image = cube_exp.mean(axis=0)
 
     file_ = dir_ / 'im_weight.fits'
@@ -257,6 +260,7 @@ def write_bb_images(cube, cube_exp, dir_, n_cpu=1, limit_ram=False):
 
     logger = logging.getLogger(__name__)
 
+    t0_create = time.time()
     if (n_cpu == 1) or limit_ram: #enables nicer traceback for debugging
         logger.info("creating broad-band images using 1 CPU")
             
@@ -277,6 +281,9 @@ def write_bb_images(cube, cube_exp, dir_, n_cpu=1, limit_ram=False):
 
         [r.get(999999) for r in [r1, r2, r3]]
 
+    t_create = time.time() - t0_create
+    logger.debug("Broad-bands created in {0:.1f} seconds".format(t_create))
+
 
 def write_nb(i, data, var, left, right, exp, fw, hdr, dir_):
 
@@ -286,6 +293,7 @@ def write_nb(i, data, var, left, right, exp, fw, hdr, dir_):
     im_left = np.median(left, axis=0)
     im_right = np.median(right, axis=0)
 
+    im_mask = im_center.mask
     im_center = np.ma.filled(im_center, np.nan)
 
     n_l = len(left)
@@ -297,8 +305,16 @@ def write_nb(i, data, var, left, right, exp, fw, hdr, dir_):
     else:
         im_nb = im_center
 
-    hdu = fits.ImageHDU(im_nb, header=hdr)
-    file_ = dir_ / 'nb/nb{0:04d}.fits'.format(i)
+    hdu = fits.ImageHDU(im_nb, header=hdr, name='DATA')
+    file_ = dir_ / 'nb/nb{:04d}.fits'.format(i)
+    hdu.writeto(file_, overwrite=True)
+
+    #expand mask by two pixels
+
+    #im_mask = binary_dilation(im_mask, iterations=2, border_value=1)
+
+    hdu = fits.ImageHDU(im_mask.astype(np.uint8), header=hdr, name='DATA')
+    file_ = dir_ / 'nb/nb{:04d}-mask.fits'.format(i)
     hdu.writeto(file_, overwrite=True)
 
     if exp is not None:
@@ -306,12 +322,12 @@ def write_nb(i, data, var, left, right, exp, fw, hdr, dir_):
             im_exp  = np.average(exp, weights=fw, axis=0)
         else:
             im_exp = exp
-        hdu = fits.ImageHDU(im_exp, header=hdr)
+        hdu = fits.ImageHDU(im_exp, header=hdr, name='DATA')
     else:
         im_weight = np.ma.sum(weight, axis=0).filled(0)
         hdu = fits.ImageHDU(im_weight, header=hdr)
 
-    file_ = dir_ / 'nb/nb{0:04d}-weight.fits'.format(i)
+    file_ = dir_ / 'nb/nb{:04d}-weight.fits'.format(i)
     hdu.writeto(file_, overwrite=True)
 
     return im_nb
@@ -364,6 +380,7 @@ def write_nb_multi(i, delta, fw, hdr, dir_):
 
     if exp is not None:
         e = exp[i]
+        #e = exp[c_min:c_max]
     else:
         e = None
 
@@ -398,12 +415,15 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1,
     data = cube.data
     var = cube.var
     if cube_exp is not None:
-        exp = cube_exp.data.filled(0)
+        exp = cube_exp.data.filled(0).astype(np.float32)
     else:
         exp = None
 
+    t0_create = time.time()
+
     if n_cpu == 1:
         logger.info("creating narrow-band images using 1 CPU")
+
 
         cube_nb = np.zeros(cube.shape, dtype=np.float32)
         if not limit_ram:
@@ -411,7 +431,7 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1,
         else:
             data0 = data #delay filling until have sliced data
 
-        progress = ProgressCounter(n_w-5, msg='Narrow band:', every=1)
+        progress = ProgressCounter(n_w-5, msg='Created:', every=1)
         for i in range(2, n_w-3):
 
             n_w, n_y, n_x = data.shape
@@ -424,6 +444,7 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1,
 
             if exp is not None:
                 e = exp[i]
+                #e = exp[c_min:c_max]
             else:
                 e = None
 
@@ -454,21 +475,21 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1,
         t0_allocate = time.time()
 
         #shared inputs
-        logger.debug("allocating shared data cube")
+        logger.debug("allocating shared data cube (input)")
         shape = data.shape
         data_raw = mp.RawArray(c_float, int(np.prod(shape)))
         data_np = np.frombuffer(data_raw, dtype='=f4').reshape(shape)
         data_shape = shape
         data_np[:] = data.data
 
-        logger.debug("allocating shared variance cube")
+        logger.debug("allocating shared variance cube (input)")
         shape = var.shape
         var_raw = mp.RawArray(c_float, int(np.prod(shape)))
         var_np = np.frombuffer(var_raw, dtype='=f4').reshape(shape)
         var_shape = shape
         var_np[:] = var.data
 
-        logger.debug("allocating shared mask cube")
+        logger.debug("allocating shared mask cube (input)")
         shape = data.mask.shape
         mask_raw = mp.RawArray(c_bool, int(np.prod(shape)))
         mask_np = np.frombuffer(mask_raw, dtype='|b1').reshape(shape)
@@ -476,7 +497,7 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1,
         mask_np[:] = data.mask
 
         if exp is not None:
-            logger.debug("allocating shared exposure cube")
+            logger.debug("allocating shared exposure cube (input)")
             shape = exp.shape
             exp_raw = mp.RawArray(c_float, int(np.prod(shape)))
             exp_np = np.frombuffer(exp_raw, dtype='=f4').reshape(shape)
@@ -487,7 +508,7 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1,
             exp_shape = None
 
         #shared output
-        logger.debug("allocating shared nb cube")
+        logger.debug("allocating shared nb cube (output)")
         shape = data.shape
         cube_nb_raw = mp.RawArray(c_float, int(np.prod(shape)))
         cube_nb = np.frombuffer(cube_nb_raw, dtype='=f4').reshape(shape)
@@ -503,8 +524,9 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1,
         logger.debug("all data allocated in {0:.1f} seconds".format(t_allocate))
 
         logger.debug("starting multiprocessing")
+
         results = []
-        progress = ProgressCounter(n_w-5, msg='Narrow band:', every=10)
+        progress = ProgressCounter(n_w-5, msg='Created:', every=10)
         for i in range(2, n_w-3):
 
             res = pool.apply_async(write_nb_multi, (i, delta, fw, hdr, dir_),
@@ -520,8 +542,12 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1,
 
     progress.close()
 
+    t_create = time.time() - t0_create
+    logger.debug("Narrow-bands created in {0:.1f} seconds".format(t_create))
+
+
     hdr = cube.wcs.to_cube_header(cube.wave)
-    cube_nb = fits.ImageHDU(cube_nb, header=hdr)
+    cube_nb = fits.ImageHDU(cube_nb, header=hdr, name='DATA')
 
     return cube_nb
 
@@ -566,15 +592,14 @@ def run_sex(cmd, dir_):
                         stderr=subprocess.STDOUT)
     p.wait()
     if p.returncode != 0:
-        stdout = p.communicate()[0].decode('utf-8')
+        stdout = p.communicate()[0].decode('utf-8', errors='ignore')
         logger = logging.getLogger(__name__)
         logger.error("Dumping output from SExtractor:" + stdout)
-        msg = "Error in call: '{}'".format(' '.join(cmd))
+        msg = "Error in subprocess call: '{}'".format(' '.join(cmd))
         raise Exception(msg)
 
 
-def step2(cubename, cmd_sex, config=None, config_nb=None, dir_=None,
-        apercube=False, n_cpu=1):
+def step2(cubename, cmd_sex, config=None, config_nb=None, dir_=None, n_cpu=1):
 
     if config is None:
         config = {}
@@ -602,23 +627,27 @@ def step2(cubename, cmd_sex, config=None, config_nb=None, dir_=None,
         run_sex(cmd, dir_)
 
     logger.debug("combining catalogs") 
-    tB = Table.read(dir_ / 'cat_b.dat', format='ascii.sextractor')
-    tG = Table.read(dir_ / 'cat_g.dat', format='ascii.sextractor')
-    tR = Table.read(dir_ / 'cat_r.dat', format='ascii.sextractor')
+    cat_b = table.Table.read(dir_ / 'cat_b.dat', format='ascii.sextractor')
+    cat_g = table.Table.read(dir_ / 'cat_g.dat', format='ascii.sextractor')
+    cat_r = table.Table.read(dir_ / 'cat_r.dat', format='ascii.sextractor')
 
-    names = ('NUMBER', 'X_IMAGE', 'Y_IMAGE',
+    names = ('NUMBER',
+             'RA', 'DEC',
+             'I_X', 'I_Y',
              'MAG_APER_B', 'MAGERR_APER_B',
              'MAG_APER_G', 'MAGERR_APER_G',
              'MAG_APER_R', 'MAGERR_APER_R')
-    tBGR = Table([tB['NUMBER'], tB['X_IMAGE'], tB['Y_IMAGE'],
-                  tB['MAG_APER'], tB['MAGERR_APER'],
-                  tG['MAG_APER'], tG['MAGERR_APER'],
-                  tR['MAG_APER'], tR['MAGERR_APER']], names=names)
-    logger.info("{} continiuum objects detected".format(len(tBGR)))
+    cat_bgr = table.Table([cat_b['NUMBER'],
+                  cat_b['ALPHA_J2000'], cat_b['DELTA_J2000'],
+                  cat_b['X_IMAGE']-1, cat_b['Y_IMAGE']-1,
+                  cat_b['MAG_APER'], cat_b['MAGERR_APER'],
+                  cat_g['MAG_APER'], cat_g['MAGERR_APER'],
+                  cat_r['MAG_APER'], cat_r['MAGERR_APER']], names=names)
+    logger.info("{} continiuum objects detected".format(len(cat_bgr)))
 
     file_ = dir_ / 'cat_bgr.dat'
     logger.debug("writing catalog: {}".format(file_))
-    tBGR.write(file_, format='ascii.fixed_width_two_line')
+    cat_bgr.write(file_, format='ascii.fixed_width_two_line')
 
     for band in ['b', 'g', 'r']:
         file_ = dir_ / 'cat_{}.dat'.format(band)
@@ -635,12 +664,14 @@ def step2(cubename, cmd_sex, config=None, config_nb=None, dir_=None,
     commands = []
     for i in range(2, n_w-3):
         cmd = [cmd_sex,
-                '-CATALOG_NAME', 'cat{0:04d}.dat'.format(i),
-                '-WEIGHT_IMAGE', 'nb{0:04d}-weight.fits'.format(i),
-                '-CHECKIMAGE_NAME', 'seg{0:04d}.fits'.format(i),
-                'nb{0:04d}.fits'.format(i)]
+                '-CATALOG_NAME', 'cat{:04d}.dat'.format(i),
+                '-WEIGHT_IMAGE', 'nb{:04d}-weight.fits'.format(i),
+                '-FLAG_IMAGE', 'nb{:04d}-mask.fits'.format(i),
+                '-CHECKIMAGE_NAME', 'seg{:04d}.fits'.format(i),
+                'nb{:04d}.fits'.format(i)]
         commands.append(cmd)
 
+    t0_run = time.time()
     if n_cpu == 1:
         logger.info("running SExtractor on narrow-band images using 1 CPU")
 
@@ -668,19 +699,477 @@ def step2(cubename, cmd_sex, config=None, config_nb=None, dir_=None,
 
     progress.close()
 
+    t_run = time.time() - t0_run
+    logger.debug("running SExtractor took {0:.1f} seconds".format(t_run))
 
-def step3(cubename, ima_size, clean, skyclean, radius, nlines_max):
+
+def load_cat(i, dir_):
+
+    file_ = dir_ / 'nb/cat{:04d}.dat'.format(i)
+    data = table.Table.read(file_, format='ascii.sextractor')
+
+    n_data = len(data)
+
+    data.rename_column('NUMBER', 'ID_SLICE')
+    data.rename_column('ALPHA_J2000', 'RA')
+    data.rename_column('DELTA_J2000', 'DEC')
+    data.rename_column('X_IMAGE', 'I_X')
+    data.rename_column('Y_IMAGE', 'I_Y')
+
+    #make image coords 0-indexed
+    data['I_X'] -= 1
+    data['I_Y'] -= 1
+
+    #add extra columns
+    #new ID unqiue in whole cube, to be filled later
+    id_cube = np.full(n_data, -1, dtype=int)
+    c1 = table.Column(id_cube, name='ID_CUBE') 
+
+    #Z index (i.e. slice+1)
+    z_image = np.full(n_data, i, dtype=int)
+    c2 = table.Column(z_image, name='I_Z') 
+
+    #wavelength, to be filled later
+    wave = np.full(n_data, np.nan, dtype=float)
+    c3 = table.Column(wave, name='WAVE')
+
+    mag = data['MAG_APER'].astype(float)
+    mag_err = data['MAGERR_APER'].astype(float)
+    mag[np.isclose(mag, 99.)] = np.nan
+    mag_err[np.isclose(mag_err, 99.)] = np.nan
+
+    flux = 10. ** ((25. - mag) / -2.5)
+    flux_err = np.abs(flux * np.log(10) * mag_err / -2.5)
+
+    c4 = table.Column(flux, name='FLUX')
+    c5 = table.Column(flux_err, name='FLUX_ERR')
+
+    data.add_columns([c1, c2, c3, c4, c5], indexes=[0, 5, 3, 5, 5])
+
+    return data
+
+
+#def assign_friends(coords, kdTree, ids, i, max_dist, id_, n_cpu=1):
+#
+#    #assign index of current
+#    ids[i] = id_
+#
+#    #find index of nearest
+#    idx_near = kdTree.query_ball_point(coords[i], max_dist, n_jobs=n_cpu)
+#
+#    #for each index in nearest
+#    for i_test in idx_near:
+#        if ids[i_test] == 0: #otherwise skip current and previously checked
+#            assign_friends(coords, kdTree, ids, i_test, max_dist, id_,
+#                            n_cpu=n_cpu)
+
+
+def merge_raw_3D(x, y, z, dist_spatial, dist_spectral, n_cpu=1):
+
+    coords_spatial = np.column_stack([x, y])
+    coords_spectral = z.reshape([-1, 1])
+
+    tree_spatial = cKDTree(coords_spatial) 
+    tree_spectral = cKDTree(coords_spectral) 
+
+    idx_unassigned = set(range(len(coords_spatial)))
+    ids = np.zeros([len(coords_spatial)], dtype=int)
+    id_group = 1
+    while len(idx_unassigned): #while still unassigned 
+
+        i_init = next(iter(idx_unassigned)) #get first
+        new_friends = set([i_init])
+
+        while len(new_friends):
+            
+            i = new_friends.pop() #pick one of the new friends
+            ids[i] = id_group #assign it the ids
+            idx_unassigned.remove(i) #remove 
+
+            idx_1 = tree_spatial.query_ball_point(coords_spatial[i],
+                            dist_spatial, n_jobs=n_cpu)
+
+            idx_2 = tree_spectral.query_ball_point(coords_spectral[i],
+                            dist_spectral, n_jobs=n_cpu)
+            
+            #near in all dimensions, and not already assigned
+            idx_new = set(idx_1) & set(idx_2) & idx_unassigned
+            
+            #extend list of indicies to check
+            new_friends |= idx_new
+
+        id_group += 1
+
+    return ids
+
+
+
+def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
+        n_cpu=1):
+
+    if dir_ is None:
+        dir_ = Path.cwd()
 
     logger = logging.getLogger(__name__)
-    logger.info("STEP 3: merge SExtractor catalogs and measure "
-                "redshifts")
+    logger.info("STEP 3: merge SExtractor catalogs and measure redshifts")
 
-    c = Cube(cubename)
-    cubevers = str(c.primary_header.get('CUBE_V', ''))
+    cube = Cube(str(cubename))
+    n_w = cube.shape[0]
 
-    wlmin = c.wave.get_start(unit=u.angstrom)
-    dw = c.wave.get_step(unit=u.angstrom)
-    nslices = c.shape[0]
+    #remove wavelengths with sky lines
+    idx_nb = np.arange(2, 500, dtype=int)
+#    idx_nb = np.arange(2, n_w-3, dtype=int)
+    wave = cube.wave.coord(idx_nb, unit=u.Unit('Angstrom'))
+    mask = np.zeros_like(idx_nb, dtype=bool)
+    for wave_range in skyclean:
+        msg = "excluding wavelengths between {:.02f}\u212B and {:.02f}\u212B"
+        logger.debug(msg.format(*wave_range))
+        m = (wave >= wave_range[0]) & (wave <= wave_range[1])
+        mask |= m
+    idx_nb = idx_nb[~mask]
+
+    msg = "{} narrow-bands will be excluded"
+    logger.debug(msg.format(np.sum(mask)))
+
+    #load NB catalogs
+    cat_all = []
+    t0_load = time.time()
+
+    if n_cpu == 1:
+        logger.info("loading narrow-band catalogs using 1 CPU")
+
+        progress = ProgressCounter(len(idx_nb), msg='Loaded:', every=1)
+        for i in idx_nb:
+            cat = load_cat(i, dir_)
+            cat_all.append(cat)
+            progress.increment()
+
+    else:
+        use_cpu = np.clip(n_cpu, None, 16) #no point using more than 16 CPUs
+        msg = "loading narrow-band catalogs using {} CPUs".format(use_cpu)
+        logger.info(msg)
+        progress = ProgressCounter(len(idx_nb), msg='Loaded:', every=10)
+        pool = mp.Pool(use_cpu)
+        results = []
+        for i in idx_nb:
+            res = pool.apply_async(load_cat, (i, dir_),
+                    callback=lambda x:progress.increment())
+            results.append(res)
+        pool.close()
+
+        for res in results:
+            cat = res.get(999999)
+            cat_all.append(cat)
+
+    progress.close()
+
+    #combine into one large table
+    cat = table.vstack(cat_all)
+
+    cat['ID_CUBE'] = np.arange(len(cat), dtype=int) + 1
+    cat['WAVE'] = cube.wave.coord(cat['I_Z'])
+
+    t_load = time.time() - t0_load
+    logger.debug("catalogs loaded in {0:.1f} seconds".format(t_load))
+
+    msg = "{} raw detections found".format(len(cat))
+    logger.info(msg)
+
+
+    logger.info("cleaning detections with fluxes below 5\u03C3")
+    #remove insigficant fluxes
+
+    flux = cat['FLUX']
+    flux_err = cat['FLUX_ERR']
+    with np.errstate(invalid='ignore', divide='ignore'):
+        mask = (flux / flux_err) < 5.
+        mask |= np.isnan(flux)
+
+    cat = cat[~mask]
+    msg = "{} detections remain ({} removed)"
+    logger.info(msg.format(np.sum(~mask), np.sum(mask)))
+    
+
+    logger.info("cleaning detections at edge of cube")
+    #clean detections partially (>10%) outside data 
+
+    area_tot = cat['ISOAREA_IMAGE'].astype(float)
+    area_bad = cat['NIMAFLAGS_ISO'].astype(float)
+    with np.errstate(invalid='ignore', divide='ignore'):
+        mask = (area_bad / area_tot) > 0.1
+        mask |= area_tot == 0
+
+    cat = cat[~mask]
+    msg = "{} detections remain ({} removed)"
+    logger.info(msg.format(np.sum(~mask), np.sum(mask)))
+
+
+    file_weight = str(dir_ / 'im_weight.fits')
+    im_weight = Image(file_weight)
+    clean_thresh = clean * np.ma.median(im_weight.data)
+    logger.info("cleaning below image weight %s", clean_thresh)
+
+    i_y = np.round(cat['I_Y']).astype(int)
+    i_x = np.round(cat['I_X']).astype(int)
+    mask = im_weight.data[i_y, i_x] < clean_thresh
+
+    cat = cat[~mask]
+    msg = "{} detections remain ({} removed)"
+    logger.info(msg.format(np.sum(~mask), np.sum(mask)))
+
+
+    max_sep_spatial = 0.8
+    max_sep_spectral = 3.75
+    msg = "merging raw detections using a friends-of-friends algorithm"
+    logger.info(msg)
+    msg = "spatial link-length \u0394r < {:.2f}\u2033"
+    logger.debug(msg.format(max_sep_spatial))
+    msg = "spectral link-length \u0394\u03BB < {:.2f}\u212B"
+    logger.debug(msg.format(max_sep_spectral))
+
+
+    #merge detections when close in wavelength and keep the brightest
+
+    x0 = cube.wcs.get_crval1(unit=u.deg)
+    y0 = cube.wcs.get_crval2(unit=u.deg)
+    z0 = cube.wave.get_crval(unit=u.Unit('Angstrom'))
+
+    x = (cat['RA'] - x0) * 3600. * np.cos(np.radians(y0))
+    y = (cat['DEC'] - y0) * 3600.
+    z = (cat['WAVE'] - z0)
+
+    ids_line = merge_raw_3D(x, y, z, max_sep_spatial, max_sep_spectral,
+                    n_cpu=n_cpu)
+
+    #loop over groups and keep brightest line
+    mask = np.zeros([len(cat)], dtype=bool)
+    for id_line in np.unique(ids_line):
+        m_line = (ids_line == id_line)
+        fluxes = cat['FLUX'][m_line] 
+        idx = np.argmax(fluxes)
+        id_keep = cat['ID_CUBE'][m_line][idx]
+        mask |= (cat['ID_CUBE'] == id_keep)
+
+    cat = cat[mask]
+    #reassign ID numbers
+    cat['ID_CUBE'] = np.arange(len(cat), dtype=int) + 1
+
+    msg = "{} lines found ({} duplicate detections discarded)"
+    logger.info(msg.format(np.sum(mask), np.sum(~mask)))
+
+    logger.info("grouping detections")
+
+    #group detections close to continuum sources
+    file_ = dir_ / 'cat_bgr.dat'
+    cat_bgr = table.Table.read(file_, format='ascii.fixed_width_two_line')
+
+    x0 = cube.wcs.get_crval1(unit=u.deg)
+    y0 = cube.wcs.get_crval2(unit=u.deg)
+
+    x_raw = (cat['RA'] - x0) * 3600. * np.cos(np.radians(y0))
+    y_raw = (cat['DEC'] - y0) * 3600.
+
+    x_cont = (cat_bgr['RA'] - x0) * 3600. * np.cos(np.radians(y0))
+    y_cont = (cat_bgr['DEC'] - y0) * 3600.
+
+    coords_raw = np.column_stack([x_raw, y_raw])
+    coords_group = np.column_stack([x_cont, y_cont])
+
+    tree_raw = cKDTree(coords_raw)
+    tree_group = cKDTree(coords_group)
+
+    ids = np.zeros([len(cat)], dtype=int)
+    dist, ids = tree_group.query(coords_raw, 1, distance_upper_bound=1.2)
+
+    mask_nogroup = ~np.isfinite(dist)
+    ids[mask_nogroup] = -1
+
+    id_group = np.max(ids) + 1
+
+    while np.sum(mask_nogroup):
+
+        i = np.where(mask_nogroup)[0][0]
+        
+        idx = tree_raw.query_ball_point(coords_raw[i], 1.2)
+        idx = np.array(idx)
+
+        mask_nogroup = ids == -1
+        idx = idx[mask_nogroup[idx]]
+
+        ids[idx] = id_group
+        
+        id_group +=1 
+
+#assign_to_group
+#for each raw find nearest cont #label centers fixed
+#for each unassined group nearest
+#if no group make new group
+#recalc group centers of non-fixed
+#for each raw assign to nearest group within radius
+#if no group make new group
+#recalc group centers of non-fixed
+#repeat untill IDs don't change or max iter limit
+
+    #iterate on this! TODO
+
+    n_obj = len(np.unique(ids))
+    logger.info("{} objects found".format(n_obj))
+
+    c = table.Column(ids, name='ID_OBJ')
+    cat.add_column(c, index=1)
+    
+
+
+    # Sources list
+    cube_version = str(cube.primary_header.get('CUBE_V', ''))
+    origin = ('muselet', __version__, cubename, cube_version)
+
+    dw = cube.wave.get_step(unit=u.angstrom)
+
+    logger.info("building raw sources".format(n_obj))
+
+    raw_cat = SourceList()
+
+    progress = ProgressCounter(len(cat), msg='Built:', every=1)
+    for row in cat:
+        src = Source.from_data(ID=row['ID_CUBE'], ra=row['RA'], dec=row['DEC'],
+                        origin=origin)
+
+        file_nb = (dir_ / 'nb/nb{:04d}.fits'.format(row['I_Z']))
+        file_seg = (dir_ / 'nb/seg{:04d}.fits'.format(row['I_Z']))
+        im_nb = Image(str(file_nb))
+        im_seg = Image(str(file_seg))
+        im_seg.data = (im_seg.data == row['ID_SLICE']) * 1
+      #  im_seg.data.mask = np.zeros_like(im_seg.data, dtype=bool)
+
+        src.add_image(im_nb, 'NB{:04.0f}'.format(row['WAVE']), ima_size)
+        import pdb; pdb.set_trace()
+        src.add_image(im_seg, 'MASK_OBJ', ima_size)
+
+        wave = row['WAVE']
+        flux = row['FLUX']
+        flux_err = row['FLUX_ERR']
+
+        lines = table.Table([[wave], [dw], [flux], [flux_err]],
+                      names=['LBDA_OBS', 'LBDA_OBS_ERR', 'FLUX', 'FLUX_ERR'],
+                      dtype=['<f8', '<f8', '<f8', '<f8'])
+        lines['LBDA_OBS'].format = '.2f'
+        lines['LBDA_OBS'].unit = u.angstrom
+        lines['LBDA_OBS_ERR'].format = '.2f'
+        lines['LBDA_OBS_ERR'].unit = u.angstrom
+        lines['FLUX'].format = '.4f'
+        lines['FLUX'].unit = cube.unit
+        lines['FLUX_ERR'].format = '.4f'
+        lines['FLUX_ERR'].unit = cube.unit
+        src.lines = lines
+        raw_cat.append(src)
+
+        progress.increment()
+
+    progress.close()
+    
+
+    logger.info("building object sources".format(n_obj))
+
+    obj_cat = SourceList()
+
+    ids = np.unique(cat['ID_OBJ'])
+    progress = ProgressCounter(len(ids), msg='Built:', every=1)
+    for id_ in ids:
+
+        rows = cat[cat['ID_OBJ'] == id_]
+
+        ra = np.mean(rows['RA'])
+        dec = np.mean(rows['DEC'])
+        src = Source.from_data(ID=id_, ra=ra, dec=dec, origin=origin)
+
+        sort = np.argsort(rows['FLUX'])[::-1]
+        rows = rows[sort][:nlines_max]
+
+        images_nb = [] 
+        images_seg = [] 
+
+        for row in rows:
+            file_nb = (dir_ / 'nb/nb{:04d}.fits'.format(row['I_Z']))
+            file_seg = (dir_ / 'nb/seg{:04d}.fits'.format(row['I_Z']))
+            im_nb = Image(str(file_nb))
+            im_seg = Image(str(file_seg))
+            im_seg.data = (im_seg.data == row['ID_SLICE']) * 1
+            im_seg.data.mask = np.zeros_like(im_seg.data, dtype=bool)
+
+            src.add_image(im_nb, 'NB{:04.0f}'.format(row['WAVE']), ima_size)
+
+            images_nb.append(im_nb)
+            images_seg.append(im_seg)
+
+
+        im_nb_coadd = images_nb[0].copy()
+        im_seg_coadd = images_seg[0].copy()
+
+        for im_nb, im_seg in zip(images_nb[1:], images_seg[1:]):
+            im_nb_coadd.data += im_nb
+            im_seg_coadd += im_seg
+
+        im_seg_coadd.data = (im_seg_coadd.data != 0) * 1
+        src.add_image(im_nb_coadd, 'NB_COADD', ima_size)
+        src.add_image(im_seg_coadd, 'MASK_OBJ', ima_size)
+
+        wave = rows['WAVE']
+        flux = rows['FLUX']
+        flux_err = rows['FLUX_ERR']
+
+        lines = table.Table([wave, [dw]*len(rows), flux, flux_err],
+                      names=['LBDA_OBS', 'LBDA_OBS_ERR', 'FLUX', 'FLUX_ERR'],
+                      dtype=['<f8', '<f8', '<f8', '<f8'])
+        lines['LBDA_OBS'].format = '.2f'
+        lines['LBDA_OBS'].unit = u.angstrom
+        lines['LBDA_OBS_ERR'].format = '.2f'
+        lines['LBDA_OBS_ERR'].unit = u.angstrom
+        lines['FLUX'].format = '.4f'
+        lines['FLUX'].unit = cube.unit
+        lines['FLUX_ERR'].format = '.4f'
+        lines['FLUX_ERR'].unit = cube.unit
+        src.lines = lines
+
+        obj_cat.append(src)
+
+        progress.increment()
+
+    progress.close()
+
+    return raw_cat, obj_cat
+#
+#
+#
+#
+#    import matplotlib.pyplot as plt
+#    plt.plot(cat['I_X'], cat['I_Y'], 'o')
+#    plt.plot(cat_bgr['I_X'], cat_bgr['I_Y'], 'o')
+#    for id_ in np.unique(ids):
+#        m = ids == id_
+#        plt.plot(cat['I_X'][m], cat['I_Y'][m])
+#    plt.show()
+#
+#
+#  #  cat.write('b.fit', overwrite=True)
+#    import pdb; pdb.set_trace()
+
+
+#improve edge cleaning
+#find centroid of groups and link to continuum objects
+#build raw sources of each
+#include segmentiation maps
+#build combined sources (store only the 25 brights lines)
+#include union+intersection segmentiation maps
+#run crackz on combined sources
+
+     
+
+
+    cube_version = str(cube.primary_header.get('CUBE_V', ''))
+
+    wlmin = cube.wave.get_start(unit=u.angstrom)
+    dw = cube.wave.get_step(unit=u.angstrom)
 
     ima_size = ima_size * c.wcs.get_step(unit=u.arcsec)[0]
 
@@ -1118,8 +1607,9 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
 
     cubename = Path(cubename)
     if expmapcube is not None:
-        logger.debug("No exposure cube provided")
         expmapcube = Path(expmapcube)
+    else:
+        logger.debug("No exposure cube provided")
 
 
     if step == 1:
@@ -1127,13 +1617,15 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
                 n_cpu=n_cpu)
     if step <= 2:
         step2(cubename, cmd_sex, config=sex_config, config_nb=sex_config_nb,
-                dir_=workdir, apercube=True, n_cpu=n_cpu)
+                dir_=workdir, n_cpu=n_cpu)
+
+    if step <= 3:
+        raw, obj = step3(cubename, ima_size, clean, skyclean,
+                            radius, nlines_max, dir_=workdir, n_cpu=n_cpu)
+
+    return raw, obj
 
    # with chdir(workdir):
-   #     if step <= 3:
-   #         continuum_lines, single_lines, raw_catalog = step3(
-   #             cubename, ima_size, clean, skyclean, radius, nlines_max)
-
    #     if del_sex:
    #         remove_files()
 
