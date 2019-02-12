@@ -16,15 +16,15 @@ WEIGHT_IMAGE    im_weight.fits
  
 DETECT_TYPE     CCD             # "CCD" or "PHOTO"
 FLAG_IMAGE      flag.fits       # filename for an input FLAG-image
-DETECT_MINAREA  {detect_minarea} # minimum number of pixels above threshold
-DETECT_THRESH   {detect_thresh} # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
-ANALYSIS_THRESH {detect_thresh}	#<threshold>,<ZP> in mag.arcsec-2
+DETECT_MINAREA  4               # minimum number of pixels above threshold
+DETECT_THRESH   2.0             # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
+ANALYSIS_THRESH 2.0         	#<threshold>,<ZP> in mag.arcsec-2
  
 FILTER          Y               # apply filter for detection ("Y" or "N")?
 FILTER_NAME     default.conv    # name of the file containing the filter
  
-DEBLEND_NTHRESH {deblend_nthresh} # Number of deblending sub-thresholds
-DEBLEND_MINCONT {deblend_mincont} # Minimum contrast parameter for deblending
+DEBLEND_NTHRESH 50
+DEBLEND_MINCONT 0.000000001     # Minimum contrast parameter for deblending
  
 CLEAN           Y               # Clean spurious detections? (Y or N)?
 CLEAN_PARAM     1.0             # Cleaning efficiency
@@ -51,8 +51,8 @@ STARNNW_NAME    default.nnw     # Neural-Network_Weight table filename
  
 #------------------------------ Background -----------------------------------
  
-BACK_SIZE       {back_size}     # Background mesh: <size> or <width>,<height>
-BACK_FILTERSIZE {back_filtersize} # Background filter: <size> or <width>,<height>
+BACK_SIZE       11              # Background mesh: <size> or <width>,<height>
+BACK_FILTERSIZE 1               # Background filter: <size> or <width>,<height>
  
 BACKPHOTO_TYPE  LOCAL           # can be "GLOBAL" or "LOCAL"
  

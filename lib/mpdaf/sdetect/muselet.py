@@ -62,22 +62,6 @@ CONFIG_FILES = {'sex': 'default.sex', 'conv': 'default.conv',
                 'nnw': 'default.nnw', 'param': 'default.param'}
 CONFIG_FILES_NB = {'sex': 'nb_default.sex', 'conv': 'nb_default.conv',
                     'nnw': 'nb_default.nnw', 'param': 'nb_default.param'}
-DEFAULT_CONFIG = {
-        'detect_minarea' : 4,
-        'detect_thresh' : 2.0,
-        'deblend_nthresh' : 50,
-        'deblend_mincont' : 0.000000001,
-        'back_size' :  11,
-        'back_filtersize' : 1,
-        }
-DEFAULT_CONFIG_NB = {
-        'detect_minarea' : 3,
-        'detect_thresh' : 2.5,
-        'deblend_nthresh' : 50,
-        'deblend_mincont' : 0.000000001,
-        'back_size' :  11,
-        'back_filtersize' : 1,
-        }
 
 shared_args = {} #global variable storage needed for multiprocessing
 
@@ -108,74 +92,26 @@ class ProgressCounter(object):
         sys.stdout.flush()
 
 
-def setup_config_files(dir_, config, nb=False):
+def setup_config_files(dir_, nb=False):
 
     logger = logging.getLogger(__name__)
 
     #choose whether working for NB files or BB files
     if nb:
         config_files = CONFIG_FILES_NB
-        default_config = DEFAULT_CONFIG_NB
-        name = 'narrow-band'
     else:
         config_files = CONFIG_FILES
-        default_config = DEFAULT_CONFIG
-        name = 'broad-band'
     
+    for config_type in ['sex', 'param', 'conv', 'nnw']:
+        f1 = DATADIR / config_files[config_type]
+        f2 = dir_ / 'default.{}'.format(config_type)
+        
+        if f2.exists():
+            logger.debug("using existing file: {}".format(f2))
+        else:
+            shutil.copy(f1, f2)
+            logger.debug("creating file: {}".format(f2))
 
-    #copy nnw file
-    f1 = DATADIR / config_files['nnw']
-    f2 = dir_ / 'default.nnw'
-    try:
-        f2.unlink() #remove existing
-    except FileNotFoundError:
-        pass
-    shutil.copy(f1, f2)
-
-    #copy param file
-    f1 = DATADIR / config_files['param']
-    f2 = dir_ / 'default.param'
-    try:
-        f2.unlink() #remove existing
-    except FileNotFoundError:
-        pass
-    shutil.copy(f1, f2)
-
-    #copy conv file
-    if 'conv' not in config:
-        #use default
-        f1 = DATADIR / config_files['conv']
-    else:
-        #use user supplied file
-        f1 = Path(config['conv'])
-        msg = "{} detection with user supplied convolution kernel: {}"
-        logger.info(msg.format(name, f1))
-    f2 = dir_ / 'default.conv'
-    try:
-        f2.unlink() #remove existing
-    except FileNotFoundError:
-        pass
-    shutil.copy(f1, f2)
-
-    #write sex configuration
-    with open(DATADIR / config_files['sex'], 'r') as fh:
-        template = fh.read()
-
-    config_out = default_config.copy()
-    for k in default_config.keys():
-        try:
-            v = config[k]
-            config_out[k] = v
-            msg = "{} detection with {}: {}"
-            logger.debug(msg.format(name, k, v))
-        except KeyError:
-            v = config_out[k]
-            msg = "{} detection with {}: {} (default)"
-            logger.debug(msg.format(name, k, v))
-
-    with open(dir_ / 'default.sex', 'w') as fh:
-        fh.write(template.format(**config_out))
-    
 
 def remove_files():
 
@@ -510,6 +446,7 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1,
         #shared output
         logger.debug("allocating shared nb cube (output)")
         shape = data.shape
+        import pdb; pdb.set_trace()
         cube_nb_raw = mp.RawArray(c_float, int(np.prod(shape)))
         cube_nb = np.frombuffer(cube_nb_raw, dtype='=f4').reshape(shape)
         cube_nb_shape = shape
@@ -599,6 +536,18 @@ def run_sex(cmd, dir_):
         raise Exception(msg)
 
 
+def get_sex_opts(config):
+
+    logger = logging.getLogger(__name__)
+
+    cmd = []
+    for k, v in config.items():
+        cmd += ['-{}'.format(k.upper()), '{}'.format(v)]
+        logger.debug("Using {} = {}".format(k.upper(), v))
+
+    return cmd
+
+
 def step2(cubename, cmd_sex, config=None, config_nb=None, dir_=None, n_cpu=1):
 
     if config is None:
@@ -613,18 +562,21 @@ def step2(cubename, cmd_sex, config=None, config_nb=None, dir_=None, n_cpu=1):
     logger = logging.getLogger(__name__)
     logger.info("STEP 2: run SExtractor on broad-band and narrow-band images")
 
-    # replace existing config files in work dir
-    setup_config_files(dir_, config)
-
+    # setup config files in work dir
+    setup_config_files(dir_)
 
     logger.info("running SExtractor on white light and RGB images") 
 
-    run_sex([cmd_sex, 'im_white.fits'], dir_)
+    sex_opts = get_sex_opts(config)
+    cmd = [cmd_sex] + sex_opts + ['im_white.fits']
+    run_sex(cmd, dir_)
     for band in ['b', 'g', 'r']:
-        cmd = [cmd_sex,
+        cmd = [cmd_sex] + sex_opts + [
                 '-CATALOG_NAME', 'cat_{}.dat'.format(band),
                 'im_white.fits,im_{}.fits'.format(band)]
         run_sex(cmd, dir_)
+
+
 
     logger.debug("combining catalogs") 
     cat_b = table.Table.read(dir_ / 'cat_b.dat', format='ascii.sextractor')
@@ -654,19 +606,21 @@ def step2(cubename, cmd_sex, config=None, config_nb=None, dir_=None, n_cpu=1):
         logger.debug("removing file {}".format(file_))
         os.remove(file_)
 
-    # replace existing config files in work dir
-    setup_config_files(dir_ / 'nb', config_nb, nb=True)
+    # setup config files in work dir
+    setup_config_files(dir_ / 'nb', nb=True)
 
     cube = Cube(str(cubename))
     n_w = cube.shape[0]
 
     #generate sextractor commands
+    sex_opts = get_sex_opts(config_nb)
     commands = []
     for i in range(2, n_w-3):
-        cmd = [cmd_sex,
+        cmd = [cmd_sex] + sex_opts + [
                 '-CATALOG_NAME', 'cat{:04d}.dat'.format(i),
                 '-WEIGHT_IMAGE', 'nb{:04d}-weight.fits'.format(i),
                 '-FLAG_IMAGE', 'nb{:04d}-mask.fits'.format(i),
+                '-CHECKIMAGE_TYPE', 'SEGMENTATION',
                 '-CHECKIMAGE_NAME', 'seg{:04d}.fits'.format(i),
                 'nb{:04d}.fits'.format(i)]
         commands.append(cmd)
