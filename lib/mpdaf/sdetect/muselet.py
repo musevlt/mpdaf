@@ -770,18 +770,43 @@ def assign_group(coord_raw, coord_group, dist, n_cpu=1):
         id_group +=1 
 
     return ids
-#
-#    #assign index of current
-#    ids[i] = id_
-#
-#    #find index of nearest
-#    idx_near = kdTree.query_ball_point(coord[i], max_dist, n_jobs=n_cpu)
-#
-#    #for each index in nearest
-#    for i_test in idx_near:
-#        if ids[i_test] == 0: #otherwise skip current and previously checked
-#            assign_friends(coord, kdTree, ids, i_test, max_dist, id_,
-#                            n_cpu=n_cpu)
+
+
+def create_line_source(row, dir_, origin, dw, flux_unit):
+
+    src = Source.from_data(ID=row['ID_CUBE'], ra=row['RA'], dec=row['DEC'],
+                    origin=origin)
+
+    file_nb = (dir_ / 'nb/nb{:04d}.fits'.format(row['I_Z']))
+    file_seg = (dir_ / 'nb/seg{:04d}.fits'.format(row['I_Z']))
+    im_nb = Image(str(file_nb))
+    im_seg = Image(str(file_seg))
+    im_seg.data = (im_seg.data == row['ID_SLICE']) * 1
+  #  im_seg.data.mask = np.zeros_like(im_seg.data, dtype=bool)
+
+    ima_size = 21
+    src.add_image(im_nb, 'NB{:04.0f}'.format(row['WAVE']), ima_size)
+    import pdb; pdb.set_trace()
+    src.add_image(im_seg, 'MASK_OBJ', ima_size)
+
+    wave = row['WAVE']
+    flux = row['FLUX']
+    flux_err = row['FLUX_ERR']
+
+    lines = table.Table([[wave], [dw], [flux], [flux_err]],
+                  names=['LBDA_OBS', 'LBDA_OBS_ERR', 'FLUX', 'FLUX_ERR'],
+                  dtype=['<f8', '<f8', '<f8', '<f8'])
+    lines['LBDA_OBS'].format = '.2f'
+    lines['LBDA_OBS'].unit = u.angstrom
+    lines['LBDA_OBS_ERR'].format = '.2f'
+    lines['LBDA_OBS_ERR'].unit = u.angstrom
+    lines['FLUX'].format = '.4f'
+    lines['FLUX'].unit = flux_unit
+    lines['FLUX_ERR'].format = '.4f'
+    lines['FLUX_ERR'].unit = cube.unit
+    src.lines = lines
+
+    return src
 
 
 def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
@@ -898,7 +923,7 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
     logger.info(msg.format(np.sum(~mask), np.sum(mask)))
 
 
-    max_sep_spatial = 0.8
+    max_sep_spatial = 1.2
     max_sep_spectral = 3.75
     msg = "merging raw detections using a friends-of-friends algorithm"
     logger.info(msg)
@@ -1059,52 +1084,23 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
 
     # Sources list
     cube_version = str(cube.primary_header.get('CUBE_V', ''))
-    origin = ('muselet', __version__, cubename, cube_version)
+    origin = ('muselet', __version__, cubename.stem, cube_version)
 
     dw = cube.wave.get_step(unit=u.angstrom)
 
-    logger.info("building raw sources".format(n_obj))
-
-    raw_cat = SourceList()
+    logger.info("building line sources".format(n_obj))
 
     progress = ProgressCounter(len(cat), msg='Built:', every=1)
     for row in cat:
-        src = Source.from_data(ID=row['ID_CUBE'], ra=row['RA'], dec=row['DEC'],
-                        origin=origin)
-
-        file_nb = (dir_ / 'nb/nb{:04d}.fits'.format(row['I_Z']))
-        file_seg = (dir_ / 'nb/seg{:04d}.fits'.format(row['I_Z']))
-        im_nb = Image(str(file_nb))
-        im_seg = Image(str(file_seg))
-        im_seg.data = (im_seg.data == row['ID_SLICE']) * 1
-      #  im_seg.data.mask = np.zeros_like(im_seg.data, dtype=bool)
-
-        src.add_image(im_nb, 'NB{:04.0f}'.format(row['WAVE']), ima_size)
-        import pdb; pdb.set_trace()
-        src.add_image(im_seg, 'MASK_OBJ', ima_size)
-
-        wave = row['WAVE']
-        flux = row['FLUX']
-        flux_err = row['FLUX_ERR']
-
-        lines = table.Table([[wave], [dw], [flux], [flux_err]],
-                      names=['LBDA_OBS', 'LBDA_OBS_ERR', 'FLUX', 'FLUX_ERR'],
-                      dtype=['<f8', '<f8', '<f8', '<f8'])
-        lines['LBDA_OBS'].format = '.2f'
-        lines['LBDA_OBS'].unit = u.angstrom
-        lines['LBDA_OBS_ERR'].format = '.2f'
-        lines['LBDA_OBS_ERR'].unit = u.angstrom
-        lines['FLUX'].format = '.4f'
-        lines['FLUX'].unit = cube.unit
-        lines['FLUX_ERR'].format = '.4f'
-        lines['FLUX_ERR'].unit = cube.unit
-        src.lines = lines
-        raw_cat.append(src)
+        src = create_line_source(row, dir_, origin, dw, cube.unit)
+        sources_line.append(src)
 
         progress.increment()
 
     progress.close()
-    
+
+    import pdb; pdb.set_trace()
+    return sources_lines, sources_obj
 
     logger.info("building object sources".format(n_obj))
 
