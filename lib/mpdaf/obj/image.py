@@ -708,7 +708,7 @@ class Image(ArithmeticMixin, DataArray):
         data[slices] = res._data[:]
         if var is not None:
             var[slices] = res._var[:]
-        if mask is not None:
+        if (mask is not None) and (mask is not ma.nomask):
             mask[slices] = res._mask[:]
 
         # Create a new WCS object for the unclipped subcube.
