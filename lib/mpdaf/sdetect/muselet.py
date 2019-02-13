@@ -703,31 +703,16 @@ def load_cat(i, dir_):
     return data
 
 
-#def assign_friends(coords, kdTree, ids, i, max_dist, id_, n_cpu=1):
-#
-#    #assign index of current
-#    ids[i] = id_
-#
-#    #find index of nearest
-#    idx_near = kdTree.query_ball_point(coords[i], max_dist, n_jobs=n_cpu)
-#
-#    #for each index in nearest
-#    for i_test in idx_near:
-#        if ids[i_test] == 0: #otherwise skip current and previously checked
-#            assign_friends(coords, kdTree, ids, i_test, max_dist, id_,
-#                            n_cpu=n_cpu)
-
-
 def merge_raw_3D(x, y, z, dist_spatial, dist_spectral, n_cpu=1):
 
-    coords_spatial = np.column_stack([x, y])
-    coords_spectral = z.reshape([-1, 1])
+    coord_spatial = np.column_stack([x, y])
+    coord_spectral = z.reshape([-1, 1])
 
-    tree_spatial = cKDTree(coords_spatial) 
-    tree_spectral = cKDTree(coords_spectral) 
+    tree_spatial = cKDTree(coord_spatial) 
+    tree_spectral = cKDTree(coord_spectral) 
 
-    idx_unassigned = set(range(len(coords_spatial)))
-    ids = np.zeros([len(coords_spatial)], dtype=int)
+    idx_unassigned = set(range(len(coord_spatial)))
+    ids = np.zeros([len(coord_spatial)], dtype=int)
     id_group = 1
     while len(idx_unassigned): #while still unassigned 
 
@@ -740,10 +725,10 @@ def merge_raw_3D(x, y, z, dist_spatial, dist_spectral, n_cpu=1):
             ids[i] = id_group #assign it the ids
             idx_unassigned.remove(i) #remove 
 
-            idx_1 = tree_spatial.query_ball_point(coords_spatial[i],
+            idx_1 = tree_spatial.query_ball_point(coord_spatial[i],
                             dist_spatial, n_jobs=n_cpu)
 
-            idx_2 = tree_spectral.query_ball_point(coords_spectral[i],
+            idx_2 = tree_spectral.query_ball_point(coord_spectral[i],
                             dist_spectral, n_jobs=n_cpu)
             
             #near in all dimensions, and not already assigned
@@ -756,6 +741,47 @@ def merge_raw_3D(x, y, z, dist_spatial, dist_spectral, n_cpu=1):
 
     return ids
 
+
+def assign_group(coord_raw, coord_group, dist, n_cpu=1):
+
+    tree_raw = cKDTree(coord_raw)
+    tree_group = cKDTree(coord_group)
+
+    dist, ids = tree_group.query(coord_raw, 1, distance_upper_bound=dist,
+                        n_jobs=n_cpu)
+
+    mask = ~np.isfinite(dist) #not grouped
+    ids[mask] = -1
+
+    id_group = len(coord_group) + 1
+
+    while np.sum(mask):
+
+        i = np.where(mask)[0][0]
+        
+        idx = tree_raw.query_ball_point(coord_raw[i], 1.2)
+        idx = np.array(idx)
+
+        idx = idx[mask[idx]] #find only those unassigned
+
+        ids[idx] = id_group
+        mask[idx] = False
+        
+        id_group +=1 
+
+    return ids
+#
+#    #assign index of current
+#    ids[i] = id_
+#
+#    #find index of nearest
+#    idx_near = kdTree.query_ball_point(coord[i], max_dist, n_jobs=n_cpu)
+#
+#    #for each index in nearest
+#    for i_test in idx_near:
+#        if ids[i_test] == 0: #otherwise skip current and previously checked
+#            assign_friends(coord, kdTree, ids, i_test, max_dist, id_,
+#                            n_cpu=n_cpu)
 
 
 def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
@@ -884,13 +910,13 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
 
     #merge detections when close in wavelength and keep the brightest
 
-    x0 = cube.wcs.get_crval1(unit=u.deg)
-    y0 = cube.wcs.get_crval2(unit=u.deg)
-    z0 = cube.wave.get_crval(unit=u.Unit('Angstrom'))
+    ra0 = cube.wcs.get_crval1(unit=u.deg)
+    dec0 = cube.wcs.get_crval2(unit=u.deg)
+    wave0 = cube.wave.get_crval(unit=u.Unit('Angstrom'))
 
-    x = (cat['RA'] - x0) * 3600. * np.cos(np.radians(y0))
-    y = (cat['DEC'] - y0) * 3600.
-    z = (cat['WAVE'] - z0)
+    x = (cat['RA'] - ra0) * 3600. * np.cos(np.radians(dec0))
+    y = (cat['DEC'] - dec0) * 3600.
+    z = (cat['WAVE'] - wave0)
 
     ids_line = merge_raw_3D(x, y, z, max_sep_spatial, max_sep_spectral,
                     n_cpu=n_cpu)
@@ -911,68 +937,125 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
     msg = "{} lines found ({} duplicate detections discarded)"
     logger.info(msg.format(np.sum(mask), np.sum(~mask)))
 
-    logger.info("grouping detections")
+    max_dist = 1.2
+    msg = "grouping detections within \u0394r < {:.2f}\u2033"
+    logger.debug(msg.format(max_dist))
 
     #group detections close to continuum sources
     file_ = dir_ / 'cat_bgr.dat'
     cat_bgr = table.Table.read(file_, format='ascii.fixed_width_two_line')
 
-    x0 = cube.wcs.get_crval1(unit=u.deg)
-    y0 = cube.wcs.get_crval2(unit=u.deg)
+    ra0 = cube.wcs.get_crval1(unit=u.deg)
+    dec0 = cube.wcs.get_crval2(unit=u.deg)
 
-    x_raw = (cat['RA'] - x0) * 3600. * np.cos(np.radians(y0))
-    y_raw = (cat['DEC'] - y0) * 3600.
+    x_raw = (cat['RA'] - ra0) * 3600. * np.cos(np.radians(dec0))
+    y_raw = (cat['DEC'] - dec0) * 3600.
 
-    x_cont = (cat_bgr['RA'] - x0) * 3600. * np.cos(np.radians(y0))
-    y_cont = (cat_bgr['DEC'] - y0) * 3600.
+    x_cont = (cat_bgr['RA'] - ra0) * 3600. * np.cos(np.radians(dec0))
+    y_cont = (cat_bgr['DEC'] - dec0) * 3600.
 
-    coords_raw = np.column_stack([x_raw, y_raw])
-    coords_group = np.column_stack([x_cont, y_cont])
+    coord_raw = np.column_stack([x_raw, y_raw])
+    coord_cont = np.column_stack([x_cont, y_cont])
+    coord_group = coord_cont.copy()
 
-    tree_raw = cKDTree(coords_raw)
-    tree_group = cKDTree(coords_group)
+    ids = np.full(len(coord_raw), -1, dtype=int) #dummy 
 
-    ids = np.zeros([len(cat)], dtype=int)
-    dist, ids = tree_group.query(coords_raw, 1, distance_upper_bound=1.2)
-
-    mask_nogroup = ~np.isfinite(dist)
-    ids[mask_nogroup] = -1
-
-    id_group = np.max(ids) + 1
-
-    while np.sum(mask_nogroup):
-
-        i = np.where(mask_nogroup)[0][0]
+    for i_iter in range(40): #some not too large number of max iterations
         
-        idx = tree_raw.query_ball_point(coords_raw[i], 1.2)
-        idx = np.array(idx)
+        ids_old = ids.copy()
+        ids = assign_group(coord_raw, coord_group, max_dist, n_cpu=n_cpu)
 
-        mask_nogroup = ids == -1
-        idx = idx[mask_nogroup[idx]]
+        #find new group centers
+        uniq_ids = np.unique(ids)
+        coord_new = np.full([len(uniq_ids), 2], np.nan, dtype=float)
+        for i, id_ in enumerate(uniq_ids):
+            m = (ids == id_)
 
-        ids[idx] = id_group
-        
-        id_group +=1 
+            #check if is a cont source, if so, do not update coord
+            if id_ < len(coord_group):
+                coord = coord_group[id_]
+                if np.any(np.all(np.isclose(coord_cont, coord), axis=1)):
+                    coord_new[i] = coord
+                    continue
 
-#assign_to_group
-#for each raw find nearest cont #label centers fixed
-#for each unassined group nearest
-#if no group make new group
-#recalc group centers of non-fixed
-#for each raw assign to nearest group within radius
-#if no group make new group
-#recalc group centers of non-fixed
-#repeat untill IDs don't change or max iter limit
+            #otherwise update coord center
+            coord_new[i] = np.mean(coord_raw[m], 0)
 
-    #iterate on this! TODO
+        coord_group = coord_new
 
+        if np.all(ids == ids_old):
+            #no further iteration needed
+            msg = "group assignment converged after {} iterations"
+            logger.debug(msg.format(i_iter+1))
+            break
+
+    else: #did not converge
+        f_conv = np.sum(ids == ids_old) / float(len(ids))
+        msg = "group assignment did not fully converge ({:.3f}% complete)"
+        logger.warning(msg.format(f_conv*100.))
+
+    ids +=1 #increment all indicies by 1
+
+    uniq_ids = np.unique(ids)
     n_obj = len(np.unique(ids))
     logger.info("{} objects found".format(n_obj))
 
     c = table.Column(ids, name='ID_OBJ')
     cat.add_column(c, index=1)
-    
 
+    #create object catalog
+    cat_obj = table.Table()
+    cat_obj['ID_OBJ'] = table.Column([], dtype=int)
+    cat_obj['RA'] = table.Column([], dtype=float)
+    cat_obj['DEC'] = table.Column([], dtype=float)
+    for band in ['B', 'G', 'R']:
+        cat_obj['MAG_APER_{}'.format(band)] = table.Column([], dtype=float)
+        cat_obj['MAGERR_APER_{}'.format(band)] = table.Column([], dtype=float)
+
+    ra0 = cube.wcs.get_crval1(unit=u.deg)
+    dec0 = cube.wcs.get_crval2(unit=u.deg)
+
+    for id_obj, coord in zip(uniq_ids, coord_group):
+        
+        x, y = coord
+
+        m = np.all(np.isclose(coord_cont, coord), axis=1)
+
+        ra = x / 3600. / np.cos(np.radians(dec0)) + ra0
+        dec = y / 3600. + dec0
+
+        row = {
+            'ID_OBJ': id_obj,
+            'RA': ra,
+            'DEC': dec,
+            }
+        
+        if np.sum(m) == 1: #is cont source
+            row_bgr = cat_bgr[m]
+            row['MAG_APER_B'] = row_bgr['MAG_APER_B'] 
+            row['MAGERR_APER_B'] = row_bgr['MAGERR_APER_B'] 
+            row['MAG_APER_G'] = row_bgr['MAG_APER_G'] 
+            row['MAGERR_APER_G'] = row_bgr['MAGERR_APER_G'] 
+            row['MAG_APER_R'] = row_bgr['MAG_APER_R'] 
+            row['MAGERR_APER_R'] = row_bgr['MAGERR_APER_R'] 
+
+        elif np.sum(m) == 0:
+            row['MAG_APER_B'] = np.nan
+            row['MAGERR_APER_B'] = np.nan
+            row['MAG_APER_G'] = np.nan
+            row['MAGERR_APER_G'] = np.nan
+            row['MAG_APER_R'] = np.nan
+            row['MAGERR_APER_R'] = np.nan
+
+        else: #this really shouldn't have happened, something went very wrong
+            raise Exception 
+
+        cat_obj.add_row(row)
+
+    import pdb; pdb.set_trace()
+
+    sources_line = SourceList()
+    sources_obj = SourceList()
 
     # Sources list
     cube_version = str(cube.primary_header.get('CUBE_V', ''))
@@ -1091,7 +1174,7 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
 
     progress.close()
 
-    return raw_cat, obj_cat
+    return sources_lines, sources_obj
 #
 #
 #
@@ -1574,10 +1657,10 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
                 dir_=workdir, n_cpu=n_cpu)
 
     if step <= 3:
-        raw, obj = step3(cubename, ima_size, clean, skyclean,
-                            radius, nlines_max, dir_=workdir, n_cpu=n_cpu)
+        line, obj = step3(cubename, ima_size, clean, skyclean,
+                        radius, nlines_max, dir_=workdir, n_cpu=n_cpu)
 
-    return raw, obj
+    return line, obj
 
    # with chdir(workdir):
    #     if del_sex:
