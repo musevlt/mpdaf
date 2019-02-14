@@ -840,8 +840,11 @@ def create_object_source(row_obj, rows_lines, dir_, cube, ima_size, nlines_max):
     cube_version = str(cube.primary_header.get('cube_v', ''))
     origin = ('muselet', __version__, cube_name, cube_version)
 
-    src = Source.from_data(ID=row_obj['ID_OBJ'], ra=row_obj['RA'],
-                    dec=row_obj['DEC'], origin=origin)
+    #use mean RA, DEC from lines
+    ra = np.mean(rows_lines['RA'])
+    dec = np.mean(rows_lines['DEC'])
+
+    src = Source.from_data(ID=row_obj['ID_OBJ'], ra=ra, dec=dec, origin=origin)
 
     #add mag table
     src.add_mag('MUSEB', row_obj['MAG_APER_B'], row_obj['MAGERR_APER_B'])
