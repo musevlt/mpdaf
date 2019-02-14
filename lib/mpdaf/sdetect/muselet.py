@@ -510,11 +510,14 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1,
 def step1(cubename, expmapcube, fw, delta, dir_=None, nbcube=False, n_cpu=1,
         limit_ram=False):
 
-    logger = logging.getLogger(__name__)
-    logger.info("Opening: %s", cubename)
+    cubename = Path(cubename)
+    expmapcube = Path(expmapcube)
 
     if dir_ is None:
         dir_ = Path.cwd()
+
+    logger = logging.getLogger(__name__)
+    logger.info("Opening: %s", cubename)
 
     cube = Cube(str(cubename))
 
@@ -567,6 +570,8 @@ def get_sex_opts(config):
 
 
 def step2(cubename, cmd_sex, config=None, config_nb=None, dir_=None, n_cpu=1):
+
+    cubename = Path(cubename)
 
     if config is None:
         config = {}
@@ -960,6 +965,8 @@ def create_object_source(row_obj, rows_lines, dir_, cube, ima_size, nlines_max):
 
 def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
         n_cpu=1):
+
+    cubename = Path(cubename)
 
     logger = logging.getLogger(__name__)
     logger.info("STEP 3: merge SExtractor catalogs and measure redshifts")
