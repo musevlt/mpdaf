@@ -1210,7 +1210,7 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
     t0_create = time.time()
 
     progress = ProgressCounter(len(cat), msg='Built:', every=1)
-    for row in cat[:10]:
+    for row in cat:
         src = create_line_source(row, dir_, cube)
         sources_line.append(src)
 
