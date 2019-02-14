@@ -210,7 +210,7 @@ def write_bb_images(cube, cube_exp, dir_, n_cpu=1, limit_ram=False):
     logger = logging.getLogger(__name__)
 
     # multiprocessing seems to cause a weird bug, 
-    # force single processing
+    logger.debug("forcing single-threaded broad-band creation")
     n_cpu = 1
 
     t0_create = time.time()
@@ -223,7 +223,6 @@ def write_bb_images(cube, cube_exp, dir_, n_cpu=1, limit_ram=False):
 
 
     else:
-
         use_cpu = np.clip(n_cpu, None, 3) #at most 3CPUs
         logger.info("creating broad-band images using "
                     "{} CPUs".format(use_cpu))
@@ -802,14 +801,7 @@ def create_line_source(row, dir_, cube):
     src = Source.from_data(ID=row['ID_CUBE'], ra=row['RA'], dec=row['DEC'],
                     origin=origin)
 
-    file_nb = (dir_ / 'nb/nb{:04d}.fits'.format(row['I_Z']))
-    file_seg = (dir_ / 'nb/seg{:04d}.fits'.format(row['I_Z']))
-    im_nb = Image(str(file_nb))
-    im_seg = Image(str(file_seg))
-    im_seg.data = (im_seg.data == row['ID_SLICE']) * 1
-
-    src.add_image(im_nb, 'NB{:04.0f}'.format(row['WAVE']), ima_size)
-    src.add_image(im_seg, 'MASK_OBJ', ima_size)
+    #add line table
 
     wave = row['WAVE']
     dw = cube.wave.get_step(unit=u.angstrom)
@@ -829,6 +821,16 @@ def create_line_source(row, dir_, cube):
     lines['FLUX_ERR'].unit = cube.unit
     src.lines = lines
 
+    #add line image
+    file_nb = (dir_ / 'nb/nb{:04d}.fits'.format(row['I_Z']))
+    file_seg = (dir_ / 'nb/seg{:04d}.fits'.format(row['I_Z']))
+    im_nb = Image(str(file_nb))
+    im_seg = Image(str(file_seg))
+    im_seg.data = (im_seg.data == row['ID_SLICE']) * 1
+
+    src.add_image(im_nb, 'NB{:04.0f}'.format(row['WAVE']), ima_size)
+    src.add_image(im_seg, 'MASK_OBJ', ima_size)
+
     return src
 
 
@@ -841,40 +843,12 @@ def create_object_source(row_obj, rows_lines, dir_, cube, ima_size, nlines_max):
     src = Source.from_data(ID=row_obj['ID_OBJ'], ra=row_obj['RA'],
                     dec=row_obj['DEC'], origin=origin)
 
+    #add mag table
     src.add_mag('MUSEB', row_obj['MAG_APER_B'], row_obj['MAGERR_APER_B'])
     src.add_mag('MUSEG', row_obj['MAG_APER_G'], row_obj['MAGERR_APER_G'])
     src.add_mag('MUSER', row_obj['MAG_APER_R'], row_obj['MAGERR_APER_R'])
 
-    images_nb = [] 
-    images_seg = [] 
-
-    #use only the brightest lines
-    sort = np.argsort(rows_lines['FLUX'])[::-1][:nlines_max]
-    for row_line in rows_lines[sort]:
-
-        file_nb = (dir_ / 'nb/nb{:04d}.fits'.format(row_line['I_Z']))
-        file_seg = (dir_ / 'nb/seg{:04d}.fits'.format(row_line['I_Z']))
-
-        im_nb = Image(str(file_nb))
-        im_seg = Image(str(file_seg))
-        im_seg.data = (im_seg.data == row_line['ID_SLICE']) * 1
-
-        src.add_image(im_nb, 'NB{:04.0f}'.format(row_line['WAVE']), ima_size)
-
-        images_nb.append(im_nb)
-        images_seg.append(im_seg)
-
-    im_nb_coadd = images_nb[0].copy()
-    im_seg_union = images_seg[0].copy()
-
-    for im_nb, im_seg in zip(images_nb[1:], images_seg[1:]):
-        im_nb_coadd += im_nb
-        im_seg_union += im_seg
-
-    im_seg_union.data = (im_seg_union.data != 0) * 1
-    src.add_image(im_nb_coadd, 'NB_COADD', ima_size)
-    src.add_image(im_seg_union, 'MASK_OBJ', ima_size)
-
+    #add line table
     wave = rows_lines['WAVE']
     dw = [cube.wave.get_step(unit=u.angstrom)] * len(wave)
     flux = rows_lines['FLUX']
@@ -893,6 +867,7 @@ def create_object_source(row_obj, rows_lines, dir_, cube, ima_size, nlines_max):
     lines['FLUX_ERR'].unit = cube.unit
     src.lines = lines
 
+    #guess a redshift
     dt = {'names': ('lambda', 'lname'), 'formats': ('f', 'S20')}
     eml = dict(np.loadtxt(dir_ / 'emlines', dtype=dt))
     eml2 = dict(np.loadtxt(dir_ / 'emlines_small', dtype=dt))
@@ -911,6 +886,40 @@ def create_object_source(row_obj, rows_lines, dir_, cube, ima_size, nlines_max):
             src.crack_z(eml2, 20)
 
     src.sort_lines(nlines_max)
+
+    #add line images for the brightest lines
+    images_nb = []
+    images_seg = []
+    for line in src.lines:
+        w = line['LBDA_OBS']
+        #find nearest line
+
+        idx = np.argmin(np.abs(rows_lines['WAVE'] - line['LBDA_OBS']))
+        row_line = rows_lines[idx]
+
+        file_nb = (dir_ / 'nb/nb{:04d}.fits'.format(row_line['I_Z']))
+        file_seg = (dir_ / 'nb/seg{:04d}.fits'.format(row_line['I_Z']))
+
+        im_nb = Image(str(file_nb))
+        im_seg = Image(str(file_seg))
+        im_seg.data = (im_seg.data == row_line['ID_SLICE']) * 1
+
+        src.add_image(im_nb, 'NB{:04.0f}'.format(row_line['WAVE']), ima_size)
+
+        images_nb.append(im_nb)
+        images_seg.append(im_seg)
+
+    #add coadd image
+    im_nb_coadd = images_nb[0].copy()
+    im_seg_union = images_seg[0].copy()
+
+    for im_nb, im_seg in zip(images_nb[1:], images_seg[1:]):
+        im_nb_coadd += im_nb
+        im_seg_union += im_seg
+
+    im_seg_union.data = (im_seg_union.data != 0) * 1
+    src.add_image(im_nb_coadd, 'NB_COADD', ima_size)
+    src.add_image(im_seg_union, 'MASK_OBJ', ima_size)
 
     return src
 
@@ -980,7 +989,7 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
 
     progress.close()
 
-    logger.debug("stacking catalogs")
+    logger.debug("combining catalogs")
 
     #combine into one large table
     cat = table.vstack(cat_all)
@@ -1099,7 +1108,7 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
 
     ids = np.full(len(coord_raw), -1, dtype=int) #dummy 
 
-    for i_iter in range(40): #some not too large number of max iterations
+    for i_iter in range(100): #some not too large number of max iterations
         
         ids_old = ids.copy()
         ids = assign_group(coord_raw, coord_group, max_dist, n_cpu=n_cpu)
@@ -1130,7 +1139,7 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
 
     else: #did not converge
         f_conv = np.sum(ids == ids_old) / float(len(ids))
-        msg = "group assignment did not fully converge ({:.3f}% complete)"
+        msg = "group assignment did not fully converge ({:.3f}% converged)"
         logger.warning(msg.format(f_conv*100.))
 
     ids +=1 #increment all indicies by 1
@@ -1201,7 +1210,7 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
     t0_create = time.time()
 
     progress = ProgressCounter(len(cat), msg='Built:', every=1)
-    for row in cat:
+    for row in cat[:10]:
         src = create_line_source(row, dir_, cube)
         sources_line.append(src)
 
@@ -1238,6 +1247,21 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
     logger.debug("object sources created in {0:.1f} seconds".format(t_create))
 
     return sources_line, sources_obj
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     cube_version = str(cube.primary_header.get('CUBE_V', ''))
