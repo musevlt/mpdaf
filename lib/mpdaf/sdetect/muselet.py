@@ -209,6 +209,10 @@ def write_bb_images(cube, cube_exp, dir_, n_cpu=1, limit_ram=False):
 
     logger = logging.getLogger(__name__)
 
+    # multiprocessing seems to cause a weird bug, 
+    # force single processing
+    n_cpu = 1
+
     t0_create = time.time()
     if (n_cpu == 1) or limit_ram: #enables nicer traceback for debugging
         logger.info("creating broad-band images using 1 CPU")
@@ -219,6 +223,7 @@ def write_bb_images(cube, cube_exp, dir_, n_cpu=1, limit_ram=False):
 
 
     else:
+
         use_cpu = np.clip(n_cpu, None, 3) #at most 3CPUs
         logger.info("creating broad-band images using "
                     "{} CPUs".format(use_cpu))
@@ -528,7 +533,7 @@ def step1(cubename, expmapcube, fw, delta, dir_=None, nbcube=False, n_cpu=1,
     logger.info("STEP 1: create white light, variance, RGB and "
                 "narrow-band images")
 
-    write_bb_images(cube, cube_exp, dir_, n_cpu=n_cpu, limit_ram=True)
+    write_bb_images(cube, cube_exp, dir_, n_cpu=n_cpu, limit_ram=False)
     cube_nb = write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=n_cpu,
                         limit_ram=limit_ram)
 
