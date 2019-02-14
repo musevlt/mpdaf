@@ -113,19 +113,33 @@ def setup_config_files(dir_, nb=False):
             logger.debug("creating file: {}".format(f2))
 
 
-def remove_files():
+def setup_emline_files(dir_):
+
+    logger = logging.getLogger(__name__)
+
+    for file_ in ['emlines', 'emlines_small']:
+        f1 = DATADIR / file_
+        f2 = dir_ / file_
+        if f2.exists():
+            logger.debug("using existing file: {}".format(f2))
+        else:
+            shutil.copy(f1, f2)
+            logger.debug("creating file: {}".format(f2))
+
+
+def remove_files(dir_):
 
     files = ['default.sex', 'default.conv', 'default.nnw', 'default.param',
-             'emlines', 'emlines_small', 'BGR.cat', 'inv_variance.fits',
-             'segment.fits', 'white.fits', 'whiteb.fits', 'whiteg.fits',
-             'whiter.fits', 'detect.cat']
+             'emlines', 'emlines_small', 'cat_bgr.dat', 'im_weight.fits',
+             'seg.fits', 'im_white.fits', 'im_b.fits', 'im_g.fits',
+             'im_r.fits', 'detect.cat']
 
     for f in files:
         try:
-            os.remove(f)
+            os.remove(dir_ / f)
         except FileNotFoundError:
             pass
-    shutil.rmtree('nb')
+    shutil.rmtree(dir_ / 'nb', ignore_errors=True)
 
 
 def write_white_image(cube, dir_):
@@ -191,7 +205,6 @@ def write_rgb_images(cube, dir_):
     im_r.write(file_, savemask='nan')
 
 
-
 def write_bb_images(cube, cube_exp, dir_, n_cpu=1, limit_ram=False):
 
     logger = logging.getLogger(__name__)
@@ -215,7 +228,9 @@ def write_bb_images(cube, cube_exp, dir_, n_cpu=1, limit_ram=False):
         r3 = pool.apply_async(write_rgb_images, (cube, dir_))
         pool.close()
 
-        [r.get(999999) for r in [r1, r2, r3]]
+        r1.get(999999)
+        r2.get(999999)
+        r3.get(999999)
 
     t_create = time.time() - t0_create
     logger.debug("Broad-bands created in {0:.1f} seconds".format(t_create))
@@ -446,7 +461,6 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1,
         #shared output
         logger.debug("allocating shared nb cube (output)")
         shape = data.shape
-        import pdb; pdb.set_trace()
         cube_nb_raw = mp.RawArray(c_float, int(np.prod(shape)))
         cube_nb = np.frombuffer(cube_nb_raw, dtype='=f4').reshape(shape)
         cube_nb_shape = shape
@@ -514,7 +528,7 @@ def step1(cubename, expmapcube, fw, delta, dir_=None, nbcube=False, n_cpu=1,
     logger.info("STEP 1: create white light, variance, RGB and "
                 "narrow-band images")
 
-    write_bb_images(cube, cube_exp, dir_, n_cpu=n_cpu, limit_ram=limit_ram)
+    write_bb_images(cube, cube_exp, dir_, n_cpu=n_cpu, limit_ram=True)
     cube_nb = write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=n_cpu,
                         limit_ram=limit_ram)
 
@@ -772,7 +786,13 @@ def assign_group(coord_raw, coord_group, dist, n_cpu=1):
     return ids
 
 
-def create_line_source(row, dir_, origin, dw, flux_unit):
+def create_line_source(row, dir_, cube):
+
+    cube_name = Path(cube.filename).stem
+    cube_version = str(cube.primary_header.get('CUBE_V', ''))
+    origin = ('muselet', __version__, cube_name, cube_version)
+
+    ima_size = 21 * 0.2
 
     src = Source.from_data(ID=row['ID_CUBE'], ra=row['RA'], dec=row['DEC'],
                     origin=origin)
@@ -782,14 +802,12 @@ def create_line_source(row, dir_, origin, dw, flux_unit):
     im_nb = Image(str(file_nb))
     im_seg = Image(str(file_seg))
     im_seg.data = (im_seg.data == row['ID_SLICE']) * 1
-  #  im_seg.data.mask = np.zeros_like(im_seg.data, dtype=bool)
 
-    ima_size = 21
     src.add_image(im_nb, 'NB{:04.0f}'.format(row['WAVE']), ima_size)
-    import pdb; pdb.set_trace()
     src.add_image(im_seg, 'MASK_OBJ', ima_size)
 
     wave = row['WAVE']
+    dw = cube.wave.get_step(unit=u.angstrom)
     flux = row['FLUX']
     flux_err = row['FLUX_ERR']
 
@@ -801,7 +819,7 @@ def create_line_source(row, dir_, origin, dw, flux_unit):
     lines['LBDA_OBS_ERR'].format = '.2f'
     lines['LBDA_OBS_ERR'].unit = u.angstrom
     lines['FLUX'].format = '.4f'
-    lines['FLUX'].unit = flux_unit
+    lines['FLUX'].unit = cube.unit
     lines['FLUX_ERR'].format = '.4f'
     lines['FLUX_ERR'].unit = cube.unit
     src.lines = lines
@@ -809,21 +827,112 @@ def create_line_source(row, dir_, origin, dw, flux_unit):
     return src
 
 
+def create_object_source(row_obj, rows_lines, dir_, cube, ima_size, nlines_max):
+
+    cube_name = Path(cube.filename).stem
+    cube_version = str(cube.primary_header.get('cube_v', ''))
+    origin = ('muselet', __version__, cube_name, cube_version)
+
+    src = Source.from_data(ID=row_obj['ID_OBJ'], ra=row_obj['RA'],
+                    dec=row_obj['DEC'], origin=origin)
+
+    src.add_mag('MUSEB', row_obj['MAG_APER_B'], row_obj['MAGERR_APER_B'])
+    src.add_mag('MUSEG', row_obj['MAG_APER_G'], row_obj['MAGERR_APER_G'])
+    src.add_mag('MUSER', row_obj['MAG_APER_R'], row_obj['MAGERR_APER_R'])
+
+    images_nb = [] 
+    images_seg = [] 
+
+    #use only the brightest lines
+    sort = np.argsort(rows_lines['FLUX'])[::-1][:nlines_max]
+    for row_line in rows_lines[sort]:
+
+        file_nb = (dir_ / 'nb/nb{:04d}.fits'.format(row_line['I_Z']))
+        file_seg = (dir_ / 'nb/seg{:04d}.fits'.format(row_line['I_Z']))
+
+        im_nb = Image(str(file_nb))
+        im_seg = Image(str(file_seg))
+        im_seg.data = (im_seg.data == row_line['ID_SLICE']) * 1
+
+        src.add_image(im_nb, 'NB{:04.0f}'.format(row_line['WAVE']), ima_size)
+
+        images_nb.append(im_nb)
+        images_seg.append(im_seg)
+
+    im_nb_coadd = images_nb[0].copy()
+    im_seg_union = images_seg[0].copy()
+
+    for im_nb, im_seg in zip(images_nb[1:], images_seg[1:]):
+        im_nb_coadd += im_nb
+        im_seg_union += im_seg
+
+    im_seg_union.data = (im_seg_union.data != 0) * 1
+    src.add_image(im_nb_coadd, 'NB_COADD', ima_size)
+    src.add_image(im_seg_union, 'MASK_OBJ', ima_size)
+
+    wave = rows_lines['WAVE']
+    dw = [cube.wave.get_step(unit=u.angstrom)] * len(wave)
+    flux = rows_lines['FLUX']
+    flux_err = rows_lines['FLUX_ERR']
+
+    lines = table.Table([wave, dw, flux, flux_err],
+                  names=['LBDA_OBS', 'LBDA_OBS_ERR', 'FLUX', 'FLUX_ERR'],
+                  dtype=['<f8', '<f8', '<f8', '<f8'])
+    lines['LBDA_OBS'].format = '.2f'
+    lines['LBDA_OBS'].unit = u.angstrom
+    lines['LBDA_OBS_ERR'].format = '.2f'
+    lines['LBDA_OBS_ERR'].unit = u.angstrom
+    lines['FLUX'].format = '.4f'
+    lines['FLUX'].unit = cube.unit
+    lines['FLUX_ERR'].format = '.4f'
+    lines['FLUX_ERR'].unit = cube.unit
+    src.lines = lines
+
+    dt = {'names': ('lambda', 'lname'), 'formats': ('f', 'S20')}
+    eml = dict(np.loadtxt(dir_ / 'emlines', dtype=dt))
+    eml2 = dict(np.loadtxt(dir_ / 'emlines_small', dtype=dt))
+
+    #if a continuum source
+    if np.any(np.isfinite(src.mag['MAG'])):
+        if len(lines) > 3:
+            src.crack_z(eml)
+        else:
+            src.crack_z(eml2)
+
+    else: #has no continuum
+        if len(lines) > 3:
+            src.crack_z(eml, 20)
+        else:
+            src.crack_z(eml2, 20)
+
+    src.sort_lines(nlines_max)
+
+    return src
+
+
 def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
         n_cpu=1):
-
-    if dir_ is None:
-        dir_ = Path.cwd()
 
     logger = logging.getLogger(__name__)
     logger.info("STEP 3: merge SExtractor catalogs and measure redshifts")
 
+    if dir_ is None:
+        dir_ = Path.cwd()
+
+
+    setup_emline_files(dir_)
+
     cube = Cube(str(cubename))
+    
+    pix_size = np.mean(cube.wcs.get_step(unit=u.arcsec))
+    ima_size *= pix_size
+    radius *= pix_size
+
     n_w = cube.shape[0]
 
     #remove wavelengths with sky lines
     idx_nb = np.arange(2, 500, dtype=int)
-#    idx_nb = np.arange(2, n_w-3, dtype=int)
+    idx_nb = np.arange(2, n_w-3, dtype=int)
     wave = cube.wave.coord(idx_nb, unit=u.Unit('Angstrom'))
     mask = np.zeros_like(idx_nb, dtype=bool)
     for wave_range in skyclean:
@@ -867,6 +976,8 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
             cat_all.append(cat)
 
     progress.close()
+
+    logger.debug("stacking catalogs")
 
     #combine into one large table
     cat = table.vstack(cat_all)
@@ -923,7 +1034,7 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
     logger.info(msg.format(np.sum(~mask), np.sum(mask)))
 
 
-    max_sep_spatial = 1.2
+    max_sep_spatial = radius
     max_sep_spectral = 3.75
     msg = "merging raw detections using a friends-of-friends algorithm"
     logger.info(msg)
@@ -962,7 +1073,7 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
     msg = "{} lines found ({} duplicate detections discarded)"
     logger.info(msg.format(np.sum(mask), np.sum(~mask)))
 
-    max_dist = 1.2
+    max_dist = radius
     msg = "grouping detections within \u0394r < {:.2f}\u2033"
     logger.debug(msg.format(max_dist))
 
@@ -1077,126 +1188,51 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
 
         cat_obj.add_row(row)
 
-    import pdb; pdb.set_trace()
+
+    logger.info("creating line sources".format(n_obj))
 
     sources_line = SourceList()
-    sources_obj = SourceList()
 
-    # Sources list
-    cube_version = str(cube.primary_header.get('CUBE_V', ''))
-    origin = ('muselet', __version__, cubename.stem, cube_version)
-
-    dw = cube.wave.get_step(unit=u.angstrom)
-
-    logger.info("building line sources".format(n_obj))
+    t0_create = time.time()
 
     progress = ProgressCounter(len(cat), msg='Built:', every=1)
     for row in cat:
-        src = create_line_source(row, dir_, origin, dw, cube.unit)
+        src = create_line_source(row, dir_, cube)
         sources_line.append(src)
 
         progress.increment()
 
     progress.close()
 
-    import pdb; pdb.set_trace()
-    return sources_lines, sources_obj
-
-    logger.info("building object sources".format(n_obj))
-
-    obj_cat = SourceList()
-
-    ids = np.unique(cat['ID_OBJ'])
-    progress = ProgressCounter(len(ids), msg='Built:', every=1)
-    for id_ in ids:
-
-        rows = cat[cat['ID_OBJ'] == id_]
-
-        ra = np.mean(rows['RA'])
-        dec = np.mean(rows['DEC'])
-        src = Source.from_data(ID=id_, ra=ra, dec=dec, origin=origin)
-
-        sort = np.argsort(rows['FLUX'])[::-1]
-        rows = rows[sort][:nlines_max]
-
-        images_nb = [] 
-        images_seg = [] 
-
-        for row in rows:
-            file_nb = (dir_ / 'nb/nb{:04d}.fits'.format(row['I_Z']))
-            file_seg = (dir_ / 'nb/seg{:04d}.fits'.format(row['I_Z']))
-            im_nb = Image(str(file_nb))
-            im_seg = Image(str(file_seg))
-            im_seg.data = (im_seg.data == row['ID_SLICE']) * 1
-            im_seg.data.mask = np.zeros_like(im_seg.data, dtype=bool)
-
-            src.add_image(im_nb, 'NB{:04.0f}'.format(row['WAVE']), ima_size)
-
-            images_nb.append(im_nb)
-            images_seg.append(im_seg)
+    t_create = time.time() - t0_create
+    logger.debug("line sources created in {0:.1f} seconds".format(t_create))
 
 
-        im_nb_coadd = images_nb[0].copy()
-        im_seg_coadd = images_seg[0].copy()
 
-        for im_nb, im_seg in zip(images_nb[1:], images_seg[1:]):
-            im_nb_coadd.data += im_nb
-            im_seg_coadd += im_seg
+    logger.info("creating object sources".format(n_obj))
 
-        im_seg_coadd.data = (im_seg_coadd.data != 0) * 1
-        src.add_image(im_nb_coadd, 'NB_COADD', ima_size)
-        src.add_image(im_seg_coadd, 'MASK_OBJ', ima_size)
+    sources_obj = SourceList()
 
-        wave = rows['WAVE']
-        flux = rows['FLUX']
-        flux_err = rows['FLUX_ERR']
+    t0_create = time.time()
 
-        lines = table.Table([wave, [dw]*len(rows), flux, flux_err],
-                      names=['LBDA_OBS', 'LBDA_OBS_ERR', 'FLUX', 'FLUX_ERR'],
-                      dtype=['<f8', '<f8', '<f8', '<f8'])
-        lines['LBDA_OBS'].format = '.2f'
-        lines['LBDA_OBS'].unit = u.angstrom
-        lines['LBDA_OBS_ERR'].format = '.2f'
-        lines['LBDA_OBS_ERR'].unit = u.angstrom
-        lines['FLUX'].format = '.4f'
-        lines['FLUX'].unit = cube.unit
-        lines['FLUX_ERR'].format = '.4f'
-        lines['FLUX_ERR'].unit = cube.unit
-        src.lines = lines
+    progress = ProgressCounter(len(cat_obj), msg='Built:', every=1)
+    for row_obj in cat_obj:
 
-        obj_cat.append(src)
+        id_obj = row_obj['ID_OBJ']
+        rows_lines = cat[cat['ID_OBJ'] == id_obj]
+
+        src = create_object_source(row_obj, rows_lines, dir_, cube,
+                        ima_size, nlines_max)
+        sources_obj.append(src)
 
         progress.increment()
 
     progress.close()
 
-    return sources_lines, sources_obj
-#
-#
-#
-#
-#    import matplotlib.pyplot as plt
-#    plt.plot(cat['I_X'], cat['I_Y'], 'o')
-#    plt.plot(cat_bgr['I_X'], cat_bgr['I_Y'], 'o')
-#    for id_ in np.unique(ids):
-#        m = ids == id_
-#        plt.plot(cat['I_X'][m], cat['I_Y'][m])
-#    plt.show()
-#
-#
-#  #  cat.write('b.fit', overwrite=True)
-#    import pdb; pdb.set_trace()
+    t_create = time.time() - t0_create
+    logger.debug("object sources created in {0:.1f} seconds".format(t_create))
 
-
-#improve edge cleaning
-#find centroid of groups and link to continuum objects
-#build raw sources of each
-#include segmentiation maps
-#build combined sources (store only the 25 brights lines)
-#include union+intersection segmentiation maps
-#run crackz on combined sources
-
-     
+    return sources_line, sources_obj
 
 
     cube_version = str(cube.primary_header.get('CUBE_V', ''))
@@ -1656,11 +1692,10 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
         line, obj = step3(cubename, ima_size, clean, skyclean,
                         radius, nlines_max, dir_=workdir, n_cpu=n_cpu)
 
-    return line, obj
+    if del_sex:
+        remove_files(workdir)
 
-   # with chdir(workdir):
-   #     if del_sex:
-   #         remove_files()
+    return line, obj
 
    # return continuum_lines, single_lines, raw_catalog
 
