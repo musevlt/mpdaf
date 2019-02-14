@@ -533,7 +533,7 @@ def step1(cubename, expmapcube, fw, delta, dir_=None, nbcube=False, n_cpu=1,
     logger.info("STEP 1: create white light, variance, RGB and "
                 "narrow-band images")
 
-    write_bb_images(cube, cube_exp, dir_, n_cpu=n_cpu, limit_ram=False)
+    write_bb_images(cube, cube_exp, dir_, n_cpu=n_cpu, limit_ram=limit_ram)
     cube_nb = write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=n_cpu,
                         limit_ram=limit_ram)
 
@@ -925,8 +925,6 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
         dir_ = Path.cwd()
 
 
-    setup_emline_files(dir_)
-
     cube = Cube(str(cubename))
     
     pix_size = np.mean(cube.wcs.get_step(unit=u.arcsec))
@@ -1195,6 +1193,8 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
 
 
     logger.info("creating line sources".format(n_obj))
+
+    setup_emline_files(dir_)
 
     sources_line = SourceList()
 
