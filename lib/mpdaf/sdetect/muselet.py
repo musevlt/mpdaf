@@ -894,9 +894,7 @@ def create_object_source(row_obj, rows_lines, dir_, cube, ima_size, nlines_max):
     images_nb = []
     images_seg = []
     for line in src.lines:
-        w = line['LBDA_OBS']
         #find nearest line
-
         idx = np.argmin(np.abs(rows_lines['WAVE'] - line['LBDA_OBS']))
         row_line = rows_lines[idx]
 
@@ -904,6 +902,8 @@ def create_object_source(row_obj, rows_lines, dir_, cube, ima_size, nlines_max):
         file_seg = (dir_ / 'nb/seg{:04d}.fits'.format(row_line['I_Z']))
 
         im_nb = Image(str(file_nb))
+        im_nb.data_header['ID_LINE'] = row_line['ID']
+
         im_seg = Image(str(file_seg))
         im_seg.data = (im_seg.data == row_line['ID_SLICE']) * 1
 
@@ -1203,18 +1203,16 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
         cat_obj.add_row(row)
 
 
-    logger.info("creating line sources".format(n_obj))
+    logger.info("creating line sources")
 
-    setup_emline_files(dir_)
-
-    sources_line = SourceList()
+    sources_lines = SourceList()
 
     t0_create = time.time()
 
     progress = ProgressCounter(len(cat), msg='Built:', every=1)
     for row in cat:
         src = create_line_source(row, dir_, cube)
-        sources_line.append(src)
+        sources_lines.append(src)
 
         progress.increment()
 
@@ -1224,10 +1222,11 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
     logger.debug("line sources created in {0:.1f} seconds".format(t_create))
 
 
+    logger.info("creating object sources")
 
-    logger.info("creating object sources".format(n_obj))
+    setup_emline_files(dir_)
 
-    sources_obj = SourceList()
+    sources_objects = SourceList()
 
     t0_create = time.time()
 
@@ -1239,7 +1238,7 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
 
         src = create_object_source(row_obj, rows_lines, dir_, cube,
                         ima_size, nlines_max)
-        sources_obj.append(src)
+        sources_objects.append(src)
 
         progress.increment()
 
@@ -1248,7 +1247,7 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
     t_create = time.time() - t0_create
     logger.debug("object sources created in {0:.1f} seconds".format(t_create))
 
-    return sources_line, sources_obj
+    return sources_objects, sources_lines
 
 
 def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
@@ -1278,6 +1277,12 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
     fw : list of 5 floats
         Define the weights on the 5 central wavelength planes when estimated
         the line-profile-weighted flux in the narrow-band images.
+    sex_config : dict
+        optional SExtractor comandline options for broad-band detection
+        e.g. {'detect_minarea': 8, 'detect_thresh': 1.3}
+    sex_config_nb : dict
+        optional SExtractor comandline options for narrow-band detection
+        e.g. {'detect_minarea': 8, 'detect_thresh': 1.3}
     radius : float
         Radius in spatial pixels (default=4) within which emission lines
         are merged spatially into the same object.
@@ -1305,11 +1310,8 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
     Returns
     -------
     continuum, single, raw : `~mpdaf.sdetect.SourceList`, `~mpdaf.sdetect.SourceList`, `~mpdaf.sdetect.SourceList`
-        - continuum : List of detected sources that contains emission lines
-            associated with continuum detection
-        - single : List of detected sources that contains emission lines not
-            associated with continuum detection
-        - raw : List of detected sources  before the merging procedure.
+        - objects : List of detected sources, merged via a spatial distance match
+        - lines : List of detected sources before the merging procedure.
 
     """
     logger = logging.getLogger(__name__)
@@ -1360,10 +1362,11 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
                 dir_=workdir, n_cpu=n_cpu)
 
     if step <= 3:
-        line, obj = step3(cubename, ima_size, clean, skyclean,
-                        radius, nlines_max, dir_=workdir, n_cpu=n_cpu)
+        out = step3(cubename, ima_size, clean, skyclean,
+                radius, nlines_max, dir_=workdir, n_cpu=n_cpu)
+        objects, lines = out
 
     if del_sex:
         remove_files(workdir)
 
-    return line, obj
+    return objects, lines
