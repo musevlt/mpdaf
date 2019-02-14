@@ -790,16 +790,33 @@ def assign_group(coord_raw, coord_group, dist, n_cpu=1):
     return ids
 
 
-def create_line_source(row, dir_, cube):
+def get_mask_minsize(mask, center):
+
+    center_pix = mask.wcs.sky2pix(center, unit=u.deg)
+
+    obj_coord_pix = np.argwhere(mask.data != 0).astype(float)
+    obj_coord_pix -= center_pix
+
+    max_dist = np.max(np.abs(obj_coord_pix), axis=0)
+
+    pix_size = mask.wcs.get_step(unit=u.arcsec)
+    
+    size = 2. * np.ceil(max_dist) + 1.
+    size = np.max(size * pix_size)
+
+    return size
+
+
+def create_line_source(row, dir_, cube, ima_size):
 
     cube_name = Path(cube.filename).stem
     cube_version = str(cube.primary_header.get('CUBE_V', ''))
     origin = ('muselet', __version__, cube_name, cube_version)
 
-    ima_size = 21 * 0.2
+    ra=row['RA']
+    dec=row['DEC']
 
-    src = Source.from_data(ID=row['ID_CUBE'], ra=row['RA'], dec=row['DEC'],
-                    origin=origin)
+    src = Source.from_data(ID=row['ID_CUBE'], ra=ra, dec=dec, origin=origin)
 
     #add line table
 
@@ -828,8 +845,13 @@ def create_line_source(row, dir_, cube):
     im_seg = Image(str(file_seg))
     im_seg.data = (im_seg.data == row['ID_SLICE']) * 1
 
-    src.add_image(im_nb, 'NB{:04.0f}'.format(row['WAVE']), ima_size)
-    src.add_image(im_seg, 'MASK_OBJ', ima_size)
+    size = get_mask_minsize(im_seg, [dec, ra]) + 2. #pad by 1 arcsec border
+    size = np.clip(size, ima_size, None) #ima_size controls smallest size
+
+    src.add_image(im_nb, 'NB{:04.0f}'.format(row['WAVE']), size)
+    src.add_image(im_seg, 'MASK_OBJ', size)
+
+    src.add_attr('ID_OBJ', row['ID_OBJ'])
 
     return src
 
@@ -891,6 +913,9 @@ def create_object_source(row_obj, rows_lines, dir_, cube, ima_size, nlines_max):
     src.sort_lines(nlines_max)
 
     #add line images for the brightest lines
+    size = ima_size #minimum size
+
+    names = []
     images_nb = []
     images_seg = []
     for line in src.lines:
@@ -907,22 +932,28 @@ def create_object_source(row_obj, rows_lines, dir_, cube, ima_size, nlines_max):
         im_seg = Image(str(file_seg))
         im_seg.data = (im_seg.data == row_line['ID_SLICE']) * 1
 
-        src.add_image(im_nb, 'NB{:04.0f}'.format(row_line['WAVE']), ima_size)
+        s = get_mask_minsize(im_seg, [dec, ra]) + 2. #pad by 1 arcsec border
+        size = np.clip(size, s, None) #make size bigger if needed
 
+        name = 'NB{:04.0f}'.format(row_line['WAVE'])
+
+        names.append(name)
         images_nb.append(im_nb)
         images_seg.append(im_seg)
 
     #add coadd image
-    im_nb_coadd = images_nb[0].copy()
-    im_seg_union = images_seg[0].copy()
+    im_nb_coadd = images_nb[0].clone(data_init=np.zeros)
+    im_seg_union = images_seg[0].clone(data_init=np.zeros)
 
-    for im_nb, im_seg in zip(images_nb[1:], images_seg[1:]):
+    for name, im_nb, im_seg in zip(names, images_nb, images_seg):
+        src.add_image(im_nb, name, size)
+
         im_nb_coadd += im_nb
         im_seg_union += im_seg
 
     im_seg_union.data = (im_seg_union.data != 0) * 1
-    src.add_image(im_nb_coadd, 'NB_COADD', ima_size)
-    src.add_image(im_seg_union, 'MASK_OBJ', ima_size)
+    src.add_image(im_nb_coadd, 'NB_COADD', size)
+    src.add_image(im_seg_union, 'MASK_OBJ', size)
 
     return src
 
@@ -1211,7 +1242,7 @@ def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
 
     progress = ProgressCounter(len(cat), msg='Built:', every=1)
     for row in cat:
-        src = create_line_source(row, dir_, cube)
+        src = create_line_source(row, dir_, cube, ima_size)
         sources_lines.append(src)
 
         progress.increment()
@@ -1287,7 +1318,7 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
         Radius in spatial pixels (default=4) within which emission lines
         are merged spatially into the same object.
     ima_size : int
-        Size of the extracted images in pixels.
+        Minimum size of the extracted images in pixels.
     nlines_max : int
         Maximum number of lines detected per object.
     clean : float
