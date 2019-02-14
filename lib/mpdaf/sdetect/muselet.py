@@ -902,7 +902,7 @@ def create_object_source(row_obj, rows_lines, dir_, cube, ima_size, nlines_max):
         file_seg = (dir_ / 'nb/seg{:04d}.fits'.format(row_line['I_Z']))
 
         im_nb = Image(str(file_nb))
-        im_nb.data_header['ID_LINE'] = row_line['ID']
+        im_nb.data_header['ID_LINE'] = row_line['ID_CUBE']
 
         im_seg = Image(str(file_seg))
         im_seg.data = (im_seg.data == row_line['ID_SLICE']) * 1
