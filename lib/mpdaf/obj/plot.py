@@ -82,7 +82,7 @@ def get_plot_norm(data, vmin=None, vmax=None, zscale=False, scale='linear'):
 
     # Create an object that will be used to map pixel values
     # in the range vmin..vmax to normalized colormap indexes.
-    norm = ImageNormalize(vmin=vmin, vmax=vmax, stretch=stretch())
+    norm = ImageNormalize(vmin=vmin, vmax=vmax, stretch=stretch(), clip=False)
 
     return norm
 
