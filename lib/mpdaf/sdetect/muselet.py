@@ -91,6 +91,20 @@ class ProgressCounter(object):
         sys.stdout.write("\n")
         sys.stdout.flush()
 
+def get_cmd_sex():
+
+    try:
+        subprocess.check_call(['sex', '-v'])
+        cmd_sex = 'sex'
+    except OSError:
+        try:
+            subprocess.check_call(['sextractor', '-v'])
+            cmd_sex = 'sextractor'
+        except OSError:
+            raise OSError('SExtractor not found')
+
+    return cmd_sex
+
 
 def setup_config_files(dir_, nb=False):
 
@@ -130,9 +144,9 @@ def setup_emline_files(dir_):
 def remove_files(dir_):
 
     files = ['default.sex', 'default.conv', 'default.nnw', 'default.param',
-             'emlines', 'emlines_small', 'cat_bgr.dat', 'im_weight.fits',
-             'seg.fits', 'im_white.fits', 'im_b.fits', 'im_g.fits',
-             'im_r.fits', 'detect.cat']
+             'emlines', 'emlines_small', 'cat_white.dat', 'cat_bgr.dat',
+             'im_white.fits', 'im_weight.fits', 'seg.fits',
+             'im_b.fits', 'im_g.fits', 'im_r.fits']
 
     for f in files:
         try:
@@ -569,9 +583,11 @@ def get_sex_opts(config):
     return cmd
 
 
-def step2(cubename, cmd_sex, config=None, config_nb=None, dir_=None, n_cpu=1):
+def step2(cubename, config=None, config_nb=None, dir_=None, n_cpu=1):
 
     cubename = Path(cubename)
+
+    cmd_sex = get_cmd_sex()
 
     if config is None:
         config = {}
@@ -591,9 +607,7 @@ def step2(cubename, cmd_sex, config=None, config_nb=None, dir_=None, n_cpu=1):
     logger.info("running SExtractor on white light and RGB images") 
 
     sex_opts = get_sex_opts(config)
-    cmd = [cmd_sex] + sex_opts + ['im_white.fits']
-    run_sex(cmd, dir_)
-    for band in ['b', 'g', 'r']:
+    for band in ['white', 'b', 'g', 'r']:
         cmd = [cmd_sex] + sex_opts + [
                 '-CATALOG_NAME', 'cat_{}.dat'.format(band),
                 'im_white.fits,im_{}.fits'.format(band)]
@@ -1369,16 +1383,6 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
     except Exception:
         logger.error('fw is not an array of float')
 
-    try:
-        subprocess.check_call(['sex', '-v'])
-        cmd_sex = 'sex'
-    except OSError:
-        try:
-            subprocess.check_call(['sextractor', '-v'])
-            cmd_sex = 'sextractor'
-        except OSError:
-            raise OSError('SExtractor not found')
-
     if workdir is None:
         workdir = Path.cwd()
     else:
@@ -1391,12 +1395,14 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
     else:
         logger.debug("No exposure cube provided")
 
+    #check first that sextractor is installed
+    get_cmd_sex()
 
     if step == 1:
         step1(cubename, expmapcube, fw, delta, dir_=workdir, nbcube=nbcube,
                 n_cpu=n_cpu)
     if step <= 2:
-        step2(cubename, cmd_sex, config=sex_config, config_nb=sex_config_nb,
+        step2(cubename, config=sex_config, config_nb=sex_config_nb,
                 dir_=workdir, n_cpu=n_cpu)
 
     if step <= 3:
