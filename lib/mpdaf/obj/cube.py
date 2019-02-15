@@ -1564,8 +1564,8 @@ class Cube(ArithmeticMixin, DataArray):
                                  interpolation="linear")
         # as we use the DRS filters, add the same keyword allowing to find
         # which filter was used.
-        im.primary_header['ESO DRS MUSE FILTER NAME'] = (name,
-                                                         'filter name used')
+        key = 'HIERARCH ESO DRS MUSE FILTER NAME'
+        im.primary_header[key] = (name, 'filter name used')
         add_mpdaf_method_keywords(im.primary_header, "cube.get_band_image",
                                   ['name'], [name], ['filter name used'])
         return im
