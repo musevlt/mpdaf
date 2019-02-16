@@ -521,11 +521,12 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1,
     return cube_nb
 
 
-def step1(cubename, expmapcube, fw, delta, dir_=None, nbcube=False, n_cpu=1,
-        limit_ram=False):
+def step1(cubename, expmapcube=None, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
+        dir_=None, nbcube=False, n_cpu=1, limit_ram=False):
 
     cubename = Path(cubename)
-    expmapcube = Path(expmapcube)
+    if expmapcube is not None:
+        expmapcube = Path(expmapcube)
 
     if dir_ is None:
         dir_ = Path.cwd()
@@ -977,8 +978,8 @@ def create_object_source(row_obj, rows_lines, dir_, cube, ima_size, nlines_max):
     return src
 
 
-def step3(cubename, ima_size, clean, skyclean, radius, nlines_max, dir_=None,
-        n_cpu=1):
+def step3(cubename, clean=0.5, skyclean=((5573.5, 5578.8), (6297.0, 6300.5)),
+        radius=4., ima_size=21, nlines_max=25, dir_=None, n_cpu=1):
 
     cubename = Path(cubename)
 
@@ -1399,15 +1400,16 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
     get_cmd_sex()
 
     if step == 1:
-        step1(cubename, expmapcube, fw, delta, dir_=workdir, nbcube=nbcube,
-                n_cpu=n_cpu)
+        step1(cubename, expmapcube, delta=delta, fw=fw, dir_=workdir,
+                nbcube=nbcube, n_cpu=n_cpu)
     if step <= 2:
         step2(cubename, config=sex_config, config_nb=sex_config_nb,
                 dir_=workdir, n_cpu=n_cpu)
 
     if step <= 3:
-        out = step3(cubename, ima_size, clean, skyclean,
-                radius, nlines_max, dir_=workdir, n_cpu=n_cpu)
+        out = step3(cubename, clean=clean, skyclean=skyclean, radius=radius,
+                ima_size=ima_size, nlines_max=nlines_max, dir_=workdir,
+                n_cpu=n_cpu)
         objects, lines = out
 
     if del_sex:
