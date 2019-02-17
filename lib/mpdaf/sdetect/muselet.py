@@ -730,8 +730,8 @@ def load_cat(i, dir_):
     mag[np.isclose(mag, 99.)] = np.nan
     mag_err[np.isclose(mag_err, 99.)] = np.nan
 
-    flux = 10. ** ((25. - mag) / -2.5)
-    flux_err = np.abs(flux * np.log(10) * mag_err / -2.5)
+    flux = 10. ** ((mag - 25.) / -2.5)
+    flux_err = np.abs(flux * np.log(10.) * mag_err / -2.5)
 
     c4 = table.Column(flux, name='FLUX')
     c5 = table.Column(flux_err, name='FLUX_ERR')
@@ -1101,6 +1101,7 @@ def step3(cubename, clean=0.5, skyclean=((5573.5, 5578.8), (6297.0, 6300.5)),
     logger.info(msg.format(np.sum(~mask), np.sum(mask)))
 
 
+    import pdb; pdb.set_trace()
     max_sep_spatial = radius
     max_sep_spectral = 3.75
     msg = "merging raw detections using a friends-of-friends algorithm"
