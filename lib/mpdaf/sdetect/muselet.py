@@ -773,7 +773,6 @@ def load_raw_catalog(dir_, cube, skyclean, n_cpu=1):
 
     #remove wavelengths with sky lines
     idx_nb = np.arange(2, n_w-3, dtype=int)
-#    idx_nb = np.arange(2, 500, dtype=int) #only for testing
     wave = cube.wave.coord(idx_nb, unit=u.Unit('Angstrom'))
     mask = np.zeros_like(idx_nb, dtype=bool)
     for wave_range in skyclean:
