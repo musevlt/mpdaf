@@ -741,43 +741,43 @@ def load_cat(i, dir_):
     return data
 
 
-def merge_raw_3D(x, y, z, dist_spatial, dist_spectral, n_cpu=1):
-
-    coord_spatial = np.column_stack([x, y])
-    coord_spectral = z.reshape([-1, 1])
-
-    tree_spatial = cKDTree(coord_spatial) 
-    tree_spectral = cKDTree(coord_spectral) 
-
-    idx_unassigned = set(range(len(coord_spatial)))
-    ids = np.zeros([len(coord_spatial)], dtype=int)
-    id_group = 1
-    while len(idx_unassigned): #while still unassigned 
-
-        i_init = next(iter(idx_unassigned)) #get first
-        new_friends = set([i_init])
-
-        while len(new_friends):
-            
-            i = new_friends.pop() #pick one of the new friends
-            ids[i] = id_group #assign it the ids
-            idx_unassigned.remove(i) #remove 
-
-            idx_1 = tree_spatial.query_ball_point(coord_spatial[i],
-                            dist_spatial, n_jobs=n_cpu)
-
-            idx_2 = tree_spectral.query_ball_point(coord_spectral[i],
-                            dist_spectral, n_jobs=n_cpu)
-            
-            #near in all dimensions, and not already assigned
-            idx_new = set(idx_1) & set(idx_2) & idx_unassigned
-            
-            #extend list of indicies to check
-            new_friends |= idx_new
-
-        id_group += 1
-
-    return ids
+#def merge_raw_3D(x, y, z, dist_spatial, dist_spectral, n_cpu=1):
+#
+#    coord_spatial = np.column_stack([x, y])
+#    coord_spectral = z.reshape([-1, 1])
+#
+#    tree_spatial = cKDTree(coord_spatial) 
+#    tree_spectral = cKDTree(coord_spectral) 
+#
+#    idx_unassigned = set(range(len(coord_spatial)))
+#    ids = np.zeros([len(coord_spatial)], dtype=int)
+#    id_group = 1
+#    while len(idx_unassigned): #while still unassigned 
+#
+#        i_init = next(iter(idx_unassigned)) #get first
+#        new_friends = set([i_init])
+#
+#        while len(new_friends):
+#            
+#            i = new_friends.pop() #pick one of the new friends
+#            ids[i] = id_group #assign it the ids
+#            idx_unassigned.remove(i) #remove 
+#
+#            idx_1 = tree_spatial.query_ball_point(coord_spatial[i],
+#                            dist_spatial, n_jobs=n_cpu)
+#
+#            idx_2 = tree_spectral.query_ball_point(coord_spectral[i],
+#                            dist_spectral, n_jobs=n_cpu)
+#            
+#            #near in all dimensions, and not already assigned
+#            idx_new = set(idx_1) & set(idx_2) & idx_unassigned
+#            
+#            #extend list of indicies to check
+#            new_friends |= idx_new
+#
+#        id_group += 1
+#
+#    return ids
 
 
 def load_raw_catalog(dir_, cube, skyclean, n_cpu=1):
@@ -939,7 +939,7 @@ def find_lines(cat, cube, radius, n_cpu=1):
 
     max_sep_spatial = radius
     max_sep_spectral = 3.75
-    msg = "merging raw detections using a friends-of-friends algorithm"
+    msg = "merging raw detections within"
     logger.info(msg)
     msg = "spatial link-length \u0394r < {:.2f}\u2033"
     logger.debug(msg.format(max_sep_spatial))
@@ -1023,7 +1023,7 @@ def find_objects(cat, dir_, cube, radius, n_cpu=1):
     logger = logging.getLogger(__name__)
 
     max_dist = radius
-    msg = "grouping detections within \u0394r < {:.2f}\u2033"
+    msg = "grouping lines within \u0394r < {:.2f}\u2033"
     logger.debug(msg.format(max_dist))
 
     #group detections close to continuum sources
