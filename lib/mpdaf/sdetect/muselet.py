@@ -715,7 +715,7 @@ def load_cat(i, dir_):
     #add extra columns
     #new ID unqiue in whole cube, to be filled later
     id_cube = np.full(n_data, -1, dtype=int)
-    c1 = table.Column(id_cube, name='ID_CUBE') 
+    c1 = table.Column(id_cube, name='ID_RAW') 
 
     #Z index (i.e. slice+1)
     z_image = np.full(n_data, i, dtype=int)
@@ -780,12 +780,217 @@ def merge_raw_3D(x, y, z, dist_spatial, dist_spectral, n_cpu=1):
     return ids
 
 
-def assign_group(coord_raw, coord_group, dist, n_cpu=1):
+def load_raw_catalog(dir_, cube, skyclean, n_cpu=1):
 
-    tree_raw = cKDTree(coord_raw)
+    logger = logging.getLogger(__name__)
+
+    n_w = cube.shape[0]
+
+    #remove wavelengths with sky lines
+    idx_nb = np.arange(2, n_w-3, dtype=int)
+    wave = cube.wave.coord(idx_nb, unit=u.Unit('Angstrom'))
+    mask = np.zeros_like(idx_nb, dtype=bool)
+    for wave_range in skyclean:
+        msg = "excluding wavelengths between {:.02f}\u212B and {:.02f}\u212B"
+        logger.debug(msg.format(*wave_range))
+        m = (wave >= wave_range[0]) & (wave <= wave_range[1])
+        mask |= m
+    idx_nb = idx_nb[~mask]
+
+    msg = "{} narrow-bands will be excluded"
+    logger.debug(msg.format(np.sum(mask)))
+
+    #load NB catalogs
+    cat_all = []
+    t0_load = time.time()
+
+    if n_cpu == 1:
+        logger.info("loading narrow-band catalogs using 1 CPU")
+
+        progress = ProgressCounter(len(idx_nb), msg='Loaded:', every=1)
+        for i in idx_nb:
+            cat = load_cat(i, dir_)
+            cat_all.append(cat)
+            progress.increment()
+
+    else:
+        use_cpu = np.clip(n_cpu, None, 16) #no point using more than 16 CPUs
+        msg = "loading narrow-band catalogs using {} CPUs".format(use_cpu)
+        logger.info(msg)
+        progress = ProgressCounter(len(idx_nb), msg='Loaded:', every=10)
+        pool = mp.Pool(use_cpu)
+        results = []
+        for i in idx_nb:
+            res = pool.apply_async(load_cat, (i, dir_),
+                    callback=lambda x:progress.increment())
+            results.append(res)
+        pool.close()
+
+        for res in results:
+            cat = res.get(999999)
+            cat_all.append(cat)
+
+    progress.close()
+
+    logger.debug("combining catalogs")
+
+    #combine into one large table
+    cat = table.vstack(cat_all)
+
+    cat['ID_RAW'] = np.arange(len(cat), dtype=int) + 1
+    cat['WAVE'] = cube.wave.coord(cat['I_Z'])
+
+    t_load = time.time() - t0_load
+    logger.debug("catalogs loaded in {0:.1f} seconds".format(t_load))
+
+    msg = "{} raw detections found".format(len(cat))
+    logger.info(msg)
+
+    return cat
+
+
+def clean_raw_catalog(cat, dir_, clean):
+
+    logger = logging.getLogger(__name__)
+
+    logger.info("cleaning detections with fluxes below 5\u03C3")
+    #remove insigficant fluxes
+
+    flux = cat['FLUX']
+    flux_err = cat['FLUX_ERR']
+    with np.errstate(invalid='ignore', divide='ignore'):
+        mask = (flux / flux_err) < 5.
+        mask |= np.isnan(flux)
+
+    cat = cat[~mask]
+    msg = "{} detections remain ({} removed)"
+    logger.info(msg.format(np.sum(~mask), np.sum(mask)))
+    
+
+    logger.info("cleaning detections at edge of cube")
+    #clean detections partially (>10%) outside data 
+
+    area_tot = cat['ISOAREA_IMAGE'].astype(float)
+    area_bad = cat['NIMAFLAGS_ISO'].astype(float)
+    with np.errstate(invalid='ignore', divide='ignore'):
+        mask = (area_bad / area_tot) > 0.1
+        mask |= area_tot == 0
+
+    cat = cat[~mask]
+    msg = "{} detections remain ({} removed)"
+    logger.info(msg.format(np.sum(~mask), np.sum(mask)))
+
+
+    file_weight = str(dir_ / 'im_weight.fits')
+    im_weight = Image(file_weight)
+    clean_thresh = clean * np.ma.median(im_weight.data)
+    logger.info("cleaning below image weight %s", clean_thresh)
+
+    i_y = np.round(cat['I_Y']).astype(int)
+    i_x = np.round(cat['I_X']).astype(int)
+    mask = im_weight.data[i_y, i_x] < clean_thresh
+
+    cat = cat[~mask]
+    msg = "{} detections remain ({} removed)"
+    logger.info(msg.format(np.sum(~mask), np.sum(mask)))
+
+    return cat
+
+
+def assign_lines(coord_raw, flux_raw, dist_spatial, dist_spectral, n_cpu=1):
+
+    coord_raw_xy = coord_raw[:,:2]
+    coord_raw_z = coord_raw[:,[2]]
+
+    tree_raw_xy = cKDTree(coord_raw_xy)
+    tree_raw_z = cKDTree(coord_raw_z)
+
+    ids = np.full(len(coord_raw), -1, dtype=int)
+    mask = np.ones(len(coord_raw), dtype=bool)
+
+    id_group = 1 #next group id
+    while np.sum(mask):
+
+        #pick brightest ungrouped line
+        i = np.where(mask)[0][np.argmax(flux_raw[mask])]
+        
+        #find other lines close in xy
+        idx_xy = tree_raw_xy.query_ball_point(coord_raw_xy[i], dist_spatial)
+
+        #find other lines close in z
+        idx_z = tree_raw_z.query_ball_point(coord_raw_z[i], dist_spectral)
+
+        #find intersection
+        idx = np.array(list(set(idx_xy) & set(idx_z)))
+            
+        idx = idx[mask[idx]] #find only those unassigned
+
+        ids[idx] = id_group
+        mask[idx] = False
+        
+        id_group +=1 
+
+    return ids
+
+
+def find_lines(cat, cube, radius, n_cpu=1):
+
+    logger = logging.getLogger(__name__)
+
+    max_sep_spatial = radius
+    max_sep_spectral = 3.75
+    msg = "merging raw detections using a friends-of-friends algorithm"
+    logger.info(msg)
+    msg = "spatial link-length \u0394r < {:.2f}\u2033"
+    logger.debug(msg.format(max_sep_spatial))
+    msg = "spectral link-length \u0394\u03BB < {:.2f}\u212B"
+    logger.debug(msg.format(max_sep_spectral))
+
+
+    #merge detections when close in wavelength and keep the brightest
+
+    ra0 = cube.wcs.get_crval1(unit=u.deg)
+    dec0 = cube.wcs.get_crval2(unit=u.deg)
+    wave0 = cube.wave.get_crval(unit=u.Unit('Angstrom'))
+
+    x = (cat['RA'] - ra0) * 3600. * np.cos(np.radians(dec0))
+    y = (cat['DEC'] - dec0) * 3600.
+    z = (cat['WAVE'] - wave0)
+
+    coord_raw = np.column_stack([x, y, z])
+    flux_raw = cat['FLUX']
+
+    ids = assign_lines(coord_raw, flux_raw, max_sep_spatial,
+                        max_sep_spectral, n_cpu=n_cpu)
+
+    #loop over groups and keep brightest line
+    mask = np.zeros([len(cat)], dtype=bool)
+    for id_ in np.unique(ids):
+        m = (ids == id_)
+        fluxes = cat['FLUX'][m] 
+        idx = np.argmax(fluxes)
+        id_keep = cat['ID_RAW'][m][idx]
+        mask |= (cat['ID_RAW'] == id_keep)
+
+    cat_lines = cat[mask]
+
+    #assign ID numbers
+    ids = np.arange(len(cat_lines), dtype=int) + 1
+    c = table.Column(ids, name='ID_LINE')
+    cat_lines.add_column(c, index=0)
+
+    msg = "{} lines found ({} duplicate detections discarded)"
+    logger.info(msg.format(np.sum(mask), np.sum(~mask)))
+
+    return cat_lines
+
+
+def assign_objects(coord_lines, coord_group, flux_lines, max_dist, n_cpu=1):
+
+    tree_lines = cKDTree(coord_lines)
     tree_group = cKDTree(coord_group)
 
-    dist, ids = tree_group.query(coord_raw, 1, distance_upper_bound=dist,
+    dist, ids = tree_group.query(coord_lines, 1, distance_upper_bound=max_dist,
                         n_jobs=n_cpu)
 
     mask = ~np.isfinite(dist) #not grouped
@@ -795,9 +1000,12 @@ def assign_group(coord_raw, coord_group, dist, n_cpu=1):
 
     while np.sum(mask):
 
-        i = np.where(mask)[0][0]
+        #pick brightest ungrouped line
+        i = np.where(mask)[0][np.argmax(flux_lines[mask])]
+        #i = np.where(mask)[0][0]
         
-        idx = tree_raw.query_ball_point(coord_raw[i], 1.2)
+
+        idx = tree_lines.query_ball_point(coord_lines[i], max_dist)
         idx = np.array(idx)
 
         idx = idx[mask[idx]] #find only those unassigned
@@ -808,6 +1016,131 @@ def assign_group(coord_raw, coord_group, dist, n_cpu=1):
         id_group +=1 
 
     return ids
+
+
+def find_objects(cat, dir_, cube, radius, n_cpu=1):
+
+    logger = logging.getLogger(__name__)
+
+    max_dist = radius
+    msg = "grouping detections within \u0394r < {:.2f}\u2033"
+    logger.debug(msg.format(max_dist))
+
+    #group detections close to continuum sources
+    file_ = dir_ / 'cat_bgr.dat'
+    cat_bgr = table.Table.read(file_, format='ascii.fixed_width_two_line')
+
+    ra0 = cube.wcs.get_crval1(unit=u.deg)
+    dec0 = cube.wcs.get_crval2(unit=u.deg)
+
+    x_raw = (cat['RA'] - ra0) * 3600. * np.cos(np.radians(dec0))
+    y_raw = (cat['DEC'] - dec0) * 3600.
+
+    x_cont = (cat_bgr['RA'] - ra0) * 3600. * np.cos(np.radians(dec0))
+    y_cont = (cat_bgr['DEC'] - dec0) * 3600.
+
+    coord_lines = np.column_stack([x_raw, y_raw])
+    flux_lines = cat['FLUX']
+    coord_cont = np.column_stack([x_cont, y_cont])
+    coord_group = coord_cont.copy()
+
+    ids = np.full(len(coord_lines), -1, dtype=int) #dummy 
+
+    for i_iter in range(100): #some not too large number of max iterations
+        
+        ids_old = ids.copy()
+        ids = assign_objects(coord_lines, coord_group, flux_lines, max_dist,
+                    n_cpu=n_cpu)
+
+        #find new group centers
+        uniq_ids = np.unique(ids)
+        coord_new = np.full([len(uniq_ids), 2], np.nan, dtype=float)
+        for i, id_ in enumerate(uniq_ids):
+            m = (ids == id_)
+
+            #check if is a cont source, if so, do not update coord
+            if id_ < len(coord_group):
+                coord = coord_group[id_]
+                if np.any(np.all(np.isclose(coord_cont, coord), axis=1)):
+                    coord_new[i] = coord
+                    continue
+
+            #otherwise update coord center
+            coord_new[i] = np.mean(coord_lines[m], 0)
+
+        coord_group = coord_new
+
+        if np.all(ids == ids_old):
+            #no further iteration needed
+            msg = "group assignment converged after {} iterations"
+            logger.debug(msg.format(i_iter+1))
+            break
+
+    else: #did not converge
+        f_conv = np.sum(ids == ids_old) / float(len(ids))
+        msg = "group assignment did not fully converge ({:.3f}% converged)"
+        logger.warning(msg.format(f_conv*100.))
+
+    ids +=1 #increment all indicies by 1
+
+    uniq_ids = np.unique(ids)
+    n_obj = len(np.unique(ids))
+    logger.info("{} objects found".format(n_obj))
+
+    #add object id column to line catalog
+    c = table.Column(ids, name='ID_OBJ')
+    cat.add_column(c, index=1)
+
+    #create object catalog
+    cat_obj = table.Table()
+    cat_obj['ID_OBJ'] = table.Column([], dtype=int)
+    cat_obj['RA'] = table.Column([], dtype=float)
+    cat_obj['DEC'] = table.Column([], dtype=float)
+    for band in ['B', 'G', 'R']:
+        cat_obj['MAG_APER_{}'.format(band)] = table.Column([], dtype=float)
+        cat_obj['MAGERR_APER_{}'.format(band)] = table.Column([], dtype=float)
+
+    ra0 = cube.wcs.get_crval1(unit=u.deg)
+    dec0 = cube.wcs.get_crval2(unit=u.deg)
+
+    for id_obj, coord in zip(uniq_ids, coord_group):
+        
+        x, y = coord
+
+        m = np.all(np.isclose(coord_cont, coord), axis=1)
+
+        ra = x / 3600. / np.cos(np.radians(dec0)) + ra0
+        dec = y / 3600. + dec0
+
+        row = {
+            'ID_OBJ': id_obj,
+            'RA': ra,
+            'DEC': dec,
+            }
+        
+        if np.sum(m) == 1: #is cont source
+            row_bgr = cat_bgr[m]
+            row['MAG_APER_B'] = row_bgr['MAG_APER_B'] 
+            row['MAGERR_APER_B'] = row_bgr['MAGERR_APER_B'] 
+            row['MAG_APER_G'] = row_bgr['MAG_APER_G'] 
+            row['MAGERR_APER_G'] = row_bgr['MAGERR_APER_G'] 
+            row['MAG_APER_R'] = row_bgr['MAG_APER_R'] 
+            row['MAGERR_APER_R'] = row_bgr['MAGERR_APER_R'] 
+
+        elif np.sum(m) == 0:
+            row['MAG_APER_B'] = np.nan
+            row['MAGERR_APER_B'] = np.nan
+            row['MAG_APER_G'] = np.nan
+            row['MAGERR_APER_G'] = np.nan
+            row['MAG_APER_R'] = np.nan
+            row['MAGERR_APER_R'] = np.nan
+
+        else: #this really shouldn't have happened, something went very wrong
+            raise Exception 
+
+        cat_obj.add_row(row)
+
+    return cat_obj
 
 
 def get_mask_minsize(mask, center):
@@ -836,7 +1169,7 @@ def create_line_source(row, dir_, cube, ima_size):
     ra=row['RA']
     dec=row['DEC']
 
-    src = Source.from_data(ID=row['ID_CUBE'], ra=ra, dec=dec, origin=origin)
+    src = Source.from_data(ID=row['ID_LINE'], ra=ra, dec=dec, origin=origin)
 
     #add line table
 
@@ -947,7 +1280,7 @@ def create_object_source(row_obj, rows_lines, dir_, cube, ima_size, nlines_max):
         file_seg = (dir_ / 'nb/seg{:04d}.fits'.format(row_line['I_Z']))
 
         im_nb = Image(str(file_nb))
-        im_nb.data_header['ID_LINE'] = row_line['ID_CUBE']
+        im_nb.data_header['ID_LINE'] = row_line['ID_LINE']
 
         im_seg = Image(str(file_seg))
         im_seg.data = (im_seg.data == row_line['ID_SLICE']) * 1
@@ -989,272 +1322,19 @@ def step3(cubename, clean=0.5, skyclean=((5573.5, 5578.8), (6297.0, 6300.5)),
     if dir_ is None:
         dir_ = Path.cwd()
 
-
     cube = Cube(str(cubename))
-    
+
     pix_size = np.mean(cube.wcs.get_step(unit=u.arcsec))
     ima_size *= pix_size
     radius *= pix_size
 
-    n_w = cube.shape[0]
+    cat_raw = load_raw_catalog(dir_, cube, skyclean, n_cpu=n_cpu)
 
-    #remove wavelengths with sky lines
-    idx_nb = np.arange(2, n_w-3, dtype=int)
-    wave = cube.wave.coord(idx_nb, unit=u.Unit('Angstrom'))
-    mask = np.zeros_like(idx_nb, dtype=bool)
-    for wave_range in skyclean:
-        msg = "excluding wavelengths between {:.02f}\u212B and {:.02f}\u212B"
-        logger.debug(msg.format(*wave_range))
-        m = (wave >= wave_range[0]) & (wave <= wave_range[1])
-        mask |= m
-    idx_nb = idx_nb[~mask]
+    cat_clean = clean_raw_catalog(cat_raw, dir_, clean)
 
-    msg = "{} narrow-bands will be excluded"
-    logger.debug(msg.format(np.sum(mask)))
+    cat_lines = find_lines(cat_clean, cube, radius, n_cpu=n_cpu)
 
-    #load NB catalogs
-    cat_all = []
-    t0_load = time.time()
-
-    if n_cpu == 1:
-        logger.info("loading narrow-band catalogs using 1 CPU")
-
-        progress = ProgressCounter(len(idx_nb), msg='Loaded:', every=1)
-        for i in idx_nb:
-            cat = load_cat(i, dir_)
-            cat_all.append(cat)
-            progress.increment()
-
-    else:
-        use_cpu = np.clip(n_cpu, None, 16) #no point using more than 16 CPUs
-        msg = "loading narrow-band catalogs using {} CPUs".format(use_cpu)
-        logger.info(msg)
-        progress = ProgressCounter(len(idx_nb), msg='Loaded:', every=10)
-        pool = mp.Pool(use_cpu)
-        results = []
-        for i in idx_nb:
-            res = pool.apply_async(load_cat, (i, dir_),
-                    callback=lambda x:progress.increment())
-            results.append(res)
-        pool.close()
-
-        for res in results:
-            cat = res.get(999999)
-            cat_all.append(cat)
-
-    progress.close()
-
-    logger.debug("combining catalogs")
-
-    #combine into one large table
-    cat = table.vstack(cat_all)
-
-    cat['ID_CUBE'] = np.arange(len(cat), dtype=int) + 1
-    cat['WAVE'] = cube.wave.coord(cat['I_Z'])
-
-    t_load = time.time() - t0_load
-    logger.debug("catalogs loaded in {0:.1f} seconds".format(t_load))
-
-    msg = "{} raw detections found".format(len(cat))
-    logger.info(msg)
-
-
-    logger.info("cleaning detections with fluxes below 5\u03C3")
-    #remove insigficant fluxes
-
-    flux = cat['FLUX']
-    flux_err = cat['FLUX_ERR']
-    with np.errstate(invalid='ignore', divide='ignore'):
-        mask = (flux / flux_err) < 5.
-        mask |= np.isnan(flux)
-
-    cat = cat[~mask]
-    msg = "{} detections remain ({} removed)"
-    logger.info(msg.format(np.sum(~mask), np.sum(mask)))
-    
-
-    logger.info("cleaning detections at edge of cube")
-    #clean detections partially (>10%) outside data 
-
-    area_tot = cat['ISOAREA_IMAGE'].astype(float)
-    area_bad = cat['NIMAFLAGS_ISO'].astype(float)
-    with np.errstate(invalid='ignore', divide='ignore'):
-        mask = (area_bad / area_tot) > 0.1
-        mask |= area_tot == 0
-
-    cat = cat[~mask]
-    msg = "{} detections remain ({} removed)"
-    logger.info(msg.format(np.sum(~mask), np.sum(mask)))
-
-
-    file_weight = str(dir_ / 'im_weight.fits')
-    im_weight = Image(file_weight)
-    clean_thresh = clean * np.ma.median(im_weight.data)
-    logger.info("cleaning below image weight %s", clean_thresh)
-
-    i_y = np.round(cat['I_Y']).astype(int)
-    i_x = np.round(cat['I_X']).astype(int)
-    mask = im_weight.data[i_y, i_x] < clean_thresh
-
-    cat = cat[~mask]
-    msg = "{} detections remain ({} removed)"
-    logger.info(msg.format(np.sum(~mask), np.sum(mask)))
-
-
-    import pdb; pdb.set_trace()
-    max_sep_spatial = radius
-    max_sep_spectral = 3.75
-    msg = "merging raw detections using a friends-of-friends algorithm"
-    logger.info(msg)
-    msg = "spatial link-length \u0394r < {:.2f}\u2033"
-    logger.debug(msg.format(max_sep_spatial))
-    msg = "spectral link-length \u0394\u03BB < {:.2f}\u212B"
-    logger.debug(msg.format(max_sep_spectral))
-
-
-    #merge detections when close in wavelength and keep the brightest
-
-    ra0 = cube.wcs.get_crval1(unit=u.deg)
-    dec0 = cube.wcs.get_crval2(unit=u.deg)
-    wave0 = cube.wave.get_crval(unit=u.Unit('Angstrom'))
-
-    x = (cat['RA'] - ra0) * 3600. * np.cos(np.radians(dec0))
-    y = (cat['DEC'] - dec0) * 3600.
-    z = (cat['WAVE'] - wave0)
-
-    ids_line = merge_raw_3D(x, y, z, max_sep_spatial, max_sep_spectral,
-                    n_cpu=n_cpu)
-
-    #loop over groups and keep brightest line
-    mask = np.zeros([len(cat)], dtype=bool)
-    for id_line in np.unique(ids_line):
-        m_line = (ids_line == id_line)
-        fluxes = cat['FLUX'][m_line] 
-        idx = np.argmax(fluxes)
-        id_keep = cat['ID_CUBE'][m_line][idx]
-        mask |= (cat['ID_CUBE'] == id_keep)
-
-    cat = cat[mask]
-    #reassign ID numbers
-    cat['ID_CUBE'] = np.arange(len(cat), dtype=int) + 1
-
-    msg = "{} lines found ({} duplicate detections discarded)"
-    logger.info(msg.format(np.sum(mask), np.sum(~mask)))
-
-    max_dist = radius
-    msg = "grouping detections within \u0394r < {:.2f}\u2033"
-    logger.debug(msg.format(max_dist))
-
-    #group detections close to continuum sources
-    file_ = dir_ / 'cat_bgr.dat'
-    cat_bgr = table.Table.read(file_, format='ascii.fixed_width_two_line')
-
-    ra0 = cube.wcs.get_crval1(unit=u.deg)
-    dec0 = cube.wcs.get_crval2(unit=u.deg)
-
-    x_raw = (cat['RA'] - ra0) * 3600. * np.cos(np.radians(dec0))
-    y_raw = (cat['DEC'] - dec0) * 3600.
-
-    x_cont = (cat_bgr['RA'] - ra0) * 3600. * np.cos(np.radians(dec0))
-    y_cont = (cat_bgr['DEC'] - dec0) * 3600.
-
-    coord_raw = np.column_stack([x_raw, y_raw])
-    coord_cont = np.column_stack([x_cont, y_cont])
-    coord_group = coord_cont.copy()
-
-    ids = np.full(len(coord_raw), -1, dtype=int) #dummy 
-
-    for i_iter in range(100): #some not too large number of max iterations
-        
-        ids_old = ids.copy()
-        ids = assign_group(coord_raw, coord_group, max_dist, n_cpu=n_cpu)
-
-        #find new group centers
-        uniq_ids = np.unique(ids)
-        coord_new = np.full([len(uniq_ids), 2], np.nan, dtype=float)
-        for i, id_ in enumerate(uniq_ids):
-            m = (ids == id_)
-
-            #check if is a cont source, if so, do not update coord
-            if id_ < len(coord_group):
-                coord = coord_group[id_]
-                if np.any(np.all(np.isclose(coord_cont, coord), axis=1)):
-                    coord_new[i] = coord
-                    continue
-
-            #otherwise update coord center
-            coord_new[i] = np.mean(coord_raw[m], 0)
-
-        coord_group = coord_new
-
-        if np.all(ids == ids_old):
-            #no further iteration needed
-            msg = "group assignment converged after {} iterations"
-            logger.debug(msg.format(i_iter+1))
-            break
-
-    else: #did not converge
-        f_conv = np.sum(ids == ids_old) / float(len(ids))
-        msg = "group assignment did not fully converge ({:.3f}% converged)"
-        logger.warning(msg.format(f_conv*100.))
-
-    ids +=1 #increment all indicies by 1
-
-    uniq_ids = np.unique(ids)
-    n_obj = len(np.unique(ids))
-    logger.info("{} objects found".format(n_obj))
-
-    c = table.Column(ids, name='ID_OBJ')
-    cat.add_column(c, index=1)
-
-    #create object catalog
-    cat_obj = table.Table()
-    cat_obj['ID_OBJ'] = table.Column([], dtype=int)
-    cat_obj['RA'] = table.Column([], dtype=float)
-    cat_obj['DEC'] = table.Column([], dtype=float)
-    for band in ['B', 'G', 'R']:
-        cat_obj['MAG_APER_{}'.format(band)] = table.Column([], dtype=float)
-        cat_obj['MAGERR_APER_{}'.format(band)] = table.Column([], dtype=float)
-
-    ra0 = cube.wcs.get_crval1(unit=u.deg)
-    dec0 = cube.wcs.get_crval2(unit=u.deg)
-
-    for id_obj, coord in zip(uniq_ids, coord_group):
-        
-        x, y = coord
-
-        m = np.all(np.isclose(coord_cont, coord), axis=1)
-
-        ra = x / 3600. / np.cos(np.radians(dec0)) + ra0
-        dec = y / 3600. + dec0
-
-        row = {
-            'ID_OBJ': id_obj,
-            'RA': ra,
-            'DEC': dec,
-            }
-        
-        if np.sum(m) == 1: #is cont source
-            row_bgr = cat_bgr[m]
-            row['MAG_APER_B'] = row_bgr['MAG_APER_B'] 
-            row['MAGERR_APER_B'] = row_bgr['MAGERR_APER_B'] 
-            row['MAG_APER_G'] = row_bgr['MAG_APER_G'] 
-            row['MAGERR_APER_G'] = row_bgr['MAGERR_APER_G'] 
-            row['MAG_APER_R'] = row_bgr['MAG_APER_R'] 
-            row['MAGERR_APER_R'] = row_bgr['MAGERR_APER_R'] 
-
-        elif np.sum(m) == 0:
-            row['MAG_APER_B'] = np.nan
-            row['MAGERR_APER_B'] = np.nan
-            row['MAG_APER_G'] = np.nan
-            row['MAGERR_APER_G'] = np.nan
-            row['MAG_APER_R'] = np.nan
-            row['MAGERR_APER_R'] = np.nan
-
-        else: #this really shouldn't have happened, something went very wrong
-            raise Exception 
-
-        cat_obj.add_row(row)
+    cat_objects = find_objects(cat_lines, dir_, cube, radius, n_cpu=n_cpu)
 
 
     logger.info("creating line sources")
@@ -1263,8 +1343,8 @@ def step3(cubename, clean=0.5, skyclean=((5573.5, 5578.8), (6297.0, 6300.5)),
 
     t0_create = time.time()
 
-    progress = ProgressCounter(len(cat), msg='Built:', every=1)
-    for row in cat:
+    progress = ProgressCounter(len(cat_lines), msg='Built:', every=1)
+    for row in cat_lines:
         src = create_line_source(row, dir_, cube, ima_size)
         sources_lines.append(src)
 
@@ -1284,11 +1364,11 @@ def step3(cubename, clean=0.5, skyclean=((5573.5, 5578.8), (6297.0, 6300.5)),
 
     t0_create = time.time()
 
-    progress = ProgressCounter(len(cat_obj), msg='Built:', every=1)
-    for row_obj in cat_obj:
+    progress = ProgressCounter(len(cat_objects), msg='Built:', every=1)
+    for row_obj in cat_objects:
 
         id_obj = row_obj['ID_OBJ']
-        rows_lines = cat[cat['ID_OBJ'] == id_obj]
+        rows_lines = cat_lines[cat_lines['ID_OBJ'] == id_obj]
 
         src = create_object_source(row_obj, rows_lines, dir_, cube,
                         ima_size, nlines_max)
