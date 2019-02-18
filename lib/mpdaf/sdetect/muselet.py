@@ -52,7 +52,7 @@ from astropy import table
 import astropy.units as u
 
 from ..obj import Cube, Image
-from ..sdetect import Source, SourceList
+from ..sdetect import Source, Catalog
 from ..tools import chdir
 
 __version__ = 3.0
@@ -84,11 +84,12 @@ class ProgressCounter(object):
 
     def update_display(self):
        if ((self.count % self.every) == 0) or (self.count == self.total):
-           sys.stdout.write("{}{}/{}\r".format(self.msg, self.count,
+           sys.stdout.write("\r\x1b[K{}{}/{}".format(self.msg, self.count,
                                                 self.total))
+           sys.stdout.flush()
 
     def close(self):
-        sys.stdout.write("\n")
+        sys.stdout.write("\r\x1b[K")
         sys.stdout.flush()
 
 def get_cmd_sex():
@@ -151,7 +152,7 @@ def remove_files(dir_):
 
     for f in files:
         try:
-            os.remove(dir_ / f)
+            (dir_ / f).unlink()
         except FileNotFoundError:
             pass
     shutil.rmtree(dir_ / 'nb', ignore_errors=True)
@@ -629,7 +630,7 @@ def run_sex_bb(dir_, config):
     for band in ['b', 'g', 'r']:
         file_ = dir_ / 'cat_{}.dat'.format(band)
         logger.debug("removing file {}".format(file_))
-        os.remove(file_)
+        file_.unlink()
 
 
 def run_sex_nb(dir_, cube, config, n_cpu=1):
@@ -759,45 +760,6 @@ def load_cat(i, dir_):
     return data
 
 
-#def merge_raw_3D(x, y, z, dist_spatial, dist_spectral, n_cpu=1):
-#
-#    coord_spatial = np.column_stack([x, y])
-#    coord_spectral = z.reshape([-1, 1])
-#
-#    tree_spatial = cKDTree(coord_spatial) 
-#    tree_spectral = cKDTree(coord_spectral) 
-#
-#    idx_unassigned = set(range(len(coord_spatial)))
-#    ids = np.zeros([len(coord_spatial)], dtype=int)
-#    id_group = 1
-#    while len(idx_unassigned): #while still unassigned 
-#
-#        i_init = next(iter(idx_unassigned)) #get first
-#        new_friends = set([i_init])
-#
-#        while len(new_friends):
-#            
-#            i = new_friends.pop() #pick one of the new friends
-#            ids[i] = id_group #assign it the ids
-#            idx_unassigned.remove(i) #remove 
-#
-#            idx_1 = tree_spatial.query_ball_point(coord_spatial[i],
-#                            dist_spatial, n_jobs=n_cpu)
-#
-#            idx_2 = tree_spectral.query_ball_point(coord_spectral[i],
-#                            dist_spectral, n_jobs=n_cpu)
-#            
-#            #near in all dimensions, and not already assigned
-#            idx_new = set(idx_1) & set(idx_2) & idx_unassigned
-#            
-#            #extend list of indicies to check
-#            new_friends |= idx_new
-#
-#        id_group += 1
-#
-#    return ids
-
-
 def load_raw_catalog(dir_, cube, skyclean, n_cpu=1):
 
     logger = logging.getLogger(__name__)
@@ -806,6 +768,7 @@ def load_raw_catalog(dir_, cube, skyclean, n_cpu=1):
 
     #remove wavelengths with sky lines
     idx_nb = np.arange(2, n_w-3, dtype=int)
+#    idx_nb = np.arange(2, 500, dtype=int)
     wave = cube.wave.coord(idx_nb, unit=u.Unit('Angstrom'))
     mask = np.zeros_like(idx_nb, dtype=bool)
     for wave_range in skyclean:
@@ -951,6 +914,39 @@ def assign_lines(coord_raw, flux_raw, dist_spatial, dist_spectral, n_cpu=1):
     return ids
 
 
+def assign_objects(coord_lines, coord_group, flux_lines, max_dist, n_cpu=1):
+
+    tree_lines = cKDTree(coord_lines)
+    tree_group = cKDTree(coord_group)
+
+    dist, ids = tree_group.query(coord_lines, 1, distance_upper_bound=max_dist,
+                        n_jobs=n_cpu)
+
+    mask = ~np.isfinite(dist) #not grouped
+    ids[mask] = -1
+
+    id_group = len(coord_group) + 1
+
+    while np.sum(mask):
+
+        #pick brightest ungrouped line
+        i = np.where(mask)[0][np.argmax(flux_lines[mask])]
+        #i = np.where(mask)[0][0]
+        
+
+        idx = tree_lines.query_ball_point(coord_lines[i], max_dist)
+        idx = np.array(idx)
+
+        idx = idx[mask[idx]] #find only those unassigned
+
+        ids[idx] = id_group
+        mask[idx] = False
+        
+        id_group +=1 
+
+    return ids
+
+
 def find_lines(cat, cube, radius, n_cpu=1):
 
     logger = logging.getLogger(__name__)
@@ -958,11 +954,9 @@ def find_lines(cat, cube, radius, n_cpu=1):
     max_sep_spatial = radius
     max_sep_spectral = 3.75
     msg = "merging raw detections within"
-    logger.info(msg)
-    msg = "spatial link-length \u0394r < {:.2f}\u2033"
-    logger.debug(msg.format(max_sep_spatial))
-    msg = "spectral link-length \u0394\u03BB < {:.2f}\u212B"
-    logger.debug(msg.format(max_sep_spectral))
+    msg += " \u0394r < {0:.2f}\u2033"
+    msg += " and \u0394\u03BB < {1:.2f}\u212B"
+    logger.debug(msg.format(max_sep_spatial, max_sep_spectral))
 
 
     #merge detections when close in wavelength and keep the brightest
@@ -1001,39 +995,6 @@ def find_lines(cat, cube, radius, n_cpu=1):
     logger.info(msg.format(np.sum(mask), np.sum(~mask)))
 
     return cat_lines
-
-
-def assign_objects(coord_lines, coord_group, flux_lines, max_dist, n_cpu=1):
-
-    tree_lines = cKDTree(coord_lines)
-    tree_group = cKDTree(coord_group)
-
-    dist, ids = tree_group.query(coord_lines, 1, distance_upper_bound=max_dist,
-                        n_jobs=n_cpu)
-
-    mask = ~np.isfinite(dist) #not grouped
-    ids[mask] = -1
-
-    id_group = len(coord_group) + 1
-
-    while np.sum(mask):
-
-        #pick brightest ungrouped line
-        i = np.where(mask)[0][np.argmax(flux_lines[mask])]
-        #i = np.where(mask)[0][0]
-        
-
-        idx = tree_lines.query_ball_point(coord_lines[i], max_dist)
-        idx = np.array(idx)
-
-        idx = idx[mask[idx]] #find only those unassigned
-
-        ids[idx] = id_group
-        mask[idx] = False
-        
-        id_group +=1 
-
-    return ids
 
 
 def find_objects(cat, dir_, cube, radius, n_cpu=1):
@@ -1182,16 +1143,17 @@ def get_mask_minsize(mask, center):
     return size
 
 
-def create_line_source(row, dir_, cube, ima_size):
+def write_one_line_source(row, dir_, cube, ima_size):
 
     cube_name = Path(cube.filename).stem
     cube_version = str(cube.primary_header.get('CUBE_V', ''))
     origin = ('muselet', __version__, cube_name, cube_version)
 
-    ra=row['RA']
-    dec=row['DEC']
+    id_ = row['ID_LINE']
+    ra = row['RA']
+    dec = row['DEC']
 
-    src = Source.from_data(ID=row['ID_LINE'], ra=ra, dec=dec, origin=origin)
+    src = Source.from_data(ID=id_, ra=ra, dec=dec, origin=origin)
 
     #add line table
 
@@ -1226,9 +1188,9 @@ def create_line_source(row, dir_, cube, ima_size):
     src.add_image(im_nb, 'NB{:04.0f}'.format(row['WAVE']), size)
     src.add_image(im_seg, 'MASK_OBJ', size)
 
-    src.add_attr('ID_OBJ', row['ID_OBJ'])
+    src.add_attr('ID_OBJ', id_)
 
-    return src
+    src.write(dir_ / 'lines/lines-{:04d}.fits'.format(id_))
 
 
 def create_object_source(row_obj, rows_lines, dir_, cube, ima_size, nlines_max):
@@ -1237,11 +1199,11 @@ def create_object_source(row_obj, rows_lines, dir_, cube, ima_size, nlines_max):
     cube_version = str(cube.primary_header.get('cube_v', ''))
     origin = ('muselet', __version__, cube_name, cube_version)
 
-    #use mean RA, DEC from lines
+    id_ = row_obj['ID_OBJ']
     ra = row_obj['RA']
     dec = row_obj['DEC']
 
-    src = Source.from_data(ID=row_obj['ID_OBJ'], ra=ra, dec=dec, origin=origin)
+    src = Source.from_data(ID=id_, ra=ra, dec=dec, origin=origin)
 
     #add mag table
     src.add_mag('MUSEB', row_obj['MAG_APER_B'], row_obj['MAGERR_APER_B'])
@@ -1330,8 +1292,87 @@ def create_object_source(row_obj, rows_lines, dir_, cube, ima_size, nlines_max):
     src.add_image(im_nb_coadd, 'NB_COADD', size)
     src.add_image(im_seg_union, 'MASK_OBJ', size)
 
-    return src
+    src.write(dir_ / 'objects/objects-{:04d}.fits'.format(id_))
 
+
+def write_line_sources(cat_lines, dir_, cube, ima_size, n_cpu=1):
+
+    logger = logging.getLogger(__name__)
+    
+    logger.info("creating line source files")
+
+    #remove any existing files
+    try:
+        (dir_ / 'lines.fit').unlink()
+    except FileNotFoundError:
+        pass
+    shutil.rmtree(dir_ / 'lines', ignore_errors=True)
+    os.mkdir(dir_ / 'lines')
+
+    logger.debug('writing sources to: {}'.format(dir_ / 'lines'))
+
+    t0_create = time.time()
+
+    progress = ProgressCounter(len(cat_lines), msg='Built:', every=1)
+    for row in cat_lines:
+        src = write_one_line_source(row, dir_, cube, ima_size)
+        progress.increment()
+    progress.close()
+
+    t_create = time.time() - t0_create
+    logger.debug("line sources created in {0:.1f} seconds".format(t_create))
+
+    logger.info("creating line source catalog")
+
+    source_cat = Catalog.from_path(dir_ / 'lines', fmt='working')
+    file_ = dir_ / 'lines.fit'
+    source_cat.write(file_, format='fits')
+    logger.debug('writing catalog to: {}'.format(file_))
+
+
+def write_object_sources(cat_objects, cat_lines, dir_, cube, ima_size,
+        nlines_max, n_cpu=1):
+
+    logger = logging.getLogger(__name__)
+
+    logger.info("creating object sources")
+
+    #remove any existing files
+    try:
+        (dir_ / 'objects.fit').unlink()
+    except FileNotFoundError:
+        pass
+    shutil.rmtree(dir_ / 'objects', ignore_errors=True)
+    os.mkdir(dir_ / 'objects')
+
+    setup_emline_files(dir_)
+
+    logger.debug('writing sources to: {}'.format(dir_ / 'objects'))
+
+    t0_create = time.time()
+
+    progress = ProgressCounter(len(cat_objects), msg='Built:', every=1)
+    for row_obj in cat_objects:
+
+        id_obj = row_obj['ID_OBJ']
+        rows_lines = cat_lines[cat_lines['ID_OBJ'] == id_obj]
+
+        create_object_source(row_obj, rows_lines, dir_, cube,
+                        ima_size, nlines_max)
+
+        progress.increment()
+
+    progress.close()
+
+    t_create = time.time() - t0_create
+    logger.debug("object sources created in {0:.1f} seconds".format(t_create))
+
+    logger.info("creating object source catalog")
+
+    source_cat = Catalog.from_path(dir_ / 'objects', fmt='working')
+    file_ = dir_ / 'objects.fit'
+    source_cat.write(file_, format='fits')
+    logger.debug('writing catalog to: {}'.format(file_))
 
 def step3(cubename, clean=0.5, skyclean=((5573.5, 5578.8), (6297.0, 6300.5)),
         radius=4., ima_size=21, nlines_max=25, dir_=None, n_cpu=1):
@@ -1378,53 +1419,9 @@ def step3(cubename, clean=0.5, skyclean=((5573.5, 5578.8), (6297.0, 6300.5)),
 
 
     #create source files
-#    write_line_sources(cat_lines
-
-    logger.info("creating line sources")
-
-    sources_lines = SourceList()
-
-    t0_create = time.time()
-
-    progress = ProgressCounter(len(cat_lines), msg='Built:', every=1)
-    for row in cat_lines:
-        src = create_line_source(row, dir_, cube, ima_size)
-        sources_lines.append(src)
-
-        progress.increment()
-
-    progress.close()
-
-    t_create = time.time() - t0_create
-    logger.debug("line sources created in {0:.1f} seconds".format(t_create))
-
-
-    logger.info("creating object sources")
-
-    setup_emline_files(dir_)
-
-    sources_objects = SourceList()
-
-    t0_create = time.time()
-
-    progress = ProgressCounter(len(cat_objects), msg='Built:', every=1)
-    for row_obj in cat_objects:
-
-        id_obj = row_obj['ID_OBJ']
-        rows_lines = cat_lines[cat_lines['ID_OBJ'] == id_obj]
-
-        src = create_object_source(row_obj, rows_lines, dir_, cube,
-                        ima_size, nlines_max)
-        sources_objects.append(src)
-
-        progress.increment()
-
-    progress.close()
-
-    t_create = time.time() - t0_create
-    logger.debug("object sources created in {0:.1f} seconds".format(t_create))
-
-    return sources_objects, sources_lines
+    write_line_sources(cat_lines, dir_, cube, ima_size, n_cpu=n_cpu)
+    write_object_sources(cat_objects, cat_lines, dir_, cube, ima_size,
+            nlines_max, n_cpu=n_cpu)
 
 
 def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
@@ -1531,12 +1528,10 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
                 dir_=workdir, n_cpu=n_cpu)
 
     if step <= 3:
-        out = step3(cubename, clean=clean, skyclean=skyclean, radius=radius,
+        step3(cubename, clean=clean, skyclean=skyclean, radius=radius,
                 ima_size=ima_size, nlines_max=nlines_max, dir_=workdir,
                 n_cpu=n_cpu)
-        objects, lines = out
 
     if del_sex:
         remove_files(workdir)
 
-    return objects, lines
