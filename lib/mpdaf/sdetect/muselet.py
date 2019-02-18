@@ -239,7 +239,12 @@ def write_bb_images(cube, cube_exp, dir_, n_cpu=1, limit_ram=False):
 
 
     else:
-        use_cpu = np.clip(n_cpu, None, 3) #at most 3CPUs
+        if n_cpu > 3:
+            use_cpu = 3
+            logger.debug("limiting to use at most 3 CPUs")
+        else:
+            use_cpu = n_cpu
+
         logger.info("creating broad-band images using "
                     "{} CPUs".format(use_cpu))
         pool = mp.Pool(use_cpu)
@@ -768,7 +773,7 @@ def load_raw_catalog(dir_, cube, skyclean, n_cpu=1):
 
     #remove wavelengths with sky lines
     idx_nb = np.arange(2, n_w-3, dtype=int)
-#    idx_nb = np.arange(2, 500, dtype=int)
+#    idx_nb = np.arange(2, 500, dtype=int) #only for testing
     wave = cube.wave.coord(idx_nb, unit=u.Unit('Angstrom'))
     mask = np.zeros_like(idx_nb, dtype=bool)
     for wave_range in skyclean:
@@ -795,7 +800,12 @@ def load_raw_catalog(dir_, cube, skyclean, n_cpu=1):
             progress.increment()
 
     else:
-        use_cpu = np.clip(n_cpu, None, 16) #no point using more than 16 CPUs
+        if n_cpu > 16:
+            use_cpu = 16 #no point using more than 16 CPUs
+            logger.debug("limiting to use at most 16 CPUs")
+        else:
+            use_cpu = n_cpu
+
         msg = "loading narrow-band catalogs using {} CPUs".format(use_cpu)
         logger.info(msg)
         progress = ProgressCounter(len(idx_nb), msg='Loaded:', every=10)
@@ -1143,7 +1153,7 @@ def get_mask_minsize(mask, center):
     return size
 
 
-def write_one_line_source(row, dir_, cube, ima_size):
+def write_line_source_single(row, dir_, cube, ima_size):
 
     cube_name = Path(cube.filename).stem
     cube_version = str(cube.primary_header.get('CUBE_V', ''))
@@ -1193,10 +1203,11 @@ def write_one_line_source(row, dir_, cube, ima_size):
     src.write(dir_ / 'lines/lines-{:04d}.fits'.format(id_))
 
 
-def create_object_source(row_obj, rows_lines, dir_, cube, ima_size, nlines_max):
+def write_object_source_single(row_obj, rows_lines, dir_, cube, ima_size,
+        nlines_max):
 
     cube_name = Path(cube.filename).stem
-    cube_version = str(cube.primary_header.get('cube_v', ''))
+    cube_version = str(cube.primary_header.get('CUBE_V', ''))
     origin = ('muselet', __version__, cube_name, cube_version)
 
     id_ = row_obj['ID_OBJ']
@@ -1295,11 +1306,27 @@ def create_object_source(row_obj, rows_lines, dir_, cube, ima_size, nlines_max):
     src.write(dir_ / 'objects/objects-{:04d}.fits'.format(id_))
 
 
+def write_line_source_multi(row, dir_, file_cube, ima_size):
+    """Wrapper for multiprocessing write_line_source_single"""
+    
+    cube = Cube(str(file_cube))
+    write_line_source_single(row, dir_, cube, ima_size)
+
+
+def write_object_source_multi(row_obj, rows_lines, dir_, file_cube, ima_size,
+        nlines_max):
+    """Wrapper for multiprocessing write_object_source_single"""
+    
+    cube = Cube(str(file_cube))
+    write_object_source_single(row_obj, rows_lines, dir_, cube, ima_size,
+        nlines_max)
+
+
 def write_line_sources(cat_lines, dir_, cube, ima_size, n_cpu=1):
 
     logger = logging.getLogger(__name__)
     
-    logger.info("creating line source files")
+    logger.info("creating line source files using {} CPU".format(n_cpu))
 
     #remove any existing files
     try:
@@ -1313,10 +1340,24 @@ def write_line_sources(cat_lines, dir_, cube, ima_size, n_cpu=1):
 
     t0_create = time.time()
 
-    progress = ProgressCounter(len(cat_lines), msg='Built:', every=1)
-    for row in cat_lines:
-        src = write_one_line_source(row, dir_, cube, ima_size)
-        progress.increment()
+    if n_cpu == 1:
+        progress = ProgressCounter(len(cat_lines), msg='Built:', every=1)
+        for row in cat_lines:
+            write_line_source_single(row, dir_, cube, ima_size)
+            progress.increment()
+
+    else:
+        progress = ProgressCounter(len(cat_lines), msg='Built:', every=10)
+        pool = mp.Pool(n_cpu)
+        results = []
+        for row in cat_lines:
+            args = (row, dir_, cube.filename, ima_size)
+            res = pool.apply_async(write_line_source_multi, args,
+                            callback=lambda x: progress.increment())
+            results.append(res)
+
+        [res.get(999999) for res in results]
+
     progress.close()
 
     t_create = time.time() - t0_create
@@ -1335,7 +1376,7 @@ def write_object_sources(cat_objects, cat_lines, dir_, cube, ima_size,
 
     logger = logging.getLogger(__name__)
 
-    logger.info("creating object sources")
+    logger.info("creating object source files using {} CPU".format(n_cpu))
 
     #remove any existing files
     try:
@@ -1351,16 +1392,34 @@ def write_object_sources(cat_objects, cat_lines, dir_, cube, ima_size,
 
     t0_create = time.time()
 
-    progress = ProgressCounter(len(cat_objects), msg='Built:', every=1)
-    for row_obj in cat_objects:
+    if n_cpu == 1:
+        progress = ProgressCounter(len(cat_objects), msg='Built:', every=1)
+        for row_obj in cat_objects:
 
-        id_obj = row_obj['ID_OBJ']
-        rows_lines = cat_lines[cat_lines['ID_OBJ'] == id_obj]
+            id_obj = row_obj['ID_OBJ']
+            rows_lines = cat_lines[cat_lines['ID_OBJ'] == id_obj]
 
-        create_object_source(row_obj, rows_lines, dir_, cube,
-                        ima_size, nlines_max)
+            write_object_source_single(row_obj, rows_lines, dir_, cube,
+                            ima_size, nlines_max)
 
-        progress.increment()
+            progress.increment()
+
+    else:
+        progress = ProgressCounter(len(cat_lines), msg='Built:', every=10)
+        pool = mp.Pool(n_cpu)
+        results = []
+        for row_obj in cat_objects:
+
+            id_obj = row_obj['ID_OBJ']
+            rows_lines = cat_lines[cat_lines['ID_OBJ'] == id_obj]
+
+            args = (row_obj, rows_lines, dir_, cube.filename, ima_size,
+                    nlines_max)
+            res = pool.apply_async(write_object_source_multi, args,
+                            callback=lambda x: progress.increment())
+            results.append(res)
+
+        [res.get(999999) for res in results]
 
     progress.close()
 
@@ -1373,6 +1432,7 @@ def write_object_sources(cat_objects, cat_lines, dir_, cube, ima_size,
     file_ = dir_ / 'objects.fit'
     source_cat.write(file_, format='fits')
     logger.debug('writing catalog to: {}'.format(file_))
+
 
 def step3(cubename, clean=0.5, skyclean=((5573.5, 5578.8), (6297.0, 6300.5)),
         radius=4., ima_size=21, nlines_max=25, dir_=None, n_cpu=1):
