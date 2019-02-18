@@ -561,7 +561,7 @@ def step1(cubename, expmapcube=None, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
         cube_nb.writeto(file_, overwrite=True)
 
 
-def run_sex(cmd, dir_):
+def run_sex_cmd(cmd, dir_):
     p = subprocess.Popen(cmd, cwd=dir_, stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT)
     p.wait()
@@ -585,23 +585,11 @@ def get_sex_opts(config):
     return cmd
 
 
-def step2(cubename, config=None, config_nb=None, dir_=None, n_cpu=1):
-
-    cubename = Path(cubename)
-
-    cmd_sex = get_cmd_sex()
-
-    if config is None:
-        config = {}
-
-    if config_nb is None:
-        config_nb = {}
-
-    if dir_ is None:
-        dir_ = Path.cwd()
+def run_sex_bb(dir_, config):
 
     logger = logging.getLogger(__name__)
-    logger.info("STEP 2: run SExtractor on broad-band and narrow-band images")
+
+    cmd_sex = get_cmd_sex()
 
     # setup config files in work dir
     setup_config_files(dir_)
@@ -613,9 +601,7 @@ def step2(cubename, config=None, config_nb=None, dir_=None, n_cpu=1):
         cmd = [cmd_sex] + sex_opts + [
                 '-CATALOG_NAME', 'cat_{}.dat'.format(band),
                 'im_white.fits,im_{}.fits'.format(band)]
-        run_sex(cmd, dir_)
-
-
+        run_sex_cmd(cmd, dir_)
 
     logger.debug("combining catalogs") 
     cat_b = table.Table.read(dir_ / 'cat_b.dat', format='ascii.sextractor')
@@ -645,14 +631,20 @@ def step2(cubename, config=None, config_nb=None, dir_=None, n_cpu=1):
         logger.debug("removing file {}".format(file_))
         os.remove(file_)
 
+
+def run_sex_nb(dir_, cube, config, n_cpu=1):
+
+    logger = logging.getLogger(__name__)
+
+    cmd_sex = get_cmd_sex()
+
     # setup config files in work dir
     setup_config_files(dir_ / 'nb', nb=True)
 
-    cube = Cube(str(cubename))
     n_w = cube.shape[0]
 
     #generate sextractor commands
-    sex_opts = get_sex_opts(config_nb)
+    sex_opts = get_sex_opts(config)
     commands = []
     for i in range(2, n_w-3):
         cmd = [cmd_sex] + sex_opts + [
@@ -671,7 +663,7 @@ def step2(cubename, config=None, config_nb=None, dir_=None, n_cpu=1):
         progress = ProgressCounter(len(commands), msg='SExtractor:', every=1)
 
         for cmd in commands:
-            run_sex(cmd, dir_ / 'nb')
+            run_sex_cmd(cmd, dir_ / 'nb')
             progress.increment()
 
     else:
@@ -683,7 +675,7 @@ def step2(cubename, config=None, config_nb=None, dir_=None, n_cpu=1):
         pool = mp.Pool(n_cpu)
         results = []
         for cmd in commands:
-            res = pool.apply_async(run_sex, (cmd, dir_ / 'nb'),
+            res = pool.apply_async(run_sex_cmd, (cmd, dir_ / 'nb'),
                             callback=lambda x: progress.increment())
             results.append(res)
         pool.close()
@@ -694,6 +686,31 @@ def step2(cubename, config=None, config_nb=None, dir_=None, n_cpu=1):
 
     t_run = time.time() - t0_run
     logger.debug("running SExtractor took {0:.1f} seconds".format(t_run))
+
+
+def step2(cubename, config=None, config_nb=None, dir_=None, n_cpu=1):
+
+    cubename = Path(cubename)
+
+    if config is None:
+        config = {}
+
+    if config_nb is None:
+        config_nb = {}
+
+    if dir_ is None:
+        dir_ = Path.cwd()
+
+    logger = logging.getLogger(__name__)
+    logger.info("STEP 2: run SExtractor on broad-band and narrow-band images")
+
+    #run sextractor on broad band
+    run_sex_bb(dir_, config)
+
+    #run sextractor on narrow band
+    cube = Cube(str(cubename))
+    run_sex_nb(dir_, cube, config_nb, n_cpu=n_cpu)
+
 
 
 def load_cat(i, dir_):
