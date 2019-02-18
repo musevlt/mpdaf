@@ -146,7 +146,8 @@ def remove_files(dir_):
     files = ['default.sex', 'default.conv', 'default.nnw', 'default.param',
              'emlines', 'emlines_small', 'cat_white.dat', 'cat_bgr.dat',
              'im_white.fits', 'im_weight.fits', 'seg.fits',
-             'im_b.fits', 'im_g.fits', 'im_r.fits']
+             'im_b.fits', 'im_g.fits', 'im_r.fits', 'cat_raw.fit',
+             'cat_raw-clean.fit', 'cat_lines.fit', 'cat_objects.fit']
 
     for f in files:
         try:
@@ -1105,21 +1106,25 @@ def find_objects(cat, dir_, cube, radius, n_cpu=1):
 
     for id_obj, coord in zip(uniq_ids, coord_group):
         
+        match_cont = np.all(np.isclose(coord_cont, coord), axis=1)
+
         x, y = coord
+        ra_old = x / 3600. / np.cos(np.radians(dec0)) + ra0
+        dec_old = y / 3600. + dec0
 
-        m = np.all(np.isclose(coord_cont, coord), axis=1)
-
-        ra = x / 3600. / np.cos(np.radians(dec0)) + ra0
-        dec = y / 3600. + dec0
-
+        #get mean from mean of lines
+        m_lines = cat['ID_OBJ'] == id_obj
+        ra = np.mean(cat['RA'][m_lines])
+        dec = np.mean(cat['DEC'][m_lines])
+    
         row = {
             'ID_OBJ': id_obj,
             'RA': ra,
             'DEC': dec,
             }
         
-        if np.sum(m) == 1: #is cont source
-            row_bgr = cat_bgr[m]
+        if np.sum(match_cont) == 1: #is cont source
+            row_bgr = cat_bgr[match_cont]
             row['MAG_APER_B'] = row_bgr['MAG_APER_B'] 
             row['MAGERR_APER_B'] = row_bgr['MAGERR_APER_B'] 
             row['MAG_APER_G'] = row_bgr['MAG_APER_G'] 
@@ -1127,7 +1132,7 @@ def find_objects(cat, dir_, cube, radius, n_cpu=1):
             row['MAG_APER_R'] = row_bgr['MAG_APER_R'] 
             row['MAGERR_APER_R'] = row_bgr['MAGERR_APER_R'] 
 
-        elif np.sum(m) == 0:
+        elif np.sum(match_cont) == 0:
             row['MAG_APER_B'] = np.nan
             row['MAGERR_APER_B'] = np.nan
             row['MAG_APER_G'] = np.nan
@@ -1216,8 +1221,8 @@ def create_object_source(row_obj, rows_lines, dir_, cube, ima_size, nlines_max):
     origin = ('muselet', __version__, cube_name, cube_version)
 
     #use mean RA, DEC from lines
-    ra = np.mean(rows_lines['RA'])
-    dec = np.mean(rows_lines['DEC'])
+    ra = row_obj['RA']
+    dec = row_obj['DEC']
 
     src = Source.from_data(ID=row_obj['ID_OBJ'], ra=ra, dec=dec, origin=origin)
 
@@ -1328,14 +1333,35 @@ def step3(cubename, clean=0.5, skyclean=((5573.5, 5578.8), (6297.0, 6300.5)),
     ima_size *= pix_size
     radius *= pix_size
 
+    #load and clean sextractor catalogs
     cat_raw = load_raw_catalog(dir_, cube, skyclean, n_cpu=n_cpu)
-
     cat_clean = clean_raw_catalog(cat_raw, dir_, clean)
 
+    #merge raw detections in lines and objects
     cat_lines = find_lines(cat_clean, cube, radius, n_cpu=n_cpu)
-
     cat_objects = find_objects(cat_lines, dir_, cube, radius, n_cpu=n_cpu)
 
+    #write raw catalogues,
+    #perhaps useful for debugging / user to do own postprocessing
+    file_ = dir_ / 'cat_raw.fit'
+    logger.debug('writing raw catalog: {}'.format(file_))
+    cat_raw.write(file_, overwrite=True)
+
+    file_ = dir_ / 'cat_raw-clean.fit'
+    logger.debug('writing cleaned catalog: {}'.format(file_))
+    cat_clean.write(file_, overwrite=True)
+
+    file_ = dir_ / 'cat_lines.fit'
+    logger.debug('writing line catalog: {}'.format(file_))
+    cat_lines.write(file_, overwrite=True)
+
+    file_ = dir_ / 'cat_objects.fit'
+    logger.debug('writing object catalog: {}'.format(file_))
+    cat_objects.write(file_, overwrite=True)
+
+
+    #create source files
+#    write_line_sources(cat_lines
 
     logger.info("creating line sources")
 
