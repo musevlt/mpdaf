@@ -56,7 +56,6 @@ import astropy.units as u
 from ..obj import Cube, Image
 from ..sdetect import Source, Catalog
 from ..tools import chdir, MpdafUnitsWarning
-from ..log import setup_logging
 
 __version__ = 3.0
 
