@@ -1340,13 +1340,13 @@ def write_line_sources(cat_lines, dir_, cube, ima_size, n_cpu=1):
     t0_create = time.time()
 
     if n_cpu == 1:
-        progress = ProgressCounter(len(cat_lines), msg='Built:', every=1)
+        progress = ProgressCounter(len(cat_lines), msg='Created:', every=1)
         for row in cat_lines:
             write_line_source_single(row, dir_, cube, ima_size)
             progress.increment()
 
     else:
-        progress = ProgressCounter(len(cat_lines), msg='Built:', every=10)
+        progress = ProgressCounter(len(cat_lines), msg='Created:', every=10)
         pool = mp.Pool(n_cpu)
         results = []
         for row in cat_lines:
@@ -1392,7 +1392,7 @@ def write_object_sources(cat_objects, cat_lines, dir_, cube, ima_size,
     t0_create = time.time()
 
     if n_cpu == 1:
-        progress = ProgressCounter(len(cat_objects), msg='Built:', every=1)
+        progress = ProgressCounter(len(cat_objects), msg='Created:', every=1)
         for row_obj in cat_objects:
 
             id_obj = row_obj['ID_OBJ']
@@ -1404,7 +1404,7 @@ def write_object_sources(cat_objects, cat_lines, dir_, cube, ima_size,
             progress.increment()
 
     else:
-        progress = ProgressCounter(len(cat_lines), msg='Built:', every=10)
+        progress = ProgressCounter(len(cat_lines), msg='Created:', every=10)
         pool = mp.Pool()
         results = []
         for row_obj in cat_objects:
