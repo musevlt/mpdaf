@@ -44,6 +44,7 @@ import subprocess
 import stat
 import sys
 import time
+import warnings
 
 import numpy as np
 from scipy.ndimage import binary_dilation
@@ -54,7 +55,7 @@ import astropy.units as u
 
 from ..obj import Cube, Image
 from ..sdetect import Source, Catalog
-from ..tools import chdir
+from ..tools import chdir, MpdafUnitsWarning
 from ..log import setup_logging
 
 __version__ = 3.0
@@ -1169,12 +1170,16 @@ def write_line_source_single(row, dir_, cube, ima_size):
     #add line image
     file_nb = (dir_ / 'nb/nb{:04d}.fits'.format(row['I_Z']))
     file_seg = (dir_ / 'nb/seg{:04d}.fits'.format(row['I_Z']))
-    im_nb = Image(str(file_nb))
-    im_nb.unit = cube.unit
 
-    im_seg = Image(str(file_seg))
-    im_seg.data = (im_seg.data == row['ID_SLICE']) * 1
-    im_seg.unit = u.Unit('')
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', category=MpdafUnitsWarning)
+
+        im_nb = Image(str(file_nb))
+        im_nb.unit = cube.unit
+
+        im_seg = Image(str(file_seg))
+        im_seg.data = (im_seg.data == row['ID_SLICE']) * 1
+        im_seg.unit = u.Unit('')
 
     size = get_mask_minsize(im_seg, [dec, ra]) + 2. #pad by 1 arcsec border
     size = np.clip(size, ima_size, None) #ima_size controls smallest size
@@ -1263,13 +1268,16 @@ def write_object_source_single(row_obj, rows_lines, dir_, cube, ima_size,
         file_nb = (dir_ / 'nb/nb{:04d}.fits'.format(row_line['I_Z']))
         file_seg = (dir_ / 'nb/seg{:04d}.fits'.format(row_line['I_Z']))
 
-        im_nb = Image(str(file_nb))
-        im_nb.data_header['ID_LINE'] = row_line['ID_LINE']
-        im_nb.unit = cube.unit
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', category=MpdafUnitsWarning)
 
-        im_seg = Image(str(file_seg))
-        im_seg.data = (im_seg.data == row_line['ID_SLICE']) * 1
-        im_seg.unit = u.Unit('')
+            im_nb = Image(str(file_nb))
+            im_nb.data_header['ID_LINE'] = row_line['ID_LINE']
+            im_nb.unit = cube.unit
+
+            im_seg = Image(str(file_seg))
+            im_seg.data = (im_seg.data == row_line['ID_SLICE']) * 1
+            im_seg.unit = u.Unit('')
 
         s = get_mask_minsize(im_seg, [dec, ra]) + 2. #pad by 1 arcsec border
         size = np.clip(size, s, None) #make size bigger if needed
