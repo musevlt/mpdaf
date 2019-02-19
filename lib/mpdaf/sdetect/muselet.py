@@ -55,6 +55,7 @@ import astropy.units as u
 from ..obj import Cube, Image
 from ..sdetect import Source, Catalog
 from ..tools import chdir
+from ..log import setup_logging
 
 __version__ = 3.0
 
@@ -93,21 +94,35 @@ class ProgressCounter(object):
         sys.stdout.write("\r\x1b[K")
         sys.stdout.flush()
 
-def get_cmd_sex():
+
+def get_cmd_sex(silent=True):
 
     logger = logging.getLogger(__name__)
 
-    try:
-        subprocess.check_call(['sex', '-v'])
-        cmd_sex = 'sex'
-    except OSError:
+    commands = ['sex', 'sextractor']
+    #loop over commands and find first success
+    for cmd in commands:
         try:
-            subprocess.check_call(['sextractor', '-v'])
-            cmd_sex = 'sextractor'
-        except OSError:
-            raise OSError('SExtractor not found')
+            res = subprocess.run([cmd, '-v'], stdout=subprocess.PIPE,
+                    check=True)
+            version = res.stdout.decode('utf-8', errors='ignore').strip()
+        except:
+            pass
+        else:
+            break
+    else:
+        raise OSError('SExtractor not found')
 
-    return cmd_sex
+    if not silent:
+        try:
+            res = subprocess.run(['which', cmd], stdout=subprocess.PIPE)
+            which = res.stdout.decode('utf-8', errors='ignore').strip()
+            logger.debug('using SExtractor: {}'.format(which))
+        except:
+            pass
+        logger.debug(version)
+
+    return cmd
 
 
 def setup_config_files(dir_, nb=False):
@@ -567,7 +582,7 @@ def run_sex_bb(dir_, config):
 
     logger = logging.getLogger(__name__)
 
-    cmd_sex = get_cmd_sex()
+    cmd_sex = get_cmd_sex(silent=False)
 
     # setup config files in work dir
     setup_config_files(dir_)
@@ -744,7 +759,8 @@ def load_raw_catalog(dir_, cube, skyclean, n_cpu=1):
     n_w = cube.shape[0]
 
     #remove wavelengths with sky lines
-    idx_nb = np.arange(2, n_w-3, dtype=int)
+#    idx_nb = np.arange(2, n_w-3, dtype=int)
+    idx_nb = np.arange(2, 400, dtype=int)
     wave = cube.wave.coord(idx_nb, unit=u.Unit('Angstrom'))
     mask = np.zeros_like(idx_nb, dtype=bool)
     for wave_range in skyclean:
@@ -1214,6 +1230,8 @@ def write_object_source_single(row_obj, rows_lines, dir_, cube, ima_size,
     eml = dict(np.loadtxt(dir_ / 'emlines', dtype=dt))
     eml2 = dict(np.loadtxt(dir_ / 'emlines_small', dtype=dt))
 
+    old_level = src._logger.level
+    src._logger.setLevel('WARNING') #suppress lots of INFO messages
     #if a continuum source
     if np.any(np.isfinite(src.mag['MAG'])):
         if len(lines) > 3:
@@ -1226,6 +1244,8 @@ def write_object_source_single(row_obj, rows_lines, dir_, cube, ima_size,
             src.crack_z(eml, 20)
         else:
             src.crack_z(eml2, 20)
+
+    src._logger.setLevel(old_level) #restore old level
 
     src.sort_lines(nlines_max)
 
