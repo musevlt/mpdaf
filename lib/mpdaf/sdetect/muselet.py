@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 from ctypes import c_float, c_bool
+import io
 import logging
 import os
 from os.path import join
@@ -94,6 +95,8 @@ class ProgressCounter(object):
 
 def get_cmd_sex():
 
+    logger = logging.getLogger(__name__)
+
     try:
         subprocess.check_call(['sex', '-v'])
         cmd_sex = 'sex'
@@ -132,9 +135,9 @@ def setup_emline_files(dir_):
 
     logger = logging.getLogger(__name__)
 
-    for file_ in ['emlines', 'emlines_small']:
-        f1 = DATADIR / file_
-        f2 = dir_ / file_
+    for file in ['emlines', 'emlines_small']:
+        f1 = DATADIR / file
+        f2 = dir_ / file
         if f2.exists():
             logger.debug("using existing file: {}".format(f2))
         else:
@@ -165,9 +168,9 @@ def write_white_image(cube, dir_):
     data = np.ma.average(cube.data, weights=1./cube.var, axis=0)
     image = Image(data=data, wcs=cube.wcs, unit=cube.unit, copy=False)
 
-    file_ = dir_ / 'im_white.fits'
-    logger.debug('writing white light image: {}'.format(file_))
-    image.write(file_, savemask='nan')
+    file = dir_ / 'im_white.fits'
+    logger.debug('writing white light image: {}'.format(file))
+    image.write(file, savemask='nan')
 
 
 def write_weight_image(cube, cube_exp, dir_):
@@ -185,9 +188,9 @@ def write_weight_image(cube, cube_exp, dir_):
         cube_exp.data = cube_exp.data.astype(np.float32)
         image = cube_exp.mean(axis=0)
 
-    file_ = dir_ / 'im_weight.fits'
-    logger.debug("writing weight image: {}".format(file_))
-    image.write(file_, savemask='nan')
+    file = dir_ / 'im_weight.fits'
+    logger.debug("writing weight image: {}".format(file))
+    image.write(file, savemask='nan')
 
 
 def write_rgb_images(cube, dir_):
@@ -208,54 +211,32 @@ def write_rgb_images(cube, dir_):
     im_g = Image(data=data_g, wcs=cube.wcs, unit=cube.unit, copy=False)
     im_r = Image(data=data_r, wcs=cube.wcs, unit=cube.unit, copy=False)
 
-    file_ = dir_ / 'im_b.fits'
-    logger.debug("writing blue image: {}".format(file_))
-    im_b.write(file_, savemask='nan')
+    file = dir_ / 'im_b.fits'
+    logger.debug("writing blue image: {}".format(file))
+    im_b.write(file, savemask='nan')
 
-    file_ = dir_ / 'im_g.fits'
-    logger.debug("writing green image: {}".format(file_))
-    im_g.write(file_, savemask='nan')
+    file = dir_ / 'im_g.fits'
+    logger.debug("writing green image: {}".format(file))
+    im_g.write(file, savemask='nan')
 
-    file_ = dir_ / 'im_r.fits'
-    logger.debug("writing red image: {}".format(file_))
-    im_r.write(file_, savemask='nan')
+    file = dir_ / 'im_r.fits'
+    logger.debug("writing red image: {}".format(file))
+    im_r.write(file, savemask='nan')
 
 
-def write_bb_images(cube, cube_exp, dir_, n_cpu=1, limit_ram=False):
+def write_bb_images(cube, cube_exp, dir_):
 
     logger = logging.getLogger(__name__)
 
-    # multiprocessing seems to cause a weird bug, 
-    logger.debug("forcing single-threaded broad-band creation")
-    n_cpu = 1
+    #don't multiprocess this part, because it uses lots of RAM
 
+    logger.info("creating broad-band images")
+        
     t0_create = time.time()
-    if (n_cpu == 1) or limit_ram: #enables nicer traceback for debugging
-        logger.info("creating broad-band images using 1 CPU")
-            
-        write_white_image(cube, dir_)
-        write_weight_image(cube, cube_exp, dir_)
-        write_rgb_images(cube, dir_)
 
-
-    else:
-        if n_cpu > 3:
-            use_cpu = 3
-            logger.debug("limiting to use at most 3 CPUs")
-        else:
-            use_cpu = n_cpu
-
-        logger.info("creating broad-band images using "
-                    "{} CPUs".format(use_cpu))
-        pool = mp.Pool(use_cpu)
-        r1 = pool.apply_async(write_white_image, (cube, dir_))
-        r2 = pool.apply_async(write_weight_image, (cube, cube_exp, dir_))
-        r3 = pool.apply_async(write_rgb_images, (cube, dir_))
-        pool.close()
-
-        r1.get(999999)
-        r2.get(999999)
-        r3.get(999999)
+    write_white_image(cube, dir_)
+    write_weight_image(cube, cube_exp, dir_)
+    write_rgb_images(cube, dir_)
 
     t_create = time.time() - t0_create
     logger.debug("Broad-bands created in {0:.1f} seconds".format(t_create))
@@ -282,16 +263,16 @@ def write_nb(i, data, var, left, right, exp, fw, hdr, dir_):
         im_nb = im_center
 
     hdu = fits.ImageHDU(im_nb, header=hdr, name='DATA')
-    file_ = dir_ / 'nb/nb{:04d}.fits'.format(i)
-    hdu.writeto(file_, overwrite=True)
+    file = dir_ / 'nb/nb{:04d}.fits'.format(i)
+    hdu.writeto(file, overwrite=True)
 
     #expand mask by two pixels
 
     #im_mask = binary_dilation(im_mask, iterations=2, border_value=1)
 
     hdu = fits.ImageHDU(im_mask.astype(np.uint8), header=hdr, name='DATA')
-    file_ = dir_ / 'nb/nb{:04d}-mask.fits'.format(i)
-    hdu.writeto(file_, overwrite=True)
+    file = dir_ / 'nb/nb{:04d}-mask.fits'.format(i)
+    hdu.writeto(file, overwrite=True)
 
     if exp is not None:
         if exp.ndim == 3:
@@ -303,8 +284,8 @@ def write_nb(i, data, var, left, right, exp, fw, hdr, dir_):
         im_weight = np.ma.sum(weight, axis=0).filled(0)
         hdu = fits.ImageHDU(im_weight, header=hdr)
 
-    file_ = dir_ / 'nb/nb{:04d}-weight.fits'.format(i)
-    hdu.writeto(file_, overwrite=True)
+    file = dir_ / 'nb/nb{:04d}-weight.fits'.format(i)
+    hdu.writeto(file, overwrite=True)
 
     return im_nb
 
@@ -379,8 +360,7 @@ def write_nb_multi(i, delta, fw, hdr, dir_):
     cube_nb[i] = im_nb #output
 
 
-def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1,
-            limit_ram=False):
+def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1):
 
     logger = logging.getLogger(__name__)
 
@@ -402,10 +382,7 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1,
 
 
         cube_nb = np.zeros(cube.shape, dtype=np.float32)
-        if not limit_ram:
-            data0 = data.filled(0.) #for computing continuum
-        else:
-            data0 = data #delay filling until have sliced data
+        data0 = data.filled(0.) #for computing continuum
 
         progress = ProgressCounter(n_w-5, msg='Created:', every=1)
         for i in range(2, n_w-3):
@@ -433,10 +410,6 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1,
                 r = data0[-1].reshape([1, n_y, n_x])
             else:
                 r = data0[r_min:r_max]
-
-            if limit_ram:
-                l = l.filled(0.)
-                r = r.filled(0.)
 
             im_nb = write_nb(i, d, v, l, r, e, fw, hdr, dir_)
             cube_nb[i] = im_nb
@@ -528,43 +501,42 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1,
     return cube_nb
 
 
-def step1(cubename, expmapcube=None, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
-        dir_=None, nbcube=False, n_cpu=1, limit_ram=False):
+def step1(file_cube, file_expmap=None, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
+        dir_=None, write_nbcube=False, n_cpu=1):
 
-    cubename = Path(cubename)
-    if expmapcube is not None:
-        expmapcube = Path(expmapcube)
+    file_cube = Path(file_cube)
+    if file_expmap is not None:
+        file_expmap = Path(file_expmap)
 
     if dir_ is None:
         dir_ = Path.cwd()
 
     logger = logging.getLogger(__name__)
-    logger.info("Opening: %s", cubename)
+    logger.debug("opening: %s", file_cube)
 
-    cube = Cube(str(cubename))
+    cube = Cube(str(file_cube))
 
 #    #mvar=c.var.filled(np.inf)
 #    mvar=c.var
 #    #mvar[mvar <= 0] = np.inf
 #    c._var = None
 
-    if expmapcube is None:
+    if file_expmap is None:
         cube_exp = None
     else:
-        logger.info("Opening exposure map cube: %s", expmapcube)
-        cube_exp = Cube(str(expmapcube))
+        logger.debug("opening exposure map cube: %s", file_expmap)
+        cube_exp = Cube(str(file_expmap))
 
     logger.info("STEP 1: create white light, variance, RGB and "
                 "narrow-band images")
 
-    write_bb_images(cube, cube_exp, dir_, n_cpu=n_cpu, limit_ram=limit_ram)
-    cube_nb = write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=n_cpu,
-                        limit_ram=limit_ram)
+    write_bb_images(cube, cube_exp, dir_)
+    cube_nb = write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=n_cpu)
 
-    if nbcube:
-        file_ = dir_ / ('NB_' + cubename.name)
-        logger.debug("writing narrow-band cube: {}".format(file_))
-        cube_nb.writeto(file_, overwrite=True)
+    if write_nbcube:
+        file = dir_ / ('NB_' + file_cube.name)
+        logger.debug("writing narrow-band cube: {}".format(file))
+        cube_nb.writeto(file, overwrite=True)
 
 
 def run_sex_cmd(cmd, dir_):
@@ -628,14 +600,14 @@ def run_sex_bb(dir_, config):
                   cat_r['MAG_APER'], cat_r['MAGERR_APER']], names=names)
     logger.info("{} continiuum objects detected".format(len(cat_bgr)))
 
-    file_ = dir_ / 'cat_bgr.dat'
-    logger.debug("writing catalog: {}".format(file_))
-    cat_bgr.write(file_, format='ascii.fixed_width_two_line')
+    file = dir_ / 'cat_bgr.dat'
+    logger.debug("writing catalog: {}".format(file))
+    cat_bgr.write(file, format='ascii.fixed_width_two_line')
 
     for band in ['b', 'g', 'r']:
-        file_ = dir_ / 'cat_{}.dat'.format(band)
-        logger.debug("removing file {}".format(file_))
-        file_.unlink()
+        file = dir_ / 'cat_{}.dat'.format(band)
+        logger.debug("removing file {}".format(file))
+        file.unlink()
 
 
 def run_sex_nb(dir_, cube, config, n_cpu=1):
@@ -694,9 +666,9 @@ def run_sex_nb(dir_, cube, config, n_cpu=1):
     logger.debug("running SExtractor took {0:.1f} seconds".format(t_run))
 
 
-def step2(cubename, config=None, config_nb=None, dir_=None, n_cpu=1):
+def step2(file_cube, config=None, config_nb=None, dir_=None, n_cpu=1):
 
-    cubename = Path(cubename)
+    file_cube = Path(file_cube)
 
     if config is None:
         config = {}
@@ -714,15 +686,15 @@ def step2(cubename, config=None, config_nb=None, dir_=None, n_cpu=1):
     run_sex_bb(dir_, config)
 
     #run sextractor on narrow band
-    cube = Cube(str(cubename))
+    cube = Cube(str(file_cube))
     run_sex_nb(dir_, cube, config_nb, n_cpu=n_cpu)
 
 
 
 def load_cat(i, dir_):
 
-    file_ = dir_ / 'nb/cat{:04d}.dat'.format(i)
-    data = table.Table.read(file_, format='ascii.sextractor')
+    file = dir_ / 'nb/cat{:04d}.dat'.format(i)
+    data = table.Table.read(file, format='ascii.sextractor')
 
     n_data = len(data)
 
@@ -782,7 +754,7 @@ def load_raw_catalog(dir_, cube, skyclean, n_cpu=1):
         mask |= m
     idx_nb = idx_nb[~mask]
 
-    msg = "{} narrow-bands will be excluded"
+    msg = "{} narrow-band layers will be excluded"
     logger.debug(msg.format(np.sum(mask)))
 
     #load NB catalogs
@@ -799,16 +771,10 @@ def load_raw_catalog(dir_, cube, skyclean, n_cpu=1):
             progress.increment()
 
     else:
-        if n_cpu > 16:
-            use_cpu = 16 #no point using more than 16 CPUs
-            logger.debug("limiting to use at most 16 CPUs")
-        else:
-            use_cpu = n_cpu
-
-        msg = "loading narrow-band catalogs using {} CPUs".format(use_cpu)
+        msg = "loading narrow-band catalogs using {} CPUs".format(n_cpu)
         logger.info(msg)
         progress = ProgressCounter(len(idx_nb), msg='Loaded:', every=10)
-        pool = mp.Pool(use_cpu)
+        pool = mp.Pool(n_cpu)
         results = []
         for i in idx_nb:
             res = pool.apply_async(load_cat, (i, dir_),
@@ -1015,8 +981,8 @@ def find_objects(cat, dir_, cube, radius, n_cpu=1):
     logger.debug(msg.format(max_dist))
 
     #group detections close to continuum sources
-    file_ = dir_ / 'cat_bgr.dat'
-    cat_bgr = table.Table.read(file_, format='ascii.fixed_width_two_line')
+    file = dir_ / 'cat_bgr.dat'
+    cat_bgr = table.Table.read(file, format='ascii.fixed_width_two_line')
 
     ra0 = cube.wcs.get_crval1(unit=u.deg)
     dec0 = cube.wcs.get_crval2(unit=u.deg)
@@ -1163,7 +1129,6 @@ def write_line_source_single(row, dir_, cube, ima_size):
     dec = row['DEC']
 
     src = Source.from_data(ID=id_, ra=ra, dec=dec, origin=origin)
-
     #add line table
 
     wave = row['WAVE']
@@ -1173,7 +1138,8 @@ def write_line_source_single(row, dir_, cube, ima_size):
 
     lines = table.Table([[wave], [dw], [flux], [flux_err]],
                   names=['LBDA_OBS', 'LBDA_OBS_ERR', 'FLUX', 'FLUX_ERR'],
-                  dtype=['<f8', '<f8', '<f8', '<f8'])
+                  dtype=['<f8', '<f8', '<f8', '<f8'],
+                  masked=True)
     lines['LBDA_OBS'].format = '.2f'
     lines['LBDA_OBS'].unit = u.angstrom
     lines['LBDA_OBS_ERR'].format = '.2f'
@@ -1188,8 +1154,11 @@ def write_line_source_single(row, dir_, cube, ima_size):
     file_nb = (dir_ / 'nb/nb{:04d}.fits'.format(row['I_Z']))
     file_seg = (dir_ / 'nb/seg{:04d}.fits'.format(row['I_Z']))
     im_nb = Image(str(file_nb))
+    im_nb.unit = cube.unit
+
     im_seg = Image(str(file_seg))
     im_seg.data = (im_seg.data == row['ID_SLICE']) * 1
+    im_seg.unit = u.Unit('')
 
     size = get_mask_minsize(im_seg, [dec, ra]) + 2. #pad by 1 arcsec border
     size = np.clip(size, ima_size, None) #ima_size controls smallest size
@@ -1228,7 +1197,8 @@ def write_object_source_single(row_obj, rows_lines, dir_, cube, ima_size,
 
     lines = table.Table([wave, dw, flux, flux_err],
                   names=['LBDA_OBS', 'LBDA_OBS_ERR', 'FLUX', 'FLUX_ERR'],
-                  dtype=['<f8', '<f8', '<f8', '<f8'])
+                  dtype=['<f8', '<f8', '<f8', '<f8'],
+                  masked=True)
     lines['LBDA_OBS'].format = '.2f'
     lines['LBDA_OBS'].unit = u.angstrom
     lines['LBDA_OBS_ERR'].format = '.2f'
@@ -1275,9 +1245,11 @@ def write_object_source_single(row_obj, rows_lines, dir_, cube, ima_size,
 
         im_nb = Image(str(file_nb))
         im_nb.data_header['ID_LINE'] = row_line['ID_LINE']
+        im_nb.unit = cube.unit
 
         im_seg = Image(str(file_seg))
         im_seg.data = (im_seg.data == row_line['ID_SLICE']) * 1
+        im_seg.unit = u.Unit('')
 
         s = get_mask_minsize(im_seg, [dec, ra]) + 2. #pad by 1 arcsec border
         size = np.clip(size, s, None) #make size bigger if needed
@@ -1317,8 +1289,10 @@ def write_object_source_multi(row_obj, rows_lines, dir_, file_cube, ima_size,
     """Wrapper for multiprocessing write_object_source_single"""
     
     cube = Cube(str(file_cube))
+
     write_object_source_single(row_obj, rows_lines, dir_, cube, ima_size,
         nlines_max)
+
 
 
 def write_line_sources(cat_lines, dir_, cube, ima_size, n_cpu=1):
@@ -1365,9 +1339,9 @@ def write_line_sources(cat_lines, dir_, cube, ima_size, n_cpu=1):
     logger.info("creating line source catalog")
 
     source_cat = Catalog.from_path(dir_ / 'lines', fmt='working')
-    file_ = dir_ / 'lines.fit'
-    source_cat.write(file_, format='fits')
-    logger.debug('writing catalog to: {}'.format(file_))
+    file = dir_ / 'lines.fit'
+    source_cat.write(file, format='fits')
+    logger.debug('writing catalog to: {}'.format(file))
 
 
 def write_object_sources(cat_objects, cat_lines, dir_, cube, ima_size,
@@ -1405,7 +1379,7 @@ def write_object_sources(cat_objects, cat_lines, dir_, cube, ima_size,
 
     else:
         progress = ProgressCounter(len(cat_lines), msg='Built:', every=10)
-        pool = mp.Pool(n_cpu)
+        pool = mp.Pool()
         results = []
         for row_obj in cat_objects:
 
@@ -1420,23 +1394,21 @@ def write_object_sources(cat_objects, cat_lines, dir_, cube, ima_size,
 
         [res.get(999999) for res in results]
 
-    progress.close()
-
     t_create = time.time() - t0_create
     logger.debug("object sources created in {0:.1f} seconds".format(t_create))
 
     logger.info("creating object source catalog")
 
     source_cat = Catalog.from_path(dir_ / 'objects', fmt='working')
-    file_ = dir_ / 'objects.fit'
-    source_cat.write(file_, format='fits')
-    logger.debug('writing catalog to: {}'.format(file_))
+    file = dir_ / 'objects.fit'
+    source_cat.write(file, format='fits')
+    logger.debug('writing catalog to: {}'.format(file))
 
 
-def step3(cubename, clean=0.5, skyclean=((5573.5, 5578.8), (6297.0, 6300.5)),
+def step3(file_cube, clean=0.5, skyclean=((5573.5, 5578.8), (6297.0, 6300.5)),
         radius=4., ima_size=21, nlines_max=25, dir_=None, n_cpu=1):
 
-    cubename = Path(cubename)
+    file_cube = Path(file_cube)
 
     logger = logging.getLogger(__name__)
     logger.info("STEP 3: merge SExtractor catalogs and measure redshifts")
@@ -1444,7 +1416,7 @@ def step3(cubename, clean=0.5, skyclean=((5573.5, 5578.8), (6297.0, 6300.5)),
     if dir_ is None:
         dir_ = Path.cwd()
 
-    cube = Cube(str(cubename))
+    cube = Cube(str(file_cube))
 
     pix_size = np.mean(cube.wcs.get_step(unit=u.arcsec))
     ima_size *= pix_size
@@ -1460,21 +1432,21 @@ def step3(cubename, clean=0.5, skyclean=((5573.5, 5578.8), (6297.0, 6300.5)),
 
     #write raw catalogues,
     #perhaps useful for debugging / user to do own postprocessing
-    file_ = dir_ / 'cat_raw.fit'
-    logger.debug('writing raw catalog: {}'.format(file_))
-    cat_raw.write(file_, overwrite=True)
+    file = dir_ / 'cat_raw.fit'
+    logger.debug('writing raw catalog: {}'.format(file))
+    cat_raw.write(file, overwrite=True)
 
-    file_ = dir_ / 'cat_raw-clean.fit'
-    logger.debug('writing cleaned catalog: {}'.format(file_))
-    cat_clean.write(file_, overwrite=True)
+    file = dir_ / 'cat_raw-clean.fit'
+    logger.debug('writing cleaned catalog: {}'.format(file))
+    cat_clean.write(file, overwrite=True)
 
-    file_ = dir_ / 'cat_lines.fit'
-    logger.debug('writing line catalog: {}'.format(file_))
-    cat_lines.write(file_, overwrite=True)
+    file = dir_ / 'cat_lines.fit'
+    logger.debug('writing line catalog: {}'.format(file))
+    cat_lines.write(file, overwrite=True)
 
-    file_ = dir_ / 'cat_objects.fit'
-    logger.debug('writing object catalog: {}'.format(file_))
-    cat_objects.write(file_, overwrite=True)
+    file = dir_ / 'cat_objects.fit'
+    logger.debug('writing object catalog: {}'.format(file))
+    cat_objects.write(file, overwrite=True)
 
 
     #create source files
@@ -1483,19 +1455,31 @@ def step3(cubename, clean=0.5, skyclean=((5573.5, 5578.8), (6297.0, 6300.5)),
             nlines_max, n_cpu=n_cpu)
 
 
-def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
-            sex_config=None, sex_config_nb=None,
-            radius=4.0, ima_size=21, nlines_max=25, clean=0.5, nbcube=True,
-            expmapcube=None, skyclean=((5573.5, 5578.8), (6297.0, 6300.5)),
-            del_sex=False, workdir=None, n_cpu=1):
+def muselet(file_cube, file_expmap=None, step=1, delta=20,
+        fw=(0.26, 0.7, 1., 0.7, 0.26), sex_config=None, sex_config_nb=None,
+        radius=4.0, ima_size=21, nlines_max=25, clean=0.5,
+        skyclean=((5573.5, 5578.8), (6297.0, 6300.5)), write_nbcube=True,
+        cleanup=False, workdir=None, n_cpu=1):
     """MUSELET (for MUSE Line Emission Tracker) is a simple SExtractor-based
     python tool to detect emission lines in a datacube. It has been developed
     by Johan Richard (johan.richard@univ-lyon1.fr)
 
+    Two catalogs will be created:
+        - (lines) detected line emission peak sources, before merging
+        - (obejcts) detected sources, merging lines that are spatially close to
+          one another
+
+    These catalogs, and corresponding source files, are written directly to the
+    current directory or if the workdir keyword is given, they will be written
+    there.
+
     Parameters
     ----------
-    cubename : str
-        Name of the MUSE cube.
+    file_cube : `pathlib.Path` or str
+        filename of the MUSE datacube.
+    file_expmap : str
+        Name of the associated exposure map cube (to be used as a weight map
+        for SExtractor)
     step : int in {1,2,3}
         Starting step for MUSELET to run:
 
@@ -1525,26 +1509,17 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
         Maximum number of lines detected per object.
     clean : float
         Removing sources at a fraction of the the max_weight level.
-    nbcube : bool
-        Flag to produce an output datacube containing all narrow-band images
-    expmapcube : str
-        Name of the associated exposure map cube (to be used as a weight map
-        for SExtractor)
     skyclean : array of float tuples
         List of wavelength ranges to exclude from the raw detections
-    del_sex : bool
+    write_nbcube : bool
+        Flag to produce an output datacube containing all narrow-band images
+    cleanup : bool
         If True, configuration files and intermediate files used by sextractor
         are removed.
-    workdir : str
+    workdir : `pathlib.Path` or str
         Working directory, default is the current directory.
     n_cpu : int
-        max number of CPU cores to use in parallel
-
-    Returns
-    -------
-    continuum, single, raw : `~mpdaf.sdetect.SourceList`, `~mpdaf.sdetect.SourceList`, `~mpdaf.sdetect.SourceList`
-        - objects : List of detected sources, merged via a spatial distance match
-        - lines : List of detected sources before the merging procedure.
+        max number of CPU cores to use for parallel execution
 
     """
     logger = logging.getLogger(__name__)
@@ -1570,9 +1545,9 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
         workdir = Path(workdir)
         os.makedirs(workdir, exist_ok=True)
 
-    cubename = Path(cubename)
-    if expmapcube is not None:
-        expmapcube = Path(expmapcube)
+    file_cube = Path(file_cube)
+    if file_expmap is not None:
+        file_expmap = Path(file_expmap)
     else:
         logger.debug("No exposure cube provided")
 
@@ -1580,17 +1555,17 @@ def muselet(cubename, step=1, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
     get_cmd_sex()
 
     if step == 1:
-        step1(cubename, expmapcube, delta=delta, fw=fw, dir_=workdir,
-                nbcube=nbcube, n_cpu=n_cpu)
+        step1(file_cube, file_expmap, delta=delta, fw=fw, dir_=workdir,
+                write_nbcube=write_nbcube, n_cpu=n_cpu)
     if step <= 2:
-        step2(cubename, config=sex_config, config_nb=sex_config_nb,
+        step2(file_cube, config=sex_config, config_nb=sex_config_nb,
                 dir_=workdir, n_cpu=n_cpu)
 
     if step <= 3:
-        step3(cubename, clean=clean, skyclean=skyclean, radius=radius,
+        step3(file_cube, clean=clean, skyclean=skyclean, radius=radius,
                 ima_size=ima_size, nlines_max=nlines_max, dir_=workdir,
                 n_cpu=n_cpu)
 
-    if del_sex:
+    if cleanup:
         remove_files(workdir)
 
