@@ -59,6 +59,7 @@ The code will produce:
   - a `~mpdaf.sdetect.Catalog` containing detected objects (merged groups of
     lines),
   - a directory containing the corresponding `~mpdaf.sdetect.Source` files.
+
 These are written to the current directory (or the working directory if
 specified via the "workdir" keyword)
 
