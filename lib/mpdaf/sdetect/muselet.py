@@ -523,8 +523,18 @@ def step1(file_cube, file_expmap=None, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
     if file_expmap is not None:
         file_expmap = Path(file_expmap)
 
+    if len(fw) != 5:
+        logger.error("len(fw) != 5")
+
+    try:
+        fw = np.array(fw, dtype=np.float32)
+    except Exception:
+        logger.error('fw is not an array of float')
+
     if dir_ is None:
         dir_ = Path.cwd()
+    else:
+        os.makedirs(dir_, exist_ok=True)
 
     logger = logging.getLogger(__name__)
     logger.debug("opening: %s", file_cube)
@@ -681,15 +691,15 @@ def run_sex_nb(dir_, cube, config, n_cpu=1):
     logger.debug("running SExtractor took {0:.1f} seconds".format(t_run))
 
 
-def step2(file_cube, config=None, config_nb=None, dir_=None, n_cpu=1):
+def step2(file_cube, sex_config=None, sex_config_nb=None, dir_=None, n_cpu=1):
 
     file_cube = Path(file_cube)
 
-    if config is None:
-        config = {}
+    if sex_config is None:
+        sex_config = {}
 
-    if config_nb is None:
-        config_nb = {}
+    if sex_config_nb is None:
+        sex_config_nb = {}
 
     if dir_ is None:
         dir_ = Path.cwd()
@@ -698,11 +708,11 @@ def step2(file_cube, config=None, config_nb=None, dir_=None, n_cpu=1):
     logger.info("STEP 2: run SExtractor on broad-band and narrow-band images")
 
     #run sextractor on broad band
-    run_sex_bb(dir_, config)
+    run_sex_bb(dir_, sex_config)
 
     #run sextractor on narrow band
     cube = Cube(str(file_cube))
-    run_sex_nb(dir_, cube, config_nb, n_cpu=n_cpu)
+    run_sex_nb(dir_, cube, sex_config_nb, n_cpu=n_cpu)
 
 
 
@@ -1406,7 +1416,7 @@ def write_object_sources(cat_objects, cat_lines, dir_, cube, ima_size,
             progress.increment()
 
     else:
-        progress = ProgressCounter(len(cat_lines), msg='Created:', every=10)
+        progress = ProgressCounter(len(cat_objects), msg='Created:', every=10)
         pool = mp.Pool()
         results = []
         for row_obj in cat_objects:
@@ -1559,19 +1569,10 @@ def muselet(file_cube, file_expmap=None, step=1, delta=20,
         logger.error("STEP 3: merge catalogs and measure redshifts")
         return
 
-    if len(fw) != 5:
-        logger.error("len(fw) != 5")
-
-    try:
-        fw = np.array(fw, dtype=np.float32)
-    except Exception:
-        logger.error('fw is not an array of float')
-
     if workdir is None:
         workdir = Path.cwd()
     else:
         workdir = Path(workdir)
-        os.makedirs(workdir, exist_ok=True)
 
     file_cube = Path(file_cube)
     if file_expmap is not None:
@@ -1586,7 +1587,7 @@ def muselet(file_cube, file_expmap=None, step=1, delta=20,
         step1(file_cube, file_expmap, delta=delta, fw=fw, dir_=workdir,
                 write_nbcube=write_nbcube, n_cpu=n_cpu)
     if step <= 2:
-        step2(file_cube, config=sex_config, config_nb=sex_config_nb,
+        step2(file_cube, sex_config=sex_config, sex_config_nb=sex_config_nb,
                 dir_=workdir, n_cpu=n_cpu)
 
     if step <= 3:
