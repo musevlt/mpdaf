@@ -46,7 +46,7 @@ MUSELET takes as an input a MUSE DATACUBE (fits format), and works in 3 steps:
 
 - STEP 3: The code will merge all SExtractor catalogs and will return separate
   emission lines linked with continuum objects from the rest.  For each of
-  these catalog, MUSELET will estimate a redshift based on multiple emission
+  these catalogs, MUSELET will estimate a redshift based on multiple emission
   lines. Emission lines are merged spatially to the same source based on the
   "radius" parameter (in pixels, default radius=4).  The redshifts are
   estimated from emission line catalogs ``emlines`` (all emission lines) and
@@ -58,8 +58,9 @@ The code will produce:
   - a directory containing the corresponding `~mpdaf.sdetect.Source` files,
   - a `~mpdaf.sdetect.Catalog` containing detected objects (merged groups of
     lines),
-  - a directory containing the corresponding `~mpdaf.sdetect.Source` files,
-These are written to the current directory (or the working directory if specified via the "workdir" keyword)
+  - a directory containing the corresponding `~mpdaf.sdetect.Source` files.
+These are written to the current directory (or the working directory if
+specified via the "workdir" keyword)
 
 Requirements:
 
@@ -95,8 +96,14 @@ object::
 and or as a `mpdaf.sdetect.SourceList` object::
 
   >>> from mpdaf.sdetect import SourceList
-  >>> list_lines = SourceList.from_path('lines')
-  >>> list_objects = SourceList.from_path('objects')
+  >>> sources_lines = SourceList.from_path('lines')
+  >>> sources_objects = SourceList.from_path('objects')
+
+Individual `mpdaf.sdetect.Source` files can be open::
+
+  >>> from mpdaf.sdetect import Source
+  >>> src_line = Source.from_file('lines/lines-0001.fits')
+  >>> src_object = Source.from_file('objects/objects-0001.fits')
 
 Finally it is possible to interact easily in topcat between the muselet catalog
 and a MUSE datacube opened in ds9. To do so one has to select the "Activation
