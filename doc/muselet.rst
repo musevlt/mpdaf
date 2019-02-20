@@ -54,8 +54,7 @@ MUSELET takes as an input a MUSE DATACUBE (fits format), and works in 3 steps:
 The code will produce:
   - a `~mpdaf.sdetect.SourceList` containing continuum emission lines,
   - a `~mpdaf.sdetect.SourceList` containing isolated emission lines,
-  - a `~mpdaf.sdetect.SourceList` that stores all detected sources before the
-    merging procedure.
+  - a `~mpdaf.sdetect.SourceList` that stores all detected sources before the merging procedure.
 
 Requirements:
 
