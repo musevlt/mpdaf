@@ -117,10 +117,9 @@ def get_cmd_sex(silent=True):
         try:
             res = subprocess.run(['which', cmd], stdout=subprocess.PIPE)
             which = res.stdout.decode('utf-8', errors='ignore').strip()
-            logger.debug('using SExtractor: {}'.format(which))
+            logger.debug('[{}] {}'.format(which, version))
         except:
-            pass
-        logger.debug(version)
+            logger.debug('{}'.format(version))
 
     return cmd
 
