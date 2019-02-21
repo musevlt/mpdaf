@@ -436,24 +436,24 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1):
 
         #setup shared arrays (no locks needed!), this can take some time
         logger.debug("allocating shared arrays for multiprocessing")
-        t0_allocate = time.time()
+#        t0_allocate = time.time()
 
         #shared inputs
-        logger.debug("allocating shared data cube (input)")
+#        logger.debug("allocating shared data cube (input)")
         shape = data.shape
         data_raw = mp.RawArray(c_float, int(np.prod(shape)))
         data_np = np.frombuffer(data_raw, dtype='=f4').reshape(shape)
         data_shape = shape
         data_np[:] = data.data
 
-        logger.debug("allocating shared variance cube (input)")
+#        logger.debug("allocating shared variance cube (input)")
         shape = var.shape
         var_raw = mp.RawArray(c_float, int(np.prod(shape)))
         var_np = np.frombuffer(var_raw, dtype='=f4').reshape(shape)
         var_shape = shape
         var_np[:] = var.data
 
-        logger.debug("allocating shared mask cube (input)")
+#        logger.debug("allocating shared mask cube (input)")
         shape = data.mask.shape
         mask_raw = mp.RawArray(c_bool, int(np.prod(shape)))
         mask_np = np.frombuffer(mask_raw, dtype='|b1').reshape(shape)
@@ -461,7 +461,7 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1):
         mask_np[:] = data.mask
 
         if exp is not None:
-            logger.debug("allocating shared exposure cube (input)")
+#            logger.debug("allocating shared exposure cube (input)")
             shape = exp.shape
             exp_raw = mp.RawArray(c_float, int(np.prod(shape)))
             exp_np = np.frombuffer(exp_raw, dtype='=f4').reshape(shape)
@@ -472,20 +472,20 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1):
             exp_shape = None
 
         #shared output
-        logger.debug("allocating shared nb cube (output)")
+#        logger.debug("allocating shared nb cube (output)")
         shape = data.shape
         cube_nb_raw = mp.RawArray(c_float, int(np.prod(shape)))
         cube_nb = np.frombuffer(cube_nb_raw, dtype='=f4').reshape(shape)
         cube_nb_shape = shape
 
-        logger.debug("initializing process pool")
+#        logger.debug("initializing process pool")
         initargs = (data_raw, data_shape, var_raw, var_shape, mask_raw,
                 mask_shape, exp_raw, exp_shape, cube_nb_raw, cube_nb_shape)
 
         pool = mp.Pool(n_cpu, initializer=init_write_nb_multi,
                         initargs=initargs)
-        t_allocate = time.time() - t0_allocate
-        logger.debug("all data allocated in {0:.1f} seconds".format(t_allocate))
+#        t_allocate = time.time() - t0_allocate
+#        logger.debug("all data allocated in {0:.1f} seconds".format(t_allocate))
 
         logger.debug("starting multiprocessing")
 
@@ -519,6 +519,10 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1):
 def step1(file_cube, file_expmap=None, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
         dir_=None, write_nbcube=False, n_cpu=1):
 
+    logger = logging.getLogger(__name__)
+    logger.info("STEP 1: create white light, variance, RGB and "
+                "narrow-band images")
+
     file_cube = Path(file_cube)
     if file_expmap is not None:
         file_expmap = Path(file_expmap)
@@ -536,8 +540,7 @@ def step1(file_cube, file_expmap=None, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
     else:
         os.makedirs(dir_, exist_ok=True)
 
-    logger = logging.getLogger(__name__)
-    logger.debug("opening: %s", file_cube)
+#    logger.debug("opening: %s", file_cube)
 
     cube = Cube(str(file_cube))
 
@@ -549,11 +552,9 @@ def step1(file_cube, file_expmap=None, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
     if file_expmap is None:
         cube_exp = None
     else:
-        logger.debug("opening exposure map cube: %s", file_expmap)
+#        logger.debug("opening exposure map cube: %s", file_expmap)
         cube_exp = Cube(str(file_expmap))
 
-    logger.info("STEP 1: create white light, variance, RGB and "
-                "narrow-band images")
 
     write_bb_images(cube, cube_exp, dir_)
     cube_nb = write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=n_cpu)
@@ -631,7 +632,7 @@ def run_sex_bb(dir_, config):
 
     for band in ['b', 'g', 'r']:
         file = dir_ / 'cat_{}.dat'.format(band)
-        logger.debug("removing file {}".format(file))
+#        logger.debug("removing file {}".format(file))
         file.unlink()
 
 
@@ -693,6 +694,9 @@ def run_sex_nb(dir_, cube, config, n_cpu=1):
 
 def step2(file_cube, sex_config=None, sex_config_nb=None, dir_=None, n_cpu=1):
 
+    logger = logging.getLogger(__name__)
+    logger.info("STEP 2: run SExtractor on broad-band and narrow-band images")
+
     file_cube = Path(file_cube)
 
     if sex_config is None:
@@ -704,8 +708,6 @@ def step2(file_cube, sex_config=None, sex_config_nb=None, dir_=None, n_cpu=1):
     if dir_ is None:
         dir_ = Path.cwd()
 
-    logger = logging.getLogger(__name__)
-    logger.info("STEP 2: run SExtractor on broad-band and narrow-band images")
 
     #run sextractor on broad band
     run_sex_bb(dir_, sex_config)
@@ -1443,13 +1445,19 @@ def write_object_sources(cat_objects, cat_lines, dir_, cube, ima_size,
     logger.debug('writing catalog to: {}'.format(file))
 
 
-def step3(file_cube, clean=0.5, skyclean=((5573.5, 5578.8), (6297.0, 6300.5)),
+def step3(file_cube, clean=0.5,
+        skyclean=((5573.5, 5578.8), (6297.0, 6300.5)),
         radius=4., ima_size=21, nlines_max=25, dir_=None, n_cpu=1):
-
-    file_cube = Path(file_cube)
 
     logger = logging.getLogger(__name__)
     logger.info("STEP 3: merge SExtractor catalogs and measure redshifts")
+
+    file_cube = Path(file_cube)
+
+    file_cube = Path(file_cube)
+    if file_expmap is not None:
+        file_expmap = Path(file_expmap)
+
 
     if dir_ is None:
         dir_ = Path.cwd()
@@ -1591,7 +1599,8 @@ def muselet(file_cube, file_expmap=None, step=1, delta=20,
                 dir_=workdir, n_cpu=n_cpu)
 
     if step <= 3:
-        step3(file_cube, clean=clean, skyclean=skyclean, radius=radius,
+        step3(file_cube, clean=clean,
+                skyclean=skyclean, radius=radius, 
                 ima_size=ima_size, nlines_max=nlines_max, dir_=workdir,
                 n_cpu=n_cpu)
 
