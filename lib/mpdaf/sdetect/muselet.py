@@ -247,14 +247,14 @@ def write_bb_images(cube, cube_exp, dir_):
 
     logger.info("creating broad-band images")
         
-    t0_create = time.time()
+#    t0_create = time.time()
 
     write_white_image(cube, dir_)
     write_weight_image(cube, cube_exp, dir_)
     write_rgb_images(cube, dir_)
 
-    t_create = time.time() - t0_create
-    logger.debug("Broad-bands created in {0:.1f} seconds".format(t_create))
+#    t_create = time.time() - t0_create
+#    logger.debug("Broad-bands created in {0:.1f} seconds".format(t_create))
 
 
 def write_nb(i, data, var, left, right, exp, fw, hdr, dir_):
@@ -390,7 +390,7 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1):
     else:
         exp = None
 
-    t0_create = time.time()
+#    t0_create = time.time()
 
     if n_cpu == 1:
         logger.info("creating narrow-band images using 1 CPU")
@@ -506,8 +506,8 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1):
 
     progress.close()
 
-    t_create = time.time() - t0_create
-    logger.debug("Narrow-bands created in {0:.1f} seconds".format(t_create))
+#    t_create = time.time() - t0_create
+#    logger.debug("Narrow-bands created in {0:.1f} seconds".format(t_create))
 
 
     hdr = cube.wcs.to_cube_header(cube.wave)
@@ -660,7 +660,7 @@ def run_sex_nb(dir_, cube, config, n_cpu=1):
                 'nb{:04d}.fits'.format(i)]
         commands.append(cmd)
 
-    t0_run = time.time()
+#    t0_run = time.time()
     if n_cpu == 1:
         logger.info("running SExtractor on narrow-band images using 1 CPU")
 
@@ -688,8 +688,8 @@ def run_sex_nb(dir_, cube, config, n_cpu=1):
 
     progress.close()
 
-    t_run = time.time() - t0_run
-    logger.debug("running SExtractor took {0:.1f} seconds".format(t_run))
+#    t_run = time.time() - t0_run
+#    logger.debug("running SExtractor took {0:.1f} seconds".format(t_run))
 
 
 def step2(file_cube, sex_config=None, sex_config_nb=None, dir_=None, n_cpu=1):
@@ -786,7 +786,7 @@ def load_raw_catalog(dir_, cube, skyclean, n_cpu=1):
 
     #load NB catalogs
     cat_all = []
-    t0_load = time.time()
+#    t0_load = time.time()
 
     if n_cpu == 1:
         logger.info("loading narrow-band catalogs using 1 CPU")
@@ -823,8 +823,8 @@ def load_raw_catalog(dir_, cube, skyclean, n_cpu=1):
     cat['ID_RAW'] = np.arange(len(cat), dtype=int) + 1
     cat['WAVE'] = cube.wave.coord(cat['I_Z'])
 
-    t_load = time.time() - t0_load
-    logger.debug("catalogs loaded in {0:.1f} seconds".format(t_load))
+#    t_load = time.time() - t0_load
+#    logger.debug("catalogs loaded in {0:.1f} seconds".format(t_load))
 
     msg = "{} raw detections found".format(len(cat))
     logger.info(msg)
@@ -1351,7 +1351,7 @@ def write_line_sources(cat_lines, dir_, cube, ima_size, n_cpu=1):
 
     logger.debug('writing sources to: {}'.format(dir_ / 'lines'))
 
-    t0_create = time.time()
+#    t0_create = time.time()
 
     if n_cpu == 1:
         progress = ProgressCounter(len(cat_lines), msg='Created:', every=1)
@@ -1373,8 +1373,8 @@ def write_line_sources(cat_lines, dir_, cube, ima_size, n_cpu=1):
 
     progress.close()
 
-    t_create = time.time() - t0_create
-    logger.debug("line sources created in {0:.1f} seconds".format(t_create))
+#    t_create = time.time() - t0_create
+#    logger.debug("line sources created in {0:.1f} seconds".format(t_create))
 
     logger.info("creating line source catalog")
 
@@ -1403,7 +1403,7 @@ def write_object_sources(cat_objects, cat_lines, dir_, cube, ima_size,
 
     logger.debug('writing sources to: {}'.format(dir_ / 'objects'))
 
-    t0_create = time.time()
+#    t0_create = time.time()
 
     if n_cpu == 1:
         progress = ProgressCounter(len(cat_objects), msg='Created:', every=1)
@@ -1434,8 +1434,8 @@ def write_object_sources(cat_objects, cat_lines, dir_, cube, ima_size,
 
         [res.get(999999) for res in results]
 
-    t_create = time.time() - t0_create
-    logger.debug("object sources created in {0:.1f} seconds".format(t_create))
+#    t_create = time.time() - t0_create
+#    logger.debug("object sources created in {0:.1f} seconds".format(t_create))
 
     logger.info("creating object source catalog")
 
@@ -1593,8 +1593,7 @@ def muselet(file_cube, file_expmap=None, step=1, delta=20,
                 dir_=workdir, n_cpu=n_cpu)
 
     if step <= 3:
-        step3(file_cube, file_expmap=file_expmap, clean=clean,
-                skyclean=skyclean, radius=radius, 
+        step3(file_cube, clean=clean, skyclean=skyclean, radius=radius, 
                 ima_size=ima_size, nlines_max=nlines_max, dir_=workdir,
                 n_cpu=n_cpu)
 
