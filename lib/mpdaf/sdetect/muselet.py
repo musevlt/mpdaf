@@ -139,11 +139,11 @@ def setup_config_files(dir_, nb=False):
         f1 = DATADIR / config_files[config_type]
         f2 = dir_ / 'default.{}'.format(config_type)
         
-        if f2.exists():
-            logger.debug("using existing file: {}".format(f2))
-        else:
+        if not f2.exists():
             shutil.copy(f1, f2)
             logger.debug("creating file: {}".format(f2))
+#        else:
+#            logger.debug("using existing file: {}".format(f2))
 
 
 def setup_emline_files(dir_):
@@ -153,11 +153,11 @@ def setup_emline_files(dir_):
     for file in ['emlines', 'emlines_small']:
         f1 = DATADIR / file
         f2 = dir_ / file
-        if f2.exists():
-            logger.debug("using existing file: {}".format(f2))
-        else:
+        if not f2.exists():
             shutil.copy(f1, f2)
             logger.debug("creating file: {}".format(f2))
+#        else:
+#            logger.debug("using existing file: {}".format(f2))
 
 
 def remove_files(dir_):
@@ -1445,7 +1445,7 @@ def write_object_sources(cat_objects, cat_lines, dir_, cube, ima_size,
     logger.debug('writing catalog to: {}'.format(file))
 
 
-def step3(file_cube, clean=0.5,
+def step3(file_cube, file_expmap=None, clean=0.5,
         skyclean=((5573.5, 5578.8), (6297.0, 6300.5)),
         radius=4., ima_size=21, nlines_max=25, dir_=None, n_cpu=1):
 
@@ -1599,7 +1599,7 @@ def muselet(file_cube, file_expmap=None, step=1, delta=20,
                 dir_=workdir, n_cpu=n_cpu)
 
     if step <= 3:
-        step3(file_cube, clean=clean,
+        step3(file_cube, file_expmap=file_expmap, clean=clean,
                 skyclean=skyclean, radius=radius, 
                 ima_size=ima_size, nlines_max=nlines_max, dir_=workdir,
                 n_cpu=n_cpu)
