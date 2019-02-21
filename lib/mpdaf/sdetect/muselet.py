@@ -832,7 +832,7 @@ def load_raw_catalog(dir_, cube, skyclean, n_cpu=1):
     return cat
 
 
-def clean_raw_catalog(cat, dir_, clean):
+def clean_raw_catalog(cat, cube_exp, dir_, clean):
 
     logger = logging.getLogger(__name__)
 
@@ -864,14 +864,24 @@ def clean_raw_catalog(cat, dir_, clean):
     logger.info(msg.format(np.sum(~mask), np.sum(mask)))
 
 
-    file_weight = str(dir_ / 'im_weight.fits')
-    im_weight = Image(file_weight)
-    clean_thresh = clean * np.ma.median(im_weight.data)
-    logger.info("cleaning below image weight %s", clean_thresh)
+    if cube_exp is None:
+        file_weight = str(dir_ / 'im_weight.fits')
+        im_weight = Image(file_weight)
+        clean_thresh = clean * np.ma.median(im_weight.data)
+        logger.info("cleaning below image weight %s", clean_thresh)
 
-    i_y = np.round(cat['I_Y']).astype(int)
-    i_x = np.round(cat['I_X']).astype(int)
-    mask = im_weight.data[i_y, i_x] < clean_thresh
+        i_x = np.round(cat['I_X']).astype(int)
+        i_y = np.round(cat['I_Y']).astype(int)
+        mask = im_weight.data[i_y, i_x] < clean_thresh
+
+    else:
+        clean_thresh = clean * np.median(cube_exp.data[~cube_exp.mask])
+        logger.info("cleaning below exposure time %s", clean_thresh)
+
+        i_x = np.round(cat['I_X']).astype(int)
+        i_y = np.round(cat['I_Y']).astype(int)
+        i_z = cat['I_Z']
+        mask = cube_exp.data[i_z, i_y, i_x] < clean_thresh
 
     cat = cat[~mask]
     msg = "{} detections remain ({} removed)"
@@ -1453,16 +1463,18 @@ def step3(file_cube, file_expmap=None, clean=0.5,
     logger.info("STEP 3: merge SExtractor catalogs and measure redshifts")
 
     file_cube = Path(file_cube)
+    cube = Cube(str(file_cube))
 
     file_cube = Path(file_cube)
     if file_expmap is not None:
         file_expmap = Path(file_expmap)
-
+        cube_exp = Cube(str(file_expmap))
+    else:
+        cube_exp = None
 
     if dir_ is None:
         dir_ = Path.cwd()
 
-    cube = Cube(str(file_cube))
 
     pix_size = np.mean(cube.wcs.get_step(unit=u.arcsec))
     ima_size *= pix_size
@@ -1470,7 +1482,7 @@ def step3(file_cube, file_expmap=None, clean=0.5,
 
     #load and clean sextractor catalogs
     cat_raw = load_raw_catalog(dir_, cube, skyclean, n_cpu=n_cpu)
-    cat_clean = clean_raw_catalog(cat_raw, dir_, clean)
+    cat_clean = clean_raw_catalog(cat_raw, cube_exp, dir_, clean)
 
     #merge raw detections in lines and objects
     cat_lines = find_lines(cat_clean, cube, radius, n_cpu=n_cpu)
