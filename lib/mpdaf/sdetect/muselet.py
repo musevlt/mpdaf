@@ -1197,7 +1197,7 @@ def write_line_source_single(row, dir_, cube, ima_size):
     src.add_image(im_nb, 'NB{:04.0f}'.format(row['WAVE']), size)
     src.add_image(im_seg, 'MASK_OBJ', size)
 
-    src.add_attr('ID_OBJ', id_)
+    src.add_attr('ID_OBJ', row['ID_OBJ'])
 
     src.write(dir_ / 'lines/lines-{:04d}.fits'.format(id_))
 
