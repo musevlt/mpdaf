@@ -152,7 +152,7 @@ class FSFModel:
     @classmethod
     def from_psfrec(cls, rawfilename):  
         """Compute FSF parameters from GLAO MUSE PSF reconstruction"""
-        raise NotImplementedError  
+        return MoffatModel2.from_psfrec(rawfilename)
     
     @classmethod
     def from_starfit(cls, cube, pos, size=5, nslice=20, fwhmdeg=3, betadeg=3, lbrange=(5000,9000)): 
@@ -301,6 +301,7 @@ class MoffatModel2(FSFModel):
     @classmethod
     def from_psfrec(cls, rawfilename):
         # Try to import muse-psfr, if not available raise an error
+        from muse_psfr import  psfrec
         logger.debug('Computing PSF from Sparta data file %s', rawfilename)
         res = psfrec.compute_psf_from_sparta(rawfilename)
         data = res['FIT_MEAN'].data 
@@ -402,7 +403,7 @@ class MoffatModel2(FSFModel):
 
 
 
-class EllipticalMoffatModel(FSFModel):
+#class EllipticalMoffatModel(FSFModel):
 
-    model = 3
-    name = "Elliptical MOFFAT beta=poly(lbda) fwhmx,y=polyx,y(lbda) pa=cste"
+    #model = 3
+    #name = "Elliptical MOFFAT beta=poly(lbda) fwhmx,y=polyx,y(lbda) pa=cste"
