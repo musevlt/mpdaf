@@ -20,7 +20,7 @@ def norm_lbda(lbda, lb1, lb2):
     nlbda = (lbda-lb1)/(lb2-lb1) - 0.5
     return nlbda
 
-def Moffat2D(fwhm, beta, shape):
+def Moffat2D(fwhm, beta, shape, center=None):
     """Compute Moffat for a value or array of values of FWHM and beta.
 
     Parameters
@@ -31,6 +31,8 @@ def Moffat2D(fwhm, beta, shape):
         Power index of the Moffat.
     shape : tuple
         Spatial dimension of the FSF.
+    center : tuple
+        Center in pixel (if None the image center is used)
 
     Returns
     -------
@@ -41,7 +43,10 @@ def Moffat2D(fwhm, beta, shape):
     # alpha coefficient in pixel
     alpha = fwhm / (2 * np.sqrt(2**(1 / beta) - 1))
     amplitude = (beta - 1) * (np.pi * alpha**2)
-    x0, y0 = np.array(shape) / 2
+    if center is None:
+        x0, y0 = np.array(shape) / 2
+    else:
+        x0, y0 = center
     xx, yy = np.mgrid[:shape[0], :shape[1]]
 
     if np.isscalar(alpha) and np.isscalar(beta):
@@ -175,24 +180,24 @@ class FSFModel:
         """Return FWHM for the given wavelengths."""
         raise NotImplementedError
 
-    def get_2darray(self, lbda, shape):
+    def get_2darray(self, lbda, shape, center=None):
         """Return FSF 2D array at the given wavelength."""
         raise NotImplementedError
     
-    def get_image(self, lbda, wcs):
+    def get_image(self, lbda, wcs, center=None):
         """Return FSF image at the given wavelength."""
         if not np.isscalar(lbda):
             raise ValueError
-        data = self.get_2darray(lbda, (wcs.naxis2,wcs.naxis1)) 
+        data = self.get_2darray(lbda, (wcs.naxis2,wcs.naxis1), center) 
         return Image(wcs=wcs, data=data) 
     
-    def get_cube(self, wave, wcs):
+    def get_cube(self, wave, wcs, center=None):
         """Return FSF cube at the given wavelengths."""
         lbda = wave.coord()
-        data = self.get_3darray(lbda, (wcs.naxis2,wcs.naxis1)) 
+        data = self.get_3darray(lbda, (wcs.naxis2,wcs.naxis1), center) 
         return Cube(wcs=wcs, wave=wave, data=data)        
 
-    def get_3darray(self, lbda, shape):
+    def get_3darray(self, lbda, shape, center=None):
         """Return FSF cube at the given wavelengths."""
         raise NotImplementedError
 
@@ -235,16 +240,16 @@ class OldMoffatModel(FSFModel):
             fwhm /= self.pixstep
         return fwhm
 
-    def get_2darray(self, lbda, shape):
+    def get_2darray(self, lbda, shape, center):
         """Return FSF 2D array at the given wavelength."""
         if not np.isscalar(lbda):
             raise ValueError
-        return Moffat2D(self.get_fwhm(lbda, unit='pix'), self.beta, shape)
+        return Moffat2D(self.get_fwhm(lbda, unit='pix'), self.beta, shape, center)
     
 
-    def get_3darray(self, lbda, shape):
+    def get_3darray(self, lbda, shape, center):
         """Return FSF 3D array at the given wavelengths."""
-        return Moffat2D(self.get_fwhm(lbda, unit='pix'), self.beta, shape)
+        return Moffat2D(self.get_fwhm(lbda, unit='pix'), self.beta, shape, center)
     
     def convert(self):
         lbrange = (5000,9000)
@@ -391,15 +396,15 @@ class MoffatModel2(FSFModel):
         beta = np.polyval(self.beta_pol, lb)        
         return beta  
     
-    def get_2darray(self, lbda, shape):
+    def get_2darray(self, lbda, shape, center):
         """Return FSF 2D array at the given wavelength."""
         if not np.isscalar(lbda):
             raise ValueError
-        return Moffat2D(self.get_fwhm(lbda, unit='pix'), self.get_beta(lbda), shape)    
+        return Moffat2D(self.get_fwhm(lbda, unit='pix'), self.get_beta(lbda), shape, center)    
 
-    def get_3darray(self, lbda, shape):
+    def get_3darray(self, lbda, shape, center):
         """Return FSF 3D array at the given wavelengths."""
-        return Moffat2D(self.get_fwhm(lbda, unit='pix'), self.get_beta(lbda), shape)    
+        return Moffat2D(self.get_fwhm(lbda, unit='pix'), self.get_beta(lbda), shape, center)    
 
 
 
