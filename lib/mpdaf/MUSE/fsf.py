@@ -212,6 +212,7 @@ class OldMoffatModel(FSFModel):
     model = 'MOFFAT1'
 
     def __init__(self, a, b, beta, pixstep):
+        super().__init__()
         self.a = a
         self.b = b
         self.beta = beta
@@ -261,6 +262,7 @@ class MoffatModel2(FSFModel):
     model = 2
 
     def __init__(self, fwhm_pol, beta_pol, lbrange, pixstep):
+        super().__init__()
         self.fwhm_pol = fwhm_pol
         self.beta_pol = beta_pol
         self.lbrange = lbrange
