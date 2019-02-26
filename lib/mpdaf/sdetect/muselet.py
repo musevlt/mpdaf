@@ -139,7 +139,7 @@ def setup_config_files(dir_, nb=False):
         f2 = dir_ / 'default.{}'.format(config_type)
         
         if not f2.exists():
-            shutil.copy(f1, f2)
+            shutil.copy(str(f1), (f2))
             logger.debug("creating file: {}".format(f2))
 #        else:
 #            logger.debug("using existing file: {}".format(f2))
@@ -153,7 +153,7 @@ def setup_emline_files(dir_):
         f1 = DATADIR / file
         f2 = dir_ / file
         if not f2.exists():
-            shutil.copy(f1, f2)
+            shutil.copy(str(f1), str(f2))
             logger.debug("creating file: {}".format(f2))
 #        else:
 #            logger.debug("using existing file: {}".format(f2))
@@ -172,7 +172,7 @@ def remove_files(dir_):
             (dir_ / f).unlink()
         except FileNotFoundError:
             pass
-    shutil.rmtree(dir_ / 'nb', ignore_errors=True)
+    shutil.rmtree(str(dir_ / 'nb'), ignore_errors=True)
 
 
 def write_white_image(cube, dir_):
@@ -1346,8 +1346,8 @@ def write_line_sources(cat_lines, dir_, cube, ima_size, n_cpu=1):
         (dir_ / 'lines.fit').unlink()
     except FileNotFoundError:
         pass
-    shutil.rmtree(dir_ / 'lines', ignore_errors=True)
-    os.mkdir(dir_ / 'lines')
+    shutil.rmtree(str(dir_ / 'lines'), ignore_errors=True)
+    (dir_ / 'lines').mkdir()
 
     logger.debug('writing sources to: {}'.format(dir_ / 'lines'))
 
@@ -1396,8 +1396,8 @@ def write_object_sources(cat_objects, cat_lines, dir_, cube, ima_size,
         (dir_ / 'objects.fit').unlink()
     except FileNotFoundError:
         pass
-    shutil.rmtree(dir_ / 'objects', ignore_errors=True)
-    os.mkdir(dir_ / 'objects')
+    shutil.rmtree(str(dir_ / 'objects'), ignore_errors=True)
+    (dir_ / 'objects').mkdir()
 
     setup_emline_files(dir_)
 
