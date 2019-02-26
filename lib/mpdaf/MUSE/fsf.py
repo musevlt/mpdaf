@@ -153,14 +153,12 @@ class FSFModel:
     @classmethod
     def from_psfrec(cls, rawfilename):
         """Compute FSF parameters from GLAO MUSE PSF reconstruction"""
-        return MoffatModel2.from_psfrec(rawfilename)
+        raise NotImplementedError
 
     @classmethod
-    def from_starfit(cls, cube, pos, size=5, nslice=20, fwhmdeg=3, betadeg=3,
-                     lbrange=(5000, 9000)):
+    def from_starfit(cls, cube, pos, **kwargs):
         """Compute FSF by fitting a point source on a datacube"""
-        return MoffatModel2.from_starfit(cube, pos, size, nslice, fwhmdeg,
-                                         betadeg, lbrange)
+        raise NotImplementedError
 
     @classmethod
     def from_hstconv(cls, cube, hstimages, lbrange=(5000, 9000), **kwargs):
