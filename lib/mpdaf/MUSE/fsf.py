@@ -246,14 +246,13 @@ class OldMoffatModel(FSFModel):
     def get_beta(self, lbda):
         return self.beta
 
-    def convert(self):
-        lbrange = (5000, 9000)
-        l1, l2 = lbrange
-        beta_pol = [self.beta]
+    def to_model2(self):
+        """Convert the model to a model=2 one."""
+        l1, l2 = 5000, 9000
         a = self.b * (l2 - l1)
         b = self.a + a * (l1 / (l2 - l1) + 0.5)
         fwhm_pol = [a, b]
-        return MoffatModel2(fwhm_pol, beta_pol, lbrange, self.pixstep)
+        return MoffatModel2(fwhm_pol, [self.beta], (l1, l2), self.pixstep)
 
 
 class MoffatModel2(FSFModel):
