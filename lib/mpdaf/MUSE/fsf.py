@@ -168,9 +168,12 @@ class FSFModel:
     def __repr__(self):
         return "<{}(model={})>".format(self.__class__.__name__, self.model)
 
-    def to_header(self, hdr):
+    def to_header(self, hdr=None):
         """Write FSF parameters to a FITS header"""
-        raise NotImplementedError
+        if hdr is None:
+            hdr = fits.Header()
+        hdr['FSFMODE'] = (self.model, self.name)
+        return hdr
 
     def get_fwhm(self, lbda):
         """Return FWHM for the given wavelengths."""
@@ -209,6 +212,7 @@ class FSFModel:
 class OldMoffatModel(FSFModel):
     """Moffat FSF with fixed beta and FWHM varying with wavelength."""
 
+    name = 'Old model with a fixed beta'
     model = 'MOFFAT1'
 
     def __init__(self, a, b, beta, pixstep):
@@ -231,12 +235,12 @@ class OldMoffatModel(FSFModel):
         self.logger.info('Model %s Beta %f FWHM a %f b %f Step %f',
                          self.model, self.beta, self.a, self.b, self.pixstep)
 
-    def to_header(self, hdr, field_idx=0):
-        """Write FSF parameters to a FITS header"""
-        hdr['FSFMODE'] = self.model
+    def to_header(self, hdr=None, field_idx=0):
+        hdr = super().to_header(hdr=hdr)
         hdr['FSF%02dBET' % field_idx] = np.around(self.beta, decimals=2)
         hdr['FSF%02dFWA' % field_idx] = np.around(self.a, decimals=3)
         hdr['FSF%02dFWB' % field_idx] = float('%.3e' % self.b)
+        return hdr
 
     def get_fwhm(self, lbda, unit='arcsec'):
         fwhm = self.a + self.b * lbda
@@ -289,22 +293,21 @@ class MoffatModel2(FSFModel):
                             for k in range(ncb)]
                 return cls(fwhm_pol, beta_pol, lbrange, pixstep)
 
-    def to_header(self, hdr, field_idx):
-        """Write FSF parameters to a FITS header"""
-        name = "Circular MOFFAT beta=poly(lbda) fwhm=poly(lbda)"
-        hdr['FSFMODE'] = (self.model, name)
+    def to_header(self, hdr=None, field_idx=0):
+        hdr = super().to_header(hdr=hdr)
         hdr['FSFLB1'] = (self.lbrange[0], 'FSF Blue Ref Wave (A)')
         hdr['FSFLB2'] = (self.lbrange[1], 'FSF Red Ref Wave (A)')
         hdr['FSF%02dFNC' % field_idx] = (
             len(self.fwhm_pol), 'FSF{:02d} FWHM Poly Ncoef'.format(field_idx))
         for k, coef in enumerate(self.fwhm_pol):
             hdr['FSF%02dF%02d' % (field_idx, k)] = (
-                coef, 'FSF{:02d} FWHM Poly C{k:02d}'.format(field_idx))
+                coef, 'FSF{:02d} FWHM Poly C{:02d}'.format(field_idx, k))
         hdr['FSF%02dBNC' % field_idx] = (
             len(self.beta_pol), 'FSF{:02d} BETA Poly Ncoef'.format(field_idx))
         for k, coef in enumerate(self.beta_pol):
             hdr['FSF%02dB%02d' % (field_idx, k)] = (
-                coef, 'FSF{:02d} BETA Poly C{k:02d}'.format(field_idx))
+                coef, 'FSF{:02d} BETA Poly C{:02d}'.format(field_idx, k))
+        return hdr
 
     @classmethod
     def from_psfrec(cls, rawfilename):
