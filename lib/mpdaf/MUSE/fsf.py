@@ -148,13 +148,7 @@ class FSFModel:
     @classmethod
     def from_header(cls, hdr, pixstep):
         """Read FSF parameters from a FITS header"""
-        for klass in all_subclasses(cls):
-            if klass.model == hdr['FSFMODE']:
-                break
-        else:
-            raise ValueError('FSFMODE {} is not implemented'
-                             .format(hdr['FSFMODE']))
-        return klass.from_header(hdr, pixstep)
+        raise NotImplementedError
 
     @classmethod
     def from_psfrec(cls, rawfilename):
