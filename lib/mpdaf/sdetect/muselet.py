@@ -33,15 +33,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 from ctypes import c_float, c_bool
-import io
 import logging
-import os
-from os.path import join
 from pathlib import Path
 import multiprocessing as mp
 import shutil
 import subprocess
-import stat
 import sys
 import time
 import warnings
@@ -139,7 +135,7 @@ def setup_config_files(dir_, nb=False):
         f2 = dir_ / 'default.{}'.format(config_type)
         
         if not f2.exists():
-            shutil.copy(str(f1), (f2))
+            shutil.copy(str(f1), str(f2))
             logger.debug("creating file: {}".format(f2))
 #        else:
 #            logger.debug("using existing file: {}".format(f2))
