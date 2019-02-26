@@ -9,8 +9,6 @@ from ..obj import Cube, WCS, Image
 
 __all__ = ['Moffat2D', 'FSFModel', 'OldMoffatModel', 'MoffatModel2']
 
-logger = logging.getLogger(__name__)
-
 
 def all_subclasses(cls):
     return set(cls.__subclasses__()).union(
@@ -79,9 +77,8 @@ def Moffat2D(fwhm, beta, shape, center=None):
 
 def get_images(cube, pos, size=5.0, nslice=20):
     # TODO: skip slice with masked value for the notch filter (in AO case)
-    dec, ra = pos
-    logger.debug('getting %d images around object ra:%f dec:%f',
-                 nslice, ra, dec)
+    logger = logging.getLogger(__name__)
+    logger.debug('getting %d images around object ra:%f dec:%f', nslice, *pos)
     l1, l2 = cube.wave.get_range()
     lb1, dl = np.linspace(l1, l2, nslice, endpoint=False, retstep=True)
     lb2 = lb1 + dl
@@ -91,10 +88,11 @@ def get_images(cube, pos, size=5.0, nslice=20):
         ima = scube.mean(axis=0)
         imalist.append(ima)
     white = cube.subcube(pos, size).mean(axis=0)
-    return (white, lb1 + 0.5 * dl, imalist)
+    return white, lb1 + 0.5 * dl, imalist
 
 
 def fit_poly(x, y, deg, reject=3.0):
+    logger = logging.getLogger(__name__)
     pol = np.polyfit(x, y, deg)
     yp = np.polyval(pol, x)
     err = yp - y
@@ -102,7 +100,8 @@ def fit_poly(x, y, deg, reject=3.0):
         err_masked = sigma_clip(err, sigma=reject)
         xx = x[~err_masked.mask]
         if len(xx) < len(x):
-            logger.debug('%d points rejected in polynomial fit', len(x) - len(xx))
+            logger.debug('%d points rejected in polynomial fit',
+                         len(x) - len(xx))
             yy = y[~err_masked.mask]
             pol = np.polyfit(xx, yy, deg)
             yp = np.polyval(pol, x)
@@ -112,6 +111,9 @@ def fit_poly(x, y, deg, reject=3.0):
 
 class FSFModel:
     """Base class for FSF models."""
+
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
 
     @classmethod
     def read(cls, cube):
@@ -229,8 +231,8 @@ class OldMoffatModel(FSFModel):
                 return cls(a, b, beta, pixstep)
 
     def info(self):
-        logger.info('Model %s Beta %f FWHM a %f b %f Step %f',
-                    self.model, self.beta, self.a, self.b, self.pixstep)
+        self.logger.info('Model %s Beta %f FWHM a %f b %f Step %f',
+                         self.model, self.beta, self.a, self.b, self.pixstep)
 
     def to_header(self, hdr, field_idx=0):
         """Write FSF parameters to a FITS header"""
@@ -280,6 +282,7 @@ class MoffatModel2(FSFModel):
 
     @classmethod
     def from_header(cls, hdr, pixstep):
+        logger = logging.getLogger(__name__)
         if 'FSFLB1' not in hdr or 'FSFLB2' not in hdr:
             logger.error('Missing FSFLB1 or FSFLB2 keywords in file header')
             return None
@@ -319,6 +322,7 @@ class MoffatModel2(FSFModel):
     def from_psfrec(cls, rawfilename):
         # Try to import muse-psfr, if not available raise an error
         from muse_psfr import psfrec
+        logger = logging.getLogger(__name__)
         logger.debug('Computing PSF from Sparta data file %s', rawfilename)
         res = psfrec.compute_psf_from_sparta(rawfilename)
         data = res['FIT_MEAN'].data
@@ -345,6 +349,7 @@ class MoffatModel2(FSFModel):
         return an FSF object and intermediate fitting results as .fit attribute
         """
         dec, ra = pos
+        logger = logging.getLogger(__name__)
         logger.info('FSF from star fit at Ra: %.5f Dec: %.5f Size %.1f '
                     'Nslice %d FWHM poly deg %d BETA poly deg %d',
                     pos[1], pos[0], size, nslice, fwhmdeg, betadeg)
@@ -407,13 +412,14 @@ class MoffatModel2(FSFModel):
         return fsf
 
     def info(self):
-        logger.info('Wavelength range: {}-{}'.format(self.lbrange[0], self.lbrange[1]))
-        logger.info('FWHM Poly: {}'.format(self.fwhm_pol))
+        self.logger.info('Wavelength range: %s-%s',
+                         self.lbrange[0], self.lbrange[1])
+        self.logger.info('FWHM Poly: %r', self.fwhm_pol)
         fwhm = self.get_fwhm(np.array(self.lbrange))
-        logger.info('FWHM (arcsec): {:.2f}-{:.2f}'.format(fwhm[0], fwhm[1]))
-        logger.info('Beta Poly: {}'.format(self.beta_pol))
+        self.logger.info('FWHM (arcsec): %.2f-%.2f', fwhm[0], fwhm[1])
+        self.logger.info('Beta Poly: %r', self.beta_pol)
         beta = self.get_beta(np.array(self.lbrange))
-        logger.info('Beta values: {:.2f}-{:.2f}'.format(beta[0], beta[1]))
+        self.logger.info('Beta values: %.2f-%.2f', beta[0], beta[1])
 
     def get_fwhm(self, lbda, unit='arcsec'):
         """Return FWHM at the given wavelengths"""
