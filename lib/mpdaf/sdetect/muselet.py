@@ -378,8 +378,6 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1):
 
     logger = logging.getLogger(__name__)
 
-    os.makedirs(dir_ / 'nb', exist_ok=True)
-
     n_w = cube.shape[0]
     hdr = cube.wcs.to_header()
     data = cube.data
@@ -537,7 +535,8 @@ def step1(file_cube, file_expmap=None, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
     if dir_ is None:
         dir_ = Path.cwd()
     else:
-        os.makedirs(dir_, exist_ok=True)
+        dir_ = Path(dir_)
+        (dir_ / 'nb').mkdir(parents=True, exist_ok=True)
 
 #    logger.debug("opening: %s", file_cube)
 
@@ -706,6 +705,8 @@ def step2(file_cube, sex_config=None, sex_config_nb=None, dir_=None, n_cpu=1):
 
     if dir_ is None:
         dir_ = Path.cwd()
+    else:
+        dir_ = Path(dir_)
 
 
     #run sextractor on broad band
@@ -1455,6 +1456,8 @@ def step3(file_cube, clean=0.5, skyclean=((5573.5, 5578.8), (6297.0, 6300.5)),
 
     if dir_ is None:
         dir_ = Path.cwd()
+    else:
+        dir_ = Path(dir_)
 
 
     pix_size = np.mean(cube.wcs.get_step(unit=u.arcsec))
