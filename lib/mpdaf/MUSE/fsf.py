@@ -81,13 +81,9 @@ def get_images(cube, pos, size=5.0, nslice=20):
     logger.debug('getting %d images around object ra:%f dec:%f', nslice, *pos)
     l1, l2 = cube.wave.get_range()
     lb1, dl = np.linspace(l1, l2, nslice, endpoint=False, retstep=True)
-    lb2 = lb1 + dl
-    imalist = []
-    for l1, l2 in zip(lb1, lb2):
-        scube = cube.subcube(pos, size, lbda=(l1, l2))
-        ima = scube.mean(axis=0)
-        imalist.append(ima)
-    white = cube.subcube(pos, size).mean(axis=0)
+    subc = cube.subcube(pos, size)
+    imalist = [subc.get_image((l1, l1 + dl), method='mean') for l1 in lb1]
+    white = subc.mean(axis=0)
     return white, lb1 + 0.5 * dl, imalist
 
 
