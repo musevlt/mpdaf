@@ -405,10 +405,10 @@ class MoffatModel2(FSFModel):
     def info(self):
         self.logger.info('Wavelength range: %s-%s',
                          self.lbrange[0], self.lbrange[1])
-        self.logger.info('FWHM Poly: %r', self.fwhm_pol)
+        self.logger.info('FWHM Poly: %s', self.fwhm_pol)
         fwhm = self.get_fwhm(np.array(self.lbrange))
         self.logger.info('FWHM (arcsec): %.2f-%.2f', fwhm[0], fwhm[1])
-        self.logger.info('Beta Poly: %r', self.beta_pol)
+        self.logger.info('Beta Poly: %s', self.beta_pol)
         beta = self.get_beta(np.array(self.lbrange))
         self.logger.info('Beta values: %.2f-%.2f', beta[0], beta[1])
 
