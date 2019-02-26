@@ -80,7 +80,8 @@ def Moffat2D(fwhm, beta, shape, center=None):
 def get_images(cube, pos, size=5.0, nslice=20):
     # TODO: skip slice with masked value for the notch filter (in AO case)
     dec, ra = pos
-    logger.debug('getting %d images around object ra:%f dec:%f' % (nslice, ra, dec))
+    logger.debug('getting %d images around object ra:%f dec:%f',
+                 nslice, ra, dec)
     l1, l2 = cube.wave.get_range()
     lb1, dl = np.linspace(l1, l2, nslice, endpoint=False, retstep=True)
     lb2 = lb1 + dl
@@ -304,15 +305,15 @@ class MoffatModel2(FSFModel):
         hdr['FSFLB1'] = (self.lbrange[0], 'FSF Blue Ref Wave (A)')
         hdr['FSFLB2'] = (self.lbrange[1], 'FSF Red Ref Wave (A)')
         hdr['FSF%02dFNC' % field_idx] = (
-            len(self.fwhm_pol), f'FSF{field_idx:02d} FWHM Poly Ncoef')
+            len(self.fwhm_pol), 'FSF{:02d} FWHM Poly Ncoef'.format(field_idx))
         for k, coef in enumerate(self.fwhm_pol):
             hdr['FSF%02dF%02d' % (field_idx, k)] = (
-                coef, f'FSF{field_idx:02d} FWHM Poly C{k:02d}')
+                coef, 'FSF{:02d} FWHM Poly C{k:02d}'.format(field_idx))
         hdr['FSF%02dBNC' % field_idx] = (
-            len(self.beta_pol), f'FSF{field_idx:02d} BETA Poly Ncoef')
+            len(self.beta_pol), 'FSF{:02d} BETA Poly Ncoef'.format(field_idx))
         for k, coef in enumerate(self.beta_pol):
             hdr['FSF%02dB%02d' % (field_idx, k)] = (
-                coef, f'FSF{field_idx:02d} BETA Poly C{k:02d}')
+                coef, 'FSF{:02d} BETA Poly C{k:02d}'.format(field_idx))
 
     @classmethod
     def from_psfrec(cls, rawfilename):
