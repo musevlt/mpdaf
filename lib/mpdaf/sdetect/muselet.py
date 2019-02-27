@@ -560,7 +560,7 @@ def step1(file_cube, file_expmap=None, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
 
 
 def run_sex_cmd(cmd, dir_):
-    p = subprocess.Popen(cmd, cwd=dir_, stdout=subprocess.PIPE,
+    p = subprocess.Popen(cmd, cwd=str(dir_), stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT)
     p.wait()
     if p.returncode != 0:
@@ -622,7 +622,7 @@ def run_sex_bb(dir_, config):
 
     file = dir_ / 'cat_bgr.dat'
     logger.debug("writing catalog: {}".format(file))
-    cat_bgr.write(file, format='ascii.fixed_width_two_line')
+    cat_bgr.write(str(file), format='ascii.fixed_width_two_line')
 
     for band in ['b', 'g', 'r']:
         file = dir_ / 'cat_{}.dat'.format(band)
@@ -1374,10 +1374,10 @@ def write_line_sources(cat_lines, dir_, cube, ima_size, n_cpu=1):
 
     logger.info("creating line source catalog")
 
-    source_cat = Catalog.from_path(dir_ / 'lines', fmt='working')
+    source_cat = Catalog.from_path(str(dir_ / 'lines'), fmt='working')
     file = dir_ / 'lines.fit'
-    source_cat.write(file, format='fits')
     logger.debug('writing catalog to: {}'.format(file))
+    source_cat.write(file, format='fits')
 
 
 def write_object_sources(cat_objects, cat_lines, dir_, cube, ima_size,
@@ -1435,10 +1435,10 @@ def write_object_sources(cat_objects, cat_lines, dir_, cube, ima_size,
 
     logger.info("creating object source catalog")
 
-    source_cat = Catalog.from_path(dir_ / 'objects', fmt='working')
+    source_cat = Catalog.from_path(str(dir_ / 'objects'), fmt='working')
     file = dir_ / 'objects.fit'
-    source_cat.write(file, format='fits')
     logger.debug('writing catalog to: {}'.format(file))
+    source_cat.write(file, format='fits')
 
 
 def step3(file_cube, clean=0.5, skyclean=((5573.5, 5578.8), (6297.0, 6300.5)),
