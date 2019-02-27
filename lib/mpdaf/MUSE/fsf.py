@@ -27,7 +27,7 @@ def norm_lbda(lbda, lb1, lb2):
     return nlbda
 
 
-def Moffat2D(fwhm, beta, shape, center=None):
+def Moffat2D(fwhm, beta, shape, center=None, normalize=True):
     """Compute Moffat for a value or array of values of FWHM and beta.
 
     Parameters
@@ -40,6 +40,8 @@ def Moffat2D(fwhm, beta, shape, center=None):
         Spatial dimension of the FSF.
     center : tuple
         Center in pixel (if None the image center is used)
+    normalize : bool
+        If True, normalize the Moffat.
 
     Returns
     -------
@@ -57,10 +59,11 @@ def Moffat2D(fwhm, beta, shape, center=None):
     xx, yy = np.mgrid[:shape[0], :shape[1]]
 
     if np.isscalar(alpha) and np.isscalar(beta):
-        moffat = astMoffat2D(amplitude, x0, y0, alpha, beta)
-        PSF_Moffat = moffat(xx, yy)
+        model = astMoffat2D(amplitude, x0, y0, alpha, beta)
+        moffat = model(xx, yy)
         # Normalization
-        PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat)
+        if normalize:
+            moffat /= np.sum(moffat)
     else:
         if np.isscalar(beta):
             Nz = alpha.shape[0]
@@ -71,15 +74,16 @@ def Moffat2D(fwhm, beta, shape, center=None):
         else:
             Nz = alpha.shape[0]
             if beta.shape[0] != Nz:
-                # raise ValueError, 'alpha and beta must have the same dimension'
-                raise ValueError
-        moffat = astMoffat2D(amplitude, [x0] * Nz, [y0] * Nz,
-                             alpha, beta, n_models=Nz)
-        PSF_Moffat = moffat(xx, yy, model_set_axis=False)
-        # Normalization
-        PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat, axis=(1, 2))[:, np.newaxis, np.newaxis]
+                raise ValueError('alpha and beta must have the same dimension')
 
-    return PSF_Moffat
+        model = astMoffat2D(amplitude, [x0] * Nz, [y0] * Nz, alpha, beta,
+                            n_models=Nz)
+        moffat = model(xx, yy, model_set_axis=False)
+        # Normalization
+        if normalize:
+            moffat /= np.sum(moffat, axis=(1, 2))[:, np.newaxis, np.newaxis]
+
+    return moffat
 
 
 def get_images(cube, pos, size=5.0, nslice=20):

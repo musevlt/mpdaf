@@ -69,7 +69,7 @@ def test_create_psf_cube():
 
 def test_get_FSF_from_cube_keywords():
     cube = Cube(get_data_file('sdetect', 'minicube.fits'))
-    with pytest.raises(IOError):
+    with pytest.raises(ValueError):
         # This cube has no FSF info
         PSF, fwhm_pix, fwhm_arcsec = get_FSF_from_cube_keywords(cube, 13)
 

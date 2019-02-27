@@ -37,6 +37,9 @@ import numpy as np
 from astropy.stats import gaussian_fwhm_to_sigma
 from scipy import special
 
+from .fsf import Moffat2D, FSFModel
+from ..tools import deprecated
+
 
 class LSF:
 
@@ -141,6 +144,7 @@ class LSF:
         return size
 
 
+@deprecated('deprecated in favor of mpdaf.MUSE.Moffat2D')
 def Moffat(step_arcsec, Nfsf, beta, fwhm):
     """Compute FSF with a Moffat function
 
@@ -157,39 +161,16 @@ def Moffat(step_arcsec, Nfsf, beta, fwhm):
 
     Returns
     -------
-    PSF_Moffat : array (Nz, Nfsf, Nfsf)
+    moffat : array (Nz, Nfsf, Nfsf)
         MUSE PSF
     fwhm_pix : array (Nz)
         fwhm of the PSF in pixels
-    fwhm_arcsec : array (Nz)
-        fwhm of the PSF in arcsec
 
     """
     # conversion fwhm arcsec -> pixels
     fwhm_pix = fwhm / step_arcsec
-
-    # alpha coefficient in pixel
-    alpha = fwhm_pix / (2 * np.sqrt(2**(1 / beta) - 1))
-    amplitude = (beta - 1) * (np.pi * alpha**2)
-    center = Nfsf // 2
-    yy, xx = np.mgrid[:Nfsf, :Nfsf]
-
-    from astropy.modeling.models import Moffat2D
-    if np.isscalar(alpha):
-        moffat = Moffat2D(amplitude, center, center, alpha, beta)
-        PSF_Moffat = moffat(xx, yy)
-        # Normalization
-        # PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat)
-    else:
-        Nz = alpha.shape[0]
-        moffat = Moffat2D(amplitude, [center] * Nz, [center] * Nz,
-                          alpha, [beta] * Nz, n_models=Nz)
-        PSF_Moffat = moffat(xx, yy, model_set_axis=False)
-        # Normalization
-        # PSF_Moffat = PSF_Moffat / np.sum(PSF_Moffat, axis=(1, 2))\
-        #     [:, np.newaxis, np.newaxis]
-
-    return PSF_Moffat, fwhm_pix
+    moffat = Moffat2D(fwhm_pix, beta, (Nfsf, Nfsf), normalize=False)
+    return moffat, fwhm_pix
 
 
 def MOFFAT1(lbda, step_arcsec, Nfsf, beta, a, b):
@@ -225,6 +206,7 @@ def MOFFAT1(lbda, step_arcsec, Nfsf, beta, a, b):
     return PSF_Moffat, fwhm_pix, fwhm_arcsec
 
 
+@deprecated('deprecated in favor of mpdaf.MUSE.FSFModel')
 class FSF:
     """This class offers Field Spread Function (FSF) models for MUSE.
 
@@ -312,6 +294,7 @@ class FSF:
             raise IOError('Invalid FSF type')
 
 
+@deprecated('deprecated in favor of mpdaf.MUSE.FSFModel')
 def get_FSF_from_cube_keywords(cube, size):
     """Return a cube of FSFs corresponding to the keywords presents in the
     MUSE data cube primary header ('FSF***')
@@ -337,34 +320,21 @@ def get_FSF_from_cube_keywords(cube, size):
         fwhm of the FSF in arcsec
 
     """
-    if 'FSFMODE' not in cube.primary_header:
-        raise IOError('No FSF keywords in the cube primary header')
 
-    FSF_mode = cube.primary_header['FSFMODE']
-    if FSF_mode != 'MOFFAT1':
-        raise IOError('This method is coded only for FSFMODE=MOFFAT1')
+    fsf = FSFModel.read(cube)
+    lbda = cube.wave.coord()
 
-    nfields = cube.primary_header['NFIELDS']
-    FSF_model = FSF(FSF_mode)
-    if nfields == 1:  # just one FSF
-        nf = 0
-        beta = cube.primary_header['FSF%02dBET' % nf]
-        a = cube.primary_header['FSF%02dFWA' % nf]
-        b = cube.primary_header['FSF%02dFWB' % nf]
-        return FSF_model.get_FSF_cube(cube, size, beta=beta, a=a, b=b)
+    if isinstance(fsf, FSFModel):  # just one FSF
+        return (fsf.get_3darray(lbda, (size, size)),
+                fsf.get_fwhm(lbda, unit='pix'), fsf.get_fwhm(lbda))
     else:
         l_PSF = []
         l_fwhm_pix = []
         l_fwhm_arcsec = []
-        for i in range(1, nfields + 1):
-            beta = cube.primary_header['FSF%02dBET' % i]
-            a = cube.primary_header['FSF%02dFWA' % i]
-            b = cube.primary_header['FSF%02dFWB' % i]
-            PSF, fwhm_pix, fwhm_arcsec = \
-                FSF_model.get_FSF_cube(cube, size, beta=beta, a=a, b=b)
-            l_PSF.append(PSF)
-            l_fwhm_pix.append(fwhm_pix)
-            l_fwhm_arcsec.append(fwhm_arcsec)
+        for f in fsf:
+            l_PSF.append(f.get_3darray(lbda, (size, size)))
+            l_fwhm_pix.append(f.get_fwhm(lbda, unit='pix'))
+            l_fwhm_arcsec.append(f.get_fwhm(lbda))
         return l_PSF, l_fwhm_pix, l_fwhm_arcsec
 
 
