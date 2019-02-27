@@ -6,13 +6,20 @@ from astropy.modeling.models import Moffat2D as astMoffat2D
 from astropy.stats import sigma_clip
 
 from ..obj import Cube, WCS, Image
+from ..tools import all_subclasses
 
 __all__ = ['Moffat2D', 'FSFModel', 'OldMoffatModel', 'MoffatModel2']
 
 
-def all_subclasses(cls):
-    return set(cls.__subclasses__()).union(
-        [s for c in cls.__subclasses__() for s in all_subclasses(c)])
+def find_model_cls(hdr):
+    for cls in all_subclasses(FSFModel):
+        if cls.model == hdr['FSFMODE']:
+            break
+    else:
+        raise ValueError('FSFMODE {} is not implemented'
+                         .format(hdr['FSFMODE']))
+
+    return cls
 
 
 def norm_lbda(lbda, lb1, lb2):
@@ -105,6 +112,18 @@ def fit_poly(x, y, deg, reject=3.0):
     return (pol, yp, err)
 
 
+class FSFMultiModel(list):
+    """Class to manage multiple FSF models."""
+
+    @classmethod
+    def from_header(cls, hdr, pixstep, nfields=99):
+        self = cls()
+        klass = find_model_cls(hdr)
+        for field in range(1, nfields + 1):
+            self.append(klass.from_header(hdr, pixstep, field=field))
+        return self
+
+
 class FSFModel:
     """Base class for FSF models."""
 
@@ -112,13 +131,15 @@ class FSFModel:
         self.logger = logging.getLogger(__name__)
 
     @classmethod
-    def read(cls, cube):
+    def read(cls, cube, field=None):
         """Read the FSF model from a file, cube, or header.
 
         Parameters
         ----------
         cube : str, `mpdaf.obj.Cube`, or `astropy.io.fits.Header`
             Must contain a header with a FSF model.
+        field : int
+            Field number to read, otherwise all models are read.
 
         """
         if isinstance(cube, str):
@@ -135,18 +156,18 @@ class FSFModel:
         if 'FSFMODE' not in hdr:
             raise ValueError('FSFMODE keyword not found')
 
-        for klass in all_subclasses(cls):
-            if klass.model == hdr['FSFMODE']:
-                break
-        else:
-            raise ValueError('FSFMODE {} is not implemented'
-                             .format(hdr['FSFMODE']))
-
+        nfields = 1 if field is not None else hdr.get('NFIELDS', 1)
         step = wcs.get_step(unit=u.arcsec)[0]
-        return klass.from_header(cube.primary_header, step)
+        if nfields > 1:
+            return FSFMultiModel.from_header(hdr, step, nfields=nfields)
+        else:
+            klass = find_model_cls(hdr)
+            if field is None:
+                field = 0
+            return klass.from_header(hdr, step, field=field)
 
     @classmethod
-    def from_header(cls, hdr, pixstep):
+    def from_header(cls, hdr, pixstep, field=0):
         """Read FSF parameters from a FITS header"""
         raise NotImplementedError
 
@@ -223,13 +244,13 @@ class OldMoffatModel(FSFModel):
         self.pixstep = pixstep
 
     @classmethod
-    def from_header(cls, hdr, pixstep):
-        for field in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 99):
-            if 'FSF%02dBET' % field in hdr:
-                beta = hdr['FSF%02dBET' % field]
-                a = hdr['FSF%02dFWA' % field]
-                b = hdr['FSF%02dFWB' % field]
-                return cls(a, b, beta, pixstep)
+    def from_header(cls, hdr, pixstep, field=0):
+        if 'FSF%02dBET' % field not in hdr:
+            raise ValueError('FSF%02dBET not found in header' % field)
+        beta = hdr['FSF%02dBET' % field]
+        a = hdr['FSF%02dFWA' % field]
+        b = hdr['FSF%02dFWB' % field]
+        return cls(a, b, beta, pixstep)
 
     def info(self):
         self.logger.info('Model %s Beta %f FWHM a %f b %f Step %f',
@@ -273,25 +294,22 @@ class MoffatModel2(FSFModel):
         self.pixstep = pixstep
 
     @classmethod
-    def from_header(cls, hdr, pixstep):
-        logger = logging.getLogger(__name__)
+    def from_header(cls, hdr, pixstep, field=0):
         if 'FSFLB1' not in hdr or 'FSFLB2' not in hdr:
-            logger.error('Missing FSFLB1 or FSFLB2 keywords in file header')
-            return None
+            raise ValueError('Missing FSFLB1/FSFLB2 keywords in file header')
+
         lbrange = (hdr['FSFLB1'], hdr['FSFLB2'])
         if lbrange[1] <= lbrange[0]:
-            logger.error('Wrong FSF lambda range')
-            return None
-        # TODO check NFIELD and make it more general
-        for field in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 99):
-            if 'FSF%02dFNC' % field in hdr:
-                ncf = hdr['FSF%02dFNC' % field]
-                fwhm_pol = [hdr['FSF%02dF%02d' % (field, k)]
-                            for k in range(ncf)]
-                ncb = hdr['FSF%02dBNC' % field]
-                beta_pol = [hdr['FSF%02dB%02d' % (field, k)]
-                            for k in range(ncb)]
-                return cls(fwhm_pol, beta_pol, lbrange, pixstep)
+            raise ValueError('Wrong FSF lambda range')
+
+        if 'FSF%02dFNC' % field not in hdr:
+            raise ValueError('FSF%02dFNC not found in header' % field)
+
+        ncf = hdr['FSF%02dFNC' % field]
+        fwhm_pol = [hdr['FSF%02dF%02d' % (field, k)] for k in range(ncf)]
+        ncb = hdr['FSF%02dBNC' % field]
+        beta_pol = [hdr['FSF%02dB%02d' % (field, k)] for k in range(ncb)]
+        return cls(fwhm_pol, beta_pol, lbrange, pixstep)
 
     def to_header(self, hdr=None, field_idx=0):
         hdr = super().to_header(hdr=hdr)
