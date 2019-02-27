@@ -47,7 +47,8 @@ from functools import wraps
 from time import time
 
 __all__ = ('MpdafWarning', 'MpdafUnitsWarning', 'deprecated', 'chdir',
-           'timeit', 'timer', 'broadcast_to_cube', 'LowercaseOrderedDict')
+           'timeit', 'timer', 'broadcast_to_cube', 'LowercaseOrderedDict',
+           'all_subclasses')
 
 
 # NOTE(kgriffs): We don't want our deprecations to be ignored by default,
@@ -136,6 +137,12 @@ def broadcast_to_cube(arr, shape):
         arr = arr[:, np.newaxis, np.newaxis]
 
     return np.broadcast_to(arr, shape)
+
+
+def all_subclasses(cls):
+    """Return a set of subclasses of a given cls."""
+    return set(cls.__subclasses__()).union(
+        [s for c in cls.__subclasses__() for s in all_subclasses(c)])
 
 
 # Here we inherit unncessarily from OrderDict.
