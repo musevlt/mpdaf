@@ -1,13 +1,14 @@
+import numpy as np
 import pytest
 from astropy.io import fits
 from mpdaf.obj import Cube
 from mpdaf.MUSE import get_FSF_from_cube_keywords, FSFModel
-from mpdaf.MUSE.fsf import find_model_cls
+from mpdaf.MUSE.fsf import find_model_cls, OldMoffatModel, MoffatModel2
 from mpdaf.tests.utils import get_data_file
 from numpy.testing import assert_allclose
 
 
-def test_get_FSF_from_cube_keywords(tmpdir):
+def test_fsf_model_errors():
     # This cube has no FSF info
     with pytest.raises(ValueError):
         FSFModel.read(get_data_file('sdetect', 'minicube.fits'))
@@ -15,6 +16,17 @@ def test_get_FSF_from_cube_keywords(tmpdir):
     with pytest.raises(ValueError):
         find_model_cls(fits.Header({'FSFMODE': 5}))
 
+    with pytest.raises(ValueError):
+        OldMoffatModel.from_header(fits.Header(), 0)
+
+    for hdr in [fits.Header(),
+                fits.Header({'FSFLB1': 5000, 'FSFLB2': 9000}),
+                fits.Header({'FSFLB1': 9000, 'FSFLB2': 5000})]:
+        with pytest.raises(ValueError):
+            MoffatModel2.from_header(hdr, 0)
+
+
+def test_fsf_model(tmpdir):
     cubename = get_data_file('sdetect', 'subcub_mosaic.fits')
     cube = Cube(cubename)
 
@@ -79,5 +91,27 @@ def test_get_FSF_from_cube_keywords(tmpdir):
     outcube.write(testfile)
     fsf3 = FSFModel.read(testfile, field=0)
     assert fsf3.model == 2
-    assert fsf3.get_beta(7000) == 2.8
+    assert fsf3.get_beta(7000) == fsf.get_beta(7000)
     assert fsf3.get_fwhm(7000) == fsf.get_fwhm(7000)
+    assert fsf3.get_fwhm(7000, unit='pix') == fsf.get_fwhm(7000, unit='pix')
+
+
+def test_fsf_arrays():
+    cubename = get_data_file('sdetect', 'subcub_mosaic.fits')
+    cube = Cube(cubename)
+    fsf = FSFModel.read(cube, field=2)
+    fsf2 = fsf.to_model2()
+
+    with pytest.raises(ValueError):
+        fsf2.get_2darray([7000], (20, 20))
+
+    with pytest.raises(ValueError):
+        fsf2.get_image([7000], cube.wcs)
+
+    ima = fsf2.get_image(7000, cube.wcs, center=(10, 10))
+    assert np.unravel_index(ima.data.argmax(), ima.shape) == (10, 10)
+
+    tcube = cube[:5, :, :]
+    c = fsf2.get_cube(tcube.wave, cube.wcs, center=(10, 10))
+    assert c.shape == (5, 30, 30)
+    assert np.unravel_index(c[0].data.argmax(), c.shape[1:]) == (10, 10)
