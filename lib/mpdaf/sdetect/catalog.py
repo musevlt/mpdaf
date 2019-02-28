@@ -43,7 +43,7 @@ from astropy.coordinates import SkyCoord
 from astropy.table import Table, Column, MaskedColumn, hstack, vstack, join
 from astropy import units as u
 
-from ..tools import deprecated, LowercaseOrderedDict
+from ..tools import LowercaseOrderedDict
 
 INVALID = {
     type(1): -9999, np.int_: -9999, np.int32: -9999,
@@ -1193,56 +1193,3 @@ class Catalog(Table):
             else:
                 adjust_text(text, x=x, y=y, ax=ax, only_move={text: 'xy'},
                             expand_points=(expand, expand))
-
-    @deprecated('plot_id is deprecated, use plot_symb with label=True instead')
-    def plot_id(self, ax, wcs, iden=None, ra=None, dec=None, symb=0.2,
-                alpha=0.5, col='k', ellipse_kwargs=None, **kwargs):
-        """This function displays the id of the catalog.
-
-        Parameters
-        ----------
-        ax : `matplotlib.axes.Axes`
-            Matplotlib axis instance (eg ax = fig.add_subplot(2,3,1)).
-        wcs : `mpdaf.obj.WCS`
-            Image WCS
-        iden : str
-            Name of the column that contains ID values
-        ra : str
-            Name of the column that contains RA values
-        dec : str
-            Name of the column that contains DEC values
-        symb : float
-            Size of the circle in arcsec
-        col : str
-            Symbol color.
-        alpha : float
-            Symbol transparency
-        ellipse_kwargs : dict
-            Additional properties for `matplotlib.patches.Ellipse`.
-        **kwargs
-            Additional properties for ``ax.text``.
-
-        """
-        iden = iden or self.meta.get('idname', self._idname_default)
-        ra = ra or self.meta.get('raname', self._raname_default)
-        dec = dec or self.meta.get('decname', self._decname_default)
-
-        if ra not in self.colnames:
-            raise IOError('column %s not found in catalog' % ra)
-        if dec not in self.colnames:
-            raise IOError('column %s not found in catalog' % dec)
-        if iden not in self.colnames:
-            raise IOError('column %s not found in catalog' % iden)
-
-        from matplotlib.patches import Ellipse
-        ellipse_kwargs = ellipse_kwargs or {}
-        cat = self.select(wcs, ra, dec)
-        size = 2 * symb / wcs.get_step(unit=u.arcsec)[0]
-        for src in cat:
-            cen = wcs.sky2pix([src[dec], src[ra]], unit=u.deg)[0]
-            ax.text(cen[1], cen[0] + size, src[iden], ha='center', color=col,
-                    **kwargs)
-            ell = Ellipse((cen[1], cen[0]), size, size, 0, fill=False,
-                          alpha=alpha, edgecolor=col, clip_box=ax.bbox,
-                          **ellipse_kwargs)
-            ax.add_artist(ell)
