@@ -597,6 +597,12 @@ class Catalog(Table):
         else:
             super(Catalog, self).write(*args, **kwargs)
 
+    def _get_radec_colnames(self, col):
+        """Helper method to get the names of ra,dec columns."""
+        ra = col[0] or self.meta.get('raname', self._raname_default)
+        dec = col[1] or self.meta.get('decname', self._decname_default)
+        return ra, dec
+
     def masked_invalid(self):
         """Mask where invalid values occur (NaNs or infs or -9999 or '')."""
         for col in self.colnames:
@@ -675,10 +681,9 @@ class Catalog(Table):
         radius : float
             Matching size in arcsec (default 1).
         colc1: tuple
-            ('RA','DEC') name of ra,dec columns of input table
-
+            Name of ra,dec columns in input table.
         colc2: tuple
-            ('RA','DEC') name of ra,dec columns of cat2
+            Name of ra,dec columns in cat2.
         full_output: bool
             output flag
         **kwargs
@@ -708,11 +713,8 @@ class Catalog(Table):
         else:
             cat2_class = None
 
-        col1_ra = colc1[0] or self.meta.get('raname', self._raname_default)
-        col1_dec = colc1[1] or self.meta.get('decname', self._decname_default)
-
-        col2_ra = colc2[0] or cat2.meta.get('raname', cat2._raname_default)
-        col2_dec = colc2[1] or cat2.meta.get('decname', cat2._decname_default)
+        col1_ra, col1_dec = self._get_radec_colnames(colc1)
+        col2_ra, col2_dec = cat2._get_radec_colnames(colc2)
 
         coord1 = self.to_skycoord(ra=col1_ra, dec=col1_dec)
         coord2 = cat2.to_skycoord(ra=col2_ra, dec=col2_dec)
@@ -802,8 +804,7 @@ class Catalog(Table):
         if coord.shape == ():
             coord = coord.reshape(1)
 
-        col_ra = colcoord[0] or self.meta.get('raname', self._raname_default)
-        col_dec = colcoord[1] or self.meta.get('decname', self._decname_default)
+        col_ra, col_dec = self._get_radec_colnames(colcoord)
         src_coords = self.to_skycoord(ra=col_ra, dec=col_dec)
         idx, d2d, d3d = src_coords.match_to_catalog_sky(coord, **kwargs)
         dist = d2d.arcsec
@@ -835,21 +836,23 @@ class Catalog(Table):
         cat2 : `astropy.table.Table`
             Catalog to match.
         linecolc1: list of float
-            List of column names containing the wavelengths of the input catalog
+            List of column names containing the wavelengths of the input
+            catalog.
         linecolc2: list of float
-            List of column names containing the wavelengths of the cat2
+            List of column names containing the wavelengths of the cat2.
         spatial_radius : float
             Matching radius size in arcsec (default 1).
         spectral_window : float (default 5)
             Matching wavelength window in spectral unit (default 5).
         colc1: tuple
-            ('RA','DEC') name of ra,dec columns of input catalog
+            ('RA','DEC') name of ra,dec columns of input catalog.
         colc2: tuple
-            ('RA','DEC') name of ra,dec columns of cat2
+            ('RA','DEC') name of ra,dec columns of cat2.
         full_output: bool
             output flag
-        other arguments are passed to astropy match_to_catalog_sky
-
+        **kwargs
+            Other arguments are passed to
+            `astropy.coordinates.match_coordinates_sky`.
 
         Returns
         -------
@@ -874,11 +877,8 @@ class Catalog(Table):
         else:
             cat2_class = None
 
-        col1_ra = colc1[0] or self.meta.get('raname', self._raname_default)
-        col1_dec = colc1[1] or self.meta.get('decname', self._decname_default)
-
-        col2_ra = colc2[0] or cat2.meta.get('raname', cat2._raname_default)
-        col2_dec = colc2[1] or cat2.meta.get('decname', cat2._decname_default)
+        col1_ra, col1_dec = self._get_radec_colnames(colc1)
+        col2_ra, col2_dec = cat2._get_radec_colnames(colc2)
 
         # rename all catalogs columns with _1 or _2
         self._logger.debug('Rename Catalog columns with %s or %s suffix',
@@ -914,12 +914,12 @@ class Catalog(Table):
         match['DIST'].format = '.2f'
         match.remove_column('Distance')
         for col in linecolc1:
-            l = tcat1.colnames.index(col)
+            idx = tcat1.colnames.index(col)
             match.add_columns([MaskedColumn(length=len(match), dtype='bool'),
                                MaskedColumn(length=len(match), dtype='S30'),
                                MaskedColumn(length=len(match), dtype='float')],
                               names=['M_' + col, 'L_' + col, 'E_' + col],
-                              indexes=[l, l, l])
+                              indexes=[idx, idx, idx])
             match['E_' + col].format = '.2f'
             match['M_' + col] = False
         # perform match for lines
@@ -982,10 +982,7 @@ class Catalog(Table):
             The catalog with selected rows.
 
         """
-
-        ra = ra or self.meta.get('raname', self._raname_default)
-        dec = dec or self.meta.get('decname', self._decname_default)
-
+        ra, dec = self._get_radec_colnames((ra, dec))
         arr = np.vstack([self[dec].data, self[ra].data]).T
         cen = wcs.sky2pix(arr, unit=u.deg).T
         sel = ((cen[0] > margin) & (cen[0] < wcs.naxis2 - margin) &
@@ -1015,9 +1012,7 @@ class Catalog(Table):
             The distance in arcsec units.
 
         """
-        ra = ra or self.meta.get('raname', self._raname_default)
-        dec = dec or self.meta.get('decname', self._decname_default)
-
+        ra, dec = self._get_radec_colnames((ra, dec))
         dim = np.array([wcs.naxis2, wcs.naxis1])
         pix = wcs.sky2pix(np.array([self[dec], self[ra]]).T, unit=u.deg)
         dist = np.hstack([pix, dim - pix]).min(axis=1)
@@ -1025,10 +1020,8 @@ class Catalog(Table):
 
     def to_skycoord(self, ra=None, dec=None, frame='fk5', unit='deg'):
         """Return an `astropy.coordinates.SkyCoord` object."""
-        ra = ra or self.meta.get('raname', self._raname_default)
-        dec = dec or self.meta.get('decname', self._decname_default)
-
         from astropy.coordinates import SkyCoord
+        ra, dec = self._get_radec_colnames((ra, dec))
         return SkyCoord(ra=self[ra], dec=self[dec],
                         unit=(unit, unit), frame=frame)
 
@@ -1040,8 +1033,7 @@ class Catalog(Table):
         except ImportError:
             self._logger.error("the 'regions' package is needed for this")
             raise
-        ra = ra or self.meta.get('raname', self._raname_default)
-        dec = dec or self.meta.get('decname', self._decname_default)
+        ra, dec = self._get_radec_colnames((ra, dec))
         center = self.to_skycoord(ra=ra, dec=dec, frame=frame, unit=unit_pos)
         radius = radius * u.Unit(unit_radius)
         regions = [CircleSkyRegion(center=c, radius=radius) for c in center]
@@ -1094,27 +1086,26 @@ class Catalog(Table):
             kwargs can be used to set additional plotting properties.
 
         """
-        ra = ra or self.meta.get('raname', self._raname_default)
-        dec = dec or self.meta.get('decname', self._decname_default)
+        ra, dec = self._get_radec_colnames((ra, dec))
         id = id or self.meta.get('idname', self._idname_default)
 
-        if (ltype is None) and (etype not in ['o', 's', 'p']):
+        if ltype is None and etype not in ('o', 's', 'p'):
             raise IOError('Unknown symbol %s' % etype)
-        if (ltype is not None) and (ltype not in self.colnames):
+        if ltype is not None and ltype not in self.colnames:
             raise IOError('column %s not found in catalog' % ltype)
-        if (lsize is not None) and (lsize not in self.colnames):
+        if lsize is not None and lsize not in self.colnames:
             raise IOError('column %s not found in catalog' % lsize)
-        if (lcol is not None) and (lcol not in self.colnames):
+        if lcol is not None and lcol not in self.colnames:
             raise IOError('column %s not found in catalog' % lcol)
-        if (ledgecol is not None) and (ledgecol not in self.colnames):
+        if ledgecol is not None and ledgecol not in self.colnames:
             raise IOError('column %s not found in catalog' % ledgecol)
-        if (lfacecol is not None) and (lfacecol not in self.colnames):
+        if lfacecol is not None and lfacecol not in self.colnames:
             raise IOError('column %s not found in catalog' % lfacecol)
         if ra not in self.colnames:
             raise IOError('column %s not found in catalog' % ra)
         if dec not in self.colnames:
             raise IOError('column %s not found in catalog' % dec)
-        if label and (id not in self.colnames):
+        if label and id not in self.colnames:
             raise IOError('column %s not found in catalog' % id)
 
         from matplotlib.patches import Circle, Rectangle, RegularPolygon
@@ -1134,7 +1125,7 @@ class Catalog(Table):
             vedgecol = 'none'
             vfacecol = 'none'
             vfill = True
-            if (lcol is None) and (ledgecol is None) and (lfacecol is None):
+            if lcol is None and ledgecol is None and lfacecol is None:
                 vcol = ecol
                 vfill = fill
             if lcol is not None:

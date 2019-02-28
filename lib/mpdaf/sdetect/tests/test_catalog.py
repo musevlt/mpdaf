@@ -157,7 +157,6 @@ def test_nearest():
 def test_select(minicube):
     cat = Catalog.read(get_data_file('sdetect', 'cat.txt'), format='ascii')
     im = minicube.mean(axis=0)
-    __import__('pdb').set_trace()
 
     # Note im.shape is (40, 40) and cat has 8 rows all inside the image
     assert len(cat) == 8
