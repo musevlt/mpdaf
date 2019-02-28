@@ -86,7 +86,7 @@ class Catalog(Table):
         Remaining args and kwargs are passed to `astropy.table.Table.__init__`.
 
         """
-        #pop kwargs for PY2 compatibility
+        # pop kwargs for PY2 compatibility
         idname = kwargs.pop('idname', None)
         raname = kwargs.pop('raname', None)
         decname = kwargs.pop('decname', None)
@@ -96,10 +96,10 @@ class Catalog(Table):
         if self.masked:
             self.masked_invalid()
 
-        #replace Table.meta OrderedDict with a case insenstive version
+        # replace Table.meta OrderedDict with a case insenstive version
         self.meta = LowercaseOrderedDict(self.meta)
 
-        #set column names in metadata
+        # set column names in metadata
         if idname is not None:
             self.meta['idname'] = idname
         if raname is not None:
@@ -126,7 +126,7 @@ class Catalog(Table):
         n_cat = len(catalogs)
 
         if suffix is None:
-            suffix = tuple(['_{}'.format(i+1) for i in range(n_cat)])
+            suffix = tuple(['_{}'.format(i + 1) for i in range(n_cat)])
 
         cat0 = catalogs[0]
         # create output with same type as meta of first catalog
@@ -136,7 +136,7 @@ class Catalog(Table):
         for i_cat, cat in enumerate(catalogs):
             s = suffix[i_cat]
             for key, value in cat.meta.items():
-                out[key+s] = value
+                out[key + s] = value
 
         # special treatment for keys that identify columns
         col_keys = ['idname', 'raname', 'decname']
@@ -158,16 +158,16 @@ class Catalog(Table):
                     # check if name is dupilcated in other catalogs, and thus a
                     # suffix is needed
                     n = sum([1 for c in catalogs if col_name in c.columns])
-                    if n > 1: #not unique
+                    if n > 1:  # not unique
                         key += suffix[i_cat]
                         col_name += suffix[i_cat]
                 out[key] = col_name
 
-        #set default column keys to the first table
-        #e.g. raname = raname_1
+        # set default column keys to the first table
+        # e.g. raname = raname_1
         for key in col_keys:
             try:
-                out[key] = out[key+suffix[0]]
+                out[key] = out[key + suffix[0]]
             except KeyError:
                 pass
 
@@ -623,11 +623,11 @@ class Catalog(Table):
             New catalog containing the stacked data
 
         """
-        #convert cat2 to Catalog object
+        # convert cat2 to Catalog object
         if not isinstance(cat2, Catalog):
             cat2 = Catalog(cat2, copy=False)
 
-        #suppress metadata conflict warnings
+        # suppress metadata conflict warnings
         kwargs['metadata_conflicts'] = 'silent'
         stacked = hstack([self, cat2], **kwargs)
         stacked.meta = self._merge_meta([self, cat2])
@@ -651,11 +651,11 @@ class Catalog(Table):
             New table containing the result of the join operation.
 
         """
-        #convert cat2 to Catalog object
+        # convert cat2 to Catalog object
         if not isinstance(cat2, Catalog):
             cat2 = Catalog(cat2, copy=False)
 
-        #suppress metadata conflict warnings
+        # suppress metadata conflict warnings
         keys = kwargs.get('keys', None)
         kwargs['metadata_conflicts'] = 'silent'
         joined = join(self, cat2, **kwargs)
@@ -701,7 +701,7 @@ class Catalog(Table):
 
         """
 
-        #convert cat2 to Catalog object
+        # convert cat2 to Catalog object
         if not isinstance(cat2, Catalog):
             cat2_class = cat2.__class__
             cat2 = Catalog(cat2, copy=False)
@@ -713,7 +713,6 @@ class Catalog(Table):
 
         col2_ra = colc2[0] or cat2.meta.get('raname', cat2._raname_default)
         col2_dec = colc2[1] or cat2.meta.get('decname', cat2._decname_default)
-
 
         coord1 = self.to_skycoord(ra=col1_ra, dec=col1_dec)
         coord2 = cat2.to_skycoord(ra=col2_ra, dec=col2_dec)
@@ -756,7 +755,7 @@ class Catalog(Table):
             self._logger.debug('Cat2 Nelt %d Matched %d Not Matched %d',
                                len(cat2), len(match2), len(nomatch2))
 
-            #convert nomatch2 back to original cat2 type
+            # convert nomatch2 back to original cat2 type
             if cat2_class:
                 nomatch2 = cat2_class(nomatch2, copy=False)
 
@@ -868,7 +867,7 @@ class Catalog(Table):
 
         """
 
-        #convert cat2 to Catalog object
+        # convert cat2 to Catalog object
         if not isinstance(cat2, Catalog):
             cat2_class = cat2.__class__
             cat2 = Catalog(cat2, copy=False)
@@ -903,7 +902,7 @@ class Catalog(Table):
         else:
             match = tcat1.match(
                 tcat2, radius=spatial_radius, colc1=colc1, colc2=colc2,
-                full_output=full_output, **kwargs)            
+                full_output=full_output, **kwargs)
         match.meta = self._merge_meta([tcat1, tcat2], suffix=suffix)
 
         tcat1._logger.debug('Performing line match')
@@ -950,7 +949,7 @@ class Catalog(Table):
                               '%d Cat2 unmatched: %d', len(match3d),
                               len(match2d), len(unmatch1), len(unmatch2))
 
-            #convert unmatch2 back to original cat2 type
+            # convert unmatch2 back to original cat2 type
             if cat2_class:
                 unmatch2 = cat2_class(unmatch2, copy=False)
 
@@ -1004,11 +1003,11 @@ class Catalog(Table):
         Parameters
         ----------
         wcs : `~mpdaf.obj.WCS`
-              Image WCS
+            Image WCS
         ra  : str
-              Name of the column that contains RA values in degrees
+            Name of the column that contains RA values in degrees
         dec : str
-              Name of the column that contains DEC values in degrees
+            Name of the column that contains DEC values in degrees
 
         Returns
         -------
