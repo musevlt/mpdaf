@@ -56,7 +56,7 @@ from scipy.optimize import leastsq
 from ..obj import Cube, Image, Spectrum, vactoair, airtovac, plot_rgb
 from ..obj.objs import is_int, is_float, bounding_box
 from ..tools import deprecated, MpdafWarning
-from ..MUSE import FieldsMap, FSF
+from ..MUSE import FieldsMap, FSFModel, OldMoffatModel
 from ..MUSE.PSF import MOFFAT1, create_psf_cube
 from ..sdetect.sea import (segmentation, mask_creation, findCentralDetection,
                            union, intersection, compute_optimal_spectrum)
@@ -1224,21 +1224,13 @@ class Source:
             taken from the FIELDMAP extension in the cube file.
 
         """
-        hdr = cube.primary_header
-        try:
-            FSF_mode = hdr['FSFMODE']
-        except KeyError:
-            raise ValueError('Cannot compute FSF int the FSF keywords are not '
-                             'present in the primary header of the cube')
+        fsfmodel = FSFModel.read(cube)
 
-        if FSF_mode != 'MOFFAT1':
+        if fsfmodel.model != 'MOFFAT1':
             raise ValueError('This method is coded only for FSFMODE=MOFFAT1')
 
-        if hdr['NFIELDS'] == 1:  # just one FSF
-            nf = 0
-            beta = hdr['FSF%02dBET' % nf]
-            a = hdr['FSF%02dFWA' % nf]
-            b = hdr['FSF%02dFWB' % nf]
+        if isinstance(fsfmodel, FSFModel):  # just one FSF
+            self.header.update(fsfmodel.to_header(field_idx=0))
         else:
             # load field map, from a dedicated file or from the cube
             fmap = (FieldsMap(fieldmap) if fieldmap is not None
@@ -1278,53 +1270,49 @@ class Source:
             # FSF
             ksel = np.where(w != 0)
             if len(ksel[0]) == 1:  # only one field
-                nf = ksel[0][0] + 1
-                beta = hdr['FSF%02dBET' % nf]
-                a = hdr['FSF%02dFWA' % nf]
-                b = hdr['FSF%02dFWB' % nf]
+                idx = ksel[0][0] + 1
+                self.header.update(fsfmodel[idx].to_header(field_idx=idx))
             else:  # several fields
-                nf = 99
-                # FSF model
-                Nfsf = 13
+                shape = (13, 13)
                 step = cube.wcs.get_step(unit=u.arcsec)[0]
-                FSF_model = FSF(FSF_mode)
                 # compute FSF for minimum and maximum wavelength
-                lbda1, lbda2 = cube.wave.get_range()
-                FSF1 = np.zeros((Nfsf, Nfsf))
-                FSF2 = np.zeros((Nfsf, Nfsf))
+                l1, l2 = cube.wave.get_range()
+                FSF1 = np.zeros(shape)
+                FSF2 = np.zeros(shape)
                 for i in ksel[0]:
-                    _i = i + 1
-                    beta = hdr['FSF%02dBET' % _i]
-                    a = hdr['FSF%02dFWA' % _i]
-                    b = hdr['FSF%02dFWB' % _i]
-                    kernel1 = FSF_model.get_FSF(lbda1, step, Nfsf,
-                                                beta=beta, a=a, b=b)[0]
-                    kernel2 = FSF_model.get_FSF(lbda2, step, Nfsf,
-                                                beta=beta, a=a, b=b)[0]
+                    kernel1 = fsfmodel[i].get_2darray(l1, shape)
+                    kernel2 = fsfmodel[i].get_2darray(l2, shape)
                     FSF1 += w[i] * kernel1
                     FSF2 += w[i] * kernel2
-                # fit beta, fwhm1 and fwhm2 on PSF1 and PSF2
-                moffatfit = lambda v: np.ravel(
-                    MOFFAT1(lbda1, step, Nfsf, v[0], v[1], v[2])[0] - FSF1 +
-                    MOFFAT1(lbda2, step, Nfsf, v[0], v[1], v[2])[0] - FSF2)
-                v0 = [beta, a, b]
-                beta, a, b = leastsq(moffatfit, v0)[0]
 
-        self.header['FSFMODE'] = FSF_mode
-        self.header['FSF%02dBET' % nf] = np.around(beta, decimals=2)
-        self.header['FSF%02dFWA' % nf] = np.around(a, decimals=3)
-        self.header['FSF%02dFWB' % nf] = float('%.3e' % b)
+                # fit beta, fwhm1 and fwhm2 on PSF1 and PSF2
+                def moffatfit(v):
+                    m1 = MOFFAT1(l1, step, shape[0], v[0], v[1], v[2],
+                                 normalize=True)[0]
+                    m2 = MOFFAT1(l2, step, shape[0], v[0], v[1], v[2],
+                                 normalize=True)[0]
+                    return np.ravel(m1 - FSF1 + m2 - FSF2)
+
+                v0 = [fsfmodel[i].beta, fsfmodel[i].a, fsfmodel[i].b]
+                beta, a, b = leastsq(moffatfit, v0)[0]
+                model = OldMoffatModel(a, b, beta, step)
+                self.header.update(model.to_header(field_idx=99))
 
     def get_FSF(self):
         """Return the FSF keywords if available in the FITS header."""
-        if 'FSFMODE' not in self.header:
+        try:
+            fsfmodel = FSFModel.read(self.header)
+        except ValueError:
+            # no model found
             return
-        for field in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 99):
-            if 'FSF%02dBET' % field in self.header:
-                beta = self.header['FSF%02dBET' % field]
-                a = self.header['FSF%02dFWA' % field]
-                b = self.header['FSF%02dFWB' % field]
-                return a, b, beta, field
+
+        if isinstance(fsfmodel, OldMoffatModel):
+            return fsfmodel.a, fsfmodel.b, fsfmodel.beta, fsfmodel.field
+        else:
+            # TODO: the add_FSF still works only with OldMoffatModel, but this
+            # should be updated to work with other models, and here we should
+            # just return the FSFModel
+            return fsfmodel
 
     def add_narrow_band_images(self, cube, z_desc, eml=None, size=None,
                                unit_size=u.arcsec, width=8, is_sum=False,

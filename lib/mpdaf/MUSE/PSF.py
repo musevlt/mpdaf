@@ -173,7 +173,7 @@ def Moffat(step_arcsec, Nfsf, beta, fwhm):
     return moffat, fwhm_pix
 
 
-def MOFFAT1(lbda, step_arcsec, Nfsf, beta, a, b):
+def MOFFAT1(lbda, step_arcsec, Nfsf, beta, a, b, normalize=False):
     """Compute PSF with a Moffat function.
 
     Parameters
@@ -202,7 +202,8 @@ def MOFFAT1(lbda, step_arcsec, Nfsf, beta, a, b):
 
     """
     fwhm_arcsec = a + b * lbda
-    PSF_Moffat, fwhm_pix = Moffat(step_arcsec, Nfsf, beta, fwhm_arcsec)
+    fwhm_pix = fwhm_arcsec / step_arcsec
+    PSF_Moffat = Moffat2D(fwhm_pix, beta, (Nfsf, Nfsf), normalize=normalize)
     return PSF_Moffat, fwhm_pix, fwhm_arcsec
 
 

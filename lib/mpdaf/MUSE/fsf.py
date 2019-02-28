@@ -1,6 +1,7 @@
 import astropy.units as u
 import logging
 import numpy as np
+import warnings
 from astropy.io import fits
 from astropy.modeling.models import Moffat2D as astMoffat2D
 from astropy.stats import sigma_clip
@@ -123,6 +124,7 @@ class FSFMultiModel(list):
     def from_header(cls, hdr, pixstep, nfields=99):
         self = cls()
         klass = find_model_cls(hdr)
+        self.model = klass.model
         for field in range(1, nfields + 1):
             self.append(klass.from_header(hdr, pixstep, field=field))
         return self
@@ -135,7 +137,7 @@ class FSFModel:
         self.logger = logging.getLogger(__name__)
 
     @classmethod
-    def read(cls, cube, field=None):
+    def read(cls, cube, field=None, pixstep=None):
         """Read the FSF model from a file, cube, or header.
 
         Parameters
@@ -161,14 +163,24 @@ class FSFModel:
             raise ValueError('FSFMODE keyword not found')
 
         nfields = 1 if field is not None else hdr.get('NFIELDS', 1)
-        step = wcs.get_step(unit=u.arcsec)[0]
+        if pixstep is None:
+            try:
+                pixstep = wcs.get_step(unit=u.arcsec)[0]
+            except u.core.UnitConversionError:
+                warnings.warn('could not find use pixstep from the header',
+                              UserWarning)
+                pixstep = None
+
         if nfields > 1:
-            return FSFMultiModel.from_header(hdr, step, nfields=nfields)
+            return FSFMultiModel.from_header(hdr, pixstep, nfields=nfields)
         else:
             klass = find_model_cls(hdr)
             if field is None:
                 field = 0
-            return klass.from_header(hdr, step, field=field)
+            try:
+                return klass.from_header(hdr, pixstep, field=field)
+            except ValueError:
+                return klass.from_header(hdr, pixstep, field=99)
 
     @classmethod
     def from_header(cls, hdr, pixstep, field=0):
@@ -240,12 +252,13 @@ class OldMoffatModel(FSFModel):
     name = 'Old model with a fixed beta'
     model = 'MOFFAT1'
 
-    def __init__(self, a, b, beta, pixstep):
+    def __init__(self, a, b, beta, pixstep, field=0):
         super().__init__()
         self.a = a
         self.b = b
         self.beta = beta
         self.pixstep = pixstep
+        self.field = field
 
     @classmethod
     def from_header(cls, hdr, pixstep, field=0):
@@ -254,7 +267,7 @@ class OldMoffatModel(FSFModel):
         beta = hdr['FSF%02dBET' % field]
         a = hdr['FSF%02dFWA' % field]
         b = hdr['FSF%02dFWB' % field]
-        return cls(a, b, beta, pixstep)
+        return cls(a, b, beta, pixstep, field=field)
 
     def info(self):
         self.logger.info('Model %s Beta %f FWHM a %f b %f Step %f',
@@ -290,12 +303,13 @@ class MoffatModel2(FSFModel):
     name = "Circular MOFFAT beta=poly(lbda) fwhm=poly(lbda)"
     model = 2
 
-    def __init__(self, fwhm_pol, beta_pol, lbrange, pixstep):
+    def __init__(self, fwhm_pol, beta_pol, lbrange, pixstep, field=0):
         super().__init__()
         self.fwhm_pol = fwhm_pol
         self.beta_pol = beta_pol
         self.lbrange = lbrange
         self.pixstep = pixstep
+        self.field = field
 
     @classmethod
     def from_header(cls, hdr, pixstep, field=0):
@@ -313,7 +327,7 @@ class MoffatModel2(FSFModel):
         fwhm_pol = [hdr['FSF%02dF%02d' % (field, k)] for k in range(ncf)]
         ncb = hdr['FSF%02dBNC' % field]
         beta_pol = [hdr['FSF%02dB%02d' % (field, k)] for k in range(ncb)]
-        return cls(fwhm_pol, beta_pol, lbrange, pixstep)
+        return cls(fwhm_pol, beta_pol, lbrange, pixstep, field=field)
 
     def to_header(self, hdr=None, field_idx=0):
         hdr = super().to_header(hdr=hdr)
