@@ -92,24 +92,23 @@ STR_DTYPE = 'U20'
 
 TABLES_SCHEMA = {
     # Version of the source format, see SourceICD.pdf
-    'version': '0.5',
+    'version': '0.6',
     'MAG': {
         'BAND': {
             'description': 'Filter name',
-            'unit': 'unitless',
             'dtype': STR_DTYPE,
             'primary_index': True
         },
         'MAG': {
             'format': '.3f',
             'description': 'AB Magnitude',
-            'unit': 'unitless',
+            'unit': 'mag',
             'dtype': 'f8'
         },
         'MAG_ERR': {
             'format': '.3f',
             'description': 'Error in AB Magnitude',
-            'unit': 'unitless',
+            'unit': 'mag',
             'dtype': 'f8'
         }
     },
@@ -117,24 +116,23 @@ TABLES_SCHEMA = {
         'Z': {
             'description': 'Estimated redshift',
             'format': '.4f',
-            'unit': 'unitless',
+            'unit': '', #dimensionless_unscaled
             'dtype': 'f8'
         },
         'Z_MIN': {
             'description': 'Lower bound of estimated redshift',
             'format': '.4f',
-            'unit': 'unitless',
+            'unit': '', #dimensionless_unscaled
             'dtype': 'f8'
         },
         'Z_MAX': {
             'description': 'Upper bound of estimated redshift',
             'format': '.4f',
-            'unit': 'unitless',
+            'unit': '', #dimensionless_unscaled
             'dtype': 'f8'
         },
         'Z_DESC': {
             'description': 'Type of redshift',
-            'unit': 'unitless',
             'dtype': STR_DTYPE,
             'primary_index': True
         }
@@ -579,7 +577,7 @@ class Source:
 
         """
         header = pyfits.Header()
-        header['ID'] = (ID, 'object ID u.unitless %d')
+        header['ID'] = (ID, 'object ID %d')
         header['RA'] = (ra, 'RA u.degree %.7f')
         header['DEC'] = (dec, 'DEC u.degree %.7f')
         header['FROM'] = (origin[0], 'detection software')
@@ -1909,7 +1907,6 @@ class Source:
                     col = MaskedColumn(ma.masked_array(np.array([''] * nlines),
                                                        mask=np.ones(nlines)),
                                        name='LINE', dtype=STR_DTYPE,
-                                       unit='unitless',
                                        description='line name')
                     self.lines.add_column(col)
                 for w, name in zip(wl, lnames):

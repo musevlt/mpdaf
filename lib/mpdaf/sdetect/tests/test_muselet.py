@@ -31,6 +31,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
+from glob import glob
 import os
 import pytest
 import subprocess
@@ -56,22 +57,24 @@ def test_muselet_fast(tmpdir, minicube):
     cube = minicube[1800:2000, :, :]
     cube.write(filename, savemask='nan')
     print('Working directory:', outdir)
-    cont, single, raw = muselet(filename, nbcube=True, del_sex=True,
-                                workdir=outdir)
-    assert len(cont) == 1
-    assert len(single) == 7
-    assert len(raw) == 22
+    muselet(filename, write_nbcube=True, cleanup=True, workdir=outdir)
+
+    #NB cube produced?
     assert os.path.isfile(str(tmpdir.join('NB_cube.fits')))
 
-    cont.write('cont', path=str(tmpdir), fmt='working')
-    single.write('sing', path=str(tmpdir), fmt='working')
-    raw.write('raw', path=str(tmpdir), fmt='working')
-    cat_cont = Catalog.read(str(tmpdir.join('cont.fits')))
-    cat_sing = Catalog.read(str(tmpdir.join('sing.fits')))
-    cat_raw = Catalog.read(str(tmpdir.join('raw.fits')))
-    assert len(cont) == len(cat_cont)
-    assert len(single) == len(cat_sing)
-    assert len(raw) == len(cat_raw)
+    #get catalogs
+    cat_lines = Catalog.read(str(tmpdir.join('lines.fit')))
+    cat_objects = Catalog.read(str(tmpdir.join('objects.fit')))
+    
+    files_lines = glob(str(tmpdir.join('lines/*')))
+    files_objects = glob(str(tmpdir.join('objects/*')))
+
+    #check same length as number of sources
+    assert len(cat_lines) == len(files_lines)
+    assert len(cat_objects) ==  len(files_objects)
+
+    assert len(cat_lines) == 34
+    assert len(cat_objects) == 12
 
 
 @pytest.mark.slow
@@ -80,20 +83,25 @@ def test_muselet_full(tmpdir, minicube):
     """test MUSELET"""
     outdir = str(tmpdir)
     print('Working directory:', outdir)
-    cont, single, raw = muselet(minicube.filename, nbcube=True, del_sex=True,
-                                workdir=outdir)
-    assert len(cont) == 1
-    assert len(single) == 8
-    assert len(raw) == 39
+
+    muselet(minicube.filename, write_nbcube=True, cleanup=True,
+            workdir=outdir, n_cpu=2)
+
+    #NB cube produced?
     assert os.path.isfile(str(tmpdir.join(
         'NB_' + os.path.basename(minicube.filename))))
 
-    cont.write('cont', path=str(tmpdir), fmt='working')
-    single.write('sing', path=str(tmpdir), fmt='working')
-    raw.write('raw', path=str(tmpdir), fmt='working')
-    cat_cont = Catalog.read(str(tmpdir.join('cont.fits')))
-    cat_sing = Catalog.read(str(tmpdir.join('sing.fits')))
-    cat_raw = Catalog.read(str(tmpdir.join('raw.fits')))
-    assert len(cont) == len(cat_cont)
-    assert len(single) == len(cat_sing)
-    assert len(raw) == len(cat_raw)
+    #get catalogs
+    cat_lines = Catalog.read(str(tmpdir.join('lines.fit')))
+    cat_objects = Catalog.read(str(tmpdir.join('objects.fit')))
+    
+    files_lines = glob(str(tmpdir.join('lines/*')))
+    files_objects = glob(str(tmpdir.join('objects/*')))
+
+    #check same length as number of sources
+    assert len(cat_lines) == len(files_lines)
+    assert len(cat_objects) ==  len(files_objects)
+
+    assert len(cat_lines) == 61
+    assert len(cat_objects) == 15
+

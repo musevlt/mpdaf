@@ -473,7 +473,7 @@ class Catalog(Table):
             t[name].format = fmt
         for name in names_z:
             t[name].format = '.4f'
-            t[name].unit = 'unitless'
+            t[name].unit = u.dimensionless_unscaled
             if name[-3:] == 'MIN':
                 t[name].description = 'Lower bound of estimated redshift'
             elif name[-3:] == 'MAX':
@@ -484,7 +484,7 @@ class Catalog(Table):
                 t[name].description = 'Estimated redshift'
         for name in names_mag:
             t[name].format = '.3f'
-            t[name].unit = 'unitless'
+            t[name].unit = u.mag
             if name[-3:] == 'ERR':
                 t[name].description = 'Error in AB Magnitude'
             else:
