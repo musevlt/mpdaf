@@ -889,6 +889,7 @@ class Catalog(Table):
             tcat1.rename_column(name, name + suffix[0])
         for name in tcat2.colnames:
             tcat2.rename_column(name, name + suffix[1])
+
         colc1 = (col1_ra + suffix[0], col1_dec + suffix[0])
         linecolc1 = [col + suffix[0] for col in linecolc1]
         colc2 = (col2_ra + suffix[1], col2_dec + suffix[1])
@@ -922,6 +923,7 @@ class Catalog(Table):
                               indexes=[idx, idx, idx])
             match['E_' + col].format = '.2f'
             match['M_' + col] = False
+
         # perform match for lines
         for r in match:
             # Match lines
@@ -953,7 +955,7 @@ class Catalog(Table):
             if cat2_class:
                 unmatch2 = cat2_class(unmatch2, copy=False)
 
-            return (match3d, match2d, unmatch1, unmatch2)
+            return match3d, match2d, unmatch1, unmatch2
         else:
             self._logger.info('Matched 3D: %d',
                               len(match[match['NLMATCH'] > 0]))

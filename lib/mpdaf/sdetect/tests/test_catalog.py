@@ -134,6 +134,32 @@ def test_match():
     assert type(nomatch2) == type(c2)
 
 
+def test_match3Dline():
+    c1 = Catalog()
+    c1['RA'] = np.arange(10, dtype=float)
+    c1['DEC'] = np.arange(10, dtype=float)
+    c1['LBDA'] = np.arange(10, dtype=float)
+
+    c2 = Table()
+    c2['ra'] = np.arange(20, dtype=float) + 0.5 / 3600
+    c2['dec'] = np.arange(20, dtype=float) - 0.5 / 3600
+    c2['lbda'] = np.arange(20, dtype=float) + 3
+
+    match = c1.match3Dline(c2, ['LBDA'], ['lbda'], colc2=('ra', 'dec'),
+                           full_output=False)
+    assert len(match) == 10
+    assert_almost_equal(match['DIST'], 0.705, decimal=2)
+    assert_array_equal(match['M_LBDA_1'], True)
+
+    match3d, match2d, unmatch1, unmatch2 = c1.match3Dline(
+        c2, ['LBDA'], ['lbda'], colc2=('ra', 'dec'))
+    assert len(match3d) == 10
+    assert len(unmatch2) == 10
+
+    match = c1.match3Dline(c2, ['LBDA'], ['lbda'], colc2=('ra', 'dec'),
+                           full_output=False, spectral_window=1)
+    assert_array_equal(match['M_LBDA_1'], False)
+
 def test_nearest():
     c1 = Catalog()
     c1['RA'] = np.arange(10, dtype=float)
@@ -198,7 +224,7 @@ def test_tods9(tmpdir):
 
 
 def test_meta():
-    c1 = Catalog(idname='ID', raname='RA')
+    c1 = Catalog(idname='ID', raname='RA', decname='DEC')
     c1['ID'] = np.arange(10, dtype=int)
     c1['RA'] = np.arange(10, dtype=float)
     c1['DEC'] = np.arange(10, dtype=float)
