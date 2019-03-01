@@ -4,14 +4,71 @@
 Development version, not released yet.
 
 - Compatibility with Astropy 3.1 for wcs shape.
-- Add function to merge ``AUTOCAL_FACTORS`` files.
+
+- Add function to merge ``AUTOCAL_FACTORS`` files
+  (`mpdaf.drs.merge_autocal_factors`).
+
 - Fix bug in `mpdaf.sdetect.Source.add_FSF` when source is close to the edge.
+
 - Fix `mpdaf.obj.Image.subimage` to keep the same dtype as the input data.
+  [!153]
+
 - Increase the number of files that can be combined with `mpdaf.obj.CubeList`.
+
 - Support method parameter in `mpdaf.sdetect.Source.add_narrow_band_images`.
-- Fix writing sources with non-float extensions.
+  [!155]
+
+- Fix writing sources with non-float extensions. [!154]
+
 - Fix pickle issue, making sure that ``data_header`` always match the object
-  state.
+  state. [!157]
+
+- Add a `mpdaf.obj.Spectrum.to_spectrum1d` method to interact with specutils.
+  [!158]
+
+- Ensure that a Unit object is created from the unit parameter, and fix variance
+  units for multiply and divide. [!150]
+
+- Add function to create a mask of sources (`mpdaf.obj.mask_sources`), using
+  photutils.
+
+- Compute a better estimate of EXPTIME for combined cubes, using the mode
+  instead of the median.
+
+- Add function to get z for given line position (`mpdaf.sdetect.z_if_linepos`).
+  [!159]
+
+- Speed up `mpdaf.sdetect.crackz` by only testing redshifts of line pairs.
+
+- Fix bug in `mpdaf.obj.Image.subimage` where mask is False.
+
+- Fix issue with the display of NaNs or masked values in `mpdaf.obj.Image.plot`,
+  removing the clipping when normalizing pixel values.
+
+- Add a new class to manage FSF models (`mpdaf.MUSE.FSFModel`). The old tools
+  are deprecated (``mpdaf.MUSE.get_FSF_from_cube_keywords``,
+  ``mpdaf.MUSE.FSF``).  [!151]
+
+Muselet
+~~~~~~~
+
+Numerous changes to muselet. [!160]
+
+- Improved treatment of extended sources: expand image sizes, as needed, returns
+  sextractor segmentation mask.
+
+- Each narrow band now uses a corresponding weight map, not a global one.
+
+- More robust cleaning of false detections outside FoV.
+
+- Changes to merging algorithms. Results in slightly more objects (i.e. more
+  fragmentation, not necessarily more detections).
+
+- Fixed "too many files open error" (hopefully).
+
+- Merged "cont" and "sing" catalogs into one "object" catalog.
+
+- Performance also improved via multiprocessing (but disabled by default).
 
 
 3.0 (10/19/2018)
