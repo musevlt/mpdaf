@@ -43,7 +43,7 @@ from astropy.coordinates import SkyCoord
 from astropy.table import Table, Column, MaskedColumn, hstack, vstack, join
 from astropy import units as u
 
-from ..tools import deprecated, LowercaseOrderedDict
+from ..tools import LowercaseOrderedDict
 
 INVALID = {
     type(1): -9999, np.int_: -9999, np.int32: -9999,
@@ -86,7 +86,7 @@ class Catalog(Table):
         Remaining args and kwargs are passed to `astropy.table.Table.__init__`.
 
         """
-        #pop kwargs for PY2 compatibility
+        # pop kwargs for PY2 compatibility
         idname = kwargs.pop('idname', None)
         raname = kwargs.pop('raname', None)
         decname = kwargs.pop('decname', None)
@@ -96,10 +96,10 @@ class Catalog(Table):
         if self.masked:
             self.masked_invalid()
 
-        #replace Table.meta OrderedDict with a case insenstive version
+        # replace Table.meta OrderedDict with a case insenstive version
         self.meta = LowercaseOrderedDict(self.meta)
 
-        #set column names in metadata
+        # set column names in metadata
         if idname is not None:
             self.meta['idname'] = idname
         if raname is not None:
@@ -126,7 +126,7 @@ class Catalog(Table):
         n_cat = len(catalogs)
 
         if suffix is None:
-            suffix = tuple(['_{}'.format(i+1) for i in range(n_cat)])
+            suffix = tuple(['_{}'.format(i + 1) for i in range(n_cat)])
 
         cat0 = catalogs[0]
         # create output with same type as meta of first catalog
@@ -136,7 +136,7 @@ class Catalog(Table):
         for i_cat, cat in enumerate(catalogs):
             s = suffix[i_cat]
             for key, value in cat.meta.items():
-                out[key+s] = value
+                out[key + s] = value
 
         # special treatment for keys that identify columns
         col_keys = ['idname', 'raname', 'decname']
@@ -158,16 +158,16 @@ class Catalog(Table):
                     # check if name is dupilcated in other catalogs, and thus a
                     # suffix is needed
                     n = sum([1 for c in catalogs if col_name in c.columns])
-                    if n > 1: #not unique
+                    if n > 1:  # not unique
                         key += suffix[i_cat]
                         col_name += suffix[i_cat]
                 out[key] = col_name
 
-        #set default column keys to the first table
-        #e.g. raname = raname_1
+        # set default column keys to the first table
+        # e.g. raname = raname_1
         for key in col_keys:
             try:
-                out[key] = out[key+suffix[0]]
+                out[key] = out[key + suffix[0]]
             except KeyError:
                 pass
 
@@ -597,6 +597,12 @@ class Catalog(Table):
         else:
             super(Catalog, self).write(*args, **kwargs)
 
+    def _get_radec_colnames(self, col):
+        """Helper method to get the names of ra,dec columns."""
+        ra = col[0] or self.meta.get('raname', self._raname_default)
+        dec = col[1] or self.meta.get('decname', self._decname_default)
+        return ra, dec
+
     def masked_invalid(self):
         """Mask where invalid values occur (NaNs or infs or -9999 or '')."""
         for col in self.colnames:
@@ -623,11 +629,11 @@ class Catalog(Table):
             New catalog containing the stacked data
 
         """
-        #convert cat2 to Catalog object
+        # convert cat2 to Catalog object
         if not isinstance(cat2, Catalog):
             cat2 = Catalog(cat2, copy=False)
 
-        #suppress metadata conflict warnings
+        # suppress metadata conflict warnings
         kwargs['metadata_conflicts'] = 'silent'
         stacked = hstack([self, cat2], **kwargs)
         stacked.meta = self._merge_meta([self, cat2])
@@ -651,11 +657,11 @@ class Catalog(Table):
             New table containing the result of the join operation.
 
         """
-        #convert cat2 to Catalog object
+        # convert cat2 to Catalog object
         if not isinstance(cat2, Catalog):
             cat2 = Catalog(cat2, copy=False)
 
-        #suppress metadata conflict warnings
+        # suppress metadata conflict warnings
         keys = kwargs.get('keys', None)
         kwargs['metadata_conflicts'] = 'silent'
         joined = join(self, cat2, **kwargs)
@@ -675,10 +681,9 @@ class Catalog(Table):
         radius : float
             Matching size in arcsec (default 1).
         colc1: tuple
-            ('RA','DEC') name of ra,dec columns of input table
-
+            Name of ra,dec columns in input table.
         colc2: tuple
-            ('RA','DEC') name of ra,dec columns of cat2
+            Name of ra,dec columns in cat2.
         full_output: bool
             output flag
         **kwargs
@@ -701,19 +706,15 @@ class Catalog(Table):
 
         """
 
-        #convert cat2 to Catalog object
+        # convert cat2 to Catalog object
         if not isinstance(cat2, Catalog):
             cat2_class = cat2.__class__
             cat2 = Catalog(cat2, copy=False)
         else:
             cat2_class = None
 
-        col1_ra = colc1[0] or self.meta.get('raname', self._raname_default)
-        col1_dec = colc1[1] or self.meta.get('decname', self._decname_default)
-
-        col2_ra = colc2[0] or cat2.meta.get('raname', cat2._raname_default)
-        col2_dec = colc2[1] or cat2.meta.get('decname', cat2._decname_default)
-
+        col1_ra, col1_dec = self._get_radec_colnames(colc1)
+        col2_ra, col2_dec = cat2._get_radec_colnames(colc2)
 
         coord1 = self.to_skycoord(ra=col1_ra, dec=col1_dec)
         coord2 = cat2.to_skycoord(ra=col2_ra, dec=col2_dec)
@@ -756,7 +757,7 @@ class Catalog(Table):
             self._logger.debug('Cat2 Nelt %d Matched %d Not Matched %d',
                                len(cat2), len(match2), len(nomatch2))
 
-            #convert nomatch2 back to original cat2 type
+            # convert nomatch2 back to original cat2 type
             if cat2_class:
                 nomatch2 = cat2_class(nomatch2, copy=False)
 
@@ -803,8 +804,7 @@ class Catalog(Table):
         if coord.shape == ():
             coord = coord.reshape(1)
 
-        col_ra = colcoord[0] or self.meta.get('raname', self._raname_default)
-        col_dec = colcoord[1] or self.meta.get('decname', self._decname_default)
+        col_ra, col_dec = self._get_radec_colnames(colcoord)
         src_coords = self.to_skycoord(ra=col_ra, dec=col_dec)
         idx, d2d, d3d = src_coords.match_to_catalog_sky(coord, **kwargs)
         dist = d2d.arcsec
@@ -836,21 +836,23 @@ class Catalog(Table):
         cat2 : `astropy.table.Table`
             Catalog to match.
         linecolc1: list of float
-            List of column names containing the wavelengths of the input catalog
+            List of column names containing the wavelengths of the input
+            catalog.
         linecolc2: list of float
-            List of column names containing the wavelengths of the cat2
+            List of column names containing the wavelengths of the cat2.
         spatial_radius : float
             Matching radius size in arcsec (default 1).
         spectral_window : float (default 5)
             Matching wavelength window in spectral unit (default 5).
         colc1: tuple
-            ('RA','DEC') name of ra,dec columns of input catalog
+            ('RA','DEC') name of ra,dec columns of input catalog.
         colc2: tuple
-            ('RA','DEC') name of ra,dec columns of cat2
+            ('RA','DEC') name of ra,dec columns of cat2.
         full_output: bool
             output flag
-        other arguments are passed to astropy match_to_catalog_sky
-
+        **kwargs
+            Other arguments are passed to
+            `astropy.coordinates.match_coordinates_sky`.
 
         Returns
         -------
@@ -868,18 +870,15 @@ class Catalog(Table):
 
         """
 
-        #convert cat2 to Catalog object
+        # convert cat2 to Catalog object
         if not isinstance(cat2, Catalog):
             cat2_class = cat2.__class__
             cat2 = Catalog(cat2, copy=False)
         else:
             cat2_class = None
 
-        col1_ra = colc1[0] or self.meta.get('raname', self._raname_default)
-        col1_dec = colc1[1] or self.meta.get('decname', self._decname_default)
-
-        col2_ra = colc2[0] or cat2.meta.get('raname', cat2._raname_default)
-        col2_dec = colc2[1] or cat2.meta.get('decname', cat2._decname_default)
+        col1_ra, col1_dec = self._get_radec_colnames(colc1)
+        col2_ra, col2_dec = cat2._get_radec_colnames(colc2)
 
         # rename all catalogs columns with _1 or _2
         self._logger.debug('Rename Catalog columns with %s or %s suffix',
@@ -890,6 +889,7 @@ class Catalog(Table):
             tcat1.rename_column(name, name + suffix[0])
         for name in tcat2.colnames:
             tcat2.rename_column(name, name + suffix[1])
+
         colc1 = (col1_ra + suffix[0], col1_dec + suffix[0])
         linecolc1 = [col + suffix[0] for col in linecolc1]
         colc2 = (col2_ra + suffix[1], col2_dec + suffix[1])
@@ -903,7 +903,7 @@ class Catalog(Table):
         else:
             match = tcat1.match(
                 tcat2, radius=spatial_radius, colc1=colc1, colc2=colc2,
-                full_output=full_output, **kwargs)            
+                full_output=full_output, **kwargs)
         match.meta = self._merge_meta([tcat1, tcat2], suffix=suffix)
 
         tcat1._logger.debug('Performing line match')
@@ -915,14 +915,15 @@ class Catalog(Table):
         match['DIST'].format = '.2f'
         match.remove_column('Distance')
         for col in linecolc1:
-            l = tcat1.colnames.index(col)
+            idx = tcat1.colnames.index(col)
             match.add_columns([MaskedColumn(length=len(match), dtype='bool'),
                                MaskedColumn(length=len(match), dtype='S30'),
                                MaskedColumn(length=len(match), dtype='float')],
                               names=['M_' + col, 'L_' + col, 'E_' + col],
-                              indexes=[l, l, l])
+                              indexes=[idx, idx, idx])
             match['E_' + col].format = '.2f'
             match['M_' + col] = False
+
         # perform match for lines
         for r in match:
             # Match lines
@@ -950,11 +951,11 @@ class Catalog(Table):
                               '%d Cat2 unmatched: %d', len(match3d),
                               len(match2d), len(unmatch1), len(unmatch2))
 
-            #convert unmatch2 back to original cat2 type
+            # convert unmatch2 back to original cat2 type
             if cat2_class:
                 unmatch2 = cat2_class(unmatch2, copy=False)
 
-            return (match3d, match2d, unmatch1, unmatch2)
+            return match3d, match2d, unmatch1, unmatch2
         else:
             self._logger.info('Matched 3D: %d',
                               len(match[match['NLMATCH'] > 0]))
@@ -983,10 +984,7 @@ class Catalog(Table):
             The catalog with selected rows.
 
         """
-
-        ra = ra or self.meta.get('raname', self._raname_default)
-        dec = dec or self.meta.get('decname', self._decname_default)
-
+        ra, dec = self._get_radec_colnames((ra, dec))
         arr = np.vstack([self[dec].data, self[ra].data]).T
         cen = wcs.sky2pix(arr, unit=u.deg).T
         sel = ((cen[0] > margin) & (cen[0] < wcs.naxis2 - margin) &
@@ -1004,11 +1002,11 @@ class Catalog(Table):
         Parameters
         ----------
         wcs : `~mpdaf.obj.WCS`
-              Image WCS
+            Image WCS
         ra  : str
-              Name of the column that contains RA values in degrees
+            Name of the column that contains RA values in degrees
         dec : str
-              Name of the column that contains DEC values in degrees
+            Name of the column that contains DEC values in degrees
 
         Returns
         -------
@@ -1016,9 +1014,7 @@ class Catalog(Table):
             The distance in arcsec units.
 
         """
-        ra = ra or self.meta.get('raname', self._raname_default)
-        dec = dec or self.meta.get('decname', self._decname_default)
-
+        ra, dec = self._get_radec_colnames((ra, dec))
         dim = np.array([wcs.naxis2, wcs.naxis1])
         pix = wcs.sky2pix(np.array([self[dec], self[ra]]).T, unit=u.deg)
         dist = np.hstack([pix, dim - pix]).min(axis=1)
@@ -1026,10 +1022,8 @@ class Catalog(Table):
 
     def to_skycoord(self, ra=None, dec=None, frame='fk5', unit='deg'):
         """Return an `astropy.coordinates.SkyCoord` object."""
-        ra = ra or self.meta.get('raname', self._raname_default)
-        dec = dec or self.meta.get('decname', self._decname_default)
-
         from astropy.coordinates import SkyCoord
+        ra, dec = self._get_radec_colnames((ra, dec))
         return SkyCoord(ra=self[ra], dec=self[dec],
                         unit=(unit, unit), frame=frame)
 
@@ -1041,8 +1035,7 @@ class Catalog(Table):
         except ImportError:
             self._logger.error("the 'regions' package is needed for this")
             raise
-        ra = ra or self.meta.get('raname', self._raname_default)
-        dec = dec or self.meta.get('decname', self._decname_default)
+        ra, dec = self._get_radec_colnames((ra, dec))
         center = self.to_skycoord(ra=ra, dec=dec, frame=frame, unit=unit_pos)
         radius = radius * u.Unit(unit_radius)
         regions = [CircleSkyRegion(center=c, radius=radius) for c in center]
@@ -1095,27 +1088,26 @@ class Catalog(Table):
             kwargs can be used to set additional plotting properties.
 
         """
-        ra = ra or self.meta.get('raname', self._raname_default)
-        dec = dec or self.meta.get('decname', self._decname_default)
+        ra, dec = self._get_radec_colnames((ra, dec))
         id = id or self.meta.get('idname', self._idname_default)
 
-        if (ltype is None) and (etype not in ['o', 's', 'p']):
+        if ltype is None and etype not in ('o', 's', 'p'):
             raise IOError('Unknown symbol %s' % etype)
-        if (ltype is not None) and (ltype not in self.colnames):
+        if ltype is not None and ltype not in self.colnames:
             raise IOError('column %s not found in catalog' % ltype)
-        if (lsize is not None) and (lsize not in self.colnames):
+        if lsize is not None and lsize not in self.colnames:
             raise IOError('column %s not found in catalog' % lsize)
-        if (lcol is not None) and (lcol not in self.colnames):
+        if lcol is not None and lcol not in self.colnames:
             raise IOError('column %s not found in catalog' % lcol)
-        if (ledgecol is not None) and (ledgecol not in self.colnames):
+        if ledgecol is not None and ledgecol not in self.colnames:
             raise IOError('column %s not found in catalog' % ledgecol)
-        if (lfacecol is not None) and (lfacecol not in self.colnames):
+        if lfacecol is not None and lfacecol not in self.colnames:
             raise IOError('column %s not found in catalog' % lfacecol)
         if ra not in self.colnames:
             raise IOError('column %s not found in catalog' % ra)
         if dec not in self.colnames:
             raise IOError('column %s not found in catalog' % dec)
-        if label and (id not in self.colnames):
+        if label and id not in self.colnames:
             raise IOError('column %s not found in catalog' % id)
 
         from matplotlib.patches import Circle, Rectangle, RegularPolygon
@@ -1135,7 +1127,7 @@ class Catalog(Table):
             vedgecol = 'none'
             vfacecol = 'none'
             vfill = True
-            if (lcol is None) and (ledgecol is None) and (lfacecol is None):
+            if lcol is None and ledgecol is None and lfacecol is None:
                 vcol = ecol
                 vfill = fill
             if lcol is not None:
@@ -1194,56 +1186,3 @@ class Catalog(Table):
             else:
                 adjust_text(text, x=x, y=y, ax=ax, only_move={text: 'xy'},
                             expand_points=(expand, expand))
-
-    @deprecated('plot_id is deprecated, use plot_symb with label=True instead')
-    def plot_id(self, ax, wcs, iden=None, ra=None, dec=None, symb=0.2,
-                alpha=0.5, col='k', ellipse_kwargs=None, **kwargs):
-        """This function displays the id of the catalog.
-
-        Parameters
-        ----------
-        ax : `matplotlib.axes.Axes`
-            Matplotlib axis instance (eg ax = fig.add_subplot(2,3,1)).
-        wcs : `mpdaf.obj.WCS`
-            Image WCS
-        iden : str
-            Name of the column that contains ID values
-        ra : str
-            Name of the column that contains RA values
-        dec : str
-            Name of the column that contains DEC values
-        symb : float
-            Size of the circle in arcsec
-        col : str
-            Symbol color.
-        alpha : float
-            Symbol transparency
-        ellipse_kwargs : dict
-            Additional properties for `matplotlib.patches.Ellipse`.
-        **kwargs
-            Additional properties for ``ax.text``.
-
-        """
-        iden = iden or self.meta.get('idname', self._idname_default)
-        ra = ra or self.meta.get('raname', self._raname_default)
-        dec = dec or self.meta.get('decname', self._decname_default)
-
-        if ra not in self.colnames:
-            raise IOError('column %s not found in catalog' % ra)
-        if dec not in self.colnames:
-            raise IOError('column %s not found in catalog' % dec)
-        if iden not in self.colnames:
-            raise IOError('column %s not found in catalog' % iden)
-
-        from matplotlib.patches import Ellipse
-        ellipse_kwargs = ellipse_kwargs or {}
-        cat = self.select(wcs, ra, dec)
-        size = 2 * symb / wcs.get_step(unit=u.arcsec)[0]
-        for src in cat:
-            cen = wcs.sky2pix([src[dec], src[ra]], unit=u.deg)[0]
-            ax.text(cen[1], cen[0] + size, src[iden], ha='center', color=col,
-                    **kwargs)
-            ell = Ellipse((cen[1], cen[0]), size, size, 0, fill=False,
-                          alpha=alpha, edgecolor=col, clip_box=ax.bbox,
-                          **ellipse_kwargs)
-            ax.add_artist(ell)

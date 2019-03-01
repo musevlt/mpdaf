@@ -42,6 +42,13 @@ from numpy.testing import assert_array_equal, assert_almost_equal
 
 from mpdaf.tests.utils import get_data_file
 
+try:
+    import regions  # noqa
+except ImportError:
+    HAS_REGIONS = False
+else:
+    HAS_REGIONS = True
+
 
 def test_catalog():
     cat = Catalog(rows=[[1, 50., 10., 2., -9999],
@@ -89,13 +96,14 @@ def test_from_path(source1, source2, tmpdir):
     # SOURCE_V which was added in the Source.write
     assert len(cat.colnames) == 47
 
-    filename = str(tmpdir.join('cat.fits'))
-    cat.write(filename)
+    for name in ('cat.fits', 'cat.csv'):
+        filename = str(tmpdir.join(name))
+        cat.write(filename)
 
-    c = Catalog.read(filename)
-    assert c.colnames == cat.colnames
-    assert len(cat) == 2
-    assert isinstance(c, Catalog)
+        c = Catalog.read(filename)
+        assert c.colnames == cat.colnames
+        assert len(cat) == 2
+        assert isinstance(c, Catalog)
 
 
 def test_match():
@@ -125,6 +133,32 @@ def test_match():
     assert len(nomatch2) == 16
     assert type(nomatch2) == type(c2)
 
+
+def test_match3Dline():
+    c1 = Catalog()
+    c1['RA'] = np.arange(10, dtype=float)
+    c1['DEC'] = np.arange(10, dtype=float)
+    c1['LBDA'] = np.arange(10, dtype=float)
+
+    c2 = Table()
+    c2['ra'] = np.arange(20, dtype=float) + 0.5 / 3600
+    c2['dec'] = np.arange(20, dtype=float) - 0.5 / 3600
+    c2['lbda'] = np.arange(20, dtype=float) + 3
+
+    match = c1.match3Dline(c2, ['LBDA'], ['lbda'], colc2=('ra', 'dec'),
+                           full_output=False)
+    assert len(match) == 10
+    assert_almost_equal(match['DIST'], 0.705, decimal=2)
+    assert_array_equal(match['M_LBDA_1'], True)
+
+    match3d, match2d, unmatch1, unmatch2 = c1.match3Dline(
+        c2, ['LBDA'], ['lbda'], colc2=('ra', 'dec'))
+    assert len(match3d) == 10
+    assert len(unmatch2) == 10
+
+    match = c1.match3Dline(c2, ['LBDA'], ['lbda'], colc2=('ra', 'dec'),
+                           full_output=False, spectral_window=1)
+    assert_array_equal(match['M_LBDA_1'], False)
 
 def test_nearest():
     c1 = Catalog()
@@ -168,8 +202,29 @@ def test_select(minicube):
     assert len(cat.select(im.wcs, margin=1, mask=mask)) == 4
 
 
+def test_edgedist(minicube):
+    cat = Catalog.read(get_data_file('sdetect', 'cat.txt'), format='ascii')
+    im = minicube.mean(axis=0)
+    ref = [2.29, 0.43, 2.83, 0.19, 2.70, 0.16, 0.11, 1.51]
+    assert_almost_equal(cat.edgedist(im.wcs), ref, decimal=2)
+
+
+@pytest.mark.skipif(not HAS_REGIONS, reason="requires regions")
+def test_tods9(tmpdir):
+    cat = Catalog.read(get_data_file('sdetect', 'cat.txt'), format='ascii')
+    regfile = str(tmpdir.join('test.reg'))
+    cat.to_ds9_regions(regfile)
+    with open(regfile) as f:
+        assert f.readlines()[:4] == [
+            '# Region file format: DS9 astropy/regions\n',
+            'fk5\n',
+            'circle(63.356106,10.466166,0.000278)\n',
+            'circle(63.355404,10.464703,0.000278)\n',
+        ]
+
+
 def test_meta():
-    c1 = Catalog(idname='ID', raname='RA')
+    c1 = Catalog(idname='ID', raname='RA', decname='DEC')
     c1['ID'] = np.arange(10, dtype=int)
     c1['RA'] = np.arange(10, dtype=float)
     c1['DEC'] = np.arange(10, dtype=float)
@@ -214,7 +269,7 @@ def test_join_meta():
     c2.meta['raname'] = 'RA'
     c2.meta['decname'] = 'dec'
 
-    join = c1.join(c2, keys=['ID']) #join on id
+    join = c1.join(c2, keys=['ID'])  # join on id
     assert len(join) == 10
     assert type(join.meta) == type(c1.meta)
 
@@ -222,4 +277,3 @@ def test_join_meta():
     assert join.meta['raname'] == 'RA_1'
     assert join.meta['raname_1'] == 'RA_1'
     assert join.meta['raname_2'] == 'RA_2'
-
