@@ -96,7 +96,7 @@ def test_from_path(source1, source2, tmpdir):
     # SOURCE_V which was added in the Source.write
     assert len(cat.colnames) == 47
 
-    for name in ('cat.fits', 'cat.ecsv'):
+    for name in ('cat.fits', 'cat.csv'):
         filename = str(tmpdir.join(name))
         cat.write(filename)
 
