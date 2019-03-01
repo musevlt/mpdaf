@@ -87,15 +87,21 @@ MUSE FSF models
 
 .. warning:: FSF class is currently under development
 
-Only one model of FSF (Field Spread Function) is currently available.
+Two models of FSF (Field Spread Function) are currently available:
 
-FSF *MOFFAT1*
--------------
+- `~mpdaf.MUSE.OldMoffatModel` (``model='MOFFAT1'``): the old model with a fixed
+  beta.
+
+- `~mpdaf.MUSE.MoffatModel2` (``model=2``): a circular MOFFAT with polynomials
+  for beta and FWHM.
+
+Example with *MOFFAT1*
+----------------------
 
 The MUSE FSF is supposed to be a Moffat function with a FWHM which varies
 linearly with the wavelength:
 
-    fwhm = a + b*lbda
+    :math:`FWHM = a + b * lbda`
 
 With:
 
@@ -103,37 +109,44 @@ With:
  - a (float) constant in arcsec which defined the FWHM.
  - b (float) constant which defined the FWHM.
 
-We create the `~mpdaf.MUSE.FSF` object like this:
+We create the `~mpdaf.MUSE.FSFModel` object like this:
 
 .. ipython::
 
-  In [1]: from mpdaf.MUSE import FSF
+  In [1]: from mpdaf.MUSE import FSFModel, OldMoffatModel
 
-  In [2]: fsf = FSF(typ='MOFFAT1')
+  In [2]: fsf = OldMoffatModel(a=0.885, b=-2.94E-05, beta=2.8, pixstep=0.2)
 
-`~mpdaf.MUSE.FSF.get_FSF` returns for each wavelength an array and the FWHM in
-pixel and in arcseconds.
+  In [3]: isinstance(fsf, FSFModel)
+
+Various methods allow to get the FSF array (2D or 3D, as mpdaf Image or Cube)
+for given wavelengths, or the FWHM in pixel and in arcseconds.
 
 .. ipython::
 
-  In [3]: fsf_array, fwhm_pix, fwhm_arcsec = fsf.get_FSF(lbda=[5000, 9000], step=0.2, size=21, beta=2.8, a=0.885, b=-2.94E-05)
+  In [1]: lbda = np.array([5000, 9000])
 
-  In [4]: print(fwhm_pix)
+  In [4]: fsf.get_fwhm(lbda)
 
-  In [5]: print(fwhm_arcsec)
+  In [5]: fsf.get_fwhm(lbda, unit='pix')
+
+  In [20]: im5000 = fsf.get_2darray(lbda[0], shape=(25, 25))
+
+  In [20]: fsfcube = fsf.get_3darray(lbda, shape=(25, 25))
 
   In [27]: plt.figure()
 
   @savefig FSF1.png width=3.5in
-  In [26]: plt.imshow(fsf_array[1], vmin=0, vmax=60, interpolation='nearest')
+  In [26]: plt.imshow(im5000)
 
   In [27]: plt.figure()
 
   @savefig FSF2.png width=3.5in
-  In [28]: plt.imshow(fsf_array[0], vmin=0, vmax=60, interpolation='nearest')
+  In [28]: plt.imshow(fsfcube[1])
 
-It is also possible to use `~mpdaf.MUSE.FSF.get_FSF_cube` that returns a cube of
-FSFs with the same coordinates that the MUSE data cube given as input.
+The FSF model can be saved to a FITS header with
+`mpdaf.MUSE.FSFModel.to_header`, and read with `mpdaf.MUSE.FSFModel.read`.
+
 
 MUSE mosaic field map
 =====================

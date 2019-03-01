@@ -40,6 +40,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.ifconfig',
     'sphinx.ext.intersphinx',
+    'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'numpydoc',
     'IPython.sphinxext.ipython_console_highlighting',
