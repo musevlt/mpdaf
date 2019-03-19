@@ -40,6 +40,7 @@ from astropy import units as u
 from astropy.table import Table
 from astropy.utils.console import ProgressBar
 from ctypes import c_char_p
+from datetime import datetime
 from numpy import allclose, array_equal
 
 from .cube import Cube
@@ -139,7 +140,7 @@ def _pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
     if self.flux_scales is None and self.flux_offsets is None:
         for l in range(nl):
             if l % 100 == 0:
-                info('%d/%d', l, nl)
+                info('%d/%d %s', l, nl, datetime.now())
             arr.fill(np.nan)
             for i, f in enumerate(data):
                 x, y, x2, y2 = pos[i]
@@ -158,17 +159,17 @@ def _pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
             scales = np.ones(self.nfiles)
         else:
             scales = np.asarray(self.flux_scales)
-            self._logger.info('Using scales: %s', scales)
+            self._logger.info('Using scales')
 
         if self.flux_offsets is None:
             offsets = np.zeros(self.nfiles)
         else:
             offsets = np.asarray(self.flux_offsets)
-            self._logger.info('Using offsets: %s', offsets)
+            self._logger.info('Using offsets')
 
         for l in range(nl):
             if l % 100 == 0:
-                info('%d/%d', l, nl)
+                info('%d/%d %s', l, nl, datetime.now())
             arr.fill(np.nan)
             for i, f in enumerate(data):
                 x, y, x2, y2 = pos[i]
@@ -335,6 +336,11 @@ class CubeList:
                  str(c.wcs.wcs.wcs.crpix), str(c.wcs.wcs.wcs.crval))
                 for c in self.cubes]
         t = Table(rows=rows, names=('filename', 'shape', 'crpix', 'crval'))
+        if self.flux_scales is not None:
+            t['scale'] = self.flux_scales
+        if self.flux_offsets is not None:
+            t['offset'] = self.flux_offsets
+
         for line in t.pformat():
             self._logger.info(line)
 
@@ -492,12 +498,19 @@ class CubeList:
         files = files.encode('utf8')
 
         if self.flux_scales is None:
-            scales = np.ones(self.nfiles)
+            scale = np.ones(self.nfiles)
         else:
-            scales = np.asarray(self.flux_scales)
+            scale = np.asarray(self.flux_scales)
+            self._logger.info('Using scales')
+
+        if self.flux_offsets is None:
+            offset = np.zeros(self.nfiles)
+        else:
+            offset = np.asarray(self.flux_offsets)
+            self._logger.info('Using offsets')
 
         ctools.mpdaf_merging_sigma_clipping(
-            c_char_p(files), data, vardata, expmap, scales, select_pix,
+            c_char_p(files), data, vardata, expmap, scale, offset, select_pix,
             valid_pix, nmax, np.float64(nclip_low), np.float64(nclip_up),
             nstop, np.int32(var_mean), np.int32(mad))
 

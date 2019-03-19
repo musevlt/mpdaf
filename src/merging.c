@@ -289,7 +289,7 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
 // var=0: 'propagate'
 // var=1:  'stat_mean'
 // var=2:  'stat_one'
-int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* expmap, double* scale, int* selected_pix, int* valid_pix, int nmax, double nclip_low, double nclip_up, int nstop, int typ_var, int mad)
+int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* expmap, double* scale, double*offset, int* selected_pix, int* valid_pix, int nmax, double nclip_low, double nclip_up, int nstop, int typ_var, int mad)
 {
     char* filenames[MAX_FILES];
     char buffer[80], begin[80];
@@ -418,7 +418,7 @@ int mpdaf_merging_sigma_clipping(char* input, double* data, double* var, int* ex
                     {
                         if (!isnan(pix[i][ii]))
                         {
-                            wdata[n] = pix[i][ii]*scale[i];
+                            wdata[n] = (offset[i] + pix[i][ii]) * scale[i];
                             files_id[n] = i;
                             indx[n] = n;
                             if (typ_var==0)

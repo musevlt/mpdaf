@@ -167,8 +167,11 @@ class TestCubeList(unittest.TestCase):
 
     @pytest.mark.skipif(not HAS_CFITSIO, reason="requires cfitsio")
     def test_combine_scale(self):
-        clist = CubeList(self.cubenames, scalelist=[2.] * self.ncubes)
-        combined_cube = np.full(self.shape, 2 * 2, dtype=float)
+        clist = CubeList(self.cubenames, scalelist=[2.] * self.ncubes,
+                         offsetlist=[2.] * self.ncubes)
+        combined_cube = np.full(self.shape,
+                                np.mean((np.array(self.cubevals) + 2) * 2),
+                                dtype=float)
         cube, expmap, stat_pix = clist.combine(header={'FOO': 'BAR'})
         assert_array_equal(cube.data, combined_cube)
 
@@ -182,7 +185,9 @@ class TestCubeList(unittest.TestCase):
 
         clist = CubeList(self.cubenames, scalelist=[2.] * self.ncubes,
                          offsetlist=[0.5] * self.ncubes)
-        combined_cube = np.full(self.shape, 5, dtype=float)
+        combined_cube = np.full(self.shape,
+                                np.mean((np.array(self.cubevals) + 0.5) * 2),
+                                dtype=float)
 
         cube2, expmap2, _, _ = clist.pycombine(header={'FOO': 'BAR'})
         assert_array_equal(cube2.data, combined_cube)
