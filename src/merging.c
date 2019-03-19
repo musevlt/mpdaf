@@ -136,13 +136,30 @@ int compute_loop_limits(long naxes, int* limits) {
     return EXIT_SUCCESS;
 }
 
+void report_progress(time_t *ref, long firstpix[], int limits[], float value) {
+    time_t now;
+    struct tm *info;
+    char buffer[80];
+
+    time(&now);
+    if ((value >= 0) || ((now - *ref) > 60)) {
+        *ref = now;
+        info = localtime(&now);
+        strftime(buffer, 80, "%x - %I:%M%p", info);
+        if (value < 0) {
+            value = firstpix[2] * 100.0 / (limits[1] - limits[0]);
+        }
+        printf("%s %3.1f%%\n", buffer, value);
+        fflush(stdout);
+    }
+}
+
 int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
 {
     char* filenames[MAX_FILES];
-    char buffer[80], begin[80];
     int nfiles=0;
     time_t now;
-    struct tm *info;
+    time(&now);
 
     // read input files list
     nfiles = split_files_list(input, filenames);
@@ -152,7 +169,7 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
     omp_set_num_threads(num_nthreads); // Set number of threads to use
 
     // create threads
-    #pragma omp parallel shared(filenames, nfiles, data, expmap, valid_pix, buffer, begin)
+    #pragma omp parallel shared(filenames, nfiles, data, expmap, valid_pix)
     {
 #endif
 
@@ -169,6 +186,7 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
         {
             printf("Read fits files\n");
             printf("naxes %zu %zu %zu\n", naxes[0], naxes[1], naxes[2]);
+            report_progress(&now, NULL, NULL, 0);
         }
 
         // read other files and compare that the shape is the same
@@ -234,15 +252,10 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
                     }
                 }
             }
-            #pragma omp master
-            {
-                time(&now);
-                info = localtime(&now);
-                strftime(buffer,80,"%x - %I:%M%p", info);
-                if(strcmp(buffer,begin) != 0) {
-                    printf("%s %3.1f%%\n", buffer, (firstpix[2]-limits[0])*100.0/(limits[1]-limits[0]));
-                    fflush(stdout);
-                    strcpy(begin, buffer);
+            if (firstpix[2] % 100 == 0) {
+                #pragma omp master
+                {
+                    report_progress(&now, firstpix, limits, -1);
                 }
             }
         }
@@ -265,8 +278,7 @@ int mpdaf_merging_median(char* input, double* data, int* expmap, int* valid_pix)
 #ifdef _OPENMP
     }
 #endif
-    printf("%s 100%%\n", buffer);
-    fflush(stdout);
+    report_progress(&now, NULL, NULL, 100);
     return EXIT_SUCCESS;
 }
 
@@ -292,11 +304,10 @@ int mpdaf_merging_sigma_clipping(
     )
 {
     char* filenames[MAX_FILES];
-    char buffer[80], begin[80];
     int nfiles=0;
 
     time_t now;
-    struct tm *info;
+    time(&now);
 
     printf("merging cube using mean with sigma clipping\n");
     printf("nmax = %d\n", nmax);
@@ -312,7 +323,7 @@ int mpdaf_merging_sigma_clipping(
     omp_set_num_threads(num_nthreads); // Set number of threads to use
 
     // create threads
-    #pragma omp parallel shared(filenames, nfiles, data, var, expmap, scale, valid_pix, buffer, begin, nmax, nclip_low, nclip_up, nstop, selected_pix, typ_var, mad)
+    #pragma omp parallel shared(filenames, nfiles, data, var, expmap, scale, valid_pix, nmax, nclip_low, nclip_up, nstop, selected_pix, typ_var, mad)
     {
 #endif
 
@@ -329,6 +340,7 @@ int mpdaf_merging_sigma_clipping(
         {
             printf("Read fits files\n");
             printf("naxes %zu %zu %zu\n", naxes[0], naxes[1], naxes[2]);
+            report_progress(&now, NULL, NULL, 0);
         }
 
         // read other files and compare that the shape is the same
@@ -416,7 +428,7 @@ int mpdaf_merging_sigma_clipping(
                         files_id[n] = i;
                         indx[n] = n;
                         if (typ_var==0) {
-                            wvar[n] = pixvar[i][ii]*scale[i]*scale[i];
+                            wvar[n] = pixvar[i][ii] * scale[i] * scale[i];
                         }
                         n += 1;
                         valid[i] += 1;
@@ -463,16 +475,10 @@ int mpdaf_merging_sigma_clipping(
                     }
                 }
             }
-            #pragma omp master
-            {
-                time(&now);
-                info = localtime(&now);
-                strftime(buffer,80,"%x - %I:%M%p", info);
-                if(strcmp(buffer,begin) != 0) {
-                    printf("%s %3.1f%%\n", buffer,
-                           firstpix[2] * 100.0 / (limits[1] - limits[0]));
-                    fflush(stdout);
-                    strcpy(begin, buffer);
+            if (firstpix[2] % 100 == 0) {
+                #pragma omp master
+                {
+                    report_progress(&now, firstpix, limits, -1);
                 }
             }
         }
@@ -506,7 +512,6 @@ int mpdaf_merging_sigma_clipping(
 #ifdef _OPENMP
     }
 #endif
-    printf("%s 100%%\n", buffer);
-    fflush(stdout);
+    report_progress(&now, NULL, NULL, 100);
     return EXIT_SUCCESS;
 }
