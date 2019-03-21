@@ -790,9 +790,9 @@ class Source:
         excluded_cards = {'SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE',
                           'AUTHOR'}
 
-        for key in self.header.keys():
-            if key not in excluded_cards:
-                info(self.header.cards[key])
+        for card in self.header.cards:
+            if card.keyword not in excluded_cards:
+                info(card)
 
         for attr in (self.spectra, self.images, self.cubes, self.tables):
             info(repr(attr))
