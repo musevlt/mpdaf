@@ -81,6 +81,7 @@ else:
         array_1d_double,  # double* var
         array_1d_int,     # int* expmap
         array_1d_double,  # double* scale
+        array_1d_double,  # double* offset
         array_1d_int,     # int* selected_pix
         array_1d_int,     # int* valid_pix
         ctypes.c_int,     # int nmax
