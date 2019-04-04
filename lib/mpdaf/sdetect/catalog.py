@@ -67,7 +67,7 @@ class Catalog(Table):
 
     # These are default column names to be used if not provided by metadata.
     # They are not stored in the meta directly, and therefore not written when
-    # the catalog is writen to disk.
+    # the catalog is written to disk.
     _idname_default = 'ID'
     _raname_default = 'RA'
     _decname_default = 'DEC'
@@ -96,7 +96,7 @@ class Catalog(Table):
         if self.masked:
             self.masked_invalid()
 
-        # replace Table.meta OrderedDict with a case insenstive version
+        # replace Table.meta OrderedDict with a case insensitive version
         self.meta = LowercaseOrderedDict(self.meta)
 
         # set column names in metadata

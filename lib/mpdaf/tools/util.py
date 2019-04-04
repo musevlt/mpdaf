@@ -145,13 +145,13 @@ def all_subclasses(cls):
         [s for c in cls.__subclasses__() for s in all_subclasses(c)])
 
 
-# Here we inherit unncessarily from OrderDict.
-# This is because when mergy astropy.table.Table() objects, an explisit check
-# for the metadata object is a <dict> instance
+# Here we inherit unnecessarily from OrderedDict.
+# This is because when merging astropy.table.Table() objects, an explicit
+# check for the metadata object is a <dict> instance
 class LowercaseOrderedDict(MutableMapping, OrderedDict):
-    """Ordered dictonary where all strings keys are case insensitive.
+    """Ordered dictionary where all strings keys are case insensitive.
     i.e. keys such as 'abc', 'ABC', 'Abc' all map to the same value.
-    This can be useful for mimicing the storage of FITS headers.
+    This can be useful for mimicking the storage of FITS headers.
 
     """
     def __init__(self, *args):
@@ -190,3 +190,6 @@ class LowercaseOrderedDict(MutableMapping, OrderedDict):
         # MutableMapping pops the first item, whereas OrderedDict pops the last
         # We implement the latter.
         return self._d.popitem(last)
+
+    def copy(self):
+        return self.__class__(self)
