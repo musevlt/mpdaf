@@ -787,6 +787,7 @@ def test_align_with_image(hdfs_muse_image, hdfs_hst_image):
     im = hst.align_with_image(muse)
 
     assert im.wcs.isEqual(muse.wcs)
+    assert not im.wcs.isEqual(muse.wcs, start_atol=1e-12)
     assert im.shape == muse.shape
 
     dy, dx = im.estimate_coordinate_offset(muse)
