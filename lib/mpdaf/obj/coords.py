@@ -781,15 +781,18 @@ class WCS:
         """
         if not isinstance(other, WCS):
             return False
-        return (
-            self.sameStep(other) and
-            self.naxis1 == other.naxis1 and
-            self.naxis2 == other.naxis2 and
-            np.allclose(self.get_start(), other.get_start(),
-                        atol=start_atol, rtol=0) and
-            np.allclose(self.get_rot(), other.get_rot(),
-                        atol=rot_atol, rtol=0)
-        )
+        if not self.sameStep(other):
+            return False
+        if self.naxis1 != other.naxis1 or self.naxis2 != other.naxis2:
+            return False
+        if not np.allclose(self.get_start(), other.get_start(),
+                           atol=start_atol, rtol=0):
+            return False
+        if not np.allclose(self.get_rot(), other.get_rot(),
+                           atol=rot_atol, rtol=0):
+            return False
+
+        return True
 
     def sameStep(self, other):
         """Return True if other and self have the same pixel sizes.
