@@ -757,7 +757,7 @@ class WCS:
 
         return np.array([dec, ra]).T
 
-    def isEqual(self, other):
+    def isEqual(self, other, start_atol=1e-6, rot_atol=1e-6):
         """Return True if other and self have the same attributes.
 
         Beware that if the two wcs objects have the same world coordinate
@@ -768,6 +768,10 @@ class WCS:
         ----------
         other : WCS
             The wcs object to be compared to self.
+        start_atol : float
+            Absolute tolerance for the test with `WCS.get_start`, in degrees.
+        start_rot : float
+            Absolute tolerance for the test with `WCS.get_rot`, in degrees.
 
         Returns
         -------
@@ -777,14 +781,18 @@ class WCS:
         """
         if not isinstance(other, WCS):
             return False
+        if not self.sameStep(other):
+            return False
+        if self.naxis1 != other.naxis1 or self.naxis2 != other.naxis2:
+            return False
+        if not np.allclose(self.get_start(), other.get_start(),
+                           atol=start_atol, rtol=0):
+            return False
+        if not np.allclose(self.get_rot(), other.get_rot(),
+                           atol=rot_atol, rtol=0):
+            return False
 
-        return (self.sameStep(other) and
-                self.naxis1 == other.naxis1 and
-                self.naxis2 == other.naxis2 and
-                np.allclose(self.get_start(), other.get_start(),
-                            atol=1E-3, rtol=0) and
-                np.allclose(self.get_rot(), other.get_rot(),
-                            atol=1E-3, rtol=0))
+        return True
 
     def sameStep(self, other):
         """Return True if other and self have the same pixel sizes.
