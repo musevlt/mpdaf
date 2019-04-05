@@ -175,12 +175,14 @@ class FSFModel:
             return FSFMultiModel.from_header(hdr, pixstep, nfields=nfields)
         else:
             klass = find_model_cls(hdr)
-            if field is None:
-                field = 0
-            try:
+            if field is not None:
                 return klass.from_header(hdr, pixstep, field=field)
-            except ValueError:
-                return klass.from_header(hdr, pixstep, field=99)
+            else:
+                for field in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 99):
+                    try:
+                        return klass.from_header(hdr, pixstep, field=field)
+                    except ValueError:
+                        pass
 
     @classmethod
     def from_header(cls, hdr, pixstep, field=0):
