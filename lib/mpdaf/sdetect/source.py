@@ -1270,8 +1270,8 @@ class Source:
             # FSF
             ksel = np.where(w != 0)
             if len(ksel[0]) == 1:  # only one field
-                idx = ksel[0][0] + 1
-                self.header.update(fsfmodel[idx].to_header(field_idx=idx))
+                idx = ksel[0][0]
+                self.header.update(fsfmodel[idx].to_header(field_idx=idx + 1))
             else:  # several fields
                 shape = (13, 13)
                 step = cube.wcs.get_step(unit=u.arcsec)[0]
@@ -1301,7 +1301,13 @@ class Source:
     def get_FSF(self):
         """Return the FSF keywords if available in the FITS header."""
         try:
-            fsfmodel = FSFModel.read(self.header)
+            white = self.images['MUSE_WHITE']
+            pixstep = white.wcs.get_step(unit=u.arcsec)[0]
+        except Exception:
+            pixstep = None
+
+        try:
+            fsfmodel = FSFModel.read(self.header, pixstep=pixstep)
         except ValueError:
             # no model found
             return
