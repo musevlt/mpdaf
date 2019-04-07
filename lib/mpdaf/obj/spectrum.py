@@ -2335,9 +2335,9 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         """
         try:
-            from pyPLATEFIT import fit_mpdaf_spectrum
+            from pyplatefit import fit_mpdaf_spectrum
         except ImportError:
-            raise ImportError("You need to install pyPLATEFIT.")
+            raise ImportError("You need to install pyplatefit.")
 
         return fit_mpdaf_spectrum(self, redshift=redshift, **kwargs)
 
