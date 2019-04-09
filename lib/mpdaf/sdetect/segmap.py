@@ -189,8 +189,6 @@ def struct_from_moffat_fwhm(wcs, fwhm, psf_threshold=0.5, beta=2.5):
     # image size will be twice the full-width, to account for
     # psf_threshold < 0.5
     size = int(round(fwhm / wcs.get_step(u.arcsec)[0])) * 2 + 1
-    if size % 2 == 0:
-        size += 1
 
     psf = moffat_image(fwhm=(fwhm, fwhm), n=beta, peak=True,
                        wcs=wcs[:size, :size])
@@ -207,8 +205,6 @@ def _get_psf_convolution_params(convolve_fwhm, segmap, psf_threshold):
         # compute a structuring element for the dilatation, to simulate
         # a convolution with a psf, but faster.
         dilateit = 1
-        # logging.getLogger(__name__).debug(
-        #     'dilate with %d iterations, psf=%.2f', dilateit, convolve_fwhm)
         struct = struct_from_moffat_fwhm(segmap.img.wcs, convolve_fwhm,
                                          psf_threshold=psf_threshold)
     else:

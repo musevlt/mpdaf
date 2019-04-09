@@ -22,6 +22,9 @@ def test_segmap():
 
     assert_array_equal(segmap.copy().img.data, segmap.img.data)
 
+    cmap = segmap.cmap()
+    assert cmap.N == 14  # nb of values in the segmap
+
 
 def test_align_segmap():
     segmap = Segmap(get_data_file('segmap', 'segmap.fits'))
@@ -31,17 +34,23 @@ def test_align_segmap():
     assert (aligned.img.wcs.get_rot() - ref.wcs.get_rot()) < 1e-3
 
 
+def test_cut_header():
+    segmap = Segmap(get_data_file('segmap', 'segmap.fits'),
+                    cut_header_after='NAXIS2')
+    assert 'RADESYS' not in segmap.img.primary_header
+    assert 'RADESYS' not in segmap.img.data_header
+
+
 def test_create_masks(tmpdir):
     segfile = get_data_file('segmap', 'segmap.fits')
     reffile = get_data_file('segmap', 'image.fits')
     catalog = get_data_file('segmap', 'catalog.fits')
 
     create_masks_from_segmap(
-        segfile, catalog, reffile, n_jobs=1, skip_existing=True,
+        segfile, catalog, reffile, n_jobs=1,
         masksky_name=str(tmpdir.join('mask-sky.fits')),
         maskobj_name=str(tmpdir.join('mask-source-%05d.fits')),
-        idname='id', raname='ra', decname='dec', margin=5, mask_size=(10, 10),
-        convolve_fwhm=0)
+        idname='id', raname='ra', decname='dec', margin=5, mask_size=(10, 10))
 
     assert len(glob(str(tmpdir.join('mask-source*')))) == 13
     assert len(glob(str(tmpdir.join('mask-sky*')))) == 1
@@ -50,6 +59,15 @@ def test_create_masks(tmpdir):
     assert mask.shape == (50, 50)
     assert mask.sum() == 56
 
+    # test skip_existing
+    create_masks_from_segmap(
+        segfile, catalog, reffile, n_jobs=1, skip_existing=True,
+        masksky_name=str(tmpdir.join('mask-sky.fits')),
+        maskobj_name=str(tmpdir.join('mask-source-%05d.fits')),
+        idname='id', raname='ra', decname='dec', margin=5, mask_size=(10, 10),
+        convolve_fwhm=0)
+
+    # test convolve_fwhm
     create_masks_from_segmap(
         segfile, catalog, reffile, n_jobs=1, skip_existing=True,
         masksky_name=str(tmpdir.join('mask2-sky.fits')),
