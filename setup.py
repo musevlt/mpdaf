@@ -231,7 +231,7 @@ setup(
     setup_requires=['numpy>=1.10.0'],
     install_requires=['numpy>=1.10.0', 'scipy', 'matplotlib', 'astropy>=1.0'],
     extras_require={
-        'all': ['numexpr', 'fitsio', 'adjustText'],
+        'all': ['numexpr', 'fitsio', 'adjustText', 'joblib', 'tqdm'],
     },
     tests_require=['pytest'],
     package_dir={'': 'lib'},
