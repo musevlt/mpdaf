@@ -36,3 +36,4 @@ from .source import *
 from .linelist import *
 from .muselet import muselet
 from .sea import *
+from .segmap import *
