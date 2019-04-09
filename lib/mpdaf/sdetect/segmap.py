@@ -235,9 +235,9 @@ def create_masks_from_segmap(
         Number of parallel processes (for joblib).
     skip_existing: bool
         If True, skip sources for which the mask file exists.
-    masksky_name: str
+    masksky_name: str or callable
         The filename for the sky mask.
-    maskobj_name: str
+    maskobj_name: str or callable
         The filename for the source masks, with a format string that will be
         substituted with the ID, e.g. ``%05d``.
     idname, raname, decname: str
@@ -272,12 +272,13 @@ def create_masks_from_segmap(
                                                    psf_threshold)
 
     # create sky mask
-    if exists(masksky_name) and skip_existing:
+    masksky = masksky_name() if callable(masksky_name) else masksky_name
+    if exists(masksky) and skip_existing:
         logger.debug('sky mask exists, skipping')
     else:
         logger.debug('creating sky mask')
         segm.get_mask(0, inverse=True, dilate=dilateit, struct=struct,
-                      regrid_to=ref_image, outname=masksky_name)
+                      regrid_to=ref_image, outname=masksky)
 
     # extract source masks
     minsize = 0.
@@ -286,7 +287,8 @@ def create_masks_from_segmap(
 
     for row in catalog:
         id_ = int(row[idname])  # need int, not np.int64
-        source_path = maskobj_name % id_
+        source_path = (maskobj_name(id_) if callable(maskobj_name)
+                       else maskobj_name % id_)
         if skip_existing and exists(source_path):
             stats['skipped'].append(id_)
         else:

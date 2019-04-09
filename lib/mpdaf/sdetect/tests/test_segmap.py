@@ -76,11 +76,12 @@ def test_create_masks(tmpdir):
         idname='id', raname='ra', decname='dec', margin=5, mask_size=(10, 10),
         convolve_fwhm=0)
 
-    # test convolve_fwhm
+    # test convolve_fwhm and callables for mask filenames
+    masksky_func = lambda: str(tmpdir.join('mask2-sky.fits'))
+    maskobj_func = lambda x: str(tmpdir.join('mask2-source-%05d.fits' % x))
     create_masks_from_segmap(
         segfile, catalog, reffile, n_jobs=1, skip_existing=True,
-        masksky_name=str(tmpdir.join('mask2-sky.fits')),
-        maskobj_name=str(tmpdir.join('mask2-source-%05d.fits')),
+        masksky_name=masksky_func, maskobj_name=maskobj_func,
         idname='id', raname='ra', decname='dec', margin=5, mask_size=(10, 10),
         convolve_fwhm=1, psf_threshold=0.5)
 
