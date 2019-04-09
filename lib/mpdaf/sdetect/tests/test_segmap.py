@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from astropy.io import fits
 from glob import glob
@@ -6,6 +7,13 @@ from mpdaf.obj import Image
 from mpdaf.sdetect import Segmap, create_masks_from_segmap
 from mpdaf.tests.utils import get_data_file
 from numpy.testing import assert_array_equal
+
+try:
+    import joblib  # noqa
+except ImportError:
+    HAS_JOBLIB = False
+else:
+    HAS_JOBLIB = True
 
 
 def test_segmap():
@@ -41,6 +49,7 @@ def test_cut_header():
     assert 'RADESYS' not in segmap.img.data_header
 
 
+@pytest.mark.skipif(not HAS_JOBLIB, reason="requires joblib")
 def test_create_masks(tmpdir):
     segfile = get_data_file('segmap', 'segmap.fits')
     reffile = get_data_file('segmap', 'image.fits')
