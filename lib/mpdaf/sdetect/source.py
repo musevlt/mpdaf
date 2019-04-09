@@ -116,19 +116,19 @@ TABLES_SCHEMA = {
         'Z': {
             'description': 'Estimated redshift',
             'format': '.4f',
-            'unit': '', #dimensionless_unscaled
+            'unit': '',  # dimensionless_unscaled
             'dtype': 'f8'
         },
         'Z_MIN': {
             'description': 'Lower bound of estimated redshift',
             'format': '.4f',
-            'unit': '', #dimensionless_unscaled
+            'unit': '',  # dimensionless_unscaled
             'dtype': 'f8'
         },
         'Z_MAX': {
             'description': 'Upper bound of estimated redshift',
             'format': '.4f',
-            'unit': '', #dimensionless_unscaled
+            'unit': '',  # dimensionless_unscaled
             'dtype': 'f8'
         },
         'Z_DESC': {
@@ -241,7 +241,7 @@ def crackz(nlines, wl, flux, eml, zguess=None):
 
     """
     errmin = 3.0
-    found=0
+    found = 0
 
     lnames = np.array(list(eml.values()))
     lbdas = np.array(list(eml.keys()))
@@ -254,16 +254,16 @@ def crackz(nlines, wl, flux, eml, zguess=None):
     if zguess:
         (error, jfound) = matchlines(nlines, wl, zguess, eml)
         if(error < errmin):
-             return zguess, -9999.0, 1, wl, flux, list(lnames[jfound[0]])
+            return zguess, -9999.0, 1, wl, flux, list(lnames[jfound[0]])
         else:
-             return zguess, -9999.0, 1, [], [], []
+            return zguess, -9999.0, 1, [], [], []
 
-    #test all redshift combinations
+    # test all redshift combinations
     for n in range(nlines):
         for p in range(lbdas.shape[0]):
-            ztest=wl[n]/lbdas[p]-1.0
-            if(ztest>=0):
-                (error,jfound)=matchlines(nlines,wl,ztest,eml)
+            ztest = wl[n] / lbdas[p] - 1.0
+            if(ztest >= 0):
+                (error, jfound) = matchlines(nlines, wl, ztest, eml)
                 if(error < errmin):
                     errmin = error
                     found = 1
@@ -272,7 +272,7 @@ def crackz(nlines, wl, flux, eml, zguess=None):
     if(found == 1):
         jfinal = np.array(jfinal).astype(int)
         return zfound, errmin / np.min(lbdas[jfinal]), nlines, \
-                wl, flux, list(lnames[jfinal[0:nlines]])
+            wl, flux, list(lnames[jfinal[0:nlines]])
     else:
         if(nlines > 3):
             # keep the three brightest
@@ -287,9 +287,6 @@ def crackz(nlines, wl, flux, eml, zguess=None):
             ksel = np.argsort(flux)[-1]
             return crackz(1, [wl[ksel]], [flux[ksel]], eml)
         return -9999.0, -9999.0, 0, [], [], []
-
-
-
 
 
 def _mask_invalid(tables):
@@ -1904,7 +1901,7 @@ class Source:
                                        description='line name')
                     self.lines.add_column(col)
                 for w, name in zip(wl, lnames):
-                    self.lines['LINE'][np.where(abs(self.lines[col_lbda]-w)<0.01)] = name
+                    self.lines['LINE'][np.where(abs(self.lines[col_lbda] - w) < 0.01)] = name
                 self._logger.info('crack_z: lines')
                 for l in self.lines.pformat():
                     self._logger.info(l)
