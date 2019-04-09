@@ -40,9 +40,16 @@ import warnings
 
 from astropy.utils import minversion
 from mpdaf.tools.util import (chdir, deprecated, broadcast_to_cube, timeit,
-                              timer)
+                              timer, isiter, progressbar)
 
 PYTEST_LT_3_3 = not minversion('pytest', '3.3')
+
+try:
+    import tqdm
+except ImportError:
+    HAS_TQDM = False
+else:
+    HAS_TQDM = True
 
 
 def test_chdir(tmpdir):
@@ -106,3 +113,17 @@ def test_timer(caplog):
 
     assert out == 'a'
     assert re.search(r'Request took 0.1\d\d sec.', caplog.text) is not None
+
+
+def test_isiter():
+    assert isiter([])
+    assert isiter((1, 2, 3))
+    assert not isiter(1)
+    assert isiter(np.array([1, 2, 3]))
+
+
+@pytest.mark.skipif(not HAS_TQDM, reason="requires tqdm")
+def test_progressbar():
+    bar = progressbar([1, 2, 3])
+    assert isinstance(bar, tqdm.tqdm)
+    assert next(iter(bar)) == 1

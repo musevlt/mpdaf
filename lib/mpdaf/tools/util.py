@@ -48,7 +48,7 @@ from time import time
 
 __all__ = ('MpdafWarning', 'MpdafUnitsWarning', 'deprecated', 'chdir',
            'timeit', 'timer', 'broadcast_to_cube', 'LowercaseOrderedDict',
-           'all_subclasses')
+           'all_subclasses', 'isiter', 'isnotebook', 'progressbar')
 
 
 # NOTE(kgriffs): We don't want our deprecations to be ignored by default,
@@ -143,6 +143,37 @@ def all_subclasses(cls):
     """Return a set of subclasses of a given cls."""
     return set(cls.__subclasses__()).union(
         [s for c in cls.__subclasses__() for s in all_subclasses(c)])
+
+
+def isiter(val):
+    """Return True is val is iterable."""
+    try:
+        iter(val)
+    except TypeError:
+        return False
+    else:
+        return True
+
+
+def isnotebook():  # pragma: no cover
+    """Detect if running inside a jupyter notebook."""
+    try:
+        shell = get_ipython().__class__.__name__
+        if shell == 'ZMQInteractiveShell':
+            return True   # Jupyter notebook or qtconsole
+        elif shell == 'TerminalInteractiveShell':
+            return False  # Terminal running IPython
+        else:
+            return False  # Other type (?)
+    except NameError:
+        return False      # Probably standard Python interpreter
+
+
+def progressbar(*args, **kwargs):
+    """Wrapper for tqdm progress bar, with notebook detection."""
+    from tqdm import tqdm, tqdm_notebook
+    func = tqdm_notebook if isnotebook() else tqdm
+    return func(*args, **kwargs)
 
 
 # Here we inherit unnecessarily from OrderedDict.
