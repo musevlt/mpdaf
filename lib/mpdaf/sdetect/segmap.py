@@ -257,15 +257,16 @@ def create_masks_from_segmap(
     from joblib import delayed, Parallel
 
     logger = logging.getLogger(__name__)
-    segmap_img = Segmap(segmap)
-    logger.info('Aligning segmap with reference image')
 
     if isinstance(ref_image, str):
         ref_image = Image(ref_image)
     if isinstance(catalog, str):
         catalog = Catalog.read(catalog)
+    if not isinstance(segmap, Segmap):
+        segmap = Segmap(segmap)
 
-    segm = segmap_img.align_with_image(ref_image, truncate=True, margin=margin)
+    logger.info('Aligning segmap with reference image')
+    segm = segmap.align_with_image(ref_image, truncate=True, margin=margin)
 
     dilateit, struct = _get_psf_convolution_params(convolve_fwhm, segm,
                                                    psf_threshold)
