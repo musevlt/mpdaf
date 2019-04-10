@@ -3,6 +3,9 @@
 
 Development version, not released yet.
 
+- The `WaveCoord.coord` now accepts a medium to force getting the air or vacuum
+  wavelength coordinates.
+
 
 3.1 (03/04/2019)
 ----------------
