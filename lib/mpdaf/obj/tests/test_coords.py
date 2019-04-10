@@ -36,7 +36,9 @@ import numpy as np
 from astropy import wcs as pywcs
 from astropy.io import fits
 from mpdaf.obj import WCS, WaveCoord, deg2sexa, sexa2deg, determine_refframe
+from mpdaf.obj.spectrum import airtovac, vactoair
 from numpy.testing import assert_allclose, assert_array_equal
+import pytest
 
 from mpdaf.tests.utils import get_data_file
 
@@ -159,6 +161,29 @@ class TestWaveCoord:
         wave = WaveCoord(crval=0, cunit=u.nm, shape=10)
         wave2 = wave.copy()
         assert wave.isEqual(wave2)
+
+    def test_coord(self):
+        """WaveCoord class: testing getting the coordinates"""
+        wave = WaveCoord(crval=0, cunit=u.nm, shape=10)
+        # By default the CTYPE is LINEAR and can't be converted to air or
+        # vacuum.
+        with pytest.raises(ValueError):
+            wave.coord(medium='air')
+        with pytest.raises(ValueError):
+            wave.coord(medium='vacuum')
+        wave.wcs.wcs.ctype = ['WAVE']
+        with pytest.raises(ValueError):
+            # Unknown parameter value
+            wave.coord(medium='vacuu')
+        np.testing.assert_array_equal(
+            wave.coord(medium='vacuum'), np.arange(10))
+        np.testing.assert_array_equal(
+            wave.coord(medium='air'), vactoair(np.arange(10)))
+        wave.wcs.wcs.ctype = ['AWAV']
+        np.testing.assert_array_equal(
+            wave.coord(medium='air'), np.arange(10))
+        np.testing.assert_array_equal(
+            wave.coord(medium='vacuum'), airtovac(np.arange(10)))
 
     def test_coord_transform(self):
         """WaveCoord class: testing coordinates transformations"""

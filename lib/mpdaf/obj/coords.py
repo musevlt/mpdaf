@@ -1640,7 +1640,7 @@ class WaveCoord:
                             atol=1E-2, rtol=0) and
                 self.wcs.wcs.ctype[0] == other.wcs.wcs.ctype[0])
 
-    def coord(self, pixel=None, unit=None):
+    def coord(self, pixel=None, unit=None, medium=None):
         """Return the coordinate corresponding to pixel.
 
         If pixel is None (default value), the full coordinate array is
@@ -1649,9 +1649,13 @@ class WaveCoord:
         Parameters
         ----------
         pixel : int, array or None.
-            pixel value.
+            Pixel value.
         unit : `astropy.units.Unit`
-            type of the wavelength coordinates
+            Unit of the wavelength coordinates
+        medium : str or None
+            Medium in which the wavelengths are returned: 'air' or 'vacuum'.
+            If None (default), the wavelength corresponding to the spectrum
+            CTYPE are returned.
 
         Returns
         -------
@@ -1669,7 +1673,25 @@ class WaveCoord:
         res = self.wcs.wcs_pix2world(pixelarr, 0)[0]
         if unit is not None:
             res = (res * self.unit).to(unit).value
-        return res[0] if np.isscalar(pixel) else res
+
+        result = res[0] if np.isscalar(pixel) else res
+
+        if medium is not None:
+            if medium not in ['air', 'vacuum']:
+                raise ValueError("Unknown 'medium' parameter value.")
+            ctype = self.wcs.wcs.ctype[0]  # Wave type
+            if ctype[:4] not in ['WAVE', 'AWAV']:
+                raise ValueError("No method to convert from %s to %s." %
+                                 (ctype, medium))
+
+            from .spectrum import airtovac, vactoair  # To avoid circ. import
+
+            if medium == "air" and ctype.startswith("WAVE"):
+                result = vactoair(result)
+            elif medium == "vacuum" and ctype.startswith("AWAV"):
+                result = airtovac(result)
+
+        return result
 
     def pixel(self, lbda, nearest=False, unit=None):
         """Return the decimal pixel corresponding to the wavelength lbda.
