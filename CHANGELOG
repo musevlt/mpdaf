@@ -3,8 +3,8 @@
 
 Development version, not released yet.
 
-- The `WaveCoord.coord` now accepts a `medium` parameter to force getting the
-  air or the vacuum wavelength coordinates.
+- The `WaveCoord.coord` now accepts a ``medium`` parameter to force getting the
+  air or the vacuum wavelength coordinates. [!167]
 
 
 3.1 (03/04/2019)
