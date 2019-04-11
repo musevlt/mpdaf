@@ -166,9 +166,6 @@ pixels can be adjusted to account for relative pointing errors:
   # Resample the HST image onto the coordinate grid of the MUSE image
   In [3]: ima2hst = imahst.align_with_image(ima)
 
-  # Adjust the relative pointing of the MUSE image.
-  In [4]: ima2hst = ima2hst.adjust_coordinates(ima)
-
   In [5]: plt.figure()
 
   @savefig Image5.png width=3.5in
