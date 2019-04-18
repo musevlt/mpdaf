@@ -166,6 +166,7 @@ def get_emlines(iden=None, z=0, vac=True, lbrange=None, margin=25, sel=None,
         if restframe:
             lbda = em['c'] * (1 + z)
             em = em[lbda - margin >= lbrange[0]]
+            lbda = em['c'] * (1 + z)
             em = em[lbda + margin <= lbrange[1]]
         else:
             em = em[em['c'] - margin >= lbrange[0]]
