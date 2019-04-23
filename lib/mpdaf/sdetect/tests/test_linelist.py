@@ -38,10 +38,10 @@ from mpdaf.sdetect import get_emlines, z_from_linepos
 
 def test_linelist():
     em = get_emlines()
-    assert len(em) == 54
+    assert len(em) == 59
 
     em = get_emlines(doublet=True, z=3.0, vac=False)
-    assert len(em) == 6
+    assert len(em) == 10
 
     em = get_emlines(z=0, vac=False, lbrange=(4750, 9350), margin=20, sel=0,
                      ltype='is')
