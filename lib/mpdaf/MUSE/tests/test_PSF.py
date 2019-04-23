@@ -67,6 +67,7 @@ def test_create_psf_cube():
     assert np.allclose(res.flux, 1.0, atol=1e-2)
 
 
+@pytest.mark.filterwarnings("ignore:Call to deprecated function")
 def test_get_FSF_from_cube_keywords():
     cube = Cube(get_data_file('sdetect', 'minicube.fits'))
     with pytest.raises(ValueError):

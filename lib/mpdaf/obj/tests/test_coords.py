@@ -164,7 +164,7 @@ class TestWaveCoord:
 
     def test_coord(self):
         """WaveCoord class: testing getting the coordinates"""
-        wave = WaveCoord(crval=0, cunit=u.nm, shape=10)
+        wave = WaveCoord(crval=1, cunit=u.nm, shape=10)
         # By default the CTYPE is LINEAR and can't be converted to air or
         # vacuum.
         with pytest.raises(ValueError):
@@ -175,15 +175,13 @@ class TestWaveCoord:
         with pytest.raises(ValueError):
             # Unknown parameter value
             wave.coord(medium='vacuu')
-        np.testing.assert_array_equal(
-            wave.coord(medium='vacuum'), np.arange(10))
-        np.testing.assert_array_equal(
-            wave.coord(medium='air'), vactoair(np.arange(10)))
+
+        refcoord = np.arange(10) + 1
+        assert_array_equal(wave.coord(medium='vacuum'), refcoord)
+        assert_array_equal(wave.coord(medium='air'), vactoair(refcoord))
         wave.wcs.wcs.ctype = ['AWAV']
-        np.testing.assert_array_equal(
-            wave.coord(medium='air'), np.arange(10))
-        np.testing.assert_array_equal(
-            wave.coord(medium='vacuum'), airtovac(np.arange(10)))
+        assert_array_equal(wave.coord(medium='air'), refcoord)
+        assert_array_equal(wave.coord(medium='vacuum'), airtovac(refcoord))
 
     def test_coord_transform(self):
         """WaveCoord class: testing coordinates transformations"""
@@ -194,7 +192,7 @@ class TestWaveCoord:
         wave2 = np.arange(10)
         pixel = wave.pixel(wave.coord(wave2, unit=u.nm), nearest=True,
                            unit=u.nm)
-        np.testing.assert_array_equal(pixel, wave2)
+        assert_array_equal(pixel, wave2)
 
         pix = np.arange(wave.shape, dtype=float)
         np.testing.assert_allclose(wave.pixel(wave.coord(unit=u.nm),

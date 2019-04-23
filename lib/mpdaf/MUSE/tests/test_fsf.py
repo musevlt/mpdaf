@@ -4,6 +4,7 @@ from astropy.io import fits
 from mpdaf.obj import Cube
 from mpdaf.MUSE import get_FSF_from_cube_keywords, FSFModel
 from mpdaf.MUSE.fsf import find_model_cls, OldMoffatModel, MoffatModel2
+from mpdaf.tools import MpdafWarning
 from mpdaf.tests.utils import get_data_file
 from numpy.testing import assert_allclose
 
@@ -31,7 +32,8 @@ def test_fsf_model(tmpdir):
     cube = Cube(cubename)
 
     # Read FSF model with the old method
-    PSF, fwhm_pix, fwhm_arcsec = get_FSF_from_cube_keywords(cube, 13)
+    with pytest.warns(MpdafWarning):
+        PSF, fwhm_pix, fwhm_arcsec = get_FSF_from_cube_keywords(cube, 13)
 
     # Read FSF model from file
     fsf = FSFModel.read(cubename)
