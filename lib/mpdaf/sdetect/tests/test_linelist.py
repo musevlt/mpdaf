@@ -32,20 +32,21 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
+import pytest
 from numpy.testing import assert_allclose
 from mpdaf.sdetect import get_emlines, z_from_linepos
 
 
 def test_linelist():
-    em = get_emlines()
-    assert len(em) == 59
-
-    em = get_emlines(doublet=True, z=3.0, vac=False)
-    assert len(em) == 10
+    assert len(get_emlines()) == 59
+    assert len(get_emlines(family=1)) == 9
+    assert len(get_emlines(doublet=True, z=3.0, vac=False)) == 10
+    assert get_emlines(iden='FOO') is None
 
     em = get_emlines(z=0, vac=False, lbrange=(4750, 9350), margin=20, sel=0,
                      ltype='is')
     assert len(em) == 2
+    assert em['id'].tolist() == ['MGB', 'NAD']
 
 
 def test_restframe():
@@ -53,6 +54,12 @@ def test_restframe():
     assert_allclose(em[1], 1215.67)
     em = get_emlines(iden='LYALPHA', z=3.0, restframe=False)[0]
     assert_allclose(em[1], 4862.68)
+
+    em = get_emlines(z=1, vac=False, lbrange=(4750, 9350), margin=20, sel=0,
+                     ltype='is', restframe=True)
+    assert len(em) == 6
+    assert em['id'].tolist() == ['FEII2587', 'FEII2600', 'MGI2853', 'CAK',
+                                 'CAH', 'CAG']
 
 
 def test_table():
@@ -67,6 +74,9 @@ def test_table():
 
 def test_z_linepos():
     assert_allclose(z_from_linepos(iden='LYALPHA', wavelength=4862.68), 3)
+
+    with pytest.raises(ValueError):
+        z_from_linepos(iden='FOO', wavelength=4862.68)
 
 
 def test_z_linepos_air():
