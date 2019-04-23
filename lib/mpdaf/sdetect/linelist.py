@@ -50,20 +50,20 @@ __all__ = ['get_emlines', 'z_from_linepos']
 emlines = np.array([
     ('LYALPHA',  1215.67, 1204.00, 1226.00, 'em', 1,      0, 3, "Lyα"),
     ('SiII1260', 1260.42, None,    None,    'is', 0,      0, 0, "Siɪɪ"),
-    ('OI1302',   1302.17, None,    None,    'is', 0,      0, 0, "Oɪ"), 
+    ('OI1302',   1302.17, None,    None,    'is', 0,      0, 0, "Oɪ"),
     ('SIII1304', 1304.37, None,    None,    'is', 0,      0, 0, "Siɪɪ"),
     ('CII1334',  1334.53, None,    None,    'is', 0,      0, 0, "Cɪɪ"),
     ('SIIV1394', 1393.76, 1393.76, 1393.76, 'is', 0,      0, 0, None), # SiIV
-    ('SIIV1403', 1402.77, 1402.77, 1402.77, 'is', 0,      0, 0, "Siɪᴠ"),  
+    ('SIIV1403', 1402.77, 1402.77, 1402.77, 'is', 0,      0, 0, "Siɪᴠ"),
     ('CIV1548',  1548.20, None,    None,    'em', 1, 1549.5, 2, None), #CIV
-    ('CIV1551',  1550.77, None,    None,    'em', 1, 1549.5, 2, "Cɪᴠ"),  
+    ('CIV1551',  1550.77, None,    None,    'em', 1, 1549.5, 2, "Cɪᴠ"),
     ('FEII1608', 1608.45, None,    None,    'is', 0,      0, 0, None), #FeII
     ('FEII1611', 1611.20, None,    None,    'is', 0,      0, 0, "Feɪɪ"),
     ('HEII1640', 1640.42, 1630.0, 1651.0,   'em', 0,      0, 2, "Heɪɪ"),
-    ('OIII1666', 1666.15, None,    None,    'em', 0,      0, 2, "Oɪɪɪ]"),    
+    ('OIII1666', 1666.15, None,    None,    'em', 0,      0, 2, "Oɪɪɪ]"),
     ('ALII1671', 1670.79, None,    None,    'is', 0,      0, 0, "Alɪɪ"),
     ('AL1854',   1854.10, None,    None,    'is', 0,      0, 0, None), #AlIII
-    ('AL1862',   1862.17, None,    None,    'is', 0,      0, 0, "Alɪɪɪ"), 
+    ('AL1862',   1862.17, None,    None,    'is', 0,      0, 0, "Alɪɪɪ"),
     ('CIII1907', 1906.68, 1896.0, 1920.0,   'em', 1, 1907.7, 2, None), #CIII]
     ('CIII1909', 1908.73, 1898.0, 1920.0,   'em', 1, 1907.7, 2, "Cɪɪɪ]"),
     ('CII2326',  2326.00, None,    None,    'em', 0,      0, 2, "Cɪɪ]"),
@@ -76,7 +76,7 @@ emlines = np.array([
     ('FEII2600', 2600.17, 2590.0, 2610.0,   'is', 0,      0, 0, "Feɪɪ"),
     ('MGII2796', 2796.35, 2786.0, 2806.0,   'em', 0, 2800.0, 3, None), #MgII
     ('MGII2803', 2803.53, 2793.0, 2813.0,   'em', 0, 2800.0, 3, "Mgɪɪ"),
-    ('MGI2853',  2852.97, None,    None,    'is', 0,      0, 0, "Mgɪ"),        
+    ('MGI2853',  2852.97, None,    None,    'is', 0,      0, 0, "Mgɪ"),
     ('NEV3427',  3426.85, 3416.0, 3436.0,   'em', 0,      0, 2, "Neᴠ"),
     ('OII3727',  3727.09, 3717.0, 3737.0,   'em', 1, 3727.5, 2, None), #OII
     ('OII3729',  3729.88, 3719.0, 3739.0,   'em', 1, 3727.5, 2, "[Oɪɪ]"),
@@ -85,7 +85,7 @@ emlines = np.array([
     ('H9',       3836.47, 3825.0, 3845.0,   'em', 0,      0, 1, "H9"),
     ('NEIII3870',3870.16, 3859.0, 3879.0,   'em', 1,      0, 2, "[Neɪɪɪ]"),
     ('CAK',      3933.66, 3919.0, 3949.0,   'is', 0,      0, 0, None), #CaK
-    ('CAH',      3968.45, 3953.0, 3983.0,   'is', 0,      0, 0, "CaHK"),    
+    ('CAH',      3968.45, 3953.0, 3983.0,   'is', 0,      0, 0, "CaHK"),
     ('HEI3890',  3889.73, 3879.0, 3899.0,   'em', 0,      0, 2, None), #HeI
     ('H8',       3890.15, 3879.0, 3899.0,   'em', 0,      0, 1, "H8"),
     ('NEIII3967',3968.91, 3957.0, 3977.0,   'em', 0,      0, 2, None), #NeIII
@@ -109,7 +109,7 @@ emlines = np.array([
     ('ARIII7138',7137.80, 7130.0, 7147.0,   'em', 0,      0, 2, "[Arɪɪɪ]"),
 ], dtype=[('id', 'U20'), ('c', '<f4'), ('lo', '<f4'),
           ('up', '<f4'), ('tp', 'U2'), ('s', '<i4'), ('d', '<f4'),
-          ('f', '<i4'), ('n','U10')])
+          ('f', '<i4'), ('n', 'U10')])
 
 
 def get_emlines(iden=None, z=0, vac=True, lbrange=None, margin=25, sel=None,
@@ -119,29 +119,30 @@ def get_emlines(iden=None, z=0, vac=True, lbrange=None, margin=25, sel=None,
 
     Parameters
     ----------
-    iden: str or list of str
+    iden : str or list of str
         identifiers, eg 'LYALPHA', ['OII3727','OII3729'] default None
-    z: float
+    z : float
         redshift (0)
-    vac: bool
+    vac : bool
         if False return wavelength in air
-    lbrange: array-like
+    lbrange : array-like
         wavelength range ex [4750,9350] default None
-    margin: float
+    margin : float
         margin in A to select a line (25)
-    sel:
+    sel : int
         select line which has sel value (1=major,0=minor)
-    ltype:
-        select line with the given type ('em','is')
-    doublet: bool
+    ltype : str
+        select line with the given type ('em', 'is')
+    doublet : bool
         if true return only doublet
-    restframe: bool
+    restframe : bool
         if true the wavelength are not reshifted but the
         selection with lbrange take into account the redshift
-    table: bool
+    table : bool
         if True return an astropy table
-    family:
-        select line with the given family (0=abs, 1=Balmer, 2=Forbidden, 3=Resonant)
+    family : int
+        select line with the given family (0=abs, 1=Balmer, 2=Forbidden,
+        3=Resonant).
 
     """
     em = emlines.copy()
@@ -176,7 +177,7 @@ def get_emlines(iden=None, z=0, vac=True, lbrange=None, margin=25, sel=None,
     if ltype is not None:
         em = em[em['tp'] == ltype]
     if family is not None:
-        em = em[em['f'] == family]    
+        em = em[em['f'] == family]
     if doublet:
         em = em[em['d'] > 0]
 
@@ -184,9 +185,11 @@ def get_emlines(iden=None, z=0, vac=True, lbrange=None, margin=25, sel=None,
         return em
     else:
         return Table(
-            data=[em['id'], em['c'], em['lo'], em['up'], em['tp'], em['d'], em['f'], em['n']],
+            data=[em['id'], em['c'], em['lo'], em['up'], em['tp'], em['d'],
+                  em['f'], em['n']],
             names=['LINE', 'LBDA_OBS', 'LBDA_LOW', 'LBDA_UP', 'TYPE',
-                   'DOUBLET', 'FAMILY', 'DNAME'])
+                   'DOUBLET', 'FAMILY', 'DNAME']
+        )
 
 
 def z_from_linepos(iden, wavelength, vac=True):
