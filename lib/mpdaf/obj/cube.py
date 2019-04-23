@@ -1420,7 +1420,7 @@ class Cube(ArithmeticMixin, DataArray):
             The ratio of the number of images used to form a
             background image and the number of images that are being
             combined.  The default value is 3.0.
-        method: str
+        method : str
             Name of the Cube method used to aggregate the data. This method
             must accept the axis=0 parameter and return an image. Example:
             mean, sum, max.

@@ -225,30 +225,30 @@ def create_masks_from_segmap(
 
     Parameters
     ----------
-    segmap: str or `mpdaf.obj.Image`
+    segmap : str or `mpdaf.obj.Image`
         The segmentation map.
-    catalog: str or `mpdaf.sdetect.Catalog` or `astropy.table.Table`
+    catalog : str or `mpdaf.sdetect.Catalog` or `astropy.table.Table`
         The catalog with sources id and position.
-    ref_image: str or `mpdaf.obj.Image`
+    ref_image : str or `mpdaf.obj.Image`
         The reference image, with which the segmap is aligned.
-    n_jobs: int
+    n_jobs : int
         Number of parallel processes (for joblib).
-    skip_existing: bool
+    skip_existing : bool
         If True, skip sources for which the mask file exists.
-    masksky_name: str or callable
+    masksky_name : str or callable
         The filename for the sky mask.
-    maskobj_name: str or callable
+    maskobj_name : str or callable
         The filename for the source masks, with a format string that will be
         substituted with the ID, e.g. ``%05d``.
-    idname, raname, decname: str
+    idname, raname, decname : str
         Name of the 'id', 'ra' and 'dec' columns.
-    margin: float
+    margin : float
         Margin used for the segmap alignment (pixels).
-    mask_size: tuple
+    mask_size : tuple
         Size of the source masks (arcsec).
-    convolve_fwhm: float
+    convolve_fwhm : float
         FWHM for the PSF convolution (arcsec).
-    psf_threshold: float
+    psf_threshold : float
         Threshold applied to the PSF to get a binary image.
     verbose: int
         Verbosity level for joblib.Parallel.

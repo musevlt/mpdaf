@@ -485,10 +485,10 @@ class Source:
     tables : dict
         Dictionary containing tables.  Keys give a description of each
         table.  Values are `astropy.table.Table` objects.
-    mask_invalid: bool
+    mask_invalid : bool
         If True (default), iterate on all columns of all tables to mask
         invalid values (Inf, NaN, and -9999).
-    default_size: float
+    default_size : float
         Default size for image extraction, in arcseconds.
 
     """
@@ -601,7 +601,7 @@ class Source:
         ext : str or list of str
               Names of the FITS extensions that will be loaded in the source
               object. Regular expression accepted.
-        mask_invalid: bool
+        mask_invalid : bool
             If True (default), iterate on all columns of all tables to mask
             invalid values (Inf, NaN, and -9999).
 
@@ -1377,7 +1377,7 @@ class Source:
         fband : float
             The size of the off-band is ``fband x narrow-band width`` (in
             angstrom).
-        method: string
+        method : str
             Name of the Cube method used to aggregate the data. This method
             must accept the axis=0 parameter and return an image. Example:
             mean, sum, max.
@@ -1464,7 +1464,7 @@ class Source:
             angstrom).
         fband : float
             The size of the off-band is fband*narrow-band width (in angstrom).
-        method: string
+        method : str
             Name of the Cube method used to aggregate the data. This method
             must accept the axis=0 parameter and return an image. Example:
             mean, sum, max.
@@ -2004,11 +2004,12 @@ class Source:
         Returns
         -------
         ax : matplotlib AxesImage
-        images_aligned : [`~mpdaf.obj.Image`, `~mpdaf.obj.Image`, `~mpdaf.obj.Image`]
+            Matplotlib axis instance.
+        images_aligned : list of `~mpdaf.obj.Image`
             The input images, but all aligned to that with the highest
             resolution.
-        """
 
+        """
         images = []
         for im_name in names:
             if im_name not in self.images:
