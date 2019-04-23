@@ -87,8 +87,8 @@ automodsumm_inherited_members = True
 numpydoc_class_members_toctree = False
 numpydoc_show_class_members = False
 numpydoc_xref_param_type = True
-numpydoc_xref_ignore = {'type', 'optional', 'default', 'or', 'method'}
-xref_aliases = {
+numpydoc_xref_ignore = {'type', 'optional', 'default', 'or', 'of', 'method'}
+numpydoc_xref_aliases = {
     # python
     'sequence': ':term:`python:sequence`',
     'iterable': ':term:`python:iterable`',
