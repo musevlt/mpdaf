@@ -2,9 +2,6 @@
 MPDAF |release| documentation!
 ******************************
 
-:Release: |release|
-:Date: |today|
-
 .. ifconfig:: 'dev' in release
 
     .. warning::
@@ -91,4 +88,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

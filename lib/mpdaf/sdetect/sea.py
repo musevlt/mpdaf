@@ -345,9 +345,9 @@ def compute_optimal_spectrum(cube, mask, psf):
     ----------
     cube : `~mpdaf.obj.Cube`
         Input data cube.
-    mask : np.ndarray
+    mask : numpy.ndarray
         Aperture mask.
-    psf : np.ndarray
+    psf : numpy.ndarray
         PSF, 2D or 3D.
 
     """

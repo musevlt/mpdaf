@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # mpdaf documentation build configuration file, created by
 # sphinx-quickstart on Fri Jun 22 10:03:09 2012.
 
@@ -70,7 +68,7 @@ intersphinx_mapping = {
     'numpy': ('https://docs.scipy.org/doc/numpy/', None),
     'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
     'matplotlib': ('https://matplotlib.org/', None),
-    'astropy': ('http://docs.astropy.org/en/stable/', None)
+    'astropy': ('https://docs.astropy.org/en/stable/', None)
 }
 
 # autodoc_default_flags = ['members', 'special-members',
@@ -88,6 +86,20 @@ automodsumm_inherited_members = True
 
 numpydoc_class_members_toctree = False
 numpydoc_show_class_members = False
+numpydoc_xref_param_type = True
+numpydoc_xref_ignore = {'type', 'optional', 'default', 'or', 'method'}
+xref_aliases = {
+    # python
+    'sequence': ':term:`python:sequence`',
+    'iterable': ':term:`python:iterable`',
+    'string': 'str',
+    # numpy
+    'array': 'numpy.ndarray',
+    'dtype': 'numpy.dtype',
+    'ndarray': 'numpy.ndarray',
+    'array-like': ':term:`numpy:array_like`',
+    'array_like': ':term:`numpy:array_like`',
+}
 # numpydoc_use_plots = True
 
 ipython_savefig_dir = '_static/_generated'
@@ -141,7 +153,7 @@ copyright = u'2010-2016, CRAL'
 # built documents.
 #
 # The short X.Y version.
-version = re.match('\d+\.\d+', pkgmeta['__version__']).group()
+version = re.match(r'\d+\.\d+', pkgmeta['__version__']).group()
 # The full version, including alpha/beta/rc tags.
 release = pkgmeta['__version__']
 

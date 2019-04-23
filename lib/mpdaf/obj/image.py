@@ -3398,7 +3398,7 @@ class Image(ArithmeticMixin, DataArray):
 
         Parameters
         ----------
-        other : Image or np.ndarray
+        other : Image or numpy.ndarray
             The 2D array with which to convolve the image in self.data.
             This array can be an image of the same size as self, or it
             can be a smaller image, such as a small gaussian to use to
@@ -3458,7 +3458,7 @@ class Image(ArithmeticMixin, DataArray):
 
         Parameters
         ----------
-        other : Image or np.ndarray
+        other : Image or numpy.ndarray
             The 2D array with which to convolve the image in self.data.  This
             array can be an image of the same size as self, or it can be a
             smaller image, such as a small 2D gaussian to use to smooth the
@@ -3832,7 +3832,7 @@ class Image(ArithmeticMixin, DataArray):
 
         Returns
         -------
-        out : np.ndarray
+        out : numpy.ndarray
             The spatial-frequency band-limits of the image along
             the Y and X axes of the image in cycles per self.wcs.unit.
 
@@ -4485,7 +4485,7 @@ class SpatialFrequencyLimits:
 
         Returns
         -------
-        out : np.ndarray()
+        out : numpy.ndarray
            The maximum spatial frequencies along the Y and X axes at
            rotation angle rot, in the same units as were used to
            initialize the object.
@@ -4530,7 +4530,7 @@ class SpatialFrequencyLimits:
 
         Returns
         -------
-        out : np.ndarray
+        out : numpy.ndarray
             The Y and X coordinates of the band-limiting ellipse.
         """
 

@@ -2084,7 +2084,7 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         Parameters
         ----------
-        other : Spectrum or np.ndarray
+        other : Spectrum or numpy.ndarray
             The 1D array with which to convolve the spectrum in self.data.
             This can be an array of the same size as self, or it can be a
             smaller array, such as a small gaussian profile to use to smooth
@@ -2144,7 +2144,7 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         Parameters
         ----------
-        other : Spectrum or np.ndarray
+        other : Spectrum or numpy.ndarray
             The 1D array with which to convolve the spectrum in self.data.
             This can be an array of the same size as self.data, or it can be a
             smaller array, such as a small gaussian to use to smooth the

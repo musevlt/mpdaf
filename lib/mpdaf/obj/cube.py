@@ -84,10 +84,9 @@ def iter_spe(cube, index=False):
        of that spectrum in the image (a tuple of image-array
        indexes along the axes (y,x)).
 
-    Returns
-    -------
-    out : generator
-       A python generator object, suitable for using in a loop.
+    Yields
+    ------
+    `mpdaf.obj.Spectrum`
 
     """
     if index:
@@ -122,10 +121,9 @@ def iter_ima(cube, index=False):
        If True, return both an image and the index of that image along
        the wavelength axis of the cube.
 
-    Returns
-    -------
-    out : generator
-       A python generator object, suitable for using in a loop.
+    Yields
+    ------
+    `mpdaf.obj.Image`
 
     """
     if index:
@@ -252,12 +250,12 @@ class Cube(ArithmeticMixin, DataArray):
     unit : str or `astropy.units.Unit`
         The physical units of the data values. Defaults to
         `astropy.units.dimensionless_unscaled`.
-    data : numpy.ndarray or list
+    data : array_like
         An optional array containing the values of each pixel in the
         cube (None by default). Where given, this array should be
         3 dimensional, and the python ordering of its axes should be
         (wavelength,image_y,image_x).
-    var : float array
+    var : array_like
         An optional array containing the variances of each pixel in the
         cube (None by default). Where given, this array should be
         3 dimensional, and the python ordering of its axes should be
@@ -619,13 +617,11 @@ class Cube(ArithmeticMixin, DataArray):
         ----------
         lbda_min : float
             The minimum wavelength to be selected.
-        lbda_max : float
-            The maximum wavelength to be selected, or None
-            to just select one image close to lbda_min.
+        lbda_max : float, optional
+            The maximum wavelength to be selected. If not given, the closest
+            image to lbda_min is returned.
         unit_wave : `astropy.units.Unit`
             The wavelength units of lbda_min and lbda_max.
-            The value, None, can be used to indicate that
-            lbda_min and lbda_max are in pixel-index units.
             The default unit is angstrom.
 
         Returns
@@ -636,8 +632,8 @@ class Cube(ArithmeticMixin, DataArray):
             of those channels. If a single channel is selected, then
             an Image object is returned, containing just the image
             of that channel.
-        """
 
+        """
         # Select just the image that is closest to lbda_min?
         if lbda_max is None:
             lbda_max = lbda_min
@@ -672,20 +668,18 @@ class Cube(ArithmeticMixin, DataArray):
 
         Parameters
         ----------
-        unit_wave : `astropy.units.Unit`
-            The wavelength units of the returned wavelength
-            step.
-        unit_wcs : `astropy.units.Unit`
+        unit_wave : `astropy.units.Unit`, optional
+            The wavelength units of the returned wavelength step.
+        unit_wcs : `astropy.units.Unit`, optional
             The angular units of the returned spatial
             world-coordinate steps.
 
         Returns
         -------
-        out : [dlbda, dy, dx]
-            Where, dlbda is the size of pixels along the
-            wavelength axis, and dy and dx are the sizes
-            of pixels along the Y and X axes of
-            the image, respectively.
+        numpy.ndarray
+            Returns [dlbda, dy, dx] where, dlbda is the size of pixels
+            along the wavelength axis, and dy and dx are the sizes of
+            pixels along the Y and X axes of the image, respectively.
 
         """
         step = np.empty(3)
@@ -715,12 +709,11 @@ class Cube(ArithmeticMixin, DataArray):
 
         Returns
         -------
-        out : numpy.ndarray
+        numpy.ndarray
            The range of right ascensions declinations and wavelengths,
            arranged as [lbda_min, dec_min, ra_min, lbda_max, dec_max, ra_max].
 
         """
-
         wcs_range = self.wcs.get_range(unit_wcs)
         wave_range = self.wave.get_range(unit_wave)
         return np.array([wave_range[0], wcs_range[0], wcs_range[1],
@@ -803,7 +796,7 @@ class Cube(ArithmeticMixin, DataArray):
 
         Parameters
         ----------
-        axis : None or int or tuple of ints
+        axis : int or tuple of int, optional
             Axis or axes along which a sum is performed:
 
             - The default (axis = None) performs a sum over all the
@@ -813,7 +806,7 @@ class Cube(ArithmeticMixin, DataArray):
             - axis = (1,2) performs a sum over the (X,Y) axes and returns
               a spectrum.
 
-        weights : ndarray, np.ma.array, float
+        weights : array_like, optional
             When an array of weights is provided via this argument, it
             used to perform a weighted sum. This involves obtaining a
             weighted mean using the Cube.mean() function, then scaling
@@ -912,7 +905,7 @@ class Cube(ArithmeticMixin, DataArray):
 
         Parameters
         ----------
-        axis : None or int or tuple of ints
+        axis : int or tuple of int, optional
             The axis or axes along which the mean is to be performed.
 
             The default (axis = None) performs a mean over all the
@@ -924,7 +917,7 @@ class Cube(ArithmeticMixin, DataArray):
             axis = (1,2) performs a mean over the (X,Y) axes and
             returns a spectrum.
 
-        weights : numpy.ndarray or numpy.ma.core.MaskedArray
+        weights : array_like, optional
             When an array of weights is provided via this argument, it
             used to perform a weighted mean, as described in the
             introductory documentation above.
@@ -1026,7 +1019,7 @@ class Cube(ArithmeticMixin, DataArray):
 
         Parameters
         ----------
-        axis : None or int or tuple of ints
+        axis : int or tuple of int, optional
             The axis or axes along which a median is performed.
 
             The default (axis = None) performs a median over all the
@@ -1062,7 +1055,7 @@ class Cube(ArithmeticMixin, DataArray):
 
         Parameters
         ----------
-        axis : None or int or tuple of ints
+        axis : int or tuple of int, optional
             The axis or axes along which the maximum is computed.
 
             The default (axis = None) computes the maximum over all the
@@ -1098,7 +1091,7 @@ class Cube(ArithmeticMixin, DataArray):
 
         Parameters
         ----------
-        axis : None or int or tuple of ints
+        axis : int or tuple of int, optional
             The axis or axes along which the minimum is computed.
 
             The default (axis = None) computes the minimum over all the
@@ -1139,9 +1132,8 @@ class Cube(ArithmeticMixin, DataArray):
 
         Parameters
         ----------
-        coord : array
-           The coordinate boundaries, arranged into an array
-           as follows:
+        coord : iterable
+           A list of coordinate boundaries:
 
              [lbda_min, y_min, x_min, lbda_max, y_max, x_max]
 
@@ -1229,7 +1221,7 @@ class Cube(ArithmeticMixin, DataArray):
             The integer reduction factors along the wavelength, z
             array axis, and the image y and x array axes,
             respectively. Python notation: (nz,ny,nx).
-        margin : 'center'|'right'|'left'|'origin'
+        margin : {'center', 'right', 'left', 'origin'}
             When the dimensions of the input cube are not integer
             multiples of the reduction factor, the cube is truncated
             to remove just enough pixels that its dimensions are
@@ -1284,7 +1276,7 @@ class Cube(ArithmeticMixin, DataArray):
 
         Parameters
         ----------
-        f : function or `~mpdaf.obj.Spectrum` method
+        f : callable or `~mpdaf.obj.Spectrum` method
             The function to be applied to each spectrum of the cube.
             This function must either be a method of the Spectrum
             class, or it must be a top-level function that accepts an
@@ -1309,9 +1301,10 @@ class Cube(ArithmeticMixin, DataArray):
 
         Returns
         -------
-        out : `~mpdaf.obj.Cube` if f returns `~mpdaf.obj.Spectrum`,
-        out : `~mpdaf.obj.Image` if f returns a float or int,
-        out : np.array(dtype=object) for all others cases.
+        out :
+            `~mpdaf.obj.Cube` if f returns `~mpdaf.obj.Spectrum`,
+            `~mpdaf.obj.Image` if f returns a float or int,
+            np.array(dtype=object) for all others cases.
 
         """
         return _loop_multiprocessing(self, f, 'spe', cpu=cpu,
@@ -1341,7 +1334,7 @@ class Cube(ArithmeticMixin, DataArray):
 
         Parameters
         ----------
-        f : function or `~mpdaf.obj.Image` method
+        f : callable or `~mpdaf.obj.Image` method
             The function to be applied to each image of the cube.
             This function must either be a method of the Image class,
             or it must be a top-level function that accepts an Image object
@@ -1366,9 +1359,10 @@ class Cube(ArithmeticMixin, DataArray):
 
         Returns
         -------
-        out : `~mpdaf.obj.Cube` if f returns `~mpdaf.obj.Image`,
-        out : `~mpdaf.obj.Spectrum` if f returns a float or int.
-        out : np.array(dtype=object) for all others cases.
+        out :
+            `~mpdaf.obj.Cube` if f returns `~mpdaf.obj.Image`,
+            `~mpdaf.obj.Spectrum` if f returns a float or int.
+            np.array(dtype=object) for all others cases.
 
         """
         return _loop_multiprocessing(self, f, 'ima', cpu=cpu,
@@ -1433,7 +1427,7 @@ class Cube(ArithmeticMixin, DataArray):
 
         Returns
         -------
-        out : `~mpdaf.obj.Image`
+        `~mpdaf.obj.Image`
 
         """
         if is_sum:
@@ -1633,10 +1627,9 @@ class Cube(ArithmeticMixin, DataArray):
 
         Returns
         -------
-        out : `~mpdaf.obj.Image`
-            An image formed from the filter-weighted mean
-            of channels in the cube that overlap the bandpass
-            of the filter curve.
+        `~mpdaf.obj.Image`
+            An image formed from the filter-weighted mean of channels in
+            the cube that overlap the bandpass of the filter curve.
 
         """
         from scipy import integrate
@@ -1784,7 +1777,7 @@ class Cube(ArithmeticMixin, DataArray):
         size : float
             The size to extract. It corresponds to the size along the delta
             axis and the image is square.
-        lbda : (float, float) or None
+        lbda : (float, float), optional
             If not None, tuple giving the wavelength range.
         unit_center : `astropy.units.Unit`
             Type of the center coordinates (degrees by default)
@@ -1796,7 +1789,7 @@ class Cube(ArithmeticMixin, DataArray):
 
         Returns
         -------
-        out : `~mpdaf.obj.Cube`
+        `~mpdaf.obj.Cube`
 
         """
         # If only the width is given, give the height the same size.
@@ -1936,7 +1929,7 @@ class Cube(ArithmeticMixin, DataArray):
 
         Returns
         -------
-        out : `~mpdaf.obj.Cube`
+        `~mpdaf.obj.Cube`
 
         """
         subcub = self.subcube(center, radius * 2, unit_center=unit_center,
@@ -1980,9 +1973,9 @@ class Cube(ArithmeticMixin, DataArray):
 
         Returns
         -------
-        out : `~mpdaf.obj.Spectrum`
-        """
+        `~mpdaf.obj.Spectrum`
 
+        """
         # Sum over multiple image pixels?
         if radius is not None and radius > 0:
             cub = self.subcube_circle_aperture(center, radius,
@@ -2031,7 +2024,7 @@ class Cube(ArithmeticMixin, DataArray):
 
         Parameters
         ----------
-        other : Cube or np.ndarray
+        other : Cube or numpy.ndarray
             The 3D array with which to convolve the cube in self.data.
             This can be an 3D array of the same size as self, or it
             can be a smaller array, such as a small 3D gaussian to use to
@@ -2052,7 +2045,7 @@ class Cube(ArithmeticMixin, DataArray):
 
         Returns
         -------
-        out : `~mpdaf.obj.Cube`
+        `~mpdaf.obj.Cube`
 
         """
         return self._convolve(signal.convolve, other=other, inplace=inplace)
@@ -2089,7 +2082,7 @@ class Cube(ArithmeticMixin, DataArray):
 
         Parameters
         ----------
-        other : Cube or np.ndarray
+        other : Cube or numpy.ndarray
             The 3D array with which to convolve the cube in self.data.
             This array can be the same size as self, or it can be a
             smaller array, such as a small 3D gaussian to use to
@@ -2110,7 +2103,7 @@ class Cube(ArithmeticMixin, DataArray):
 
         Returns
         -------
-        out : `~mpdaf.obj.Cube`
+        `~mpdaf.obj.Cube`
 
         """
         return self._convolve(signal.fftconvolve, other=other, inplace=inplace)
@@ -2120,7 +2113,7 @@ class Cube(ArithmeticMixin, DataArray):
 
         Parameters
         ----------
-        npixels : integer
+        npixels : int
             Erosion width in pixels
         inplace : bool
             If False (the default), return the results in a new Cube.

@@ -191,7 +191,7 @@ class DataArray:
     hdulist : `astropy.fits.HDUList`
         HDUList object, can be used instead of ``filename`` to avoid opening
         the FITS file multiple times.
-    data : numpy.ndarray or list
+    data : array_like
         Data array, passed to `numpy.ma.MaskedArray`.
     mask : bool or numpy.ma.nomask or numpy.ndarray
         Mask used for the creation of the ``.data`` MaskedArray. If mask is
@@ -199,7 +199,7 @@ class DataArray:
         is created. To avoid creating an array, it is possible to use
         numpy.ma.nomask, but in this case several methods will break if
         they use the mask.
-    var : numpy.ndarray or list
+    var : array_like
         Variance array, passed to `numpy.ma.MaskedArray`.
     ext : int or tuple of int or str or tuple of str
         Number/name of the data extension, or numbers/names of the data,
@@ -227,6 +227,8 @@ class DataArray:
         FITS filename.
     primary_header : `astropy.io.fits.Header`
         FITS primary header instance.
+    data_header : `astropy.io.fits.Header`
+        FITS data header instance.
     wcs : `mpdaf.obj.WCS`
         World coordinates.
     wave : `mpdaf.obj.WaveCoord`
@@ -237,14 +239,14 @@ class DataArray:
         Lengths of the data axes (python notation (nz,ny,nx)).
     data : numpy.ma.MaskedArray
         Masked array containing the cube of pixel values.
-    data_header : `astropy.io.fits.Header`
-        FITS data header instance.
+    var : numpy.ma.MaskedArray
+        Masked array containing the variance.
+    mask : numpy.ndarray
+        Array containing the mask.
     unit : `astropy.units.Unit`
         Physical units of the data values.
     dtype : numpy.dtype
         Type of the data (int, float, ...).
-    var : numpy.ndarray
-        Array containing the variance.
 
     """
 
@@ -462,10 +464,10 @@ class DataArray:
             The object to use as the template for the new object. This
             should be an object based on DataArray, such as an Image,
             Cube or Spectrum.
-        data : ndarray-like
+        data : array-like, optional
             An optional data array, or None to indicate that
             ``obj.data`` should be used. The default is None.
-        var : ndarray-like
+        var : array-like, optional
             An optional variance array, or None to indicate that
             ``obj.var`` should be used, or False to indicate that the
             new object should not have any variances. The default
@@ -652,12 +654,12 @@ class DataArray:
 
         Parameters
         ----------
-        data_init : function
+        data_init : callable, optional
             An optional function to use to create the data array
             (it takes the shape as parameter). For example ``np.zeros``
             or ``np.empty`` can be used. It defaults to None, which results
             in the data attribute being None.
-        var_init : function
+        var_init : callable, optional
             An optional function to use to create the variance array,
             with the same specifics as data_init. This default to None,
             which results in the var attribute being assigned None.
@@ -729,7 +731,7 @@ class DataArray:
 
         Returns
         -------
-        out : New object.
+        `~mpdaf.obj.DataArray`
 
         """
         result = self.copy()
@@ -747,7 +749,7 @@ class DataArray:
 
         Returns
         -------
-        out : New object.
+        `~mpdaf.obj.DataArray`
 
         """
         result = self.copy()
@@ -764,7 +766,7 @@ class DataArray:
 
         Returns
         -------
-        out : New object.
+        `~mpdaf.obj.DataArray`
 
         """
         result = self.copy()
@@ -782,7 +784,7 @@ class DataArray:
 
         Returns
         -------
-        out : New object.
+        `~mpdaf.obj.DataArray`
 
         """
         result = self.copy()
@@ -1036,13 +1038,13 @@ class DataArray:
             If 'dq', the mask array is saved in a DQ extension.
             If 'nan', masked data are replaced by nan in a DATA extension.
             If 'none', masked array is not saved.
-        convert_float32: bool
+        convert_float32 : bool
             By default float64 arrays are converted to float32, in order to
             produce smaller files.
 
         Returns
         -------
-        out : `astropy.io.fits.ImageHDU`
+        `astropy.io.fits.ImageHDU`
 
         """
         if convert_float32 and self._data.dtype == np.float64:
@@ -1079,16 +1081,16 @@ class DataArray:
         ----------
         name : str
             Extension name, STAT by default.
-        header: fits.Header
+        header : `astropy.io.fits.Header`
             Fits Header to put in the extension, typically to reuse the same as
             in the DATA extension. Otherwise it is created with the wcs.
-        convert_float32: bool
+        convert_float32 : bool
             By default float64 arrays are converted to float32, in order to
             produce smaller files.
 
         Returns
         -------
-        out : `astropy.io.fits.ImageHDU`
+        `astropy.io.fits.ImageHDU`
 
         """
         if self._var is None:
@@ -1138,7 +1140,7 @@ class DataArray:
         checksum : bool
             If ``True``, adds both ``DATASUM`` and ``CHECKSUM`` cards to the
             headers of all HDU's written to the file.
-        convert_float32: bool
+        convert_float32 : bool
             By default float64 arrays are converted to float32, in order to
             produce smaller files.
 
@@ -1259,7 +1261,7 @@ class DataArray:
 
         Returns
         -------
-        item : list of slices
+        item : list of slice
             The slices that were used to extract the sub-array.
 
         """
@@ -1322,10 +1324,10 @@ class DataArray:
 
         Parameters
         ----------
-        wcs : `mpdaf.obj.WCS`
+        wcs : `mpdaf.obj.WCS`, optional
             Spatial world coordinates. This argument is ignored when
             self is a Spectrum.
-        wave : `mpdaf.obj.WaveCoord`
+        wave : `mpdaf.obj.WaveCoord`, optional
             Spectral wavelength coordinates. This argument is ignored when
             self is an Image.
 
@@ -1388,7 +1390,7 @@ class DataArray:
             The integer reduction factors along the wavelength, z
             array axis, and the image y and x array axes,
             respectively. Python notation: (nz,ny,nx).
-        margin : 'center', 'origin', 'left' or 'right'
+        margin : {'center', 'origin', 'left', 'right'}
             When the dimensions of the input array are not integer
             multiples of the reduction factor, the array is truncated
             to remove just enough pixels that its dimensions are
@@ -1543,7 +1545,7 @@ class DataArray:
 
         Parameters
         ----------
-        fn : function
+        fn : callable
             The convolution function to use, chosen from:
 
             - `scipy.signal.fftconvolve`: This exploits the Fourier convolution
@@ -1561,7 +1563,7 @@ class DataArray:
             arrays whose dimensions are the sum of self.shape and other.shape,
             rounded up to a power of two. These arrays can be impractically
             large for some input data-sets.
-        other : DataArray or np.ndarray
+        other : DataArray or numpy.ndarray
           The array with which to convolve the contents of self.  This must
           have the same number of dimensions as self, but it can have fewer
           elements. When this array contains a symmetric filtering function,
@@ -1578,7 +1580,7 @@ class DataArray:
 
         Returns
         -------
-        out : `~mpdaf.obj.DataArray`
+        `~mpdaf.obj.DataArray`
 
         """
         out = self if inplace else self.copy()
@@ -1624,7 +1626,7 @@ class DataArray:
 
         Parameters
         ----------
-        ds9id: None or str
+        ds9id: str, optional
             The DS9 session ID.  If 'None', a new one will be created.
             To find your ds9 session ID, open the ds9 menu option
             File:XPA:Information and look for the XPA_METHOD string, e.g.
