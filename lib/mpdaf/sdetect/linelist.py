@@ -50,6 +50,8 @@ __all__ = ['get_emlines', 'z_from_linepos']
 emlines = np.array([
     ('LYALPHA',  1215.67, 1204.00, 1226.00, 'em', 1,      0, 3, "Lyα"),
     ('SiII1260', 1260.42, None,    None,    'is', 0,      0, 0, "Siɪɪ"),
+    ('NeV1238',  1238.82, None,    None,    'em', 0, 1240.8, 0, None), # NeV
+    ('NeV1243',  1242.80, None,    None,    'em', 0, 1240.8, 0, "Nev"),
     ('OI1302',   1302.17, None,    None,    'is', 0,      0, 0, "Oɪ"),
     ('SIII1304', 1304.37, None,    None,    'is', 0,      0, 0, "Siɪɪ"),
     ('CII1334',  1334.53, None,    None,    'is', 0,      0, 0, "Cɪɪ"),
