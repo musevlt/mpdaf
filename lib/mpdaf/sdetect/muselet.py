@@ -714,18 +714,42 @@ def step2(file_cube, sex_config=None, sex_config_nb=None, dir_=None, n_cpu=1):
 
 
 
-def load_cat(i, dir_):
+def load_cat(i_nb, dir_):
 
-    file = dir_ / 'nb/cat{:04d}.dat'.format(i)
-    data = table.Table.read(file, format='ascii.sextractor')
+    logger = logging.getLogger(__name__)
 
-    n_data = len(data)
+    file_cat = dir_ / 'nb/cat{:04d}.dat'.format(i_nb)
+    data = table.Table.read(file_cat, format='ascii.sextractor')
 
     data.rename_column('NUMBER', 'ID_SLICE')
     data.rename_column('ALPHA_J2000', 'RA')
     data.rename_column('DELTA_J2000', 'DEC')
     data.rename_column('X_IMAGE', 'I_X')
     data.rename_column('Y_IMAGE', 'I_Y')
+
+
+    # check that object actually exists in segmap
+    # (very occasionally this isn't true)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', category=MpdafUnitsWarning)
+
+        file_seg = dir_ / 'nb/seg{:04d}.fits'.format(i_nb)
+        im_seg = Image(str(file_seg))
+
+    mask = np.zeros(len(data), dtype=bool)
+    for i, id_ in enumerate(data['ID_SLICE']):
+        id_exists = np.any(im_seg.data == id_)
+        mask[i] = id_exists
+
+        if not id_exists:
+            msg = "ID {:d}, not found in seg{:04d}.fits".format(id_, i_nb)
+            logger.warning(msg)
+
+    data = data[mask]
+
+
+    n_data = len(data)
 
     #make image coords 0-indexed
     data['I_X'] -= 1
@@ -737,7 +761,7 @@ def load_cat(i, dir_):
     c1 = table.Column(id_cube, name='ID_RAW') 
 
     #Z index (i.e. slice+1)
-    z_image = np.full(n_data, i, dtype=int)
+    z_image = np.full(n_data, i_nb, dtype=int)
     c2 = table.Column(z_image, name='I_Z') 
 
     #wavelength, to be filled later
@@ -756,6 +780,7 @@ def load_cat(i, dir_):
     c5 = table.Column(flux_err, name='FLUX_ERR')
 
     data.add_columns([c1, c2, c3, c4, c5], indexes=[0, 5, 3, 5, 5])
+
 
     return data
 
