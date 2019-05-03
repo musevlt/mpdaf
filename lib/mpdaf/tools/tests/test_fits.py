@@ -52,7 +52,7 @@ HIERARCH MPDAF METH2 ID = 'func2   ' / MPDAF method identifier
 HIERARCH MPDAF METH2 PARAM1 NAME = 'c       ' / the comment
 HIERARCH MPDAF METH2 PARAM1 VALUE = 'with a very long parameter that i'
 END
-""".format(__version__)
+""".format(re.escape(__version__))
 
 
 def test_add_mpdaf_method_keywords():
