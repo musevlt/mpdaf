@@ -55,10 +55,10 @@ from scipy.optimize import leastsq
 
 from ..obj import Cube, Image, Spectrum, vactoair, airtovac, plot_rgb
 from ..obj.objs import is_int, is_float, bounding_box
-from ..tools import deprecated, MpdafWarning
+from ..tools import MpdafWarning
 from ..MUSE import FieldsMap, FSFModel, OldMoffatModel
 from ..MUSE.PSF import MOFFAT1, create_psf_cube
-from ..sdetect.sea import (segmentation, mask_creation, findCentralDetection,
+from ..sdetect.sea import (segmentation, findCentralDetection,
                            union, intersection, compute_optimal_spectrum)
 
 
@@ -1520,43 +1520,6 @@ class Source:
         else:
             self._logger.warning('add_seg_images method use the MUSE_WHITE '
                                  'image computed by add_white_image method')
-
-    @deprecated('`add_masks` method is deprecated, use `find_sky_mask` or '
-                '`find_union_mask` or `find_intersection_mask`')
-    def add_masks(self, tags=None):
-        """Use the list of segmentation maps to compute the union mask and the
-        intersection mask and the region where no object is detected in any
-        segmentation map is saved in the sky mask.
-
-        Masks are saved as boolean images:
-        - Union is saved in ``self.images['MASK_UNION']``.
-        - Intersection is saved in ``self.images['MASK_INTER']``.
-        - Sky mask is saved in ``self.images['MASK_SKY']``.
-
-        Algorithm from Jarle Brinchmann (jarle@strw.leidenuniv.nl).
-
-        Parameters
-        ----------
-        tags : list of str
-            List of tags of selected segmentation images
-
-        """
-        maps = {}
-        if tags is None:
-            for tag, ima in self.images.items():
-                if tag[0:4] == 'SEG_':
-                    maps[tag[4:]] = ima.data.data
-        else:
-            for tag in tags:
-                if tag[0:4] == 'SEG_':
-                    maps[tag[4:]] = self.images[tag].data.data
-                else:
-                    maps[tag] = self.images[tag].data.data
-        if len(maps) == 0:
-            self._logger.warning('no segmentation images. Use add_seg_images '
-                                 'to create them')
-
-        mask_creation(self, maps)
 
     def find_sky_mask(self, seg_tags, sky_mask='MASK_SKY'):
         """Loop over all segmentation images and use the region where no object

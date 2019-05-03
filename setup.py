@@ -173,9 +173,9 @@ ext_modules = [
 if HAVE_PKG_CONFIG:
     try:
         ext_modules.append(
-            Extension('tools._ctools', [
-                'src/tools.c', 'src/subtract_slice_median.c', 'src/merging.c'],
-                **options('cfitsio')),
+            Extension('tools._ctools',
+                      ['src/tools.c', 'src/merging.c'],
+                      **options('cfitsio')),
         )
     except Exception:
         pass

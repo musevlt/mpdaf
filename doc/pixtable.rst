@@ -367,64 +367,20 @@ Self-calibration method for empty fields
    the ``autocalib="deepfield"`` parameter. This should be prefered as it is
    more efficient (no need to save the Pixtable to read it in MPDAF), includes
    a few bug fixes, and allows to use the DRS sky-subtraction after the
-   autocalib. New DRS versions may also include more features. The
-   implementation in MPDAF will be removed in the future.
+   autocalib. New DRS versions may also include more features.
 
-The `~mpdaf.drs.PixTable` class has a `~mpdaf.drs.PixTable.selfcalibrate`
-method, which can be used to apply a self-calibration method on a pixel table
-to bring all slices to the same median value. This is useful to remove residual
-IFU and slice mean level variations. It was designed to work on sparse fields,
-where objects are small compared to the size of a slice. This is because it
-needs to mask the sources, in order to extract reliably the mean sky value. And
-the correction for a slice cannot be computed if all its pixels are masked.
+   **The implementation in MPDAF has been removed in v3.2**.
 
-.. note:: The method **requires a pixel table that is not
-   sky-subtracted**, because it uses the mean sky level as a reference level.
+The self-calibration method works on a pixel table and allows to bring all
+slices to the same median value. This is useful to remove residual IFU and
+slice mean level variations. It was designed to work on sparse fields, where
+objects are small compared to the size of a slice. This is because it needs to
+mask the sources, in order to extract reliably the mean sky value. And the
+correction for a slice cannot be computed if all its pixels are masked.
 
 The figure below gives an example on an HDFS exposure, showing the white-light
 image before an after the correction. Note that this correction varies with the
-wavelength as it is computed on wavelength bins of 200 to 300 Angstroms. The
-docstring of `~mpdaf.drs.PixTable.selfcalibrate` gives more details on the
-algorithm.
+wavelength as it is computed on wavelength bins of 200 to 300 Angstroms.
 
 .. figure::  _static/pixtable/selfcalibrate.png
    :align:   center
-
-As an example, the pixtable previously loaded contains a MUSE exposure of the
-HDFS.  This is a reduced pixtable produced by ``muse_scipost``, without sky
-subtraction.  We will mask out all bright continuum objects present in the FoV.
-We use a mask which has been produced by SExtractor on the corresponding white
-light image of this exposure.
-
-`~mpdaf.drs.PixTable.mask_column` method returns a `~mpdaf.drs.PixTableMask`
-object containing the mask as a new column.  We save this mask column as a FITS
-table::
-
-  In [64]: mask = pix.mask_column('Mask-HDF-110814.fits')
-
-  In [65]: mask.write('maskcol.fits')
-
-Then we can run the self-calibration::
-
-  In [69]: autocalib = pix.selfcalibrate(pixmask=mask)
-
-`~mpdaf.drs.PixTable.selfcalibrate` is coded in C for efficiency.  It returns
-a `~mpdaf.drs.PixTableAutoCalib` object that contains the corrections per
-slice, and let the user save the calibration information in a fits file::
-
-  In [70]: autocalib.write('autocalib-PIXTABLE-MUSE.2014-07-26T04:37:08.541.fits')
-
-Finally, we save this corrected pixel table (`~mpdaf.drs.PixTable.write`)::
-
-  In [71]: pix.write('corr-PIXTABLE-MUSE.2014-07-26T04:37:08.541.fits')
-
-This non sky subtracted corrected pixtable can then be used to create
-a datacube with the appropriate pipeline recipe. Sky subtraction can then be
-performed with the zap software.
-
-.. warning::
-
-   The use of OpenMP by MPDAF could hand an other process using OpenMP during
-   the same Python program. This problem only affects GCC; ICC is not affected.
-   There is currently no workaround; the solution is to stop MPDAF before
-   starting on other process using OpenMP.

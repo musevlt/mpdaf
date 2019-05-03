@@ -39,9 +39,9 @@ import unittest
 
 from astropy.io import fits
 from contextlib import contextmanager
-from mpdaf.drs import PixTable, pixtable, PixTableMask, PixTableAutoCalib
+from mpdaf.drs import PixTable, pixtable
 from numpy.testing import assert_array_equal, assert_allclose
-from os.path import exists, join, basename
+from os.path import exists, join
 
 from mpdaf.tests.utils import DATADIR
 
@@ -270,53 +270,6 @@ class TestBasicPixTable(unittest.TestCase):
 
         pix1.hdulist.close()
         pix2.hdulist.close()
-
-
-@pytest.mark.skipif(not SUPP_FILES_PATH, reason='Missing test data')
-def test_autocalib(tmpdir):
-    # testpix-small.fits is a small pixtable with values from 2 IFUs, slices
-    # 1 to 23, and lambda between 6500A and 7500A
-    pixfile = join(SUPP_FILES_PATH, 'testpix-small.fits')
-    maskfile = join(SUPP_FILES_PATH, 'Mask-HDF.fits')
-    pix = PixTable(pixfile)
-    assert pix.nrows == 2810172
-    assert repr(pix) == \
-        '<PixTable(2810172 rows, 2 ifus, projected, flux-calibrated)>'
-
-    mask = pix.mask_column(maskfile=maskfile)
-    assert np.count_nonzero(mask.maskcol) == 97526
-
-    outmask = str(tmpdir.join('MASK.fits'))
-    mask.write(outmask)
-    savedmask = PixTableMask(filename=outmask)
-    assert savedmask.maskfile == basename(maskfile)
-    assert savedmask.pixtable == basename(pixfile)
-    assert_array_equal(savedmask.maskcol, mask.maskcol)
-    savedmask = None
-
-    sky = pix.sky_ref(pixmask=mask)
-    assert sky.shape == (1001,)
-    assert_array_equal(sky.get_range(), [6500, 7500])
-
-    with pytest.raises(AttributeError):
-        pix.subtract_slice_median(sky, mask)
-
-    with pytest.raises(AttributeError):
-        pix.divide_slice_median(sky, mask)
-
-    import mpdaf.drs.pixtable
-    mpdaf.drs.pixtable.SKY_SEGMENTS = [6500, 7000, 7500]
-    cor = pix.selfcalibrate(mask)
-    sel = cor.npts > 0
-    assert set(cor.ifu[sel]) == {1, 2}
-    assert set(cor.quad[sel]) == {1, 2}
-
-    outcor = str(tmpdir.join('cor.fits'))
-    cor.write(outcor)
-    savedcor = PixTableAutoCalib(filename=outcor)
-    assert savedcor.method == 'drs.pixtable.selfcalibrate'
-    assert savedcor.maskfile == basename(maskfile)
-    assert savedcor.pixtable == basename(pixfile)
 
 
 @pytest.mark.skipif(not SUPP_FILES_PATH, reason='Missing test data')

@@ -203,13 +203,6 @@ def test_gauss_fit(capsys, cont):
     assert_almost_equal(gauss.fwhm, 20, 2)
     assert_allclose(spem.fwhm(gauss.lpeak, cont=contval), 20, atol=0.2)
 
-    with pytest.warns(MpdafWarning):
-        gauss = spem.line_gauss_fit(lmin=(4500, 4800), lmax=(5200, 6000),
-                                    lpeak=5000, cont=cont, unit=u.angstrom)
-    assert_almost_equal(gauss.flux, 1200, 2)
-    assert_almost_equal(gauss.fwhm, 20, 2)
-    assert_allclose(spem.fwhm(gauss.lpeak, cont=contval), 20, atol=0.2)
-
 
 def test_crop(spec_var):
     """Spectrum class: testing resize method"""
