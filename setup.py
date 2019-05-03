@@ -191,9 +191,6 @@ def options(*packages, **kw):
 with open('README.rst') as f:
     README = f.read()
 
-with open('CHANGELOG') as f:
-    CHANGELOG = f.read()
-
 ext = '.pyx' if HAVE_CYTHON else '.c'
 ext_modules = [
     Extension('obj.merging',
@@ -224,7 +221,7 @@ setup(
     maintainer_email='laure.piqueras@univ-lyon1.fr',
     description='MUSE Python Data Analysis Framework is a python framework '
     'in view of the analysis of MUSE data in the context of the GTO.',
-    long_description=README + '\n' + CHANGELOG,
+    long_description=README,
     license='BSD',
     url='https://git-cral.univ-lyon1.fr/MUSE/mpdaf',
     python_requires='>=3.5',
