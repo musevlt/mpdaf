@@ -73,7 +73,6 @@ GIT_CMD = ("git log --date=format:%Y --format='%ad %aN <%aE>' --date-order "
            "--reverse {} | cut -f1 --complement")
 
 EXCLUDES = (
-    'lib/mpdaf/_githash.py',
     'lib/mpdaf/obj/wavelet1D.py',
 )
 

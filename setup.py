@@ -72,34 +72,6 @@ else:
     del out
     HAVE_PKG_CONFIG = True
 
-# Generate version.py
-__version__ = None
-with open('lib/mpdaf/version.py') as f:
-    exec(f.read())
-
-# If the version is not stable, we can add a git hash to the __version__
-if '.dev' in __version__:
-    # Find hash for __githash__ and dev number for __version__ (can't use hash
-    # as per PEP440)
-    command_hash = 'git rev-list --max-count=1 --abbrev-commit HEAD'
-    command_number = 'git rev-list --count HEAD'
-
-    try:
-        commit_hash = subprocess.check_output(command_hash, shell=True)\
-            .decode('ascii').strip()
-        commit_number = subprocess.check_output(command_number, shell=True)\
-            .decode('ascii').strip()
-    except Exception:
-        pass
-    else:
-        # We write the git hash and value so that they gets frozen if installed
-        with open(os.path.join('lib', 'mpdaf', '_githash.py'), 'w') as f:
-            f.write("__githash__ = \"{}\"\n".format(commit_hash))
-            f.write("__dev_value__ = \"{}\"\n".format(commit_number))
-
-        # We modify __version__ here too for commands such as egg_info
-        __version__ += commit_number
-
 
 class PyTest(TestCommand):
     user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
@@ -216,7 +188,8 @@ print('Configuration done, now running setup() ...\n')
 
 setup(
     name='mpdaf',
-    version=__version__,
+    use_scm_version=True,
+    setup_requires=['setuptools_scm', 'numpy>=1.10.0'],
     maintainer='Laure Piqueras',
     maintainer_email='laure.piqueras@univ-lyon1.fr',
     description='MUSE Python Data Analysis Framework is a python framework '
@@ -225,7 +198,6 @@ setup(
     license='BSD',
     url='https://git-cral.univ-lyon1.fr/MUSE/mpdaf',
     python_requires='>=3.5',
-    setup_requires=['numpy>=1.10.0'],
     install_requires=['numpy>=1.10.0', 'scipy', 'matplotlib', 'astropy>=1.0'],
     extras_require={
         'all': ['numexpr', 'fitsio', 'adjustText', 'joblib', 'tqdm'],

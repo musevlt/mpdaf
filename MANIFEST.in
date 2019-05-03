@@ -12,4 +12,4 @@ prune doc/api
 prune doc/build
 prune lib/mpdaf.egg-info
 
-global-exclude *.py[cod] __pycache__ *.so .directory _githash.py .git
+global-exclude *.py[cod] __pycache__ *.so .directory .git

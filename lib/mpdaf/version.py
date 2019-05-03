@@ -30,11 +30,10 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-__version__ = '3.2dev'
-__date__ = '2019/03/04'
 
+from pkg_resources import get_distribution, DistributionNotFound
 try:
-    from ._githash import __githash__, __dev_value__
-    __version__ += __dev_value__
-except Exception:
-    pass
+    __version__ = get_distribution('mpdaf').version
+except DistributionNotFound:
+    # package is not installed
+    __version__ = None

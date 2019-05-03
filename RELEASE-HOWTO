@@ -1,22 +1,22 @@
 Description of the new release procedure
 ----------------------------------------
 
-1. Update version number in ./lib/mpdaf/version.py, removing the .dev suffix.
+1. Update changelog, update version number and date.
 
-2. Update changelog, update version number and date.
+2. Run tests and build documentation to make sure that everything is ok.
 
-3. Run tests and build documentation to make sure that everything is ok.
+3. Commit and push.
 
-4. Commit and push.
+4. When Gitlab-CI is happy, tag the version and push tags (git push --tags).
+   The package version is set automatically from the git tag thanks to
+   setuptools_scm.
 
-5. When Gitlab-CI is happy, tag the version and push tags (git push --tags).
-
-6. Create the sdist archive, from a clean tree:
+5. Create the sdist archive, from a clean tree:
 
     git clean -fxd .
     python setup.py build sdist
 
-7. Install the sdist archive in a fresh virtualenv and run tests.
+6. Install the sdist archive in a fresh virtualenv and run tests.
 
     virtualenv test-new-version
     source test-new-version/bin/activate
@@ -25,17 +25,16 @@ Description of the new release procedure
     python -c "import mpdaf; print(mpdaf.__file__)"
     pytest $(dirname $(python -c "import mpdaf; print(mpdaf.__file__)"))
 
-8. Upload the sdist archive to PyPI:
+7. Upload the sdist archive to PyPI:
 
     pip install twine
     twine upload -u <username> dist/*
 
-9. Build the binary wheels.
+8. Build the binary wheels.
    On https://github.com/musevlt/mpdaf-wheels, edit MPDAF_VERSION in the
    .travis.yml file, commit and push. Then wheels should be build on
    https://travis-ci.org/musevlt/mpdaf-wheels and uploaded to
    https://github.com/musevlt/mpdaf-wheels/releases if it was successful.
    Download the wheels, and push them to PyPI with twine.
 
-10. Prepare the next version: increase version number in ./lib/mpdaf/version.py
-    and add the .dev suffix, and the same in the changelog.
+9. Prepare the next version: add new version header in the changelog.
