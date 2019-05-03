@@ -36,8 +36,16 @@ Removal of deprecated code:
 
 - ``Spectrum.line_gauss_fit`` has been removed, it has been deprecated since
   v2.3.
+
 - ``Source.add_masks`` has been removed, it has been deprecated since v1.2.
 
+- The self-calibration code has been removed (``PixTable.selfcalibrate`` and
+  ``PixTable.sky_ref``). The self-calibration method is available in the DRS
+  since version 2.4, with the ``autocalib="deepfield"`` parameter. This should
+  be prefered as it is more efficient (no need to save the Pixtable to read it
+  in MPDAF), includes a few bug fixes, and allows to use the DRS
+  sky-subtraction after the autocalib. New DRS versions may also include more
+  features.
 
 
 3.1 (03/04/2019)
