@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Copyright (c) 2010-2018 CNRS / Centre de Recherche Astrophysique de Lyon
 Copyright (c) 2011-2016 Laure Piqueras <laure.piqueras@univ-lyon1.fr>
@@ -40,7 +39,7 @@ if sys.version_info[:2] < (3, 5):
 
 from . import drs, MUSE, obj, sdetect, tools
 from .log import setup_logging, setup_logfile, clear_loggers
-from .version import __version__, __date__
+from .version import __version__
 
 """The maximum number of processes that should be started by
 multiprocessing MPDAF functions. By default this is zero, which
