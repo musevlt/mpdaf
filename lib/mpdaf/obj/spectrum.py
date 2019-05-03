@@ -49,7 +49,6 @@ from .arithmetic import ArithmeticMixin
 from .data import DataArray
 from .fitting import Gauss1D
 from .objs import flux2mag
-from ..tools import deprecated
 
 __all__ = ('Spectrum', 'vactoair', 'airtovac')
 
@@ -2015,11 +2014,6 @@ class Spectrum(ArithmeticMixin, DataArray):
             wave = self.wave.coord(unit=unit)[imin:imax]
         v = [flux, lpeak, sigma_right, sigma_left]
         self.data[imin:imax] = self.data[imin:imax] + asym_gauss(v, wave)
-
-    @deprecated('deprecated in favor of gauss_fit with fix_lpeak=True')
-    def line_gauss_fit(self, *args, **kwargs):
-        kwargs['fix_lpeak'] = True
-        return self.gauss_fit(*args, **kwargs)
 
     def median_filter(self, kernel_size=1., spline=False, unit=u.angstrom,
                       inplace=False):
