@@ -6,10 +6,10 @@ Development version, not released yet.
 - Fix `mpdaf.sdetect.Source.info` to correctly print header comments.
 
 - Allow to use a correction for zero offset in `mpdaf.obj.CubeList.combine`.
-  [!163]
+  [:pull:`163`]
 
 - Fix precision issue with `mpdaf.obj.WCS.isEqual` and add precision keywords.
-  [!164]
+  [:pull:`164`]
 
 - Fix issue with `mpdaf.sdetect.Catalog.meta` copy to make it compatible with
   Astropy 3.2.
@@ -21,15 +21,15 @@ Development version, not released yet.
 
 - New `mpdaf.sdetect.Segmap` class to manage segmentation maps, and
   `mpdaf.sdetect.create_masks_from_segmap` function to create masks from
-  a segmentation map. [!166]
+  a segmentation map. [:pull:`166`]
 
 - The `WaveCoord.coord` now accepts a ``medium`` parameter to force getting the
-  air or the vacuum wavelength coordinates. [!167]
+  air or the vacuum wavelength coordinates. [:pull:`167`]
 
 - Add more emission lines and fix a bug in `mpdaf.sdetect.get_emlines` when
-  ``restframe=True``. [!168]
+  ``restframe=True``. [:pull:`168`]
 
-- Fix a bug in Muselet, when some id are missing in the segmentation map. [#521]
+- Fix a bug in Muselet, when some id are missing in the segmentation map. [:issue:`521`]
 
 
 3.1 (03/04/2019)
@@ -43,23 +43,23 @@ Development version, not released yet.
 - Fix bug in `mpdaf.sdetect.Source.add_FSF` when source is close to the edge.
 
 - Fix `mpdaf.obj.Image.subimage` to keep the same dtype as the input data.
-  [!153]
+  [:pull:`153`]
 
 - Increase the number of files that can be combined with `mpdaf.obj.CubeList`.
 
 - Support method parameter in `mpdaf.sdetect.Source.add_narrow_band_images`.
-  [!155]
+  [:pull:`155`]
 
-- Fix writing sources with non-float extensions. [!154]
+- Fix writing sources with non-float extensions. [:pull:`154`]
 
 - Fix pickle issue, making sure that ``data_header`` always match the object
-  state. [!157]
+  state. [:pull:`157`]
 
 - Add a `mpdaf.obj.Spectrum.to_spectrum1d` method to interact with specutils.
-  [!158]
+  [:pull:`158`]
 
 - Ensure that a Unit object is created from the unit parameter, and fix variance
-  units for multiply and divide. [!150]
+  units for multiply and divide. [:pull:`150`]
 
 - Add function to create a mask of sources (`mpdaf.obj.mask_sources`), using
   photutils.
@@ -68,7 +68,7 @@ Development version, not released yet.
   instead of the median.
 
 - Add function to get z for given line position (`mpdaf.sdetect.z_if_linepos`).
-  [!159]
+  [:pull:`159`]
 
 - Speed up `mpdaf.sdetect.crackz` by only testing redshifts of line pairs.
 
@@ -79,12 +79,12 @@ Development version, not released yet.
 
 - Add a new class to manage FSF models (`mpdaf.MUSE.FSFModel`). The old tools
   are deprecated (``mpdaf.MUSE.get_FSF_from_cube_keywords``,
-  ``mpdaf.MUSE.FSF``).  [!151]
+  ``mpdaf.MUSE.FSF``).  [:pull:`151`]
 
 Muselet
 ~~~~~~~
 
-Numerous changes to muselet. [!160]
+Numerous changes to muselet. [:pull:`160`]
 
 - Improved treatment of extended sources: expand image sizes, as needed, returns
   sextractor segmentation mask.
@@ -115,21 +115,21 @@ Pixtable
   since version 2.4, with the ``autocalib="deepfield"`` parameter.
 
 - Add the `~mpdaf.drs.plot_autocal_factors` function to plot the autocalib
-  corrections. [!138]
+  corrections. [:pull:`138`]
 
 Muselet
 ~~~~~~~
 
-- Fix Muselet issue with AO cubes. [#513]
+- Fix Muselet issue with AO cubes. [:issue:`513`]
 
 Cube, Image, Spectrum
 ~~~~~~~~~~~~~~~~~~~~~
 
 - Add `mpdaf.obj.Cube.get_band_image` to create images with the same filters as
-  the DRS (this includes HST, SDSS, or other filters). [!146]
+  the DRS (this includes HST, SDSS, or other filters). [:pull:`146`]
 
 - Add rgb plotting function `~mpdaf.obj.plot_rgb` and a method to Source
-  objects (`mpdaf.sdetect.Source.show_rgb`). [!123]
+  objects (`mpdaf.sdetect.Source.show_rgb`). [:pull:`123`]
 
 - Adds parameter to avoid the float32/float64 conversions: by default arrays in
   Spectrum/Image/Cube are converted to float32 when saving, to save some disk
@@ -138,36 +138,36 @@ Cube, Image, Spectrum
   [!126, !!135]
 
 - Remove duplicate air/vacuum conversion functions, now available as
-  `mpdaf.obj.airtovac` and `mpdaf.obj.vactoair`. [!127]
+  `mpdaf.obj.airtovac` and `mpdaf.obj.vactoair`. [:pull:`127`]
 
-- Fix subcube when using ``np.ma.nomask`` [!128].
+- Fix subcube when using ``np.ma.nomask`` [:pull:`128`].
 
 - Check that FITS file's naxis is compatible with the class [#505, !129]
 
-- Fix the copy of FITS header to respect the initial order of keywords. [!137]
+- Fix the copy of FITS header to respect the initial order of keywords. [:pull:`137`]
 
 Source, Catalog
 ~~~~~~~~~~~~~~~
 
 - Support the use of metadata in ``Source`` tables and ``Catalog``. Keywords
   IDNAME, RANAME and DECNAME can be used to specify the column names for the ID,
-  RA and DEC columns that are used in several ``Catalog`` methods. [!124]
+  RA and DEC columns that are used in several ``Catalog`` methods. [:pull:`124`]
 
-- Speedup ``get_FSF_from_cube_keywords``. [!131]
+- Speedup ``get_FSF_from_cube_keywords``. [:pull:`131`]
 
-- Add ``cube.min()``. [!133]
+- Add ``cube.min()``. [:pull:`133`]
 
 - Correct bug in source crackz execution.
 
 - Correct bug in match to return only one catalog when option ``full_output``
-  is False. [!139]
+  is False. [:pull:`139`]
 
-- Fix ``get_emlines`` to use unicode for line type. [!142]
+- Fix ``get_emlines`` to use unicode for line type. [:pull:`142`]
 
 Misc
 ~~~~
 
-- Fix pickling of MPDAF objects when the header does not match the data. [!141]
+- Fix pickling of MPDAF objects when the header does not match the data. [:pull:`141`]
 
 - Fix warnings with recent Numpy versions.
 
@@ -175,7 +175,7 @@ Misc
 2.5.1 (16/03/2018)
 ------------------
 
-- Fix ``Spectrum.gauss_fit`` to always return a positive fwhm. [#501]
+- Fix ``Spectrum.gauss_fit`` to always return a positive fwhm. [:issue:`501`]
 
 - Fix several issues with the ``CubeList`` C extension:
 
@@ -337,9 +337,9 @@ CubeList
 Sources
 ~~~~~~~
 
-- Fix removal of extension with the optimized source writing. [!87]
+- Fix removal of extension with the optimized source writing. [:pull:`87`]
 
-- Add an overwrite parameter to `~mpdaf.sdetect.Source.write`. [#485]
+- Add an overwrite parameter to `~mpdaf.sdetect.Source.write`. [:issue:`485`]
 
 - Fix text truncated in source history.
 
@@ -364,24 +364,24 @@ v2.2 (24/01/2017)
 
 - Compatibility with Astropy 1.3
 
-- Fix direct replacement of .data in a Cube/Image/Spectrum object. [!82]
+- Fix direct replacement of .data in a Cube/Image/Spectrum object. [:pull:`82`]
 
 WCS
 ~~~
 
-- Fix bugs with the handling of ``CROTa``. [!77]
+- Fix bugs with the handling of ``CROTa``. [:pull:`77`]
 
 Image
 ~~~~~
 
 - Fix bug in `~mpdaf.obj.Image.rebin` when the ``factor`` parameter is a tuple.
-  [#483]
+  [:issue:`483`]
 
 Spectrum
 ~~~~~~~~
 
 - Add HST filters to the list of filters available in
-  `~mpdaf.obj.Spectrum.abmag_filter_name`. [#484]
+  `~mpdaf.obj.Spectrum.abmag_filter_name`. [:issue:`484`]
 
 Cube
 ~~~~
@@ -402,7 +402,7 @@ CubeList
 Sources
 ~~~~~~~
 
-- Correct behaviour when adding an image not overlapping with Source. [#482]
+- Correct behaviour when adding an image not overlapping with Source. [:issue:`482`]
 
 Catalog
 ~~~~~~~
@@ -417,7 +417,7 @@ Pixtable
   ``subtract_slice_median`` and ``divide_slice_median`` methods (which have
   been removed). The new method works differently, gives better results, and no
   more requires to pre-compute a mean sky spectrum with
-  `~mpdaf.drs.PixTable.sky_ref`. [!78]
+  `~mpdaf.drs.PixTable.sky_ref`. [:pull:`78`]
 
 v2.1 (16/11/2016)
 -----------------
@@ -429,10 +429,10 @@ New Features
   ``fits_kwargs`` parameter.
 
 * Allow to write ``CHECKSUM``/``DATASUM`` when saving a FITS file (use
-  ``checksum=True``). [!53]
+  ``checksum=True``). [:pull:`53`]
 
 * ``Image`` and ``Spectrum`` objects keep now by default the type of the FITS
-  data (like ``Cube``). [!50]
+  data (like ``Cube``). [:pull:`50`]
 
 * Add ``dtype`` property to Data classes (Spectrum/Image/Cube).
 
@@ -442,9 +442,9 @@ New Features
 * Determine the reference frame from the primary header if possible and don't
   force it if not found in the primary header.  HST and MUSE files usually have
   the EQUINOX/RADESYS/RADECSYS keywords only in the primary header, which cause
-  MPDAF to use ICRS instead of FK5. [!47] Add reference frame in ``WCS.info``.
+  MPDAF to use ICRS instead of FK5. [:pull:`47`] Add reference frame in ``WCS.info``.
 
-* Enhance ``fftconvolve`` and add this method for ``Cube``. [!52]
+* Enhance ``fftconvolve`` and add this method for ``Cube``. [:pull:`52`]
 
 * New method `MUSE.get_FSF_from_cube_keywords
   <mpdaf.MUSE.get_FSF_from_cube_keywords>` which creates a cube of FSFs
@@ -558,7 +558,7 @@ Image
 Cube
 ~~~~
 
-* Fix bug in ``Cube.rebin``. [!471]
+* Fix bug in ``Cube.rebin``. [:pull:`471`]
 
 * Improved the method ``bandpass_image``:
 
@@ -612,7 +612,7 @@ Sources
 * Add primary indexes (with unicity constraint) to `mag['BAND']` and
   ``z['Z_DESC']`` for simpler indexing.
 
-* Correct behaviour when trying to add image not overlapping with Source [!482].
+* Correct behaviour when trying to add image not overlapping with Source [:pull:`482`].
 
 
 Catalogs
@@ -627,7 +627,7 @@ Catalogs
 
 * Add comments and histories in catalog generated from a list of Source objects.
 
-* Update Catalog documentation [!467]
+* Update Catalog documentation [:pull:`467`]
 
 * Correct issue #466:
 

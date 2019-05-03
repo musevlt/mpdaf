@@ -36,6 +36,7 @@ if os.path.isfile(os.path.join(mpdaf_dir, '_githash.py')):
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
+    'sphinx.ext.extlinks',
     'sphinx.ext.ifconfig',
     'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
@@ -117,6 +118,10 @@ setup_logging(stream=sys.stdout)
 # Class documentation should contain *both* the class docstring and
 # the __init__ docstring
 autoclass_content = "both"
+
+gitlab_url = 'https://git-cral.univ-lyon1.fr/MUSE/mpdaf'
+extlinks = {'issue': (gitlab_url + '/issues/%s', '#'),
+            'pull': (gitlab_url + '/merge_requests/%s', '!')}
 
 # Render inheritance diagrams in SVG
 graphviz_output_format = "svg"
