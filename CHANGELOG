@@ -3,8 +3,33 @@
 
 Development version, not released yet.
 
+- Fix `mpdaf.sdetect.Source.info` to correctly print header comments.
+
+- Allow to use a correction for zero offset in `mpdaf.obj.CubeList.combine`.
+  [!163]
+
+- Fix precision issue with `mpdaf.obj.WCS.isEqual` and add precision keywords.
+  [!164]
+
+- Fix issue with `mpdaf.sdetect.Catalog.meta` copy to make it compatible with
+  Astropy 3.2.
+
+- Several bugfixes for `mpdaf.MUSE.FSFModel`.
+
+- Add some utilities : `mpdaf.tools.isiter`, `mpdaf.tools.progressbar`,
+  `mpdaf.tools.isnotebook`.
+
+- New `mpdaf.sdetect.Segmap` class to manage segmentation maps, and
+  `mpdaf.sdetect.create_masks_from_segmap` function to create masks from
+  a segmentation map. [!166]
+
 - The `WaveCoord.coord` now accepts a ``medium`` parameter to force getting the
   air or the vacuum wavelength coordinates. [!167]
+
+- Add more emission lines and fix a bug in `mpdaf.sdetect.get_emlines` when
+  ``restframe=True``. [!168]
+
+- Fix a bug in Muselet, when some id are missing in the segmentation map. [#521]
 
 
 3.1 (03/04/2019)
