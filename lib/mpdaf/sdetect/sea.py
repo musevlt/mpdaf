@@ -61,8 +61,7 @@ from ..obj import Image, Spectrum
 from ..tools import broadcast_to_cube, MpdafWarning
 
 __all__ = ('findCentralDetection', 'union', 'intersection', 'findSkyMask',
-           'segmentation', 'mask_creation', 'compute_spectrum',
-           'compute_optimal_spectrum')
+           'segmentation', 'compute_spectrum', 'compute_optimal_spectrum')
 
 DEFAULT_SEX_FILES = ['default.nnw', 'default.param', 'default.sex',
                      'gauss_5.0_9x9.conv']
@@ -282,20 +281,6 @@ def segmentation(source, tags, DIR, remove):
         for tag, data in maps.items():
             ima = Image(wcs=wcs, data=data, dtype=np.uint8, copy=False)
             source.images['SEG_' + tag] = ima
-
-
-def mask_creation(source, maps):
-    wcs = source.images['MUSE_WHITE'].wcs
-    yc, xc = wcs.sky2pix((source.DEC, source.RA), unit=u.deg)[0]
-    r = findCentralDetection(maps, yc, xc, tolerance=3)
-
-    segmaps = list(r['seg'].values())
-    source.images['MASK_UNION'] = Image(wcs=wcs, dtype=np.uint8, copy=False,
-                                        data=union(segmaps))
-    source.images['MASK_SKY'] = Image(wcs=wcs, dtype=np.uint8, copy=False,
-                                      data=findSkyMask(list(maps.values())))
-    source.images['MASK_INTER'] = Image(wcs=wcs, dtype=np.uint8, copy=False,
-                                        data=intersection(segmaps))
 
 
 def compute_spectrum(cube, weights):
