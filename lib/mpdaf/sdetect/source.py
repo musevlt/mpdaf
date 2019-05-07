@@ -48,7 +48,8 @@ import shutil
 import warnings
 
 from astropy.io import fits as pyfits
-from astropy.table import Table, MaskedColumn, vstack
+from astropy.table import Table, MaskedColumn, Column, vstack
+from astropy.coordinates import SkyCoord
 from functools import partial
 from numpy import ma
 from scipy.optimize import leastsq
@@ -1617,6 +1618,49 @@ class Source:
 
         """
         self.tables[name] = tab
+        
+    def add_catalogs(self, catalogs, colra='RA', coldec='DEC', coldist='DIST', digit=3):
+        """add a list of catalogs of neighbouring sources in the field
+        and sort them is distance from the source
+
+        Parameters
+        ----------
+        catalogs : dictionary od catalogs
+            {key: catalog} 
+        colra: string
+            name of RA column
+            default: RA
+        coldec: string
+            name of DEC column
+            default: DEC
+        coldist: string
+            name of the column with the distance to the source in arcsec
+            set to None to skip distance computation
+            default: DIST
+        digit: integer
+            if digit is not None, the distnace values are rounded to digit
+            default: 3
+
+        """
+        if 'MUSE_WHITE' not in self.images:
+            raise ValueError('key MUSE_WHITE not present in the images dictionary')
+        
+        for key,cat in catalogs.items():
+            scat = cat.select(wcs=self.images['MUSE_WHITE'].wcs)
+            if len(scat) == 0:
+                continue
+            if coldist is not None:
+                scat[colra].unit = u.deg
+                scat[coldec].unit = u.deg
+                scat_coords = scat.to_skycoord(ra=colra, dec=coldec)
+                src_coord = SkyCoord(ra=self.RA, dec=self.DEC, unit=('deg', 'deg'), frame='fk5')
+                dist = src_coord.separation(scat_coords)
+                if digit is not None:
+                    dist = np.round(dist.arcsec,digit)
+                scat.add_column(Column(data=dist, name=coldist), index=1)
+                scat.sort(coldist)       
+            self.tables[key] = scat        
+ 
 
     def extract_spectra(self, cube, obj_mask='MASK_UNION', sky_mask='MASK_SKY',
                         tags_to_try=('MUSE_WHITE', 'NB_LYALPHA',
