@@ -49,7 +49,6 @@ import warnings
 
 from astropy.io import fits as pyfits
 from astropy.table import Table, MaskedColumn, Column, vstack
-from astropy.coordinates import SkyCoord
 from functools import partial
 from numpy import ma
 from scipy.optimize import leastsq
@@ -1607,7 +1606,8 @@ class Source:
                                         data=intersection(list(r['seg'].values())))
 
     def add_table(self, tab, name, columns=None, select_in='MUSE_WHITE',
-                  margin=0, ra=None, dec=None, coldist='DIST', digit=3):
+                  margin=0, ra=None, dec=None, col_dist='DIST',
+                  col_edgedist=None, digit=3):
         """Append an astropy table to the tables dictionary.
 
         Parameters
@@ -1624,12 +1624,15 @@ class Source:
         margin : int
             Margin from the edges (pixels) for the WCS selection.
         ra : str
-            Name of the RA column (degrees) for the WCS selection.
+            Name of the RA column (degrees) for WCS selection and distance.
         dec : str
-            Name of the DEC column (degrees) for the WCS selection.
-        coldist : str
+            Name of the DEC column (degrees) for WCS selection and distance.
+        col_dist : str
             Name of the column with the distance to the source in arcsec.
             If None distance is not computed. Defaults to DIST.
+        col_edgedist : str
+            Name of the column with the distance to the image edges.
+            If None distance is not computed.
         digit : int
             Number of digits to round distances, defaults to 3.
 
@@ -1643,20 +1646,21 @@ class Source:
             if len(tab) == 0:
                 return
 
-            if coldist is not None:
-                tab[ra].unit = u.deg
-                tab[dec].unit = u.deg
-                scat_coords = tab.to_skycoord(ra=ra, dec=dec)
-                src_coord = SkyCoord(ra=self.RA, dec=self.DEC,
-                                     unit=('deg', 'deg'), frame='fk5')
-                dist = src_coord.separation(scat_coords).arcsec
-                if digit is not None:
-                    dist = np.round(dist, digit)
-                tab.add_column(Column(data=dist, name=coldist), index=1)
-                tab.sort(coldist)
+        if col_dist is not None:
+            from astropy.coordinates import SkyCoord
 
-            # if coldist is not None:
-            #     tab[coldist] = tab.edgedist(wcs, ra=ra, dec=dec)
+            scat_coords = tab.to_skycoord(ra=ra, dec=dec)
+            src_coord = SkyCoord(ra=self.RA, dec=self.DEC,
+                                 unit=('deg', 'deg'), frame='fk5')
+            tab[col_dist] = src_coord.separation(scat_coords).arcsec
+            if digit is not None:
+                tab[col_dist] = np.round(tab[col_dist], digit)
+            tab.sort(col_dist)
+
+        if col_edgedist is not None:
+            tab[col_edgedist] = tab.edgedist(wcs, ra=ra, dec=dec)
+            if digit is not None:
+                tab[col_edgedist] = np.round(tab[col_edgedist], digit)
 
         self.tables[name] = tab
 
