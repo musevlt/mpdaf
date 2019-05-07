@@ -48,7 +48,7 @@ import shutil
 import warnings
 
 from astropy.io import fits as pyfits
-from astropy.table import Table, MaskedColumn, vstack
+from astropy.table import Table, MaskedColumn, Column, vstack
 from functools import partial
 from numpy import ma
 from scipy.optimize import leastsq
@@ -1605,17 +1605,63 @@ class Source:
         self.images[inter_mask] = Image(wcs=wcs, dtype=np.uint8, copy=False,
                                         data=intersection(list(r['seg'].values())))
 
-    def add_table(self, tab, name):
+    def add_table(self, tab, name, columns=None, select_in='MUSE_WHITE',
+                  margin=0, ra=None, dec=None, col_dist='DIST',
+                  col_edgedist=None, digit=3):
         """Append an astropy table to the tables dictionary.
 
         Parameters
         ----------
-        tab : astropy.table.Table
-            Input astropy table object.
+        tab : `astropy.table.Table` or `mpdaf.sdetect.Catalog`
+            Input Table object.
         name : str
-            Name used to distinguish this table
+            Name used to distinguish this table.
+        columns : list of str
+            List of column names to select.
+        select_in : str
+            Name of the image (available in the source) to use for the WCS
+            selection.
+        margin : int
+            Margin from the edges (pixels) for the WCS selection.
+        ra : str
+            Name of the RA column (degrees) for WCS selection and distance.
+        dec : str
+            Name of the DEC column (degrees) for WCS selection and distance.
+        col_dist : str
+            Name of the column with the distance to the source in arcsec.
+            If None distance is not computed. Defaults to DIST.
+        col_edgedist : str
+            Name of the column with the distance to the image edges.
+            If None distance is not computed.
+        digit : int
+            Number of digits to round distances, defaults to 3.
 
         """
+        if columns:
+            tab = tab[columns]
+
+        if select_in:
+            wcs = self.images[select_in].wcs
+            tab = tab.select(wcs, ra=ra, dec=dec, margin=margin)
+            if len(tab) == 0:
+                return
+
+        if col_dist is not None:
+            from astropy.coordinates import SkyCoord
+
+            scat_coords = tab.to_skycoord(ra=ra, dec=dec)
+            src_coord = SkyCoord(ra=self.RA, dec=self.DEC,
+                                 unit=('deg', 'deg'), frame='fk5')
+            tab[col_dist] = src_coord.separation(scat_coords).arcsec
+            if digit is not None:
+                tab[col_dist] = np.round(tab[col_dist], digit)
+            tab.sort(col_dist)
+
+        if col_edgedist is not None:
+            tab[col_edgedist] = tab.edgedist(wcs, ra=ra, dec=dec)
+            if digit is not None:
+                tab[col_edgedist] = np.round(tab[col_edgedist], digit)
+
         self.tables[name] = tab
 
     def extract_spectra(self, cube, obj_mask='MASK_UNION', sky_mask='MASK_SKY',
