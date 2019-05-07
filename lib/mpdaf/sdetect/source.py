@@ -1606,61 +1606,59 @@ class Source:
         self.images[inter_mask] = Image(wcs=wcs, dtype=np.uint8, copy=False,
                                         data=intersection(list(r['seg'].values())))
 
-    def add_table(self, tab, name):
+    def add_table(self, tab, name, columns=None, select_in='MUSE_WHITE',
+                  margin=0, ra=None, dec=None, coldist='DIST', digit=3):
         """Append an astropy table to the tables dictionary.
 
         Parameters
         ----------
-        tab : astropy.table.Table
-            Input astropy table object.
+        tab : `astropy.table.Table` or `mpdaf.sdetect.Catalog`
+            Input Table object.
         name : str
-            Name used to distinguish this table
+            Name used to distinguish this table.
+        columns : list of str
+            List of column names to select.
+        select_in : str
+            Name of the image (available in the source) to use for the WCS
+            selection.
+        margin : int
+            Margin from the edges (pixels) for the WCS selection.
+        ra : str
+            Name of the RA column (degrees) for the WCS selection.
+        dec : str
+            Name of the DEC column (degrees) for the WCS selection.
+        coldist : str
+            Name of the column with the distance to the source in arcsec.
+            If None distance is not computed. Defaults to DIST.
+        digit : int
+            Number of digits to round distances, defaults to 3.
 
         """
-        self.tables[name] = tab
-        
-    def add_catalogs(self, catalogs, colra='RA', coldec='DEC', coldist='DIST', digit=3):
-        """add a list of catalogs of neighbouring sources in the field
-        and sort them is distance from the source
+        if columns:
+            tab = tab[columns]
 
-        Parameters
-        ----------
-        catalogs : dictionary od catalogs
-            {key: catalog} 
-        colra: string
-            name of RA column
-            default: RA
-        coldec: string
-            name of DEC column
-            default: DEC
-        coldist: string
-            name of the column with the distance to the source in arcsec
-            set to None to skip distance computation
-            default: DIST
-        digit: integer
-            if digit is not None, the distnace values are rounded to digit
-            default: 3
+        if select_in:
+            wcs = self.images[select_in].wcs
+            tab = tab.select(wcs, ra=ra, dec=dec, margin=margin)
+            if len(tab) == 0:
+                return
 
-        """
-        if 'MUSE_WHITE' not in self.images:
-            raise ValueError('key MUSE_WHITE not present in the images dictionary')
-        
-        for key,cat in catalogs.items():
-            scat = cat.select(wcs=self.images['MUSE_WHITE'].wcs)
-            if len(scat) == 0:
-                continue
             if coldist is not None:
-                scat[colra].unit = u.deg
-                scat[coldec].unit = u.deg
-                scat_coords = scat.to_skycoord(ra=colra, dec=coldec)
-                src_coord = SkyCoord(ra=self.RA, dec=self.DEC, unit=('deg', 'deg'), frame='fk5')
-                dist = src_coord.separation(scat_coords)
+                tab[ra].unit = u.deg
+                tab[dec].unit = u.deg
+                scat_coords = tab.to_skycoord(ra=ra, dec=dec)
+                src_coord = SkyCoord(ra=self.RA, dec=self.DEC,
+                                     unit=('deg', 'deg'), frame='fk5')
+                dist = src_coord.separation(scat_coords).arcsec
                 if digit is not None:
-                    dist = np.round(dist.arcsec,digit)
-                scat.add_column(Column(data=dist, name=coldist), index=1)
-                scat.sort(coldist)       
-            self.tables[key] = scat        
- 
+                    dist = np.round(dist, digit)
+                tab.add_column(Column(data=dist, name=coldist), index=1)
+                tab.sort(coldist)
+
+            # if coldist is not None:
+            #     tab[coldist] = tab.edgedist(wcs, ra=ra, dec=dec)
+
+        self.tables[name] = tab
 
     def extract_spectra(self, cube, obj_mask='MASK_UNION', sky_mask='MASK_SKY',
                         tags_to_try=('MUSE_WHITE', 'NB_LYALPHA',
