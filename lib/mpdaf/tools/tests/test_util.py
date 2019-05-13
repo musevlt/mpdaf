@@ -97,7 +97,7 @@ def test_timeit(caplog):
         return foo
 
     assert func('a', bar=0.1) == 'a'
-    assert re.search(r"INFO     'func' \(\('a',\), {'bar': 0.1}\) 0.1\d sec",
+    assert re.search(r"INFO .* 'func' \(\('a',\), {'bar': 0.1}\) 0.1\d sec",
                      caplog.text) is not None
 
 
