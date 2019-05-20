@@ -1,3 +1,7 @@
+stages:
+  - setup
+  - test
+
 before_script:
   - export PYENV_ROOT="$HOME/.pyenv"
   - export PATH="$PYENV_ROOT/bin:$PATH"
@@ -5,27 +9,34 @@ before_script:
   - export LANG=C.UTF-8
   - eval "$(pyenv init -)"
   - pyenv local 3.5.5 3.6.4 3.7.0
-  - pip install -U tox tox-pyenv
   - pwd
 
+# this build is run first, to update tox and run the check on setup
+check-setup:
+  stage: setup
+  script:
+    - pip install -U tox tox-pyenv
+    - tox -v -e check
+
 py35:
+  stage: test
   script:
     - tox -v -e py35 -- --pyargs mpdaf
 
 py36:
+  stage: test
   script:
     - tox -v -e py36 -- --pyargs mpdaf
 
 py37:
+  stage: test
   script:
     - tox -v -e py37 -- -m \'\' --pyargs mpdaf
-
-check-setup:
-  script: tox -v -e check
 
 # astropy-dev:
 #   allow_failure: true
 #   script: tox -v -e astropy-dev
 
 docs:
+  stage: test
   script: tox -v -e docs
