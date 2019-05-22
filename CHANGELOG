@@ -1,7 +1,8 @@
-3.2.dev (xx/xx/xxxx)
---------------------
+3.2 (22/05/2019)
+----------------
 
-Development version, not released yet.
+- New `mpdaf.sdetect.Source.add_cat` method.
+  [:pull:`172`]
 
 - Fix `mpdaf.sdetect.Source.info` to correctly print header comments.
 
