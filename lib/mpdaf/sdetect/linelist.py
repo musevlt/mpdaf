@@ -62,6 +62,7 @@ emlines = np.array([
     ('FEII1608', 1608.45, None,    None,    'is', 0,      0, 0, None), #FeII
     ('FEII1611', 1611.20, None,    None,    'is', 0,      0, 0, "Feɪɪ"),
     ('HEII1640', 1640.42, 1630.0, 1651.0,   'em', 0,      0, 2, "Heɪɪ"),
+    ('OIII1660', 1660.81, None,    None,    'em', 0,      0, 2, None), #OIII
     ('OIII1666', 1666.15, None,    None,    'em', 0,      0, 2, "Oɪɪɪ]"),
     ('ALII1671', 1670.79, None,    None,    'is', 0,      0, 0, "Alɪɪ"),
     ('AL1854',   1854.10, None,    None,    'is', 0,      0, 0, None), #AlIII
