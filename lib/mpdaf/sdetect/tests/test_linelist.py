@@ -38,7 +38,7 @@ from mpdaf.sdetect import get_emlines, z_from_linepos
 
 
 def test_linelist():
-    assert len(get_emlines()) == 61
+    assert len(get_emlines()) == 62
     assert len(get_emlines(family=1)) == 9
     assert len(get_emlines(doublet=True, z=3.0, vac=False)) == 12
     assert get_emlines(iden='FOO') is None
