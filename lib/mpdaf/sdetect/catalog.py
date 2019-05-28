@@ -987,6 +987,7 @@ class Catalog(Table):
         ra, dec = self._get_radec_colnames((ra, dec))
         arr = np.vstack([self[dec].data, self[ra].data]).T
         cen = wcs.sky2pix(arr, unit=u.deg).T
+        cen = (cen + 0.5).astype(int)
         sel = ((cen[0] > margin) & (cen[0] < wcs.naxis2 - margin) &
                (cen[1] > margin) & (cen[1] < wcs.naxis1 - margin))
         if mask is not None:
