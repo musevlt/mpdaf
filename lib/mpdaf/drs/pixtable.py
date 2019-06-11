@@ -153,6 +153,7 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
     save_as_ima : bool
         If True, pixtable is saved as multi-extension FITS
     """
+    fits.conf.extension_name_case_sensitive = True
     warnings.simplefilter("ignore")
 
     if primary_header is not None:
@@ -212,6 +213,7 @@ def write(filename, xpos, ypos, lbda, data, dq, stat, origin, weight=None,
 
     hdu.writeto(filename, overwrite=True, output_verify='fix')
     warnings.simplefilter("default")
+    fits.conf.reset('extension_name_case_sensitive')
 
 
 def plot_autocal_factors(filename, savefig=None, plot_rejected=False,
