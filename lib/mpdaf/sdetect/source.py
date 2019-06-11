@@ -1602,12 +1602,14 @@ class Source:
                 maps[tag] = self.images[tag].data.data
 
         r = findCentralDetection(maps, yc, xc, tolerance=3)
-        self.images[inter_mask] = Image(wcs=wcs, dtype=np.uint8, copy=False,
-                                        data=intersection(list(r['seg'].values())))
+        self.images[inter_mask] = Image(
+            wcs=wcs, dtype=np.uint8, copy=False,
+            data=intersection(list(r['seg'].values()))
+        )
 
-    def add_table(self, tab, name, columns=None, select_in='MUSE_WHITE',
-                  margin=0, ra=None, dec=None, col_dist='DIST',
-                  col_edgedist=None, digit=3):
+    def add_table(self, tab, name, columns=None, select_in=None, margin=0,
+                  ra=None, dec=None, col_dist=None, col_edgedist=None,
+                  digit=3):
         """Append an astropy table to the tables dictionary.
 
         Parameters
