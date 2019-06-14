@@ -496,8 +496,9 @@ class PixTable:
         - 'projected' for reduced pixtables
 
         """
-        wcs = self.get_keyword("WCS")
-        return wcs.split(' ')[0]
+        wcs = self.get_keyword("WCS", None)
+        if wcs is not None:
+            return wcs.split(' ')[0]
 
     def copy(self):
         """Copy PixTable object in a new one and returns it."""
@@ -637,6 +638,31 @@ class PixTable:
                 setattr(self, attr_name, getattr(self, 'get_' + name)())
             attr = getattr(self, attr_name)
             attr[ksel] = data
+
+    def get_row(self, idx):
+        """Return a row of the pixtable, or rows if given a list of indices.
+
+        Parameters
+        ----------
+        idx : int or list of int or ndarray
+            The row indices.
+
+        Returns
+        -------
+        dict
+            The method returns a dict with a value or array of values for each
+            column of the pixtable.
+
+        """
+        return {
+            'xpos': self.get_xpos(idx),
+            'ypos': self.get_ypos(idx),
+            'lbda': self.get_lambda(idx),
+            'data': self.get_data(idx),
+            'stat': self.get_stat(idx),
+            'dq': self.get_dq(idx),
+            'origin': self.get_origin(idx),
+        }
 
     def get_xpos(self, ksel=None, unit=None):
         """Load the xpos column and return it.
