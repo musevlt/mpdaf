@@ -1,3 +1,23 @@
+3.3dev (xx/xx/2019)
+-------------------
+
+- In `mpdaf.sdetect.get_emlines`, encode the DNAME column in bytes to make it
+  easier to export tables with this into FITS.
+
+- Add OIII1660 in `mpdaf.sdetect.linelist`.
+
+- Fix conversion to pixel coordinates in `mpdaf.sdetect.Catalog.select`.
+
+- Avoid crashes with `mpdaf.sdetect.Source.add_table` when some extension are
+  missing in the Source. By default, ``select_in`` and ``col_dist`` are not
+  used.
+
+- Use lowercase extension names when writing a `~mpdaf.drs.PixTable`, otherwise
+  the DRS is not able to read it. This fixes a regression introduced in
+  a previous version.
+
+- Add `mpdaf.drs.PixTable.get_row` to access pixtable rows.
+
 3.2 (22/05/2019)
 ----------------
 

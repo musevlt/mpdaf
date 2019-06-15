@@ -77,6 +77,7 @@ class TestBasicPixTable(unittest.TestCase):
 
     @classmethod
     def setUp(self):
+        np.random.seed(42)
         self.xpos = np.linspace(1, 10, NROWS)
         self.ypos = np.linspace(2, 6, NROWS)
         self.lbda = np.linspace(5000, 8000, NROWS)
@@ -182,6 +183,21 @@ class TestBasicPixTable(unittest.TestCase):
         assert_array_equal(self.data, self.pix.get_data(unit=u.count))
         assert_array_equal(self.stat, self.pix2.get_stat())
         assert_array_equal(self.stat, self.pix.get_stat(unit=u.count**2))
+
+    def test_get_row(self):
+        assert self.pix.get_row(0) == {
+            'xpos': 1,
+            'ypos': 2,
+            'lbda': 5000,
+            'data': 0,
+            'stat': 0,
+            'dq': 0,
+            'origin': 1241548872,
+        }
+
+        res = self.pix.get_row([0, 1, 2])
+        assert len(res['xpos']) == 3
+        assert_array_equal(res['origin'], [1241548872, 908518680, 541389771])
 
     def test_set_column(self):
         for pixt in (self.pix, self.pix2):
