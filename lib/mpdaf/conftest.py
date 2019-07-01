@@ -45,11 +45,38 @@ from .tests.utils import (get_data_file, generate_cube, generate_image,
                           generate_spectrum)
 
 
+# Show versions if installed package in pytest's header
+
 def pytest_report_header(config):
     return "Deps: Numpy {}, Scipy {}, Matplotlib {}, Astropy {}".format(
         np.__version__, scipy.__version__, matplotlib.__version__,
         astropy.__version__)
 
+
+# Add a --runslow option to run slow tests
+# From https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--runslow", action="store_true", default=False, help="run slow tests"
+    )
+
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "slow: mark test as slow to run")
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--runslow"):
+        # --runslow given in cli: do not skip slow tests
+        return
+    skip_slow = pytest.mark.skip(reason="need --runslow option to run")
+    for item in items:
+        if "slow" in item.keywords:
+            item.add_marker(skip_slow)
+
+
+# Fixtures
 
 @pytest.fixture
 def minicube():
