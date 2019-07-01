@@ -1,6 +1,7 @@
 stages:
   - setup
   - test
+  - extra
 
 before_script:
   - export PYENV_ROOT="$HOME/.pyenv"
@@ -31,12 +32,19 @@ py36:
 py37:
   stage: test
   script:
-    - tox -v -e py37 -- -m \'\' --pyargs mpdaf
+    - tox -v -e py37 -- --pyargs mpdaf
 
-# astropy-dev:
-#   allow_failure: true
-#   script: tox -v -e astropy-dev
+py37-slow:
+  stage: extra
+  script:
+    - tox -v -e py37 -- -m 'slow' --pyargs mpdaf
+
+pre:
+  allow_failure: true
+  stage: extra
+  script:
+    - tox --pre -v -e py37 -- --pyargs mpdaf
 
 docs:
-  stage: test
+  stage: extra
   script: tox -v -e docs
