@@ -160,7 +160,8 @@ def test_from_ndarray():
     # fact all references to the same mask.
     assert_array_equal(d.data.mask, mask)
     assert_array_equal(d.var.mask, mask)
-    assert d.data.mask is d.mask and d.var.mask is d.mask
+    assert np.shares_memory(d.data.mask, d.mask)
+    assert np.shares_memory(d.var.mask, d.mask)
 
     # Test data with different dtypes
     d = DataArray(data=data.astype(np.float32), var=var.astype(np.float32),
@@ -215,8 +216,8 @@ def test_copy():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert cube2.data.mask is cube2.mask
-    assert cube2.var.mask is cube2.mask
+    assert np.shares_memory(cube2.data.mask, cube2.mask)
+    assert np.shares_memory(cube2.var.mask, cube2.mask)
 
 
 def test_clone(cube):
@@ -279,8 +280,8 @@ def test_clone_with_data():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert cube2.data.mask is cube2.mask
-    assert cube2.var.mask is cube2.mask
+    assert np.shares_memory(cube2.data.mask, cube2.mask)
+    assert np.shares_memory(cube2.var.mask, cube2.mask)
 
 
 def test_pickle(cube, minicube):
@@ -349,7 +350,7 @@ def test_set_var():
 
     # Check that the data and masked properties still both hold
     # references to the same mask array.
-    assert cube.data.mask is cube.mask
+    assert np.shares_memory(cube.data.mask, cube.mask)
 
 
 def test_comparisons():
@@ -375,7 +376,8 @@ def test_comparisons():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert s.data.mask is s.mask and s.var.mask is s.mask
+    assert np.shares_memory(s.data.mask, s.mask)
+    assert np.shares_memory(s.var.mask, s.mask)
 
     # [ __lt__ ]
 
@@ -390,7 +392,8 @@ def test_comparisons():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert s.data.mask is s.mask and s.var.mask is s.mask
+    assert np.shares_memory(s.data.mask, s.mask)
+    assert np.shares_memory(s.var.mask, s.mask)
 
     # [ __ge__ ]
 
@@ -405,7 +408,8 @@ def test_comparisons():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert s.data.mask is s.mask and s.var.mask is s.mask
+    assert np.shares_memory(s.data.mask, s.mask)
+    assert np.shares_memory(s.var.mask, s.mask)
 
     # [ __gt__ ]
 
@@ -420,7 +424,8 @@ def test_comparisons():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert s.data.mask is s.mask and s.var.mask is s.mask
+    assert np.shares_memory(s.data.mask, s.mask)
+    assert np.shares_memory(s.var.mask, s.mask)
 
 
 def test_getitem():
@@ -459,7 +464,8 @@ def test_getitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert s.data.mask is s.mask and s.var.mask is s.mask
+    assert np.shares_memory(s.data.mask, s.mask)
+    assert np.shares_memory(s.var.mask, s.mask)
 
     # Check that the wavelength of the first spectrum pixel matches that
     # of pixel za,ya,xa in the original cube.
@@ -485,7 +491,8 @@ def test_getitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert s.data.mask is s.mask and s.var.mask is s.mask
+    assert np.shares_memory(s.data.mask, s.mask)
+    assert np.shares_memory(s.var.mask, s.mask)
 
     # Check that the world coordinates of the first pixel of the
     # image match those of pixel(za,ya,xa) of the original cube.
@@ -510,7 +517,8 @@ def test_getitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert s.data.mask is s.mask and s.var.mask is s.mask
+    assert np.shares_memory(s.data.mask, s.mask)
+    assert np.shares_memory(s.var.mask, s.mask)
 
     # Check that the world coordinates of the first pixel of the
     # image match those of pixel(za,ya,xa) of the original cube.
@@ -533,7 +541,8 @@ def test_getitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert s.data.mask is s.mask and s.var.mask is s.mask
+    assert np.shares_memory(s.data.mask, s.mask)
+    assert np.shares_memory(s.var.mask, s.mask)
 
     # Extract a sub-cube of values from the unmasked area of the cube
     # and check that all its data and variances are not masked.
@@ -544,7 +553,8 @@ def test_getitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert s.data.mask is s.mask and s.var.mask is s.mask
+    assert np.shares_memory(s.data.mask, s.mask)
+    assert np.shares_memory(s.var.mask, s.mask)
 
 
 def test_setitem():
@@ -589,8 +599,8 @@ def test_setitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert cube2.data.mask is cube2.mask
-    assert cube2.var.mask is cube2.mask
+    assert np.shares_memory(cube2.data.mask, cube2.mask)
+    assert np.shares_memory(cube2.var.mask, cube2.mask)
 
     # Next assign the same array, but as part of a 3D DataArray
     # with variances and a mask.
@@ -607,8 +617,8 @@ def test_setitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert cube2.data.mask is cube2.mask
-    assert cube2.var.mask is cube2.mask
+    assert np.shares_memory(cube2.data.mask, cube2.mask)
+    assert np.shares_memory(cube2.var.mask, cube2.mask)
 
     # ----------------------------------
     # Test the assignment of sub-images.
@@ -634,8 +644,8 @@ def test_setitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert cube2.data.mask is cube2.mask
-    assert cube2.var.mask is cube2.mask
+    assert np.shares_memory(cube2.data.mask, cube2.mask)
+    assert np.shares_memory(cube2.var.mask, cube2.mask)
 
     # Next assign the same array, but as part of a 2D DataArray
     # with variances and a mask.
@@ -655,8 +665,8 @@ def test_setitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert cube2.data.mask is cube2.mask
-    assert cube2.var.mask is cube2.mask
+    assert np.shares_memory(cube2.data.mask, cube2.mask)
+    assert np.shares_memory(cube2.var.mask, cube2.mask)
 
     # -----------------------------------
     # Test the assignment of sub-spectra.
@@ -681,8 +691,8 @@ def test_setitem():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert cube2.data.mask is cube2.mask
-    assert cube2.var.mask is cube2.mask
+    assert np.shares_memory(cube2.data.mask, cube2.mask)
+    assert np.shares_memory(cube2.var.mask, cube2.mask)
 
 
 def test_get_wcs_header():
@@ -775,8 +785,8 @@ def test_write(tmpdir):
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert cube2.data.mask is cube2.mask
-    assert cube2.var.mask is cube2.mask
+    assert np.shares_memory(cube2.data.mask, cube2.mask)
+    assert np.shares_memory(cube2.var.mask, cube2.mask)
 
     # Test the dtype conversion and savemask=nan
     assert cube.dtype == np.float64
@@ -828,7 +838,8 @@ def test_sqrt():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert s.data.mask is s.mask and s.var.mask is s.mask
+    assert np.shares_memory(s.data.mask, s.mask)
+    assert np.shares_memory(s.var.mask, s.mask)
 
     # Given a sample of value x, picked from a distribution of variance vx,
     # compute the expected variance, vs, of sqrt(x).
@@ -862,7 +873,8 @@ def test_sqrt():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert s.data.mask is s.mask and s.var.mask is s.mask
+    assert np.shares_memory(s.data.mask, s.mask)
+    assert np.shares_memory(s.var.mask, s.mask)
 
 
 def test_abs():
@@ -887,8 +899,8 @@ def test_abs():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert spec2.data.mask is spec2.mask
-    assert spec2.var.mask is spec2.mask
+    assert np.shares_memory(spec2.data.mask, spec2.mask)
+    assert np.shares_memory(spec2.var.mask, spec2.mask)
 
 
 def test_unmask():
@@ -917,8 +929,8 @@ def test_unmask():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert spec.data.mask is spec.mask
-    assert spec.var.mask is spec.mask
+    assert np.shares_memory(spec.data.mask, spec.mask)
+    assert np.shares_memory(spec.var.mask, spec.mask)
 
 
 def test_mask_variance():
@@ -948,8 +960,8 @@ def test_mask_variance():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert spec.data.mask is spec.mask
-    assert spec.var.mask is spec.mask
+    assert np.shares_memory(spec.data.mask, spec.mask)
+    assert np.shares_memory(spec.var.mask, spec.mask)
 
 
 def test_mask_selection():
@@ -976,8 +988,8 @@ def test_mask_selection():
 
     # Check that the data, var and masked properties all hold
     # references to the same mask array.
-    assert spec.data.mask is spec.mask
-    assert spec.var.mask is spec.mask
+    assert np.shares_memory(spec.data.mask, spec.mask)
+    assert np.shares_memory(spec.var.mask, spec.mask)
 
 
 def test_shared_masks():
@@ -1023,8 +1035,8 @@ def test_shared_masks():
     spec.var = new_var
     assert_masked_allclose(spec.var, ma.array(new_var, mask=expected_mask))
     assert_masked_allclose(spec.data, ma.array(old_data, mask=expected_mask))
-    assert spec.data.mask is spec.mask
-    assert spec.var.mask is spec.mask
+    assert np.shares_memory(spec.data.mask, spec.mask)
+    assert np.shares_memory(spec.var.mask, spec.mask)
 
     # ----------------------------------------------------------------
     # Assign a MaskedArray of the same shape to DataArray.var:
@@ -1055,8 +1067,8 @@ def test_shared_masks():
     assert_masked_allclose(spec.var,
                            ma.array(new_var.data, mask=expected_mask))
     assert_masked_allclose(spec.data, ma.array(old_data, mask=expected_mask))
-    assert spec.data.mask is spec.mask
-    assert spec.var.mask is spec.mask
+    assert np.shares_memory(spec.data.mask, spec.mask)
+    assert np.shares_memory(spec.var.mask, spec.mask)
 
     # ----------------------------------------------------------------
     # Assign a numpy.ndarray of the same shape to DataArray.data:
@@ -1084,8 +1096,8 @@ def test_shared_masks():
     spec.data = new_data
     assert_masked_allclose(spec.var, ma.array(old_var, mask=expected_mask))
     assert_masked_allclose(spec.data, ma.array(new_data, mask=expected_mask))
-    assert spec.data.mask is spec.mask
-    assert spec.var.mask is spec.mask
+    assert np.shares_memory(spec.data.mask, spec.mask)
+    assert np.shares_memory(spec.var.mask, spec.mask)
 
     # ----------------------------------------------------------------
     # Assign a MaskedArray of the same shape to DataArray.data:
@@ -1119,8 +1131,8 @@ def test_shared_masks():
     assert_masked_allclose(spec.var, ma.array(old_var, mask=expected_mask))
     assert_masked_allclose(spec.data,
                            ma.array(new_data, mask=expected_mask))
-    assert spec.data.mask is spec.mask
-    assert spec.var.mask is spec.mask
+    assert np.shares_memory(spec.data.mask, spec.mask)
+    assert np.shares_memory(spec.var.mask, spec.mask)
 
     # ----------------------------------------------------------------
     # Assign a numpy.ndarray of a different shape to DataArray.var:
@@ -1344,8 +1356,8 @@ def test_shared_masks():
     assert_array_equal(spec.data.mask, expected_mask)
     assert_array_equal(spec.var.mask, expected_mask)
     assert_array_equal(spec.mask, expected_mask)
-    assert spec.data.mask is spec.mask
-    assert spec.var.mask is spec.mask
+    assert np.shares_memory(spec.data.mask, spec.mask)
+    assert np.shares_memory(spec.var.mask, spec.mask)
 
     # ----------------------------------------------------------------
     # Attempt to assign a mask of a different size to the masked property.
@@ -1384,8 +1396,8 @@ def test_shared_masks():
     assert_masked_allclose(spec.var, ma.array(old_var, mask=expected_mask))
     assert_allclose(spec.data.data[30:32], old_data[30:32])
     assert_allclose(spec.var.data[32:34], old_var[32:34])
-    assert spec.data.mask is spec.mask
-    assert spec.var.mask is spec.mask
+    assert np.shares_memory(spec.data.mask, spec.mask)
+    assert np.shares_memory(spec.var.mask, spec.mask)
 
     # ----------------------------------------------------------------
     # Check that in-place arithmetic operations work when they mask
@@ -1412,8 +1424,8 @@ def test_shared_masks():
     spec.var[32:34] *= ma.array([2.0, 2.0], mask=[True, False])
     assert_masked_allclose(spec.data, ma.array(new_data, mask=expected_mask))
     assert_masked_allclose(spec.var, ma.array(new_var, mask=expected_mask))
-    assert spec.data.mask is spec.mask
-    assert spec.var.mask is spec.mask
+    assert np.shares_memory(spec.data.mask, spec.mask)
+    assert np.shares_memory(spec.var.mask, spec.mask)
 
 
 def test_non_masked_data():
@@ -1484,8 +1496,8 @@ def test_non_masked_data():
                            ma.array(new_data.data, mask=expected_mask))
     assert_masked_allclose(spec.var,
                            ma.array(old_var, mask=expected_mask))
-    assert spec.data.mask is spec.mask
-    assert spec.var.mask is spec.mask
+    assert np.shares_memory(spec.data.mask, spec.mask)
+    assert np.shares_memory(spec.var.mask, spec.mask)
 
     # Assign a masked array of the same size to the var property.
     new_mask = ma.make_mask_none(n)
@@ -1505,8 +1517,8 @@ def test_non_masked_data():
                            ma.array(old_data, mask=expected_mask))
     assert_masked_allclose(spec.var,
                            ma.array(new_var.data, mask=expected_mask))
-    assert spec.data.mask is spec.mask
-    assert spec.var.mask is spec.mask
+    assert np.shares_memory(spec.data.mask, spec.mask)
+    assert np.shares_memory(spec.var.mask, spec.mask)
 
 
 def test_float32_ndarray():
@@ -1536,7 +1548,8 @@ def test_float32_ndarray():
     # fact all references to the same mask.
     assert_array_equal(d.data.mask, mask)
     assert_array_equal(d.var.mask, mask)
-    assert d.data.mask is d.mask and d.var.mask is d.mask
+    assert np.shares_memory(d.data.mask, d.mask)
+    assert np.shares_memory(d.var.mask, d.mask)
 
 
 def test_replace_data():
