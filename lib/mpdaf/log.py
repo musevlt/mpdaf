@@ -59,7 +59,7 @@ def colored(text, color):
 
 
 def setup_logging(name='mpdaf', level='DEBUG', color=False, stream=None,
-                  fmt='[%(levelname)s] %(message)s', clear_handlers=True):
+                  fmt='[%(levelname)s] %(message)s', datefmt=None, clear_handlers=True):
     """Setup stream handler for a given logger.
 
     Parameters
@@ -86,7 +86,7 @@ def setup_logging(name='mpdaf', level='DEBUG', color=False, stream=None,
 
     steam_handler = logging.StreamHandler(stream)
     steam_handler.setLevel(level)
-    formatter = logging.Formatter(fmt)
+    formatter = logging.Formatter(fmt, datefmt=datefmt)
     if color:
         # Jupyter
         try:
@@ -97,13 +97,13 @@ def setup_logging(name='mpdaf', level='DEBUG', color=False, stream=None,
             pass
         else:
             if isinstance(sys.stdout, ipykernel.iostream.OutStream):
-                formatter = ColoredFormatter(fmt)
+                formatter = ColoredFormatter(fmt, datefmt=datefmt)
 
         # Try to detect if stdout is a tty
         try:
             if (os.isatty(sys.stdout.fileno()) and
                     not sys.platform.startswith('win')):
-                formatter = ColoredFormatter(fmt)
+                formatter = ColoredFormatter(fmt, datefmt=datefmt)
         except IOError:
             pass
     steam_handler.setFormatter(formatter)
@@ -112,11 +112,11 @@ def setup_logging(name='mpdaf', level='DEBUG', color=False, stream=None,
 
 def setup_logfile(name='mpdaf', level=logging.DEBUG, logfile='mpdaf.log',
                   fmt='%(asctime)s [%(levelname)s] {%(name)s:%(lineno)d} '
-                      '%(message)s', rotating=True):
+                      '%(message)s', datefmt=None, rotating=True):
     """Setup logging to file."""
 
     logger = logging.getLogger(name)
-    formatter = logging.Formatter(fmt)
+    formatter = logging.Formatter(fmt, datefmt=datefmt)
     if rotating:
         from logging.handlers import RotatingFileHandler
         file_handler = RotatingFileHandler(logfile, 'a', 1000000, 1)
