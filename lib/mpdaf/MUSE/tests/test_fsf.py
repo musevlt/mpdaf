@@ -148,3 +148,15 @@ def test_fsf_arrays():
     c = fsf2.get_cube(tcube.wave, cube.wcs, center=(10, 10))
     assert c.shape == (5, 30, 30)
     assert np.unravel_index(c[0].data.argmax(), c.shape[1:]) == (10, 10)
+
+def test_fsf_convolve():
+    lbrange = [4750.0,9350.0]
+    beta_pol = [0.425572268419153, -0.963126218379342, -0.0014311681713689742,
+                -0.0064324103352929405, 0.09098701358534873, 2.0277399948419843]
+    fwhm_pol = [0.6321570666462952, -0.06284858095522032, 0.04282359923274102, 
+               0.045673032671778586, -0.1864068502712748, 0.3693082688212182]
+    fsf = MoffatModel2(fwhm_pol, beta_pol, lbrange, 0.2)
+    
+    fsf2 = fsf.convolve(cfwhm=0.1)
+    assert_allclose(fsf2.get_fwhm(7000), 0.3919, rtol=1e-3) 
+    assert_allclose(fsf2.get_beta(7000), 2.1509, rtol=1e-3)
