@@ -176,6 +176,11 @@ def test_combine_fsf():
                 0.5566091154793532, -0.4488955513549307, 1.7496593644278122]
     fsf2 = MoffatModel2(fwhm_pol, beta_pol, lbrange, 0.2)    
     
-    fsf = combine_fsf([fsf1,fsf2])
-    #assert_allclose(fsf2.get_fwhm(7000), 0.3919, rtol=1e-3) 
-    #assert_allclose(fsf2.get_beta(7000), 2.1509, rtol=1e-3)
+    fsf,cube = combine_fsf([fsf1,fsf1])
+    assert_allclose(fsf.get_fwhm(7000), fsf1.get_fwhm(7000), rtol=1.e-6)
+    assert_allclose(fsf.get_beta(7000), fsf1.get_beta(7000), rtol=1.e-6)
+    
+    
+    fsf,cube = combine_fsf([fsf1,fsf2])
+    assert_allclose(fsf.get_fwhm(7000), 0.397959, rtol=1.e-3)
+    assert_allclose(fsf.get_beta(7000), 1.843269, rtol=1.e-3)    
