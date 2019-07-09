@@ -558,9 +558,53 @@ class MoffatModel2(FSFModel):
         else:
             return fsf
             
+def combine_fsf(fsflist, nlbda=20, size=21):
+    """
+    Combine a list of FSF
+    
+    Parameters
+    ----------
+    fsflist : list of `~mpdaf.MUSE.fsf.MoffatModel2`
+         list of FSF models
+    nlbda : int
+         Number of wavelengths
+    size : int
+         Image FSF size in pixel 
+         
+    Returns
+    -------
+    fsf : `~mpdaf.MUSE.fsf.MoffatModel2`
+         fsf model
+    cube : `~mpdaf.obj.Cube`
+         cube of FSF
+    """   
+    
+    lbda = np.linspace(fsflist[0].lbrange[0], fsflist[0].lbrange[1], nlbda)
+    shape = (size,size)
+    
+    # create FSF datacube as average of all FSF for each lbda
+    fsfcube = Cube(data=np.zeros((nlbda,size,size)), wcs=WCS())
+    fwhm = []
+    beta = []
+    for k,lb in enumerate(lbda):
+        # compute array
+        fsfarray = fsflist[0].get_2darray(lb, shape)
+        for fsf in fsflist[1:]:
+            fsfarray += fsf.get_2darray(lb, shape)
+        fsfarray /= fsfarray.sum()
+        fsfcube[k,:,:] = fsfarray
+        # fit a Moffat
+        fit = fsfcube[k,:,:].moffat_fit(fit_back=False, circular=True, unit_fwhm=None, unit_center=None, verbose=False)
+        fwhm.append(fit.fwhm[0]*0.2)
+        beta.append(fit.n) 
+    # polynomial fit
+    lbdanorm = norm_lbda(lbda, fsflist[0].lbrange[0], fsflist[0].lbrange[1])
+    fwhm_pol, fwhm_pval, fwhm_err = fit_poly(lbdanorm, fwhm, len(fsflist[0].fwhm_pol)-1)
+    beta_pol, beta_pval, beta_err = fit_poly(lbdanorm, beta, len(fsflist[0].beta_pol)-1)
+    fsf = MoffatModel2(fwhm_pol, beta_pol, fsflist[0].lbrange, fsflist[0].pixstep)
+    
+    return fsf,fsfcube
         
-        
-
 
 # class EllipticalMoffatModel(FSFModel):
 
