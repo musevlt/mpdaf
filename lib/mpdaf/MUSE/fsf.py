@@ -380,12 +380,12 @@ class MoffatModel2(FSFModel):
         return hdr
 
     @classmethod
-    def from_psfrec(cls, rawfilename):
+    def from_psfrec(cls, rawfilename, **kwargs):
         # Try to import muse-psfr, if not available raise an error
         from muse_psfr import psfrec
         logger = logging.getLogger(__name__)
         logger.debug('Computing PSF from Sparta data file %s', rawfilename)
-        res = psfrec.compute_psf_from_sparta(rawfilename)
+        res = psfrec.compute_psf_from_sparta(rawfilename, **kwargs)
         data = res['FIT_MEAN'].data
         lbda, fwhm, beta = (data['lbda'], data['fwhm'][:, 0], data['n'])
         logger.debug('Fitting polynomial on FWHM (lbda) and Beta(lbda)')
