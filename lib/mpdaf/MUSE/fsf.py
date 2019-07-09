@@ -35,7 +35,10 @@ import logging
 import numpy as np
 import warnings
 from astropy.io import fits
+from astropy.table import Table
 from astropy.modeling.models import Moffat2D as astMoffat2D
+from astropy.convolution import convolve_fft, Gaussian2DKernel
+from astropy.modeling import fitting
 from astropy.stats import sigma_clip
 
 from ..obj import Cube, WCS, Image
@@ -386,6 +389,13 @@ class MoffatModel2(FSFModel):
         logger = logging.getLogger(__name__)
         logger.debug('Computing PSF from Sparta data file %s', rawfilename)
         res = psfrec.compute_psf_from_sparta(rawfilename, **kwargs)
+        for k,r in enumerate(Table(res[1].data)):
+            logger.debug('%02d: Seeing %.02f,%.02f,%.02f,%.02f GL %.02f,%.02f,%.02f,%.02f L0 %.02f,%.02f,%.02f,%.02f',
+                          k+1,
+                          r['LGS1_SEEING'],r['LGS2_SEEING'],r['LGS3_SEEING'],r['LGS4_SEEING'],
+                          r['LGS1_TUR_GND'],r['LGS2_TUR_GND'],r['LGS3_TUR_GND'],r['LGS4_TUR_GND'],
+                          r['LGS1_L0'],r['LGS2_L0'],r['LGS3_L0'],r['LGS4_L0']
+                          )    
         data = res['FIT_MEAN'].data
         lbda, fwhm, beta = (data['lbda'], data['fwhm'][:, 0], data['n'])
         logger.debug('Fitting polynomial on FWHM (lbda) and Beta(lbda)')
@@ -492,7 +502,117 @@ class MoffatModel2(FSFModel):
     def get_beta(self, lbda):
         lb = norm_lbda(lbda, self.lbrange[0], self.lbrange[1])
         return np.polyval(self.beta_pol, lb)
-
+    
+    def _convolve_one(self, lbda, cfwhm, size=21, samp=10):
+        """ convolve the FSF by a given kernel """
+        shape = (size*samp,size*samp)
+        fwhm0 = self.get_fwhm(lbda, unit='pix')*samp
+        beta0 = self.get_beta(lbda)
+        data = Moffat2D(fwhm0, beta0, shape)
+        im = Image(wcs=WCS(shape=shape), data=data)
+        cfwhmpix  = cfwhm*samp/self.pixstep
+        cim = im.fftconvolve_gauss(fwhm=(cfwhmpix,cfwhmpix), unit_center=None, unit_fwhm=None)
+        fit = cim.moffat_fit(fit_back=False, circular=True, unit_fwhm=None, unit_center=None, verbose=False)
+        fwhm = fit.fwhm[0]*self.pixstep/samp
+        beta = fit.n
+        return (fwhm,beta)
+    
+    def convolve(self, cfwhm, samp=10, nlbda=20, size=21, full_output=False):
+        """
+        Convolve the FSF with a Gaussian kernel
+        
+        Parameters
+        ----------
+        cfwhm : float
+             Gaussian FWHM in arcsec
+        samp : int
+             Resampling factor
+        nlbda : int
+             Number of wavelengths
+        size : int
+             Image FSF size in pixel
+        full_output: bool
+             If True, return an additional dictionary
+             
+        Returns
+        -------
+        fsf : `~mpdaf.MUSE.fsf.MoffatModel2`
+             fsf model
+        res : dict
+             res['lbda']: wavelengths
+             res['fwhm0']: initial FWHM values
+             res['fwhm1']: FWHM values after convolution
+             res['beta0']: initial BETA values
+             res['beta1']: BETA values after convolution
+        """
+        lbda = np.linspace(self.lbrange[0], self.lbrange[1], nlbda)
+        fwhm1 = []
+        beta1 = []
+        fwhm0 = []
+        beta0 = []
+        for lb in lbda:
+            fwhm0.append(self.get_fwhm(lb))
+            beta0.append(self.get_beta(lb))
+            f,b = self._convolve_one(lb, cfwhm, size=size, samp=samp)
+            fwhm1.append(f)
+            beta1.append(b)
+        lbdanorm = norm_lbda(lbda, self.lbrange[0], self.lbrange[1])
+        fwhm_pol, fwhm_pval, fwhm_err = fit_poly(lbdanorm, fwhm1, len(self.fwhm_pol)-1)
+        beta_pol, beta_pval, beta_err = fit_poly(lbdanorm, beta1, len(self.beta_pol)-1)
+        fsf = MoffatModel2(fwhm_pol, beta_pol, self.lbrange, self.pixstep)
+        
+        if full_output:
+            return fsf, dict(fwhm0=fwhm0, fwhm1=fwhm1, beta0=beta0, beta1=beta1, lbda=lbda)
+        else:
+            return fsf
+            
+def combine_fsf(fsflist, nlbda=20, size=21):
+    """
+    Combine a list of FSF
+    
+    Parameters
+    ----------
+    fsflist : list of `~mpdaf.MUSE.fsf.MoffatModel2`
+         list of FSF models
+    nlbda : int
+         Number of wavelengths
+    size : int
+         Image FSF size in pixel 
+         
+    Returns
+    -------
+    fsf : `~mpdaf.MUSE.fsf.MoffatModel2`
+         fsf model
+    cube : `~mpdaf.obj.Cube`
+         cube of FSF
+    """   
+    
+    lbda = np.linspace(fsflist[0].lbrange[0], fsflist[0].lbrange[1], nlbda)
+    shape = (size,size)
+    
+    # create FSF datacube as average of all FSF for each lbda
+    fsfcube = Cube(data=np.zeros((nlbda,size,size)), wcs=WCS())
+    fwhm = []
+    beta = []
+    for k,lb in enumerate(lbda):
+        # compute array
+        fsfarray = fsflist[0].get_2darray(lb, shape)
+        for fsf in fsflist[1:]:
+            fsfarray += fsf.get_2darray(lb, shape)
+        fsfarray /= fsfarray.sum()
+        fsfcube[k,:,:] = fsfarray
+        # fit a Moffat
+        fit = fsfcube[k,:,:].moffat_fit(fit_back=False, circular=True, unit_fwhm=None, unit_center=None, verbose=False)
+        fwhm.append(fit.fwhm[0]*0.2)
+        beta.append(fit.n) 
+    # polynomial fit
+    lbdanorm = norm_lbda(lbda, fsflist[0].lbrange[0], fsflist[0].lbrange[1])
+    fwhm_pol, fwhm_pval, fwhm_err = fit_poly(lbdanorm, fwhm, len(fsflist[0].fwhm_pol)-1)
+    beta_pol, beta_pval, beta_err = fit_poly(lbdanorm, beta, len(fsflist[0].beta_pol)-1)
+    fsf = MoffatModel2(fwhm_pol, beta_pol, fsflist[0].lbrange, fsflist[0].pixstep)
+    
+    return fsf,fsfcube
+        
 
 # class EllipticalMoffatModel(FSFModel):
 
