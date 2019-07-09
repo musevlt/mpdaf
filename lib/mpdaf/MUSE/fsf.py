@@ -35,6 +35,7 @@ import logging
 import numpy as np
 import warnings
 from astropy.io import fits
+from astropy.table import Table
 from astropy.modeling.models import Moffat2D as astMoffat2D
 from astropy.convolution import convolve_fft, Gaussian2DKernel
 from astropy.modeling import fitting
@@ -388,6 +389,13 @@ class MoffatModel2(FSFModel):
         logger = logging.getLogger(__name__)
         logger.debug('Computing PSF from Sparta data file %s', rawfilename)
         res = psfrec.compute_psf_from_sparta(rawfilename, **kwargs)
+        for k,r in enumerate(Table(res[1].data)):
+            logger.debug('%02d: Seeing %.02f,%.02f,%.02f,%.02f GL %.02f,%.02f,%.02f,%.02f L0 %.02f,%.02f,%.02f,%.02f',
+                          k+1,
+                          r['LGS1_SEEING'],r['LGS2_SEEING'],r['LGS3_SEEING'],r['LGS4_SEEING'],
+                          r['LGS1_TUR_GND'],r['LGS2_TUR_GND'],r['LGS3_TUR_GND'],r['LGS4_TUR_GND'],
+                          r['LGS1_L0'],r['LGS2_L0'],r['LGS3_L0'],r['LGS4_L0']
+                          )    
         data = res['FIT_MEAN'].data
         lbda, fwhm, beta = (data['lbda'], data['fwhm'][:, 0], data['n'])
         logger.debug('Fitting polynomial on FWHM (lbda) and Beta(lbda)')
