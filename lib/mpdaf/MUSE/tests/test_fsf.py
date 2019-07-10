@@ -150,37 +150,38 @@ def test_fsf_arrays():
     assert c.shape == (5, 30, 30)
     assert np.unravel_index(c[0].data.argmax(), c.shape[1:]) == (10, 10)
 
+
 def test_fsf_convolve():
-    lbrange = [4750.0,9350.0]
+    lbrange = [4750.0, 9350.0]
     beta_pol = [0.425572268419153, -0.963126218379342, -0.0014311681713689742,
                 -0.0064324103352929405, 0.09098701358534873, 2.0277399948419843]
-    fwhm_pol = [0.6321570666462952, -0.06284858095522032, 0.04282359923274102, 
-               0.045673032671778586, -0.1864068502712748, 0.3693082688212182]
+    fwhm_pol = [0.6321570666462952, -0.06284858095522032, 0.04282359923274102,
+                0.045673032671778586, -0.1864068502712748, 0.3693082688212182]
     fsf = MoffatModel2(fwhm_pol, beta_pol, lbrange, 0.2)
-    
+
     fsf2 = fsf.convolve(cfwhm=0.1)
-    assert_allclose(fsf2.get_fwhm(7000), 0.3919, rtol=1e-3) 
+    assert_allclose(fsf2.get_fwhm(7000), 0.3919, rtol=1e-3)
     assert_allclose(fsf2.get_beta(7000), 2.1509, rtol=1e-3)
-    
+
+
 def test_combine_fsf():
-    lbrange = [4750.0,9350.0]
+    lbrange = [4750.0, 9350.0]
     beta_pol = [0.425572268419153, -0.963126218379342, -0.0014311681713689742,
                 -0.0064324103352929405, 0.09098701358534873, 2.0277399948419843]
-    fwhm_pol = [0.6321570666462952, -0.06284858095522032, 0.04282359923274102, 
-               0.045673032671778586, -0.1864068502712748, 0.3693082688212182]
+    fwhm_pol = [0.6321570666462952, -0.06284858095522032, 0.04282359923274102,
+                0.045673032671778586, -0.1864068502712748, 0.3693082688212182]
     fsf1 = MoffatModel2(fwhm_pol, beta_pol, lbrange, 0.2)
-    
+
     fwhm_pol = [0.6539648695212446, -0.09803896219961082, 0.0768935513209841,
                 0.13029884613164275, -0.30890727537189494, 0.4420737174631386]
     beta_pol = [1.3422018214910905, -1.0824007679002177, 0.0654899276450118,
                 0.5566091154793532, -0.4488955513549307, 1.7496593644278122]
-    fsf2 = MoffatModel2(fwhm_pol, beta_pol, lbrange, 0.2)    
-    
-    fsf,cube = combine_fsf([fsf1,fsf1])
+    fsf2 = MoffatModel2(fwhm_pol, beta_pol, lbrange, 0.2)
+
+    fsf, cube = combine_fsf([fsf1, fsf1])
     assert_allclose(fsf.get_fwhm(7000), fsf1.get_fwhm(7000), rtol=1.e-6)
     assert_allclose(fsf.get_beta(7000), fsf1.get_beta(7000), rtol=1.e-6)
-    
-    
-    fsf,cube = combine_fsf([fsf1,fsf2])
+
+    fsf, cube = combine_fsf([fsf1, fsf2])
     assert_allclose(fsf.get_fwhm(7000), 0.397959, rtol=1.e-3)
-    assert_allclose(fsf.get_beta(7000), 1.843269, rtol=1.e-3)    
+    assert_allclose(fsf.get_beta(7000), 1.843269, rtol=1.e-3)
