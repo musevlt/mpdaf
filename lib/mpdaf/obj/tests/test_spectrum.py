@@ -429,10 +429,11 @@ def test_integrate():
     # Integrate the whole spectrum, by not specifying starting or ending
     # wavelengths. This should be the sum of the pixel values multiplied
     # by cdelt in angstroms (because the flux units are per angstrom).
-    result = spectrum1.integrate()[0]
+    result, err = spectrum1.integrate()
     expected = spectrum1.get_step(unit=u.angstrom) * spectrum1.sum()[0]
     assert_almost_equal(result.value, expected)
     assert result.unit == u.ct
+    assert np.isinf(err)
 
     # The result should not change if we change the wavelength units of
     # the wavelength limits to nanometers.
@@ -440,6 +441,11 @@ def test_integrate():
     expected = spectrum1.get_step(unit=u.angstrom) * spectrum1.sum()[0]
     assert_almost_equal(result.value, expected)
     assert result.unit == u.ct
+
+    # new spectrum with variance
+    spectrum1 = Spectrum(data=np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+                         var=np.ones(10), wave=wave,
+                         unit=u.Unit('ct/Angstrom'))
 
     # Integrate over a wavelength range 3.5 to 6.5 nm. The WCS
     # conversion equation from wavelength to pixel index is,
@@ -453,15 +459,22 @@ def test_integrate():
     # half of cdelt, plus the value of pixel 3 times half of cdelt.
     # This comes to 2*3.0/2 + 3*3.0/2 = 7.5 ct/Angstrom*nm, which
     # should be rescaled to 75 ct, since nm/Angstrom is 10.0.
-    result = spectrum1.integrate(lmin=3.5, lmax=6.5, unit=u.nm)[0]
+    result, err = spectrum1.integrate(lmin=3.5, lmax=6.5, unit=u.nm)
     assert_almost_equal(result.value, 75)
     assert result.unit == u.ct
+
+    datasum, var = spectrum1.sum(lmin=3.5, lmax=6.5, unit=u.nm)
+    assert_almost_equal(result.value, datasum * 15)
+    assert_almost_equal(err.value, var * 15)
 
     # Do the same test, but specify the wavelength limits in angstroms.
     # The result should be the same as before.
     result = spectrum1.integrate(lmin=35.0, lmax=65.0, unit=u.angstrom)[0]
     assert_almost_equal(result.value, 75)
     assert result.unit == u.ct
+
+    assert_almost_equal(result.value, datasum * 15)
+    assert_almost_equal(err.value, var * 15)
 
     # Do the same experiment yet again, but this time after changing
     # the flux units of the spectrum to simple counts, without any per

@@ -965,10 +965,10 @@ class Spectrum(ArithmeticMixin, DataArray):
         # the start of the next pixel.
         flux = (data * np.diff(d)).sum() * out_unit
         if self.var is None:
-            err_flux = np.inf * out_unit
+            err_flux = np.inf
         else:
-            err_flux = (self.var[i1:i2] * np.diff(d**2)).sum() * out_unit
-        return (flux, err_flux)
+            err_flux = np.sqrt((self.var[i1:i2] * np.diff(d)**2).sum())
+        return (flux, err_flux * out_unit)
 
     def poly_fit(self, deg, weight=True, maxiter=0,
                  nsig=(-3.0, 3.0), verbose=False):
