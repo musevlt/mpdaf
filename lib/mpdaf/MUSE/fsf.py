@@ -39,7 +39,7 @@ from astropy.table import Table
 from astropy.modeling.models import Moffat2D as astMoffat2D
 from astropy.stats import sigma_clip
 
-from ..obj import Cube, WCS, Image
+from ..obj import Cube, WCS, Image, iter_ima
 from ..tools import all_subclasses
 
 __all__ = ['Moffat2D', 'FSFModel', 'OldMoffatModel', 'MoffatModel2']
@@ -552,22 +552,19 @@ class MoffatModel2(FSFModel):
         lbda = np.linspace(self.lbrange[0], self.lbrange[1], nlbda)
         fwhm1 = []
         beta1 = []
-        fwhm0 = []
-        beta0 = []
         for lb in lbda:
-            fwhm0.append(self.get_fwhm(lb))
-            beta0.append(self.get_beta(lb))
             f, b = self._convolve_one(lb, cfwhm, size=size, samp=samp)
             fwhm1.append(f)
             beta1.append(b)
+
         lbdanorm = norm_lbda(lbda, self.lbrange[0], self.lbrange[1])
-        fwhm_pol, fwhm_pval, fwhm_err = fit_poly(lbdanorm, fwhm1,
-                                                 len(self.fwhm_pol) - 1)
-        beta_pol, beta_pval, beta_err = fit_poly(lbdanorm, beta1,
-                                                 len(self.beta_pol) - 1)
+        fwhm_pol, _, _ = fit_poly(lbdanorm, fwhm1, len(self.fwhm_pol) - 1)
+        beta_pol, _, _ = fit_poly(lbdanorm, beta1, len(self.beta_pol) - 1)
         fsf = MoffatModel2(fwhm_pol, beta_pol, self.lbrange, self.pixstep)
 
         if full_output:
+            fwhm0 = self.get_fwhm(lbda)
+            beta0 = self.get_beta(lbda)
             return fsf, dict(fwhm0=fwhm0, fwhm1=fwhm1,
                              beta0=beta0, beta1=beta1, lbda=lbda)
         else:
@@ -580,7 +577,7 @@ def combine_fsf(fsflist, nlbda=20, size=21):
 
     Parameters
     ----------
-    fsflist : list of `~mpdaf.MUSE.fsf.MoffatModel2`
+    fsflist : list of `~mpdaf.MUSE.MoffatModel2`
          list of FSF models
     nlbda : int
          Number of wavelengths
@@ -589,7 +586,7 @@ def combine_fsf(fsflist, nlbda=20, size=21):
 
     Returns
     -------
-    fsf : `~mpdaf.MUSE.fsf.MoffatModel2`
+    fsf : `~mpdaf.MUSE.MoffatModel2`
          fsf model
     cube : `~mpdaf.obj.Cube`
          cube of FSF
@@ -598,30 +595,28 @@ def combine_fsf(fsflist, nlbda=20, size=21):
     lbda = np.linspace(fsflist[0].lbrange[0], fsflist[0].lbrange[1], nlbda)
     shape = (size, size)
 
+    # compute array
+    fsfcube = fsflist[0].get_3darray(lbda, shape)
+    for fsf in fsflist[1:]:
+        fsfcube += fsf.get_3darray(lbda, shape)
+    fsfcube /= fsfcube.sum(axis=(1, 2))[:, None, None]
+
     # create FSF datacube as average of all FSF for each lbda
-    fsfcube = Cube(data=np.zeros((nlbda, size, size)), wcs=WCS())
+    fsfcube = Cube(data=fsfcube, wcs=WCS(), copy=False)
+
     fwhm = []
     beta = []
-    for k, lb in enumerate(lbda):
-        # compute array
-        fsfarray = fsflist[0].get_2darray(lb, shape)
-        for fsf in fsflist[1:]:
-            fsfarray += fsf.get_2darray(lb, shape)
-        fsfarray /= fsfarray.sum()
-        fsfcube[k, :, :] = fsfarray
+    for im in iter_ima(fsfcube):
         # fit a Moffat
-        fit = fsfcube[k, :, :].moffat_fit(fit_back=False, circular=True,
-                                          unit_fwhm=None, unit_center=None,
-                                          verbose=False)
+        fit = im.moffat_fit(fit_back=False, circular=True, unit_fwhm=None,
+                            unit_center=None, verbose=False)
         fwhm.append(fit.fwhm[0] * 0.2)
         beta.append(fit.n)
 
     # polynomial fit
     lbdanorm = norm_lbda(lbda, fsflist[0].lbrange[0], fsflist[0].lbrange[1])
-    fwhm_pol, fwhm_pval, fwhm_err = fit_poly(lbdanorm, fwhm,
-                                             len(fsflist[0].fwhm_pol) - 1)
-    beta_pol, beta_pval, beta_err = fit_poly(lbdanorm, beta,
-                                             len(fsflist[0].beta_pol) - 1)
+    fwhm_pol, _, _ = fit_poly(lbdanorm, fwhm, len(fsflist[0].fwhm_pol) - 1)
+    beta_pol, _, _ = fit_poly(lbdanorm, beta, len(fsflist[0].beta_pol) - 1)
     fsf = MoffatModel2(fwhm_pol, beta_pol, fsflist[0].lbrange,
                        fsflist[0].pixstep)
 
