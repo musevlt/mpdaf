@@ -668,7 +668,9 @@ class Image(ArithmeticMixin, DataArray):
         # Require that the image be at least minsize x minsize pixels.
         if (sy.stop - sy.start + 1) < minsize[0] or \
            (sx.stop - sx.start + 1) < minsize[1]:
-            return None
+            # Should we raise an exception instead ?
+            self.logger.warning('extracted image is too small')
+            return
 
         # Extract the requested part of the image.
         res = self[sy, sx]
