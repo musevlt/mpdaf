@@ -16,8 +16,6 @@ matrix:
            TOXARGS='--pyargs mpdaf'
     - python: 3.6
       stage: test
-      os: osx
-      language: generic
       env: TOXENV=py36
            TOXARGS='--pyargs mpdaf'
     - python: 3.7
@@ -45,7 +43,7 @@ matrix:
 
 install: pip install -U tox-travis
 
-script: tox $TOXOPTS -- $TOXARGS
+script: tox -v $TOXOPTS -- $TOXARGS
 
 after_success:
   - pip install codecov
