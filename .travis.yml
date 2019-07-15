@@ -27,6 +27,9 @@ matrix:
     - python: 3.7
       stage: extra
       env: TOXENV=docs
+      addons:
+        apt:
+          packages: graphviz
     - python: 3.7
       stage: extra
       addons:
