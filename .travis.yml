@@ -1,0 +1,44 @@
+language: python
+cache: pip
+dist: xenial
+
+matrix:
+  include:
+    # First stage: check that setup is fine
+    - python: 3.7
+      env: TOXENV=check
+      stage: setup
+    # Second stage: run tests
+    - python: 3.5
+      stage: test
+      env: TOXARGS='--pyargs mpdaf'
+    - python: 3.6
+      stage: test
+      os: osx
+      language: generic
+      env: TOXARGS='--pyargs mpdaf'
+    - python: 3.7
+      stage: test
+      env: TOXARGS='--pyargs mpdaf'
+    # Third stage: run additional tests and docs
+    - python: 3.7
+      stage: extra
+      env: TOXENV=docs
+    - python: 3.7
+      stage: extra
+      env: TOXARGS='-m "slow" --pyargs mpdaf'
+    - python: 3.7
+      stage: extra
+      env: TOXOPTS='--pre'
+
+  allow_failures:
+    - env: TOXOPTS='--pre'
+
+
+install: pip install -U tox-travis
+
+script: tox $TOXOPTS -- $TOXARGS
+
+after_success:
+  - pip install codecov
+  - codecov
