@@ -32,29 +32,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import numpy as np
 import pytest
-from os.path import join, exists
+from astropy.utils.data import download_file
 from mpdaf.drs import RawFile
 from numpy.testing import assert_array_equal
-
-from mpdaf.tests.utils import DATADIR
-
-EXTERN_DATADIR = join(DATADIR, 'extern')
-SERVER_DATADIR = '/home/gitlab-runner/mpdaf-test-data'
-
-if exists(EXTERN_DATADIR):
-    SUPP_FILES_PATH = EXTERN_DATADIR
-elif exists(SERVER_DATADIR):
-    SUPP_FILES_PATH = SERVER_DATADIR
-else:
-    SUPP_FILES_PATH = None
 
 
 @pytest.fixture
 def rawobj():
-    return RawFile(join(SUPP_FILES_PATH, 'raw.fits'))
+    filename = download_file('http://data.muse-vlt.eu/mpdaf/raw.fits.gz',
+                             cache=True, show_progress=True, timeout=None)
+    return RawFile(filename)
 
 
-@pytest.mark.skipif(not SUPP_FILES_PATH, reason="Missing test data (raw.fits)")
+@pytest.mark.remote_data
 def test_raw(rawobj):
     """Raw objects: tests initialization"""
     assert rawobj.get_keywords('ORIGIN') == 'CRAL-INM'
@@ -69,7 +59,7 @@ def test_raw(rawobj):
                        np.arange(264, 288))
 
 
-@pytest.mark.skipif(not SUPP_FILES_PATH, reason="Missing test data (raw.fits)")
+@pytest.mark.remote_data
 def test_channel(rawobj):
     chan1 = rawobj.get_channel("CHAN01")
     assert chan1.data.shape == (rawobj.ny, rawobj.nx)
@@ -95,13 +85,13 @@ def test_channel(rawobj):
     assert im.shape == (2056, 2048)
 
     im = chan1.get_trimmed_image(bias=True)
-    assert im.shape == (chan1.ny - 64*2, chan1.nx - 64*2)
+    assert im.shape == (chan1.ny - 64 * 2, chan1.nx - 64 * 2)
 
     im = chan1.get_image_mask_overscan(det_out=1)
     assert im.shape == (2056 + 64, 2048 + 64)
 
 
-@pytest.mark.skipif(not SUPP_FILES_PATH, reason="Missing test data (raw.fits)")
+@pytest.mark.remote_data
 def test_raw_mask(rawobj):
     """Raw objects: tests strimmed and overscan functionalities"""
     overscan = rawobj[1].data[24, 12]
