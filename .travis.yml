@@ -22,6 +22,9 @@ matrix:
       stage: test
       env: TOXENV=py37
            TOXARGS='--pyargs mpdaf'
+      addons:
+        apt:
+          packages: sextractor
 
     # Third stage: run additional tests and docs
     - python: 3.7
@@ -36,7 +39,7 @@ matrix:
         apt:
           packages: sextractor
       env: TOXENV=py37
-           TOXARGS='-m "slow" --pyargs mpdaf'
+           TOXARGS='-m slow --pyargs mpdaf'
     - python: 3.7
       stage: extra
       env: TOXENV=py37
