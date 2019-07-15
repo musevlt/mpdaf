@@ -8,31 +8,39 @@ matrix:
     - python: 3.7
       env: TOXENV=check
       stage: setup
+
     # Second stage: run tests
     - python: 3.5
       stage: test
-      env: TOXARGS='--pyargs mpdaf'
+      env: TOXENV=py35
+           TOXARGS='--pyargs mpdaf'
     - python: 3.6
       stage: test
       os: osx
       language: generic
-      env: TOXARGS='--pyargs mpdaf'
+      env: TOXENV=py36
+           TOXARGS='--pyargs mpdaf'
     - python: 3.7
       stage: test
-      env: TOXARGS='--pyargs mpdaf'
+      env: TOXENV=py37
+           TOXARGS='--pyargs mpdaf'
+
     # Third stage: run additional tests and docs
     - python: 3.7
       stage: extra
       env: TOXENV=docs
     - python: 3.7
       stage: extra
-      env: TOXARGS='-m "slow" --pyargs mpdaf'
+      env: TOXENV=py37
+           TOXARGS='-m "slow" --pyargs mpdaf'
     - python: 3.7
       stage: extra
-      env: TOXOPTS='--pre'
+      env: TOXENV=py37
+           TOXOPTS='--pre'
 
   allow_failures:
-    - env: TOXOPTS='--pre'
+      env: TOXENV=py37
+           TOXOPTS='--pre'
 
 
 install: pip install -U tox-travis
