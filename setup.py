@@ -200,7 +200,10 @@ setup(
     python_requires='>=3.5',
     install_requires=['numpy>=1.10.0', 'scipy', 'matplotlib', 'astropy>=1.0'],
     extras_require={
-        'all': ['numexpr', 'fitsio', 'adjustText', 'joblib', 'tqdm'],
+        'all': ['numexpr', 'fitsio', 'adjustText', 'joblib', 'tqdm',
+                'specutils'],
+        'docs': ['sphinx', 'sphinx_rtd_theme', 'sphinx_automodapi',
+                 'numpydoc', 'ipython', 'psutil'],
     },
     tests_require=['pytest'],
     package_dir={'': 'lib'},
