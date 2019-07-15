@@ -29,6 +29,9 @@ matrix:
       env: TOXENV=docs
     - python: 3.7
       stage: extra
+      addons:
+        apt:
+          packages: sextractor
       env: TOXENV=py37
            TOXARGS='-m "slow" --pyargs mpdaf'
     - python: 3.7
