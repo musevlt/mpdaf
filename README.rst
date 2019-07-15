@@ -1,10 +1,15 @@
+.. image:: https://travis-ci.org/musevlt/mpdaf.svg?branch=master
+  :target: https://travis-ci.org/musevlt/mpdaf
+
+.. image:: https://codecov.io/gh/musevlt/mpdaf/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/musevlt/mpdaf
+
 MPDAF, the *MUSE Python Data Analysis Framework*, is an open-source (BSD
 licensed) Python package, developed and maintained by `CRAL
 <https://cral.univ-lyon1.fr/>`_ and partially funded by the ERC advanced grant
 339659-MUSICOS (see `Authors and Credits
-<http://mpdaf.readthedocs.io/en/stable/credits.html>`_ for more details).
-
-It has been developed and used in the `MUSE Consortium
+<http://mpdaf.readthedocs.io/en/stable/credits.html>`_ for more details).  It
+has been developed and used in the `MUSE Consortium
 <http://muse-vlt.eu/science/>`_ for several years, and is available freely for
 the community.
 
@@ -26,24 +31,19 @@ be installed for users that still need Python 2.
 Links
 -----
 
-- `Documentation <http://mpdaf.readthedocs.io//en/stable/>`_
-- Source, issues and pull requests on a
-  `Gitlab <https://git-cral.univ-lyon1.fr/MUSE/mpdaf>`_ instance
-- Releases on `PyPI <https://pypi.org/project/mpdaf/>`_
+- `Documentation <http://mpdaf.readthedocs.io//en/stable/>`_.
+- Source, issues and pull requests on
+  `Github <https://github.com/musevlt/mpdaf/>`_ and on a
+  `Gitlab <https://git-cral.univ-lyon1.fr/MUSE/mpdaf>`_ instance.
+- Releases on `PyPI <https://pypi.org/project/mpdaf/>`_.
 - `Mailing list <mpdaf-support@osulistes.univ-lyon1.fr>`_ to get help or
-  discuss issues
+  discuss issues.
 
 Reporting Issues
 ----------------
 
-If you have found a bug in MPDAF please report it.
-
-The preferred way is to create a new issue on `the MPDAF gitlab issue page
-<https://git-cral.univ-lyon1.fr/MUSE/mpdaf/issues>`_ .  This requires creating
-a account on `git-cral <https://git-cral.univ-lyon1.fr>`_ if you don't have
-one.  To create an account, please send email to
-`mpdaf-support@osulistes.univ-lyon1.fr
-<mailto:mpdaf-support@osulistes.univ-lyon1.fr?subject=Account%20creation>`_
+If you have found a bug in MPDAF please `create an issue on Github
+<https://github.com/musevlt/mpdaf/issues/new>`_.
 
 Citing
 ------
