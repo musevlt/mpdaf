@@ -43,9 +43,10 @@ extensions = [
     'sphinx_automodapi.smart_resolver'
 ]
 if IPYTHON_LT_7_1:
-    # before IPython 7.1 use own custom version of the extension
-    sys.path.insert(0, os.path.abspath('./ext'))
-    extensions.append('ipython_directive')
+    # before IPython 7.1 we used our own custom version of the extension
+    warnings.warn(
+        "IPython 7.1 or later is required to build the code examples"
+    )
 else:
     extensions.append('IPython.sphinxext.ipython_directive')
 
@@ -58,7 +59,8 @@ try:
 except (ImportError, AttributeError):
     warnings.warn(
         "matplotlib's plot_directive could not be imported. "
-        "Inline plots will not be included in the output")
+        "Inline plots will not be included in the output"
+    )
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3/', None),
