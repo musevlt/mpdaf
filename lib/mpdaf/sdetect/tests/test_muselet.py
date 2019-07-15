@@ -60,19 +60,19 @@ def test_muselet_fast(tmpdir, minicube):
     print('Working directory:', outdir)
     muselet(filename, write_nbcube=True, cleanup=True, workdir=outdir)
 
-    #NB cube produced?
+    # NB cube produced?
     assert os.path.isfile(str(tmpdir.join('NB_cube.fits')))
 
-    #get catalogs
+    # get catalogs
     cat_lines = Catalog.read(str(tmpdir.join('lines.fit')))
     cat_objects = Catalog.read(str(tmpdir.join('objects.fit')))
-    
+
     files_lines = glob(str(tmpdir.join('lines/*')))
     files_objects = glob(str(tmpdir.join('objects/*')))
 
-    #check same length as number of sources
+    # check same length as number of sources
     assert len(cat_lines) == len(files_lines)
-    assert len(cat_objects) ==  len(files_objects)
+    assert len(cat_objects) == len(files_objects)
 
     assert len(cat_lines) == 34
     assert len(cat_objects) == 12
@@ -88,21 +88,20 @@ def test_muselet_full(tmpdir, minicube):
     muselet(minicube.filename, write_nbcube=True, cleanup=True,
             workdir=outdir, n_cpu=2)
 
-    #NB cube produced?
+    # NB cube produced?
     assert os.path.isfile(str(tmpdir.join(
         'NB_' + os.path.basename(minicube.filename))))
 
-    #get catalogs
+    # get catalogs
     cat_lines = Catalog.read(str(tmpdir.join('lines.fit')))
     cat_objects = Catalog.read(str(tmpdir.join('objects.fit')))
-    
+
     files_lines = glob(str(tmpdir.join('lines/*')))
     files_objects = glob(str(tmpdir.join('objects/*')))
 
-    #check same length as number of sources
+    # check same length as number of sources
     assert len(cat_lines) == len(files_lines)
-    assert len(cat_objects) ==  len(files_objects)
+    assert len(cat_objects) == len(files_objects)
 
     assert len(cat_lines) == 61
     assert len(cat_objects) == 15
-

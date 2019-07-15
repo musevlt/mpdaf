@@ -38,26 +38,15 @@ import tempfile
 import unittest
 
 from astropy.io import fits
+from astropy.utils.data import download_file
 from contextlib import contextmanager
 from mpdaf.drs import PixTable, pixtable
 from numpy.testing import assert_array_equal, assert_allclose
-from os.path import exists, join
-
-from mpdaf.tests.utils import DATADIR
+from os.path import join
 
 MUSE_ORIGIN_SHIFT_XSLICE = 24
 MUSE_ORIGIN_SHIFT_YPIX = 11
 MUSE_ORIGIN_SHIFT_IFU = 6
-
-EXTERN_DATADIR = join(DATADIR, 'extern')
-SERVER_DATADIR = '/home/gitlab-runner/mpdaf-test-data'
-
-if exists(EXTERN_DATADIR):
-    SUPP_FILES_PATH = EXTERN_DATADIR
-elif exists(SERVER_DATADIR):
-    SUPP_FILES_PATH = SERVER_DATADIR
-else:
-    SUPP_FILES_PATH = None
 
 # Fake dat
 NROWS = 100
@@ -288,10 +277,17 @@ class TestBasicPixTable(unittest.TestCase):
         pix2.hdulist.close()
 
 
-@pytest.mark.skipif(not SUPP_FILES_PATH, reason='Missing test data')
+@pytest.fixture
+def pixfile():
+    return download_file(
+        'http://data.muse-vlt.eu/mpdaf/testpix-small.fits.gz',
+        cache=True, show_progress=True, timeout=None
+    )
+
+
+@pytest.mark.remote_data
 @pytest.mark.parametrize('numexpr', (True, False))
-def test_select(numexpr):
-    pixfile = join(SUPP_FILES_PATH, 'testpix-small.fits')
+def test_select(numexpr, pixfile):
     pix = PixTable(pixfile)
     with toggle_numexpr(numexpr):
         pix2 = pix.extract(xpix=[(1000, 2000)], ypix=[(1000, 2000)])
@@ -304,11 +300,10 @@ def test_select(numexpr):
         assert ypix.max() <= 2000
 
 
-@pytest.mark.skipif(not SUPP_FILES_PATH, reason='Missing test data')
+@pytest.mark.remote_data
 @pytest.mark.parametrize('numexpr', (True, False))
 @pytest.mark.parametrize('shape', ('C', 'S'))
-def test_select_sky(numexpr, shape):
-    pixfile = join(SUPP_FILES_PATH, 'testpix-small.fits')
+def test_select_sky(numexpr, shape, pixfile):
     pix = PixTable(pixfile)
     with toggle_numexpr(numexpr):
         x, y = pix.get_pos_sky()
@@ -318,9 +313,8 @@ def test_select_sky(numexpr, shape):
         assert pix2.nrows < pix.nrows
 
 
-@pytest.mark.skipif(not SUPP_FILES_PATH, reason='Missing test data')
-def test_reconstruct():
-    pixfile = join(SUPP_FILES_PATH, 'testpix-small.fits')
+@pytest.mark.remote_data
+def test_reconstruct(pixfile):
     pix = PixTable(pixfile).extract(ifu=1)
 
     im = pix.reconstruct_det_image()
