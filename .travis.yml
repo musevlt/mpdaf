@@ -39,7 +39,7 @@ matrix:
         apt:
           packages: sextractor
       env: TOXENV=py37
-           TOXARGS='-sv --runslow --pyargs mpdaf'
+           TOXARGS='-sv --runslow lib/mpdaf/sdetect/tests/test_muselet.py'
 
 
 install: pip install -U tox-travis
