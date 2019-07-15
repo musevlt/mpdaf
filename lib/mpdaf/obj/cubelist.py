@@ -498,15 +498,15 @@ class CubeList:
         files = files.encode('utf8')
 
         if self.flux_scales is None:
-            scale = np.ones(self.nfiles)
+            scale = np.ones(self.nfiles, dtype=float)
         else:
-            scale = np.asarray(self.flux_scales)
+            scale = np.asarray(self.flux_scales, dtype=float)
             self._logger.info('Using scales')
 
         if self.flux_offsets is None:
-            offset = np.zeros(self.nfiles)
+            offset = np.zeros(self.nfiles, dtype=float)
         else:
-            offset = np.asarray(self.flux_offsets)
+            offset = np.asarray(self.flux_offsets, dtype=float)
             self._logger.info('Using offsets')
 
         ctools.mpdaf_merging_sigma_clipping(
