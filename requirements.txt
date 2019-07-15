@@ -3,7 +3,6 @@ numpy
 scipy
 cython
 matplotlib
-psutil
-ipython<7.0
+ipython>=7.1
 numpydoc
 sphinx_automodapi
