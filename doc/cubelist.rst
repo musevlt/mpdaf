@@ -257,7 +257,7 @@ The procedure prints the main parameters, which are:
 The resulting cube contains an additional extension for the variance.
 Three options are available to compute the variance:
 
- - ``propagate``: The variance is the mean of the variances of the N individual
+ - ``propagate``: The variance is the sum of the variances of the N individual
    exposures divided by N**2.
 
  - ``stat_mean``: The variance of each combined pixel is computed as the

@@ -231,13 +231,13 @@ nstop : int
     than this number, the clipping iterations stop.
 var : {'propagate', 'stat_mean', 'stat_one'}
     - ``propagate``: the variance is the sum of the variances
-        of the N individual exposures divided by N**2.
+      of the N individual exposures divided by N**2.
     - ``stat_mean``: the variance of each combined pixel
-        is computed as the variance derived from the comparison
-        of the N individual exposures divided N-1.
+      is computed as the variance derived from the comparison
+      of the N individual exposures divided N-1.
     - ``stat_one``: the variance of each combined pixel is
-        computed as the variance derived from the comparison
-        of the N individual exposures.
+      computed as the variance derived from the comparison
+      of the N individual exposures.
 mad : bool
     Use MAD (median absolute deviation) statistics for sigma-clipping.
 
