@@ -1220,14 +1220,10 @@ class Image(ArithmeticMixin, DataArray):
             if unit_radius is not None:
                 radius = radius / self.wcs.get_step(unit=unit_radius)
 
-            imin = center[0] - radius[0]
-            if imin < 0:
-                imin = 0
-            imax = center[0] + radius[0] + 1
-            jmin = center[1] - radius[1]
-            if jmin < 0:
-                jmin = 0
-            jmax = center[1] + radius[1] + 1
+            imin = max(0, int(center[0] - radius[0]))
+            imax = min(self.shape[0], int(center[0] + radius[0] + 1))
+            jmin = max(0, int(center[1] - radius[1]))
+            jmax = min(self.shape[1], int(center[1] + radius[1] + 1))
 
             d = self.data[imin:imax, jmin:jmax]
             if np.shape(d)[0] == 0 or np.shape(d)[1] == 0:
