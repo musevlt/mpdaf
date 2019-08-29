@@ -419,6 +419,13 @@ def test_peak(a370II):
     assert_almost_equal(p['q'], 875.9, 1)
 
 
+def test_peak_with_wcs(hdfs_muse_image):
+    res = hdfs_muse_image.peak(center=(-60.5632907, 338.2290690), radius=11)
+    np.testing.assert_almost_equal(res['p'], 222.1, decimal=1)
+    np.testing.assert_almost_equal(res['q'], 228.9, decimal=1)
+    np.testing.assert_almost_equal(res['data'], 3.826, decimal=3)
+
+
 def test_rotate(a370II):
     """Image class: testing rotation"""
 
