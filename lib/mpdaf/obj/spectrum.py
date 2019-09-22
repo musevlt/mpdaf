@@ -2311,9 +2311,9 @@ class Spectrum(ArithmeticMixin, DataArray):
         return res
 
     def fit_lines(self, redshift, **kwargs):
-        """Use pyPLATEFIT to fit the spectrum lines.
+        """Use pyplatefit to fit the spectrum lines.
 
-        This method uses the `pyPLATEFIT.fit_mpdaf_spectrum` function to
+        This method uses the `pyplatefit.fit_spec` function to
         perform a line fitting. Refer to its documentation.
 
         Parameters
@@ -2321,19 +2321,19 @@ class Spectrum(ArithmeticMixin, DataArray):
         redshift : float
             Expected redshift of the spectrum.
         **kwargs : keyword arguments
-            Additional arguments passed to the `fit_mpdaf_spectrum` function.
+            Additional arguments passed to the `fit_spec` function.
 
         Returns
         -------
-        See pyPLATEFIT documentation.
+        See pyplatefit documentation.
 
         """
         try:
-            from pyplatefit import fit_mpdaf_spectrum
+            from pyplatefit import fit_spec
         except ImportError:
             raise ImportError("You need to install pyplatefit.")
 
-        return fit_mpdaf_spectrum(self, redshift=redshift, **kwargs)
+        return fit_spec(self, z=redshift, **kwargs)
 
     def plot(self, max=None, title=None, noise=False, snr=False,
              lmin=None, lmax=None, ax=None, stretch='linear', unit=u.angstrom,
