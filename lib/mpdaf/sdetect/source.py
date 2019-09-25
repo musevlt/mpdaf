@@ -1320,6 +1320,7 @@ class Source:
     def add_narrow_band_images(self, cube, z_desc, eml=None, size=None,
                                unit_size=u.arcsec, width=8, is_sum=False,
                                subtract_off=True, margin=10., fband=3.,
+                               median_filter=0,
                                method="mean"):
         """Create narrow-band images from a redshift value and a catalog of
         lines.
@@ -1370,13 +1371,18 @@ class Source:
                 # or if method = "sum":
                 sub_flux = sum(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
                                 flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2]) /fband
-
+                                
+                # or if median_filter > 0:
+                sub_flux = median_filter in the wavelength axis of flux
         margin : float
             This off-band is offseted by margin wrt narrow-band limit (in
             angstrom).
         fband : float
             The size of the off-band is ``fband x narrow-band width`` (in
             angstrom).
+        median_filter : float
+            size of the median filter for background estimation (if set to 0, 
+            the classical off band images are used )
         method : str
             Name of the Cube method used to aggregate the data. This method
             must accept the axis=0 parameter and return an image. Example:
@@ -1427,12 +1433,12 @@ class Source:
                     self.images['NB_' + tag] = subcub.get_image(
                         wave=(l1, l2), method=method,
                         subtract_off=subtract_off, margin=margin,
-                        fband=fband, unit_wave=u.angstrom)
+                        fband=fband, median_filter=median_filter, unit_wave=u.angstrom)
 
     def add_narrow_band_image_lbdaobs(self, cube, tag, lbda, size=None,
                                       unit_size=u.arcsec, width=8,
                                       is_sum=False, subtract_off=True,
-                                      margin=10., fband=3., method="mean"):
+                                      margin=10., fband=3., median_filter=0, method="mean"):
         """Create narrow-band image around an observed wavelength value.
 
         Parameters
@@ -1489,6 +1495,7 @@ class Source:
                                             method=method,
                                             subtract_off=subtract_off,
                                             margin=margin, fband=fband,
+                                            median_filter=median_filter,
                                             unit_wave=u.angstrom)
 
     def add_seg_images(self, tags=None, DIR=None, del_sex=True):
