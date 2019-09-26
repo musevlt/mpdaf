@@ -1473,7 +1473,7 @@ class Cube(ArithmeticMixin, DataArray):
                 extended_data_cube = self.data[m1:m2 + 1, :, :]
                 # compute background from a median filter over the wavelength range
                 background_data = ndi.filters.median_filter(extended_data_cube, (2*fwidth+1,1,1))
-                background_data = background_data[k1-m1:k2-m2,:,:]
+                background_data = background_data[k1-m1:background_data.shape[0]-(m2-k2),:,:]
                 background = data_cube.clone()
                 background.data = background_data
             else:
