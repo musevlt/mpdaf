@@ -639,6 +639,12 @@ def test_get_image():
     assert ima[0, 0] == 0
     assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].sum()[0] -
                         cube1[lslice, 0, 0].sum()[0], 3)
+    
+    # repeat with median filter method
+    ima = cube1.get_image(wave=lrange, method='sum', subtract_off=True, median_filter=200)
+    assert ima[0, 0] == 0
+    assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].sum()[0] -
+                        cube1[lslice, 0, 0].sum()[0], 3)    
 
     # Finally, perform a sum of the chosen wavelength range without
     # subtracting a background image. This is easy to test by doing

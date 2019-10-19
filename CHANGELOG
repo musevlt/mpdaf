@@ -1,5 +1,7 @@
 3.3dev (xx/xx/2019)
 -------------------
+- In `mpdaf.obj.cube.get_image` add an option to compute background from
+  a median filter. Propagate this addition to `mpdaf.sdetect.source.add_narrow_band_image`
 
 - In `mpdaf.sdetect.get_emlines`, encode the DNAME column in bytes to make it
   easier to export tables with this into FITS.

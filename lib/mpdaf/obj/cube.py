@@ -1369,7 +1369,7 @@ class Cube(ArithmeticMixin, DataArray):
                                      verbose=verbose, **kargs)
 
     def get_image(self, wave, is_sum=False, subtract_off=False, margin=10.,
-                  fband=3., unit_wave=u.angstrom, method="mean"):
+                  fband=3., median_filter=0, unit_wave=u.angstrom, method="mean"):
         """Generate an image aggregating over a wavelength range.
 
         This method creates an image aggregating all the slices between
@@ -1380,15 +1380,16 @@ class Cube(ArithmeticMixin, DataArray):
         wave : (float, float)
             The (lbda1,lbda2) interval of wavelength in angstrom.
         unit_wave : `astropy.units.Unit`
-            The wavelength units of the lbda1, lbda2 and margin
+            The wavelength units of the lbda1, lbda2, margin and median filter width
             arguments (angstrom by default). If None, lbda1, lbda2,
-            and margin should be in pixels.
+            margin and median filter width should be in pixels.
         is_sum : bool
             If True, compute the sum of the images. Deprecated, use "sum"
             as aggregation method.
         subtract_off : bool
             If True, subtract off a background image that is estimated
-            from combining some images from both below and above the
+            from median filtering (if median_filter is not zero) 
+            or by combining some images from both below and above the
             chosen wavelength range. If the number of images between
             lbda1 and lbda2 is denoted, N, then the number of
             background images taken from below and above the wavelength
@@ -1424,6 +1425,9 @@ class Cube(ArithmeticMixin, DataArray):
             Name of the Cube method used to aggregate the data. This method
             must accept the axis=0 parameter and return an image. Example:
             mean, sum, max.
+        median_filter : float
+            Size of the median filter for background estimation. 
+            If set to 0, the classical off band images are used.
 
         Returns
         -------
@@ -1456,55 +1460,71 @@ class Cube(ArithmeticMixin, DataArray):
 
         # Subtract off a background image?
         if subtract_off:
-
-            # Convert the margin to a number of pixels.
-            if unit_wave is not None:
-                margin = np.rint(
-                    margin / self.wave.get_step(unit=unit_wave)).astype(int)
-
-            # How many images were combined above?
-            nim = k2 + 1 - k1
-
-            # Calculate the indexes of the last pixel of the lower range
-            # of background images and the first pixel of the upper range
-            # of background images.
-            lower_maxpix = max(k1 - 1 - margin, 0)
-            upper_minpix = min(k2 + 1 + margin, self.shape[0])
-
-            # Calculate the number of images to separately select from
-            # below and above the chosen wavelength range.
-            nhalf = np.ceil(nim * fband / 2.0).astype(int)
-
-            # Start by assuming that we will be combining equal numbers
-            # of images from below and above the chosen wavelength range.
-            nabove = nhalf
-            nbelow = nhalf
-
-            # If the chosen wavelength range is too close to one edge of
-            # the cube's wavelength range, reduce the number to fit.
-            if lower_maxpix - nbelow < 0:
-                nbelow = lower_maxpix
-            elif upper_minpix + nabove > self.shape[0]:
-                nabove = self.shape[0] - upper_minpix
-
-            # If there was too little room both below and above the
-            # chosen wavelength range to compute the background, give up.
-            if(lower_maxpix - nbelow < 0 or
-               upper_minpix + nabove > self.shape[0]):
-                raise ValueError('Insufficient space outside the wavelength '
-                                 'range to estimate a background')
-
-            # Calculate slices that select the wavelength pixels below
-            # and above the chosen wavelength range.
-            below = slice(lower_maxpix - nbelow, lower_maxpix)
-            above = slice(upper_minpix, upper_minpix + nabove)
-
-            # The background is the mean of the background below and the
-            # background above (may be different of the mean of above and
-            # below pixels if the number of pixels is different above and
-            # below).
-            background = (self[below, :, :].mean(axis=0) +
-                          self[above, :, :].mean(axis=0)) / 2
+            if median_filter > 0:
+                if unit_wave is not None:
+                    fwidth = np.rint(
+                        median_filter / self.wave.get_step(unit=unit_wave)).astype(int)
+                else:
+                    fwidth = median_filter
+                fwidth = int(fwidth / 2) 
+                # set limits in wavelength
+                m1 = max(k1 - fwidth, 0)
+                m2 = min(k2 + fwidth, self.shape[0]-1)
+                extended_data_cube = self.data[m1:m2 + 1, :, :]
+                # compute background from a median filter over the wavelength range
+                background_data = ndi.filters.median_filter(extended_data_cube, (2*fwidth+1,1,1))
+                background_data = background_data[k1-m1:background_data.shape[0]-(m2-k2),:,:]
+                background = data_cube.clone()
+                background.data = background_data
+            else:
+                # Convert the margin to a number of pixels.
+                if unit_wave is not None:
+                    margin = np.rint(
+                        margin / self.wave.get_step(unit=unit_wave)).astype(int)
+    
+                # How many images were combined above?
+                nim = k2 + 1 - k1
+    
+                # Calculate the indexes of the last pixel of the lower range
+                # of background images and the first pixel of the upper range
+                # of background images.
+                lower_maxpix = max(k1 - 1 - margin, 0)
+                upper_minpix = min(k2 + 1 + margin, self.shape[0])
+    
+                # Calculate the number of images to separately select from
+                # below and above the chosen wavelength range.
+                nhalf = np.ceil(nim * fband / 2.0).astype(int)
+    
+                # Start by assuming that we will be combining equal numbers
+                # of images from below and above the chosen wavelength range.
+                nabove = nhalf
+                nbelow = nhalf
+    
+                # If the chosen wavelength range is too close to one edge of
+                # the cube's wavelength range, reduce the number to fit.
+                if lower_maxpix - nbelow < 0:
+                    nbelow = lower_maxpix
+                elif upper_minpix + nabove > self.shape[0]:
+                    nabove = self.shape[0] - upper_minpix
+    
+                # If there was too little room both below and above the
+                # chosen wavelength range to compute the background, give up.
+                if(lower_maxpix - nbelow < 0 or
+                   upper_minpix + nabove > self.shape[0]):
+                    raise ValueError('Insufficient space outside the wavelength '
+                                     'range to estimate a background')
+    
+                # Calculate slices that select the wavelength pixels below
+                # and above the chosen wavelength range.
+                below = slice(lower_maxpix - nbelow, lower_maxpix)
+                above = slice(upper_minpix, upper_minpix + nabove)
+    
+                # The background is the mean of the background below and the
+                # background above (may be different of the mean of above and
+                # below pixels if the number of pixels is different above and
+                # below).
+                background = (self[below, :, :].mean(axis=0) +
+                              self[above, :, :].mean(axis=0)) / 2
 
             # Adding and Image to a Cube takes care of variance propagation.
             data_cube = data_cube - background
