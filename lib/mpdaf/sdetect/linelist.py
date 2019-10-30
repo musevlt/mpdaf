@@ -57,8 +57,8 @@ emlines = np.array([
     ('CII1334',  1334.53, None,    None,    'is', 0,      0, 0, "Cɪɪ"),
     ('SIIV1394', 1393.76, 1393.76, 1393.76, 'is', 0,      0, 0, None), # SiIV
     ('SIIV1403', 1402.77, 1402.77, 1402.77, 'is', 0,      0, 0, "Siɪᴠ"),
-    ('CIV1548',  1548.20, None,    None,    'em', 1, 1549.5, 2, None), #CIV
-    ('CIV1551',  1550.77, None,    None,    'em', 1, 1549.5, 2, "Cɪᴠ"),
+    ('CIV1548',  1548.20, None,    None,    'em', 1, 1549.5, 3, None), #CIV
+    ('CIV1551',  1550.77, None,    None,    'em', 1, 1549.5, 3, "Cɪᴠ"),
     ('FEII1608', 1608.45, None,    None,    'is', 0,      0, 0, None), #FeII
     ('FEII1611', 1611.20, None,    None,    'is', 0,      0, 0, "Feɪɪ"),
     ('HEII1640', 1640.42, 1630.0, 1651.0,   'em', 0,      0, 2, "Heɪɪ"),
@@ -69,7 +69,7 @@ emlines = np.array([
     ('AL1862',   1862.17, None,    None,    'is', 0,      0, 0, "Alɪɪɪ"),
     ('CIII1907', 1906.68, 1896.0, 1920.0,   'em', 1, 1907.7, 2, None), #CIII]
     ('CIII1909', 1908.73, 1898.0, 1920.0,   'em', 1, 1907.7, 2, "Cɪɪɪ]"),
-    ('CII2326',  2326.00, None,    None,    'em', 0,      0, 3, "Cɪɪ]"),
+    ('CII2326',  2326.00, None,    None,    'em', 0,      0, 3, "Cɪɪ]"), # should not be resonnant, but CIII fit failed if fitted together 
     ('FEII2344', 2344.21, 2330.0, 2354.0,   'is', 0,      0, 0, None), #FeII
     ('FEII2374', 2374.46, 2364.0, 2384.0,   'is', 0,      0, 0, None), #FeII
     ('FEII2383', 2382.76, 2372.0, 2392.0,   'is', 0,      0, 0, "Feɪɪ"),
