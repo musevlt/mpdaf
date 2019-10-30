@@ -40,6 +40,7 @@ import types
 import astropy.units as u
 from astropy.io import fits
 from astropy.stats import gaussian_sigma_to_fwhm, gaussian_fwhm_to_sigma
+from astropy.convolution import convolve, Box1DKernel
 from os.path import join, abspath, dirname
 from scipy import interpolate, signal
 from scipy.optimize import leastsq
@@ -2049,6 +2050,36 @@ class Spectrum(ArithmeticMixin, DataArray):
         res._data = data[ks:-ks]
         res._var = None
         return res
+    
+    def filter(self, kernel = Box1DKernel, **parameters):
+        """Perform filtering on the spectrum.
+
+        Uses `astropy.convolution` kernels and convolution.
+
+        Parameters
+        ----------
+        kernel : `astropy.convolution.Kernel1D`
+            astropy kernel to use 
+            (see `https://docs.astropy.org/en/stable/convolution/kernels.html#available-kernels`)
+            
+            - Box1DKernel (default, parameters: width)
+            - Gaussan1DKernel (parameters: stddev)
+             
+        parameters : keywords
+            parameters to pass to the kernel
+ 
+
+        Returns
+        -------
+        out : Spectrum
+        """
+        res = self.copy()
+        data = res.data
+        data = convolve(data, kernel(**parameters)) 
+        res._data = data
+        res._var = None
+        return res
+    
 
     def convolve(self, other, inplace=False):
         """Convolve a Spectrum with a 1D array or another Spectrum, using
