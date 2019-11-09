@@ -6,7 +6,9 @@
 - In `mpdaf.sdetect.get_emlines`, encode the DNAME column in bytes to make it
   easier to export tables with this into FITS.
 
-- Add OIII1660 in `mpdaf.sdetect.linelist`.
+- Remove lo and up columns (not used) and add a vdisp column (to identify AGN type lines)  in `mpdaf.sdetect.linelist`.
+
+- Add OIII1660, replace CII 2326 line by a quadruplet in `mpdaf.sdetect.linelist`.
 
 - Fix conversion to pixel coordinates in `mpdaf.sdetect.Catalog.select`.
 
