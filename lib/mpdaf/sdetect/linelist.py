@@ -190,9 +190,9 @@ def get_emlines(iden=None, z=0, vac=True, lbrange=None, margin=25, sel=None,
         return em
     else:
         return Table(
-            data=[em['id'], em['c'], em['tp'], em['d'],
+            data=[em['id'], em['c'], em['tp'], em['s'], em['d'],
                   em['f'], em['v'], np.chararray.encode(em['n'], 'utf8')],
-            names=['LINE', 'LBDA_OBS', 'TYPE',
+            names=['LINE', 'LBDA_OBS', 'TYPE', 'MAIN',
                    'DOUBLET', 'FAMILY', 'VDISP', 'DNAME'],
             masked=True
         )

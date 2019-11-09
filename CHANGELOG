@@ -1,4 +1,4 @@
-3.3dev (xx/xx/2019)
+3.3 (09/11/2019)
 -------------------
 - In `mpdaf.obj.cube.get_image` add an option to compute background from
   a median filter. Propagate this addition to `mpdaf.sdetect.source.add_narrow_band_image`
