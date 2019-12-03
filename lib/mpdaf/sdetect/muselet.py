@@ -538,8 +538,8 @@ def step1(file_cube, file_expmap=None, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
 #    logger.debug("opening: %s", file_cube)
 
     cube = Cube(str(file_cube))
+    cube.data.mask|=np.isnan(cube._data)
 
-#    #mvar=c.var.filled(np.inf)
 #    mvar=c.var
 #    #mvar[mvar <= 0] = np.inf
 #    c._var = None
