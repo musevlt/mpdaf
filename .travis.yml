@@ -14,10 +14,6 @@ matrix:
       stage: setup
 
     # Second stage: run tests
-    - python: 3.5
-      stage: test
-      env: TOXENV=py35
-           TOXARGS='--pyargs mpdaf'
     - python: 3.6
       stage: test
       env: TOXENV=py36
@@ -25,6 +21,10 @@ matrix:
     - python: 3.7
       stage: test
       env: TOXENV=py37
+           TOXARGS='--pyargs mpdaf'
+    - python: 3.8
+      stage: test
+      env: TOXENV=py38
            TOXARGS='--pyargs mpdaf --remote-data=any'
       addons:
         apt:
