@@ -42,7 +42,7 @@ from astropy.stats import sigma_clip
 from ..obj import Cube, WCS, Image, iter_ima
 from ..tools import all_subclasses
 
-__all__ = ['Moffat2D', 'FSFModel', 'OldMoffatModel', 'MoffatModel2']
+__all__ = ['Moffat2D', 'FSFModel', 'OldMoffatModel', 'MoffatModel2', 'combine_fsf']
 
 
 def find_model_cls(hdr):
