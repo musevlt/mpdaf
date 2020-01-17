@@ -134,11 +134,11 @@ We create the `~mpdaf.MUSE.FSFModel` object like this:
     [INFO] Beta values: 2.80-2.80
 
 
-There are various way to create a fsf model, by fitting a point source or by using the external 
+There are various way to create a fsf model, by fitting a point source or by using the external
 PSF reconstruction module `muse_psfrec`.
 
 Using a star in the field of view
-+++++++++++++++++++++++++++++++++
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code::
 
@@ -184,9 +184,9 @@ The fsf.fit dictionary can be used to check the fit quality:
     :width: 800px
 
 Using psfrec
-++++++++++++
+^^^^^^^^^^^^
 
-If the MUSE observations have been done in GLAO WFM mode, then one can get a fsf model 
+If the MUSE observations have been done in GLAO WFM mode, then one can get a fsf model
 from the AO telemetry information saved in the raw data.
 
 .. warning::
@@ -206,7 +206,7 @@ from the AO telemetry information saved in the raw data.
     [INFO] Compute PSF with seeing=0.58 GL=0.48 L0=14.40
     [INFO] Using three lasers mode
     [INFO] Compute PSF with seeing=0.58 GL=0.49 L0=16.65
-    ......   
+    ......
     [INFO] Compute PSF with seeing=0.69 GL=0.46 L0=15.24
     [INFO] Compute PSF with seeing=0.67 GL=0.56 L0=15.86
     [DEBUG] 01: Seeing 0.69,0.69,0.70,0.69 GL 0.64,0.65,0.64,0.63 L0 18.34,19.04,17.48,20.07
@@ -217,7 +217,7 @@ from the AO telemetry information saved in the raw data.
     [DEBUG] Fitting polynomial on FWHM (lbda) and Beta(lbda)
 
 
-If the MUSE observations have been done in GLAO WFM mode, then one can get a fsf model 
+If the MUSE observations have been done in GLAO WFM mode, then one can get a fsf model
 from the AO telemetry information saved in the raw data.
 
 .. warning::
