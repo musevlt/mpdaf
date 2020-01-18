@@ -38,11 +38,8 @@ import re
 import time
 import warnings
 
-from astropy.utils import minversion
 from mpdaf.tools.util import (chdir, deprecated, broadcast_to_cube, timeit,
                               timer, isiter, progressbar)
-
-PYTEST_LT_3_3 = not minversion('pytest', '3.3')
 
 try:
     import tqdm
@@ -88,7 +85,6 @@ def test_broadcast_to_cube():
             broadcast_to_cube(np.zeros(s), shape)
 
 
-@pytest.mark.skipif(PYTEST_LT_3_3, reason="caplog requires Pytest 3.3+")
 def test_timeit(caplog):
 
     @timeit
@@ -101,7 +97,6 @@ def test_timeit(caplog):
                      caplog.text) is not None
 
 
-@pytest.mark.skipif(PYTEST_LT_3_3, reason="caplog requires Pytest 3.3+")
 def test_timer(caplog):
 
     def func(foo, bar=0):
