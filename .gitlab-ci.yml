@@ -9,7 +9,7 @@ before_script:
   - export LC_ALL=C.UTF-8
   - export LANG=C.UTF-8
   - eval "$(pyenv init -)"
-  - pyenv local 3.6.4 3.7.0
+  - pyenv local 3.6.10 3.7.6
   - pwd
 
 # this build is run first, to update tox and run the check on setup
