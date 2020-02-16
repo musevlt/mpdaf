@@ -1,7 +1,7 @@
 3.5dev (XX/XX/2020)
 -------------------
 
-
+- Add a parameter in `mpdaf.sdetect.linelist.get_emlines` to exclude a wavelength range (useful for AO spectra with masked Na region)
 
 3.4 (17/01/2020)
 ----------------
