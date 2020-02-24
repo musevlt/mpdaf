@@ -6,7 +6,7 @@
 3.4 (17/01/2020)
 ----------------
 
-- Update fsf (combine_fsf, documentation)
+- Update fsf (combine_fsf, fwhm_moffat2gauss, documentation)
 
 - Mask NaN in muselet
 

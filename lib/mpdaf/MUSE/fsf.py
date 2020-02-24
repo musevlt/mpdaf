@@ -696,6 +696,15 @@ class MoffatModel2(FSFModel):
             return fsf
 
 
+def fwhm_moffat2gauss(fwhm, beta):
+    """
+    translate a MOFFAT fwhm,beta in GAUSS equivalent fwhm
+    """
+    pol = np.array([-1.89848758e-03,  3.37400959e-02, -2.38556527e-01,  8.50778040e-01,
+       -1.58670491e+00,  2.39768917e+00])
+    gfwhm = fwhm * np.polyval(pol, beta)
+    return gfwhm
+
 def combine_fsf(fsflist, nlbda=20, size=21):
     """
     Combine a list of FSF
