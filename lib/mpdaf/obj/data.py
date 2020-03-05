@@ -1027,7 +1027,7 @@ class DataArray:
         elif self.ndim == 3 and self.wcs is not None:
             return self.wcs.to_cube_header(self.wave)
 
-    def get_data_hdu(self, name='DATA', savemask='dq', convert_float32=True):
+    def get_data_hdu(self, name='DATA', savemask='nan', convert_float32=True):
         """Return an ImageHDU corresponding to the DATA extension.
 
         Parameters
@@ -1035,9 +1035,10 @@ class DataArray:
         name : str
             Extension name, DATA by default.
         savemask : str
-            If 'dq', the mask array is saved in a DQ extension.
-            If 'nan', masked data are replaced by nan in a DATA extension.
-            If 'none', masked array is not saved.
+            - If 'dq', the mask array is saved in the ``DQ`` extension.
+            - If 'nan' (default), masked data are replaced by NaN in the
+              ``DATA`` extension.
+            - If 'none', masked array is not saved.
         convert_float32 : bool
             By default float64 arrays are converted to float32, in order to
             produce smaller files.
@@ -1123,7 +1124,7 @@ class DataArray:
             return fits.ImageHDU(name=name, header=header,
                                  data=np.uint8(self.data.mask))
 
-    def write(self, filename, savemask='dq', checksum=False,
+    def write(self, filename, savemask='nan', checksum=False,
               convert_float32=True):
         """Save the data to a FITS file.
 
@@ -1134,9 +1135,10 @@ class DataArray:
         filename : str
             The FITS filename.
         savemask : str
-            If 'dq', the mask array is saved in a ``DQ`` extension
-            If 'nan', masked data are replaced by nan in the ``DATA`` extension
-            If 'none', masked array is not saved
+            - If 'dq', the mask array is saved in a ``DQ`` extension.
+            - If 'nan' (default), masked data are replaced by NaN in the
+              ``DATA`` extension.
+            - If 'none', masked array is not saved.
         checksum : bool
             If ``True``, adds both ``DATASUM`` and ``CHECKSUM`` cards to the
             headers of all HDU's written to the file.
