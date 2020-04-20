@@ -1241,6 +1241,12 @@ class Image(ArithmeticMixin, DataArray):
                   max(0, jc - dpix):jc + dpix + 1] - background)
         ic = imin + max(0, ic - dpix) + di
         jc = jmin + max(0, jc - dpix) + dj
+        
+        # WIP (to solve problem)
+        iic, jjc = int(round(ic)), int(round(jc))
+        if (iic < 0) or (jjc < 0) or (iic >= self.data.shape[0]) or (jjc >= self.data.shape[1]):
+            return None
+        
         [[dec, ra]] = self.wcs.pix2sky([[ic, jc]])
         maxv = self.data[int(round(ic)), int(round(jc))]
         if plot:
