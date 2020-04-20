@@ -134,6 +134,8 @@ def get_images(cube, pos, size=5.0, nslice=20):
 
 def fit_poly(x, y, deg, reject=3.0):
     logger = logging.getLogger(__name__)
+    x = np.array(x)
+    y = np.array(y)
     pol = np.polyfit(x, y, deg)
     yp = np.polyval(pol, x)
     err = yp - y
