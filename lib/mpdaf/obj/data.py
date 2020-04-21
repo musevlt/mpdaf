@@ -903,7 +903,7 @@ class DataArray:
                     wave = None
 
             # Handle cube[]
-            elif item is None or item is ():
+            elif item is None or item == ():
                 try:
                     wcs = self.wcs.copy()
                 except Exception:
@@ -948,7 +948,7 @@ class DataArray:
                     reshape = (1, data.shape[0])
 
             # Handle image[]
-            elif item is None or item is ():
+            elif item is None or item == ():
                 try:
                     wcs = self.wcs.copy()
                 except Exception:
@@ -965,7 +965,7 @@ class DataArray:
                     wave = None
 
             # Handle spectrum[]
-            elif item is None or item is ():
+            elif item is None or item == ():
                 try:
                     wave = self.wave.copy()
                 except Exception:
