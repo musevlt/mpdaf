@@ -56,6 +56,8 @@ except ImportError:
 __all__ = ('PixTable', 'PixTableMask', 'plot_autocal_factors',
            'merge_autocal_factors')
 
+_NOT_SET = object()
+
 NIFUS = 24
 NSLICES = 48
 SKY_SEGMENTS = [0, 5000, 5265, 5466, 5658, 5850, 6120, 6440, 6678, 6931, 7211,
@@ -454,7 +456,7 @@ class PixTable:
             elif projection == 'positioned':
                 keyx, keyy = 'CRVAL1', 'CRVAL2'
             else:
-                raise Exception('Unknown projection: %s' % projection)
+                self._logger.warning('Unknown projection: %s', projection)
 
             try:
                 # center in degrees
@@ -544,8 +546,13 @@ class PixTable:
             self._logger.info("This pixel table was sky-subtracted")
         if self.fluxcal:
             self._logger.info("This pixel table was flux-calibrated")
-        self._logger.info('%s (%s)', hdr["%s WCS" % KEYWORD],
-                          hdr.comments["%s WCS" % KEYWORD])
+
+        wcs_key = "%s WCS" % KEYWORD
+        if wcs_key in hdr:
+            self._logger.info('%s (%s)', hdr[wcs_key], hdr.comments[wcs_key])
+        else:
+            self._logger.info('Unknown projection')
+
         try:
             self._logger.info(self.hdulist.info())
         except Exception:
@@ -1548,7 +1555,7 @@ class PixTable:
         else:
             return self._get_pos_sky(xpos, ypos)
 
-    def get_keyword(self, key, default=None):
+    def get_keyword(self, key, default=_NOT_SET):
         """Return the keyword value corresponding to key, adding the keyword
         prefix (``'HIERARCH ESO DRS MUSE PIXTABLE'``).
 
@@ -1565,7 +1572,7 @@ class PixTable:
         try:
             return self.primary_header['{} {}'.format(KEYWORD, key)]
         except KeyError:
-            if default is not None:
+            if default is not _NOT_SET:
                 return default
             else:
                 raise
