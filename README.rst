@@ -31,7 +31,7 @@ be installed for users that still need Python 2.
 Links
 -----
 
-- `Documentation <http://mpdaf.readthedocs.io//en/stable/>`_.
+- `Documentation <http://mpdaf.readthedocs.io/en/stable/>`_.
 - Source, issues and pull requests on
   `Github <https://github.com/musevlt/mpdaf/>`_ and on a
   `Gitlab <https://git-cral.univ-lyon1.fr/MUSE/mpdaf>`_ instance.
