@@ -1056,6 +1056,26 @@ class WCS:
                   [self.naxis2 - 1, self.naxis1 - 1]]
         pixsky = self.pix2sky(pixcrd, unit=unit)
         return np.hstack([pixsky.min(axis=0), pixsky.max(axis=0)])
+    
+    def get_center(self, unit=None):
+        """Return the center (dec,ra) of the image array.
+
+        Parameters
+        ----------
+        unit : `astropy.units.Unit`
+            The units of the returned angles.
+
+        Returns
+        -------
+        center : numpy.ndarray
+           The center, arranged as [dec, ra]. The returned values are
+           either in the units specified in the 'unit' input parameter,
+           or in the units stored in the self.unit property.
+
+        """
+        crange = self.get_range(unit=unit)
+        center = 0.5*np.array([crange[0]+crange[2], crange[1]+crange[3]])
+        return center    
 
     def get_start(self, unit=None):
         """Return the [dec,ra] coordinates of pixel (0,0).
