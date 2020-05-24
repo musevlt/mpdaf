@@ -725,10 +725,10 @@ class WCS:
                 np.clip(res, (0, 0), (self.naxis2 - 1, self.naxis1 - 1),
                         out=res)
         return res
-    
-    def coord(self, spaxel=False, relative=False, center=None, 
+
+    def coord(self, spaxel=False, relative=False, center=None,
               polar=False, unit=None, reshape=False, mask=None):
-        """Return the full coordinate array of the image 
+        """Return the full coordinate array of the image
 
         Parameters
         ----------
@@ -757,38 +757,38 @@ class WCS:
             array of [dec,ra], [p,q], [delta_dec, delta_ra], [delta_p, delta_q],
             [r, theta]
 
-        """  
-        x,y = np.indices((self.naxis2,self.naxis1))
+        """
+        x, y = np.indices((self.naxis2, self.naxis1))
         if not spaxel:
             coord = np.mgrid[:self.naxis2, :self.naxis1].reshape(2, -1).T
             coord = self.pix2sky(coord)
-            x,y = coord.T
-            x,y = np.meshgrid(x,y)
+            x, y = coord.T
+            x, y = np.meshgrid(x, y)
         if mask is not None:
             x = x[~mask]
             y = y[~mask]
         if relative or polar:
             if center is None:
                 if spaxel:
-                    center = 0.5*np.array([self.naxis2-1,self.naxis1-1])
+                    center = 0.5 * np.array([self.naxis2 - 1, self.naxis1 - 1])
                 else:
-                    center = self.get_center()       
-            x0,y0 = center
+                    center = self.get_center()
+            x0, y0 = center
             x = x - x0
             y = y - y0
-        if (not spaxel) and (unit is not None):
+        if not spaxel and unit is not None:
             x = UnitArray(x, self.unit, unit)
             y = UnitArray(y, self.unit, unit)
         if polar:
             theta = np.arctan2(y, x)
             rho = np.hypot(x, y)
             x = rho
-            y = theta           
+            y = theta
         if reshape:
-            x,y = np.vstack([x.ravel(), y.ravel()])
+            x, y = np.vstack([x.ravel(), y.ravel()])
             x = np.sort(np.unique(x))
             y = np.sort(np.unique(y))
-        return x,y
+        return x, y
 
     def pix2sky(self, x, unit=None):
         """Convert image pixel indexes (y,x) to world coordinates (dec,ra).
@@ -1120,7 +1120,7 @@ class WCS:
                   [self.naxis2 - 1, self.naxis1 - 1]]
         pixsky = self.pix2sky(pixcrd, unit=unit)
         return np.hstack([pixsky.min(axis=0), pixsky.max(axis=0)])
-    
+
     def get_center(self, unit=None):
         """Return the center (dec,ra) of the image array.
 
@@ -1138,8 +1138,8 @@ class WCS:
 
         """
         crange = self.get_range(unit=unit)
-        center = 0.5*np.array([crange[0]+crange[2], crange[1]+crange[3]])
-        return center    
+        center = 0.5 * np.array([crange[0] + crange[2], crange[1] + crange[3]])
+        return center
 
     def get_start(self, unit=None):
         """Return the [dec,ra] coordinates of pixel (0,0).
