@@ -785,9 +785,8 @@ class WCS:
             x = rho
             y = theta
         if reshape:
-            x, y = np.vstack([x.ravel(), y.ravel()])
-            x = np.sort(np.unique(x))
-            y = np.sort(np.unique(y))
+            x = np.unique(x)
+            y = np.unique(y)
         return x, y
 
     def pix2sky(self, x, unit=None):
