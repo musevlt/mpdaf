@@ -155,13 +155,20 @@ class TestWCS:
                   deg=True)
 
         p, q = wcs.coord(spaxel=True, relative=True)
-        assert (p.mean() == 0) & (q.mean() == 0)
+        assert p.mean() == 0
+        assert q.mean() == 0
+        assert p.shape == (4, 5)
+        assert q.shape == (4, 5)
 
         p, q = wcs.coord(spaxel=True, relative=True, reshape=True)
-        assert (p.shape == (4,)) & (q.shape == (5,))
+        assert p.shape == (4,)
+        assert q.shape == (5,)
 
         p, q = wcs.coord(spaxel=True, relative=True, center=(5.2, 6.3))
-        assert (p.min() == -5.2) & (q.min() == -6.3)
+        assert p.min() == -5.2
+        assert q.min() == -6.3
+        assert p.shape == (4, 5)
+        assert q.shape == (4, 5)
 
         dec, ra = wcs.coord()
         assert_allclose(ra.min(), 4.99987929, rtol=1e-6)
@@ -179,7 +186,8 @@ class TestWCS:
         mask[:, :] = False
         mask[0, 0] = True
         p, q = wcs.coord(spaxel=True, mask=mask)
-        assert (p.shape == (19,)) & (q.shape == (19,))
+        assert p.shape == (19,)
+        assert q.shape == (19,)
 
 
 class TestWaveCoord:

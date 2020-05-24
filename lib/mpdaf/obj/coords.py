@@ -758,15 +758,17 @@ class WCS:
             [r, theta]
 
         """
-        x, y = np.indices((self.naxis2, self.naxis1))
-        if not spaxel:
-            coord = np.mgrid[:self.naxis2, :self.naxis1].reshape(2, -1).T
-            coord = self.pix2sky(coord)
-            x, y = coord.T
-            x, y = np.meshgrid(x, y)
+        pixcrd = np.indices((self.naxis2, self.naxis1))
+        if spaxel:
+            x, y = pixcrd
+        else:
+            coord = self.pix2sky(pixcrd.reshape(2, -1).T).T
+            x, y = coord.reshape(pixcrd.shape)
+
         if mask is not None:
             x = x[~mask]
             y = y[~mask]
+
         if relative or polar:
             if center is None:
                 if spaxel:
@@ -776,17 +778,21 @@ class WCS:
             x0, y0 = center
             x = x - x0
             y = y - y0
+
         if not spaxel and unit is not None:
             x = UnitArray(x, self.unit, unit)
             y = UnitArray(y, self.unit, unit)
+
         if polar:
             theta = np.arctan2(y, x)
             rho = np.hypot(x, y)
             x = rho
             y = theta
+
         if reshape:
             x = np.unique(x)
             y = np.unique(y)
+
         return x, y
 
     def pix2sky(self, x, unit=None):
