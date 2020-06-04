@@ -696,7 +696,7 @@ class CubeMosaic(CubeList):
     def pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
                   header=None, mad=False):
         crpix_out = self.wcs.wcs.wcs.crpix[::-1]
-        pos = np.array([crpix_out - cube.wcs.wcs.wcs.crpix[::-1]
+        pos = np.array([np.rint(crpix_out - cube.wcs.wcs.wcs.crpix[::-1])
                         for cube in self.cubes], dtype=int)
         shapes = np.array([cube.shape[1:] for cube in self.cubes])
 
