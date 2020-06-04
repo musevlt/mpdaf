@@ -184,5 +184,5 @@ def test_combine_fsf():
     assert_allclose(fsf.get_beta(7000), fsf1.get_beta(7000), rtol=1.e-6)
 
     fsf, cube = combine_fsf([fsf1, fsf2])
-    assert_allclose(fsf.get_fwhm(7000), 0.397959, rtol=1.e-3)
-    assert_allclose(fsf.get_beta(7000), 1.843269, rtol=1.e-3)
+    assert_allclose(fsf.get_fwhm(7000), 0.397959, rtol=1.e-2)
+    assert_allclose(fsf.get_beta(7000), 1.843269, rtol=1.e-2)

@@ -87,7 +87,7 @@ def Moffat2D(fwhm, beta, shape, center=None, normalize=True):
     alpha = fwhm / (2 * np.sqrt(2**(1 / beta) - 1))
     amplitude = (beta - 1) * (np.pi * alpha**2)
     if center is None:
-        x0, y0 = np.array(shape) / 2
+        x0, y0 = np.array(shape) / 2 - np.array([0.5,0.5])
     else:
         x0, y0 = center
     xx, yy = np.mgrid[:shape[0], :shape[1]]
