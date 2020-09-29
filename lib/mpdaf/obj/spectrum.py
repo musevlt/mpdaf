@@ -763,7 +763,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         else:
             flux, wsum = np.ma.average(self.data[lambda_slice], returned=True)
             if self.var is not None:
-                err_flux = np.sqrt(np.ma.sum(self.var[lambda_slice])) / wsum**2
+                err_flux = np.sqrt(np.ma.sum(self.var[lambda_slice])) / wsum
             else:
                 err_flux = np.inf
         return (flux, err_flux)
