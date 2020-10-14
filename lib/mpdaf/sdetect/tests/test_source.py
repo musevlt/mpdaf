@@ -593,6 +593,6 @@ def test_add_FSF(minicube):
     cube = Cube(get_data_file('sdetect', 'subcub_mosaic.fits'))
     src.add_FSF(cube)
     assert src.FSF99BET == 2.8
-    assert src.FSF99FWA == 0.843
-    assert src.FSF99FWB == -3.301e-05
-    assert src.get_FSF() == (0.843, -3.301e-05, 2.8, 99)
+    assert np.isclose(src.FSF99FWA, 0.842)
+    assert np.isclose(src.FSF99FWB, -3.293e-05)
+    assert_almost_equal(src.get_FSF(), (0.842, -3.293e-05, 2.8, 99))
