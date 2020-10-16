@@ -2185,10 +2185,10 @@ def _multiproc_worker(arglist):
 def _loop_multiprocessing(self, f, loop_type, cpu=None, verbose=True, **kargs):
     # Determine the number of processes:
     # - default: all CPUs except one.
-    # - mdaf.CPU
+    # - mpdaf.CPU
     # - cpu_count parameter
     from mpdaf import CPU
-    cpu_count = multiprocessing.cpu_count() - 1
+    cpu_count = max(1,multiprocessing.cpu_count() - 1)
     if CPU > 0 and CPU < cpu_count:
         cpu_count = CPU
     if cpu is not None and cpu < cpu_count:
