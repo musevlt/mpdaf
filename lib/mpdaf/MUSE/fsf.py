@@ -42,7 +42,7 @@ from astropy.stats import sigma_clip
 from ..obj import Cube, WCS, Image, iter_ima
 from ..tools import all_subclasses
 
-__all__ = ['Moffat2D', 'FSFModel', 'OldMoffatModel', 'MoffatModel2', 'combine_fsf']
+__all__ = ['Moffat2D', 'FSFModel', 'MoffatModel2', 'combine_fsf']
 
 
 def find_model_cls(hdr):
@@ -50,8 +50,9 @@ def find_model_cls(hdr):
         if cls.model == hdr['FSFMODE']:
             break
     else:
-        raise ValueError('FSFMODE {} is not implemented'
-                         .format(hdr['FSFMODE']))
+        if hdr['FSFMODE'] != "MOFFAT1":  # old model comptatible with model=2
+            raise ValueError('FSFMODE {} is not implemented'
+                             .format(hdr['FSFMODE']))
 
     return cls
 
@@ -87,7 +88,7 @@ def Moffat2D(fwhm, beta, shape, center=None, normalize=True):
     alpha = fwhm / (2 * np.sqrt(2**(1 / beta) - 1))
     amplitude = (beta - 1) * (np.pi * alpha**2)
     if center is None:
-        x0, y0 = np.array(shape) / 2 - np.array([0.5,0.5])
+        x0, y0 = np.array(shape) / 2 - np.array([0.5, 0.5])
     else:
         x0, y0 = center
     xx, yy = np.mgrid[:shape[0], :shape[1]]
@@ -153,6 +154,7 @@ def fit_poly(x, y, deg, reject=3.0):
 
 
 class FSFMultiModel(list):
+
     """Class to manage multiple FSF models."""
 
     @classmethod
@@ -166,6 +168,7 @@ class FSFMultiModel(list):
 
 
 class FSFModel:
+
     """Base class for FSF models."""
 
     def __init__(self):
@@ -283,59 +286,8 @@ class FSFModel:
         return Cube(wcs=wcs, wave=wave, data=data)
 
 
-class OldMoffatModel(FSFModel):
-    """Moffat FSF with fixed beta and FWHM varying with wavelength."""
-
-    name = 'Old model with a fixed beta'
-    model = 'MOFFAT1'
-
-    def __init__(self, a, b, beta, pixstep, field=0):
-        super().__init__()
-        self.a = a
-        self.b = b
-        self.beta = beta
-        self.pixstep = pixstep
-        self.field = field
-
-    @classmethod
-    def from_header(cls, hdr, pixstep, field=0):
-        if 'FSF%02dBET' % field not in hdr:
-            raise ValueError('FSF%02dBET not found in header' % field)
-        beta = hdr['FSF%02dBET' % field]
-        a = hdr['FSF%02dFWA' % field]
-        b = hdr['FSF%02dFWB' % field]
-        return cls(a, b, beta, pixstep, field=field)
-
-    def info(self):
-        self.logger.info('Model %s Beta %f FWHM a %f b %f Step %f',
-                         self.model, self.beta, self.a, self.b, self.pixstep)
-
-    def to_header(self, hdr=None, field_idx=0):
-        hdr = super().to_header(hdr=hdr)
-        hdr['FSF%02dBET' % field_idx] = np.around(self.beta, decimals=2)
-        hdr['FSF%02dFWA' % field_idx] = np.around(self.a, decimals=3)
-        hdr['FSF%02dFWB' % field_idx] = float('%.3e' % self.b)
-        return hdr
-
-    def get_fwhm(self, lbda, unit='arcsec'):
-        fwhm = self.a + self.b * lbda
-        if unit == 'pix':
-            fwhm /= self.pixstep
-        return fwhm
-
-    def get_beta(self, lbda):
-        return self.beta
-
-    def to_model2(self):
-        """Convert the model to a model=2 one."""
-        l1, l2 = 5000, 9000
-        a = self.b * (l2 - l1)
-        b = self.a + a * (l1 / (l2 - l1) + 0.5)
-        fwhm_pol = [a, b]
-        return MoffatModel2(fwhm_pol, [self.beta], (l1, l2), self.pixstep)
-
-
 class MoffatModel2(FSFModel):
+
     """Circular MOFFAT beta=poly(lbda) fwhm=poly(lbda)."""
 
     name = "Circular MOFFAT beta=poly(lbda) fwhm=poly(lbda)"
@@ -343,29 +295,29 @@ class MoffatModel2(FSFModel):
 
     def __init__(self, fwhm_pol, beta_pol, lbrange, pixstep, field=0):
         """ Create a FSF object
-        
+
         Parameters
         ----------
         fwhm_pol : list
             list of polynome coefficients for FWHM(l)::
-            
+
                 FWHM(l) = fwhm_pol[0] * l**deg + ... + fwhm_pol[deg]
                 l = (lbda - lb1) / (lb2 - lb1) - 0.5
-                
+
         beta_pol : list
             list of polynome coefficients for beta(l)
         lbrange : tuple
             lb1,lb2 wavelengths used for wavelength normalisation
         pixstep : float
-            spaxel value in arcsec 
+            spaxel value in arcsec
         field : int
             field location in case of multiple FSF
-            
+
         Returns
         -------
         fsf : `~mpdaf.MUSE.MoffatModel2`
             fsf model
-            
+
         """
         super().__init__()
         self.fwhm_pol = fwhm_pol
@@ -377,51 +329,68 @@ class MoffatModel2(FSFModel):
     @classmethod
     def from_header(cls, hdr, pixstep, field=0):
         """ Read FSF from file header
-        
+
         Parameters
         ----------
         hdr : `astropy.io.fits.Header`
             FITS header
         pixstep : float
-            spaxel value in arcsec 
-            
+            spaxel value in arcsec
+
         Returns
         -------
         fsf : `~mpdaf.MUSE.MoffatModel2`
             fsf model
-        
+
         """
-        if 'FSFLB1' not in hdr or 'FSFLB2' not in hdr:
-            raise ValueError('Missing FSFLB1/FSFLB2 keywords in file header')
+        if 'FSFMODE' not in hdr:
+            raise ValueError('Missing FSFMODE keyword in file header')
+        if hdr['FSFMODE'] == 'MOFFAT1':  # old model
+            if 'FSF%02dBET' % field not in hdr:
+                raise ValueError('FSF%02dBET not found in header' % field)
+            _beta = hdr['FSF%02dBET' % field]
+            _a = hdr['FSF%02dFWA' % field]
+            _b = hdr['FSF%02dFWB' % field]
+            # Convert the model to a model=2 one.
+            l1, l2 = 5000, 9000
+            a = _b * (l2 - l1)
+            b = _a + a * (l1 / (l2 - l1) + 0.5)
+            fwhm_pol = [a, b]
+            return MoffatModel2(fwhm_pol, [_beta], (l1, l2), pixstep)
 
-        lbrange = (hdr['FSFLB1'], hdr['FSFLB2'])
-        if lbrange[1] <= lbrange[0]:
-            raise ValueError('Wrong FSF lambda range')
+        else:
+            if 'FSFLB1' not in hdr or 'FSFLB2' not in hdr:
+                raise ValueError(
+                    'Missing FSFLB1/FSFLB2 keywords in file header')
 
-        if 'FSF%02dFNC' % field not in hdr:
-            raise ValueError('FSF%02dFNC not found in header' % field)
+            lbrange = (hdr['FSFLB1'], hdr['FSFLB2'])
+            if lbrange[1] <= lbrange[0]:
+                raise ValueError('Wrong FSF lambda range')
 
-        ncf = hdr['FSF%02dFNC' % field]
-        fwhm_pol = [hdr['FSF%02dF%02d' % (field, k)] for k in range(ncf)]
-        ncb = hdr['FSF%02dBNC' % field]
-        beta_pol = [hdr['FSF%02dB%02d' % (field, k)] for k in range(ncb)]
-        return cls(fwhm_pol, beta_pol, lbrange, pixstep, field=field)
+            if 'FSF%02dFNC' % field not in hdr:
+                raise ValueError('FSF%02dFNC not found in header' % field)
+
+            ncf = hdr['FSF%02dFNC' % field]
+            fwhm_pol = [hdr['FSF%02dF%02d' % (field, k)] for k in range(ncf)]
+            ncb = hdr['FSF%02dBNC' % field]
+            beta_pol = [hdr['FSF%02dB%02d' % (field, k)] for k in range(ncb)]
+            return cls(fwhm_pol, beta_pol, lbrange, pixstep, field=field)
 
     def to_header(self, hdr=None, field_idx=0):
         """ Write FSF in file header
-        
+
         Parameters
         ----------
         hdr : `astropy.io.fits.Header`
             FITS header
         field_idx : int
-            field index 
-            
+            field index
+
         Returns
         -------
         hdr : `astropy.io.fits.Header`
             FITS header
-            
+
         """
         hdr = super().to_header(hdr=hdr)
         hdr['FSFLB1'] = (self.lbrange[0], 'FSF Blue Ref Wave (A)')
@@ -440,19 +409,19 @@ class MoffatModel2(FSFModel):
 
     @classmethod
     def from_psfrec(cls, rawfilename, **kwargs):
-        """ Compute Reconstructed FSF from AO telemetry 
+        """ Compute Reconstructed FSF from AO telemetry
             Need muse_psfrec external python module.
-        
+
         Parameters
         ----------
         rawfilename : str
             MUSE raw file name with AO telemetry information
-            
+
         Returns
         -------
         fsf : `~mpdaf.MUSE.MoffatModel2`
             fsf model
-        
+
         """
         # Try to import muse-psfr, if not available raise an error
         from muse_psfr import psfrec
@@ -464,8 +433,10 @@ class MoffatModel2(FSFModel):
                 '%02d: Seeing %.02f,%.02f,%.02f,%.02f '
                 'GL %.02f,%.02f,%.02f,%.02f L0 %.02f,%.02f,%.02f,%.02f',
                 k + 1,
-                r['LGS1_SEEING'], r['LGS2_SEEING'], r['LGS3_SEEING'], r['LGS4_SEEING'],
-                r['LGS1_TUR_GND'], r['LGS2_TUR_GND'], r['LGS3_TUR_GND'], r['LGS4_TUR_GND'],
+                r['LGS1_SEEING'], r['LGS2_SEEING'], r[
+                    'LGS3_SEEING'], r['LGS4_SEEING'],
+                r['LGS1_TUR_GND'], r['LGS2_TUR_GND'], r[
+                    'LGS3_TUR_GND'], r['LGS4_TUR_GND'],
                 r['LGS1_L0'], r['LGS2_L0'], r['LGS3_L0'], r['LGS4_L0']
             )
         data = res['FIT_MEAN'].data
@@ -499,12 +470,12 @@ class MoffatModel2(FSFModel):
             degre for polynomial fit of Beta(lbda)
         lbdarange: tuple of float
             (lbda1,lbda2)  reference wavelengths for normalisation
-            
+
         Returns
         -------
         fsf : `~mpdaf.MUSE.MoffatModel2`
          fsf model with intermediate fitting results as .fit attribute
-        
+
              fsf.fit : dict
                   center : array of fitted star location
                   wave : array of wavelengths
@@ -513,7 +484,7 @@ class MoffatModel2(FSFModel):
                   fwhmpol : list of FWHM polynomial
                   betafit : array of fitted beta
                   betaerr : array of errors in beta returned by the fit
-                  betapol : list of beta polynomial  
+                  betapol : list of beta polynomial
                   center0 : first iteration of fitted star location
                   fwhm0 : first iteration of fitted FWHM
                   beta0 : first iteration of fitted beta
@@ -582,8 +553,56 @@ class MoffatModel2(FSFModel):
                    'ima': imalist}
         return fsf
 
+    @classmethod
+    def from_FSFlist(cls, imalist, lbda, fwhm0, beta0, fwhmdeg=3, betadeg=3,
+                     lbrange=(5000, 9000)):
+        """
+        Fit a FSF model on a point source
+
+        Parameters
+        ----------
+        imalist : List of `mpdaf.obj.Image`
+                  List of FSF images
+        lbda : array
+               Wavelength vector corresponding to the list of FSFs
+        fwhm0 : float
+                Value used to initialize the FWHM in the Moffat fit
+        beta0 : float
+                Value used to initialize the beta parameter in the Moffat fit
+        fwhmdeg : int
+            degre for polynomial fit of FWHM(lbda)
+        betadeg : int
+            degre for polynomial fit of Beta(lbda)
+        lbdarange: tuple of float
+            (lbda1,lbda2)  reference wavelengths for normalisation
+
+        Returns
+        -------
+        fsf : `~mpdaf.MUSE.MoffatModel2`
+         fsf model
+        """
+        lbdanorm = norm_lbda(lbda, lbrange[0], lbrange[1])
+
+        fit = []
+        for k, ima in enumerate(imalist):
+            f = ima.moffat_fit(fwhm=fwhm0, n=beta0, fit_n=True, circular=True,
+                               fit_back=True, verbose=False)
+            fwhm0 = f.fwhm[0]
+            beta0 = f.n
+            fit.append(f)
+
+        beta_fit = np.array([f.n for f in fit])
+        beta_pol, beta_pval, beta_err = fit_poly(lbdanorm, beta_fit, betadeg)
+
+        fwhm_fit = np.array([f.fwhm[0] for f in fit])
+        fwhm_pol, fwhm_pval, fwhm_err = fit_poly(lbdanorm, fwhm_fit, fwhmdeg)
+
+        fsf = cls(lbrange=lbrange, fwhm_pol=fwhm_pol, beta_pol=beta_pol,
+                  pixstep=imalist[0].get_step()[0])
+        return fsf
+
     def info(self):
-        """ Print fsf model information 
+        """ Print fsf model information
         """
         self.logger.info('Wavelength range: %s-%s',
                          self.lbrange[0], self.lbrange[1])
@@ -596,18 +615,18 @@ class MoffatModel2(FSFModel):
 
     def get_fwhm(self, lbda, unit='arcsec'):
         """ Return FWHM
-        
+
         Parameters
         ----------
         lbda : float or array of float
             wavelengths
         unit : str
-            arcsec or pix, unit of FWHM 
-            
+            arcsec or pix, unit of FWHM
+
         Returns
         -------
         FWHM : float or array
-        
+
         """
         lb = norm_lbda(lbda, self.lbrange[0], self.lbrange[1])
         fwhm = np.polyval(self.fwhm_pol, lb)
@@ -622,13 +641,13 @@ class MoffatModel2(FSFModel):
         ----------
         lbda : float or array of float
             wavelengths
-            
+
         Returns
         -------
         beta : float or array
-        
+
         """
-        
+
         lb = norm_lbda(lbda, self.lbrange[0], self.lbrange[1])
         return np.polyval(self.beta_pol, lb)
 
@@ -702,10 +721,12 @@ def fwhm_moffat2gauss(fwhm, beta):
     """
     translate a MOFFAT fwhm,beta in GAUSS equivalent fwhm
     """
-    pol = np.array([-1.89848758e-03,  3.37400959e-02, -2.38556527e-01,  8.50778040e-01,
-       -1.58670491e+00,  2.39768917e+00])
+    pol = np.array(
+        [-1.89848758e-03,  3.37400959e-02, -2.38556527e-01,  8.50778040e-01,
+         -1.58670491e+00,  2.39768917e+00])
     gfwhm = fwhm * np.polyval(pol, beta)
     return gfwhm
+
 
 def combine_fsf(fsflist, nlbda=20, size=21):
     """

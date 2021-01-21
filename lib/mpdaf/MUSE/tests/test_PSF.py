@@ -47,7 +47,10 @@ def test_create_psf_cube():
 
     wcs = src.images['MUSE_WHITE'].wcs
     shape = src.images['MUSE_WHITE'].shape
-    a, b, beta, field = src.get_FSF()
+    # a, b, beta, field = src.get_FSF()
+    a = 0.862
+    b = -3.46e-05
+    beta = 2.8
     psf = b * cube.wave.coord() + a
 
     # Gaussian

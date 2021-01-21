@@ -56,7 +56,7 @@ from scipy.optimize import leastsq
 from ..obj import Cube, Image, Spectrum, vactoair, airtovac, plot_rgb
 from ..obj.objs import is_int, is_float, bounding_box
 from ..tools import MpdafWarning
-from ..MUSE import FieldsMap, FSFModel, OldMoffatModel
+from ..MUSE import FieldsMap, FSFModel, MoffatModel2
 from ..MUSE.PSF import MOFFAT1, create_psf_cube
 from ..sdetect.sea import (segmentation, findCentralDetection,
                            union, intersection, compute_optimal_spectrum)
@@ -399,6 +399,7 @@ _EXTNAME_TO_ATTRIBUTES = {v: k for k, v in _ATTRIBUTES_TO_EXTNAME.items()}
 
 
 class ExtLoader(collections.abc.MutableMapping):
+
     """Handles loading of FITS extensions.
 
     To avoid loading all the extensions of a source FITS file, this class
@@ -1043,7 +1044,8 @@ class Source:
                         if unit is None or unit == self.lines[col].unit:
                             self.lines[col][l] = val
                         else:
-                            self.lines[col][l] = (val * unit).to(self.lines[col].unit).value
+                            self.lines[col][l] = (val * unit).to(
+                                self.lines[col].unit).value
                     return
                 else:
                     if not add_if_not_matched:
@@ -1223,8 +1225,8 @@ class Source:
         """
         fsfmodel = FSFModel.read(cube)
 
-        if fsfmodel.model != 'MOFFAT1':
-            raise ValueError('This method is coded only for FSFMODE=MOFFAT1')
+        if (fsfmodel.model != "MOFFAT1") and (fsfmodel.model != 2):
+            raise ValueError('This method is coded only for FSFMODE=2')
 
         if isinstance(fsfmodel, FSFModel):  # just one FSF
             self.header.update(fsfmodel.to_header(field_idx=0))
@@ -1270,33 +1272,30 @@ class Source:
                 idx = ksel[0][0]
                 self.header.update(fsfmodel[idx].to_header(field_idx=idx + 1))
             else:  # several fields
-                shape = (13, 13)
-                step = cube.wcs.get_step(unit=u.arcsec)[0]
-                # compute FSF for minimum and maximum wavelength
-                l1, l2 = cube.wave.get_range()
-                FSF1 = np.zeros(shape)
-                FSF2 = np.zeros(shape)
-                for i in ksel[0]:
-                    kernel1 = fsfmodel[i].get_2darray(l1, shape)
-                    kernel2 = fsfmodel[i].get_2darray(l2, shape)
-                    FSF1 += w[i] * kernel1
-                    FSF2 += w[i] * kernel2
+                fwhmdeg = max([len(fsfmodel[i].fwhm_pol) for i in ksel[0]]) - 1
+                betadeg = max([len(fsfmodel[i].beta_pol) for i in ksel[0]]) - 1
+                maxorder = max(fwhmdeg, betadeg)
+                nwaves = max(2, maxorder * 5)
+                lbrange = cube.wave.get_range()
+                waves = np.linspace(lbrange[0], lbrange[1], nwaves)
+                # compute FSF for all wavelengths
+                imalist = []
+                for lbda in waves:
+                    FSF = 0
+                    for i in ksel[0]:
+                        FSF += w[i] * fsfmodel[i].get_image(lbda, cube.wcs)
+                    imalist.append(FSF)
 
-                # fit beta, fwhm1 and fwhm2 on PSF1 and PSF2
-                def moffatfit(v):
-                    m1 = MOFFAT1(l1, step, shape[0], v[0], v[1], v[2],
-                                 normalize=True)[0]
-                    m2 = MOFFAT1(l2, step, shape[0], v[0], v[1], v[2],
-                                 normalize=True)[0]
-                    return np.ravel(m1 - FSF1 + m2 - FSF2)
-
-                v0 = [fsfmodel[i].beta, fsfmodel[i].a, fsfmodel[i].b]
-                beta, a, b = leastsq(moffatfit, v0)[0]
-                model = OldMoffatModel(a, b, beta, step)
+                beta0 = fsfmodel[np.argmax(w)].get_beta(
+                    (lbrange[0] + lbrange[1]) / 2)
+                fwhm0 = fsfmodel[np.argmax(w)].get_fwhm(
+                    (lbrange[0] + lbrange[1]) / 2)
+                model = MoffatModel2.from_FSFlist(imalist, waves, fwhm0, beta0,
+                                                  fwhmdeg, betadeg, lbrange)
                 self.header.update(model.to_header(field_idx=99))
 
     def get_FSF(self):
-        """Return the FSF keywords if available in the FITS header."""
+        """Return the FSF model if available in the FITS header."""
         try:
             white = self.images['MUSE_WHITE']
             pixstep = white.wcs.get_step(unit=u.arcsec)[0]
@@ -1305,17 +1304,10 @@ class Source:
 
         try:
             fsfmodel = FSFModel.read(self.header, pixstep=pixstep)
+            return fsfmodel
         except ValueError:
             # no model found
             return
-
-        if isinstance(fsfmodel, OldMoffatModel):
-            return fsfmodel.a, fsfmodel.b, fsfmodel.beta, fsfmodel.field
-        else:
-            # TODO: the add_FSF still works only with OldMoffatModel, but this
-            # should be updated to work with other models, and here we should
-            # just return the FSFModel
-            return fsfmodel
 
     def add_narrow_band_images(self, cube, z_desc, eml=None, size=None,
                                unit_size=u.arcsec, width=8, is_sum=False,
@@ -1371,7 +1363,7 @@ class Source:
                 # or if method = "sum":
                 sub_flux = sum(flux[lbda1-margin-fband*(lbda2-lbda1)/2: lbda1-margin] +
                                 flux[lbda2+margin: lbda2+margin+fband*(lbda2-lbda1)/2]) /fband
-                                
+
                 # or if median_filter > 0:
                 sub_flux = median_filter in the wavelength axis of flux
         margin : float
@@ -1381,7 +1373,7 @@ class Source:
             The size of the off-band is ``fband x narrow-band width`` (in
             angstrom).
         median_filter : float
-            size of the median filter for background estimation (if set to 0, 
+            size of the median filter for background estimation (if set to 0,
             the classical off band images are used )
         method : str
             Name of the Cube method used to aggregate the data. This method
@@ -1919,7 +1911,8 @@ class Source:
                                        description='line name')
                     self.lines.add_column(col)
                 for w, name in zip(wl, lnames):
-                    self.lines['LINE'][np.where(abs(self.lines[col_lbda] - w) < 0.01)] = name
+                    self.lines['LINE'][
+                        np.where(abs(self.lines[col_lbda] - w) < 0.01)] = name
                 self._logger.info('crack_z: lines')
                 for l in self.lines.pformat():
                     self._logger.info(l)
