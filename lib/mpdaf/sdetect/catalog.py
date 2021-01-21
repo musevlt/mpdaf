@@ -1075,6 +1075,8 @@ class Catalog(Table):
             Name of the column that contains Color.
         ecol : str
             Symbol color (only used if lcol is not set).
+        tcol: str
+            Text label color
         alpha : float
             Symbol transparency.
         fill: bool
