@@ -1044,8 +1044,8 @@ class Catalog(Table):
 
     def plot_symb(self, ax, wcs, label=False, esize=0.8, lsize=None, etype='o',
                   ltype=None, ra=None, dec=None, id=None, ecol='k', lcol=None,
-                  alpha=1.0, fill=False, fontsize=8, expand=1.7, ledgecol=None,
-                  lfacecol=None, npolygon=3, **kwargs):
+                  alpha=1.0, fill=False, fontsize=8, expand=1.7, tcol='k', ledgecol=None,
+                  lfacecol=None, npolygon=3,  **kwargs):
         """This function plots the sources location from the catalog.
 
         Parameters
@@ -1089,6 +1089,7 @@ class Catalog(Table):
             kwargs can be used to set additional plotting properties.
 
         """
+        
         ra, dec = self._get_radec_colnames((ra, dec))
         id = id or self.meta.get('idname', self._idname_default)
 
@@ -1174,7 +1175,7 @@ class Catalog(Table):
             ax.add_artist(s)
             if label and (not np.ma.is_masked(src[id])):
                 texts.append((ax.text(xx, yy, src[id], ha='center',
-                                      fontsize=fontsize), cen[1], cen[0]))
+                                      fontsize=fontsize, color=tcol), cen[1], cen[0]))
             s.set_clip_box(ax.bbox)
 
         if label and len(texts) > 0:
