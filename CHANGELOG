@@ -1,5 +1,21 @@
-3.5dev (XX/XX/2020)
--------------------
+3.5 (01/02/2021)
+----------------
+
+- Update FSF module (new Moffat model, correct fsf centering in get_2darray)
+
+- Correct bug in `mpdaf.obj.Spectrum.mean()`
+
+- Solve rounding problem in cubemosaic
+
+- Add wcs.get_center() and wcs.coord()
+
+- Allow reading not-projected pixtable (when astrometry was not applied)
+
+- Fix documentation link
+
+- Correct a bug in `mpdaf.obj.image.peak()`
+
+- Change NeV1238 and NeV1248 to NV1238, NV1248 in `mpdaf.sdetect.linelist`
 
 - Add a parameter in `mpdaf.sdetect.linelist.get_emlines` to exclude a wavelength range (useful for AO spectra with masked Na region)
 
