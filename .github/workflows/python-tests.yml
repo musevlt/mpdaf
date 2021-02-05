@@ -17,9 +17,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            python-version: '3.7'
-            tox_env: 'check'
+          # - os: ubuntu-latest
+          #   python-version: '3.7'
+          #   tox_env: 'check'
           - os: ubuntu-latest
             python-version: '3.7'
             tox_env: 'py37'
@@ -54,7 +54,6 @@ jobs:
     - name: Convert coverage
       run: python -m coverage xml
     - name: Upload coverage to Codecov
-      if: "contains(matrix.tox_env, 'py')"
       uses: codecov/codecov-action@v1
       with:
         fail_ci_if_error: true
