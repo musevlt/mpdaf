@@ -48,7 +48,7 @@ Description of the new release procedure
 10. Build the binary wheels.
    On https://github.com/musevlt/mpdaf-wheels, edit MPDAF_VERSION in the
    .travis.yml file, commit and push. Then wheels should be build on
-   https://travis-ci.org/musevlt/mpdaf-wheels and uploaded to
+   https://travis-ci.com/github/musevlt/mpdaf-wheels and uploaded to
    https://github.com/musevlt/mpdaf-wheels/releases if it was successful.
    Download the wheels, and push them to PyPI with twine.
 
