@@ -156,7 +156,7 @@ WCS
 Data classes (Cube, Image, Spectrum)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* Methods which transform the object return now by default an other object.
+* Methods which transform the object return now by default another object.
   The optional copy argument can be used to request that the input data be
   transformed in-place.
 
@@ -172,7 +172,7 @@ Data classes (Cube, Image, Spectrum)
 * `Cube.get_image <mpdaf.obj.Cube.get_image>`: add input parameters in the
   FITS header.
 
-* Allow to overwrite `BUNIT` for data without unit.
+* Allow one to overwrite `BUNIT` for data without unit.
 
 * Fix `EXPTIME` of combined cubes when cubes overlap (using a median of the
   exposure map give a more realistic estimate).
@@ -212,7 +212,7 @@ Sources
 
 * Tell which keyword is missing when creating a source.
 
-* Allow to deactivate the masking of invalid values when loading a source.
+* Allow one to deactivate the masking of invalid values when loading a source.
   This part (`~mpdaf.sdetect.Catalog.masked_invalid`) takes ~40% of the
   total load time for sources with a lot of tables and columns.
 
@@ -242,7 +242,7 @@ Pixtable
 * Fix initial value for `~mpdaf.drs.PixTable.subtract_slice_median` correction.
   This value was set to 1 which seems wrong for an additive correction. To
   emphasize the fact that some combination of slices and quadrants are not
-  valid, and allow to filter these values later, this commit changes the init
+  valid, and allow one to filter these values later, this commit changes the init
   value for the count to -1, and the correction to NaN.
 
 * Fix `~mpdaf.drs.PixTable.select_sky` in the case of positioned pixel table.
@@ -275,7 +275,7 @@ v1.2 (13/01/2016)
 * Correct ``cube.get_step`` that returned nothing.
 * Use setuptools for the ``setup.py``:
 
-  - Allow to use develop mode (``python setup.py develop``).
+  - Allow one to use develop mode (``python setup.py develop``).
   - Install dependencies automatically.
   - Use optional dependencies.
 
@@ -298,7 +298,7 @@ PixTable
   pixtables.
 * Remove ``cos(delta)`` correction for positioned pixtables.
 * Use directly the binary mask in ``extract_from_mask``.
-* Allow to use a boolean mask for pixtable selections.
+* Allow one to use a boolean mask for pixtable selections.
 
 Sources
 ~~~~~~~
@@ -308,7 +308,7 @@ Sources
 * Add methods to manage a history in the sources headers.
 * Use ``savemask='none'`` for MASK and SEG extensions.
 * Correct bug in ``source.write`` when a column has no unit.
-* Allow to pass the lambda range and wave unit to ``Source.extract_spectra``.
+* Allow one to pass the lambda range and wave unit to ``Source.extract_spectra``.
 * Correct bug in Catalog initialization due to units.
 * ``Catalog.from_sources``: update the default format.
 * Split ``Source.add_masks`` in 3 methods: ``find_sky_mask``,
@@ -331,7 +331,7 @@ Breaking changes
 
 * Add a new base class for the :class:`~mpdaf.obj.Cube`,
   :class:`~mpdaf.obj.Image` and :class:`~mpdaf.obj.Spectrum` classes.  This
-  allows to fix some inconsistencies between these classes and to bring more
+  allows one to fix some inconsistencies between these classes and to bring more
   easily new common features.
 
 * FITS files are now read only when the data is needed: when creating an object
@@ -347,7 +347,7 @@ Breaking changes
   - Spectrum's shape is now a tuple, which is consistent with the Cube and Image
     classes, and with Numpy arrays.
 
-* Allow to specify the data type of Cube/Image/Spectrum in the constructor (and
+* Allow one to specify the data type of Cube/Image/Spectrum in the constructor (and
   read an extension as an integer array).
 
 * Change the behavior of the ``.clone`` method: now by default it returns an
@@ -386,7 +386,7 @@ Changes that should be imperceptible to users
 
 * Use ``astropy.wcs`` for handling the wavelength coordinates.
 * Simplify logging configuration.
-* Cube/Image/Spectrum constructors: allow to pass a hdulist object in place of
+* Cube/Image/Spectrum constructors: allow one to pass a hdulist object in place of
   the filename (this option should reduce the time when the FITS file is used
   several times because of the big time spent reading the FITS headers).
 
@@ -415,7 +415,7 @@ v1.1.18 (08/07/2015)
 * Optimize C libraries using openmp (cubes combination).
 * Update WCS according to FITS standard.
 * Modify ``Spectrum.log_plot`` to be the same as plot with a log stretch.
-* Allow to create a cube object with a masked array.
+* Allow one to create a cube object with a masked array.
 * Correct bug in ``mask_polygon`` function of Image object.
 * Possibility to use MAD (median absolute deviation) statistics for
   sigma-clipping during cube combination.
@@ -447,7 +447,7 @@ v1.1.18 (08/07/2015)
 
   - Add needed keywords: RA, DEC, MJD-OBS, DATE-OBS, PI-COI, OBSERVER, OBJECT,
     ESO INS DROT POSANG, ESO INS MODE
-  - Allow to override OBJECT name
+  - Allow one to override OBJECT name
   - Compute a correct EXPTIME for the mosaic case
   - Put the list of merged files in comments, otherwise the keyword value can be
     too long for MuseWise
@@ -464,7 +464,7 @@ v1.1.17.1
 * Optimize c libraries using openmp.
 * Update WCS according to FITS standard.
 * Modify ``Spectrum.log_plot`` to be the same as plot with a log stretch.
-* Allow to create a cube object with a masked array.
+* Allow one to create a cube object with a masked array.
 * Corrected bug in ``mask_polygon`` function of Image object.
 
 v1.1.17 (16/06/2015)
@@ -494,7 +494,7 @@ v1.1.17 (16/06/2015)
 * Refactor common part of PixTable.extract
 * Remove 'ESO PRO' keywords writing in PixTable.
   This was changed a long time ago and is not useful anymore.
-* Allow to extract data from a PixTable with stack numbers.
+* Allow one to extract data from a PixTable with stack numbers.
 * Add a param to PixTable.extract to choose if multiple selection are combined
   with logical_and (default) or logical_or.
 * Refactor ``get_*`` methods of PixTable.
@@ -618,7 +618,7 @@ v1.1.14 (21/01/2015)
 * compute the reference sky spectrum from a pixel table
 * method mask_image that creates a new image from a table of apertures.
 * update Image.mask and Image.mask_ellipse methods
-* allow to apply a slice on all the cubes of a CubeList.
+* allow one to apply a slice on all the cubes of a CubeList.
 * Image/Cube/CubeDisk: correct truncate methods
 * PixTable: new methods to bring all slices to the same median value
     (using sky reference spectrum)
@@ -765,7 +765,7 @@ v1.1.1 (29/08/2013)
 * correct bug in WCS.isEqual
 * correct fscale value in multiprocess functions of Cube
 * optimize interactive plots
-* update Channel.get_trimmed_image to do bias substraction
+* update Channel.get_trimmed_image to do bias subtraction
 * update Image.segment with new parameters
 * add warnings according to M Wendt comments
 * added method to plot a RawFile object
@@ -807,7 +807,7 @@ v1.0.2 (19/11/2012)
 * ima[:,q] or ima[p,:] return Spectrum objects and not 1D images
 * link on new version of HyperFusion
 * Image: add iterative methods for Gaussian and Moffat fit
-* Image: remove matplotlib clear before ploting
+* Image: remove matplotlib clear before plotting
 * fusion: update FSF model
 * Spectrum/Image/Cube .primary_header and .data_header attributes
 * fusion: add copy and clean, continue_fit methods
@@ -865,7 +865,7 @@ v1.0.1 (27/09/2012)
 * Pixtable: optimize and split origin2coords in multiple helpers
 * Update WCS object accoriding to the python notation : (dec,ra)
 * Image: add methods to mask/unmask the image.
-* Udpate the python interface for HyperF v1.1
+* Update the python interface for HyperF v1.1
 * Add euro3D package
 * Correct error with new version of pywcs (remplace 'UNITLESS' by '' for unit type)
 * Compatibility with pyfits 3.0 (The Header.ascardlist() method is deprecated,

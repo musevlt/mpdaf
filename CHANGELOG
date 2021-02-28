@@ -65,7 +65,7 @@
 
 - Fix `mpdaf.sdetect.Source.info` to correctly print header comments.
 
-- Allow to use a correction for zero offset in `mpdaf.obj.CubeList.combine`.
+- Allow one to use a correction for zero offset in `mpdaf.obj.CubeList.combine`.
   [:pull:`163`]
 
 - Fix precision issue with `mpdaf.obj.WCS.isEqual` and add precision keywords.
@@ -102,8 +102,8 @@ Removal of deprecated code:
 - The self-calibration code has been removed (``PixTable.selfcalibrate`` and
   ``PixTable.sky_ref``). The self-calibration method is available in the DRS
   since version 2.4, with the ``autocalib="deepfield"`` parameter. This should
-  be prefered as it is more efficient (no need to save the Pixtable to read it
-  in MPDAF), includes a few bug fixes, and allows to use the DRS
+  be preferred as it is more efficient (no need to save the Pixtable to read it
+  in MPDAF), includes a few bug fixes, and allows one to use the DRS
   sky-subtraction after the autocalib. New DRS versions may also include more
   features.
 
@@ -281,12 +281,12 @@ Misc
   more required to run the setup, and it can be installed directly as
   a dependency.
 
-- Allow to pickle MPDAF objects (``Cube``, ``Image``, ``Spectrum``,
+- Allow one to pickle MPDAF objects (``Cube``, ``Image``, ``Spectrum``,
   ``Source``). This makes it much easier to use these MPDAF objects with
   ``multiprocessing`` as they can now be passed transparently to the
   subprocesses.
 
-- Allow to specify the wavelength range in ``Cube.subcube_circle_aperture``.
+- Allow one to specify the wavelength range in ``Cube.subcube_circle_aperture``.
 
 - Speedup ``create_psf_cube``, ``moffat_image`` and ``gauss_image``.
 
@@ -299,7 +299,7 @@ Sources
 
 - Better completions for Source attributes, and for keys in IPython.
 
-- Allow to load a "fieldmap" from a dedicated file (in ``Source.add_FSF``).
+- Allow one to load a "fieldmap" from a dedicated file (in ``Source.add_FSF``).
 
 - New method to get FSF keywords from a Source (``Source.get_FSF``).
 
@@ -310,21 +310,21 @@ Catalog
   causing errors with some operations due to bugs in the Astropy
   implementations. Indexes can still be added manually if needed.
 
-- Allow to pass additional Ellipse arguments to ``Catalog.plot_symb``.
+- Allow one to pass additional Ellipse arguments to ``Catalog.plot_symb``.
 
-- Allow to export coordinates from their columns to
+- Allow one to export coordinates from their columns to
   a ``astropy.coordinates.SkyCoord`` object (``Catalog.to_skycoord``) and to
   ds9 region file (``Catalog.to_ds9_regions``).
 
 - New methods ``Catalog.nearest``, to get the nearest sources with respect to
   a given coordinate, and ``Catalog.match3Dline``, to match elements of the
-  current catalog with an other using spatial (RA, DEC) and a list of spectral
+  current catalog with another using spatial (RA, DEC) and a list of spectral
   lines location.
 
 - ``Catalog.plot_id`` is deprecated, in favor of ``Catalog.plot_symb`` with
   ``label=True``.
 
-- Allow to use a mask in ``Catalog.select``.
+- Allow one to use a mask in ``Catalog.select``.
 
 - Add workaround for reading FITS table written with ``Catalog``, with Astropy
   3.0 (because of a bug introduced with their new serialization feature, which
@@ -352,7 +352,7 @@ Sources
 
 - Keep the original order of the header keywords in ``.info()``.
 
-- Allow to set the size of a source without needing the white image.
+- Allow one to set the size of a source without needing the white image.
 
 - New option to add the white image directly within ``add_cube``.
 
@@ -396,7 +396,7 @@ Image
 
 - Margin of 1/100th of pixel added in `~mpdaf.obj.Image.inside`.
 
-- Allow to set the center outside the parent image in `~mpdaf.obj.Image.subimage`.
+- Allow one to set the center outside the parent image in `~mpdaf.obj.Image.subimage`.
 
 Cube
 ~~~~
@@ -421,7 +421,7 @@ Sources
 
 - New optimal extraction algorithm for "CCD spectroscopy", Horne, K. 1986.
 
-- Allow to set the order for the spline interpolation in
+- Allow one to set the order for the spline interpolation in
   `~mpdaf.sdetect.Source.add_image`.
 
 Catalog
@@ -501,10 +501,10 @@ v2.1 (16/11/2016)
 New Features
 ~~~~~~~~~~~~
 
-* Allow to pass optional arguments when opening a FITS file, using the
+* Allow one to pass optional arguments when opening a FITS file, using the
   ``fits_kwargs`` parameter.
 
-* Allow to write ``CHECKSUM``/``DATASUM`` when saving a FITS file (use
+* Allow one to write ``CHECKSUM``/``DATASUM`` when saving a FITS file (use
   ``checksum=True``). [:pull:`53`]
 
 * ``Image`` and ``Spectrum`` objects keep now by default the type of the FITS
@@ -732,7 +732,7 @@ Pixtable
 
 * Use a more efficient implementation for ``PixTable.sky_ref``.
 
-* Allow to work on ``PixTable`` object without the ``.filename`` attribute.
+* Allow one to work on ``PixTable`` object without the ``.filename`` attribute.
 
 * Fix ``PixTable.divide_slice_median``.
 

@@ -7,7 +7,7 @@ un-resampled until the very last step.  The pixel tables used for this purpose
 can be saved at each intermediate reduction step and hence contain lists of
 pixels together with output coordinates and values.  The pixel tables values
 and units change according to the reduction step. Please consult the data
-reduction user manual for further informations.
+reduction user manual for further information.
 
 The `~mpdaf.drs.PixTable` object is used to handle the MUSE pixel tables
 created by the data reduction system. The PixTable object can be read and write
@@ -52,7 +52,7 @@ that the `~mpdaf.MUSE` package  provides a `~mpdaf.MUSE.Slicer` class
 to convert the slicer number between various numbering schemes.
 
 
-Read a pixtable, display informations and extract a smaller pixtable centered around an object
+Read a pixtable, display information and extract a smaller pixtable centered around an object
 ==============================================================================================
 
 Preliminary imports::
@@ -64,7 +64,7 @@ Preliminary imports::
   In [3]: from mpdaf.drs import PixTable
 
 We read the `~mpdaf.drs.PixTable` from the disk and check its basic
-informations (`~mpdaf.drs.PixTable.info`) and FITS header content::
+information (`~mpdaf.drs.PixTable.info`) and FITS header content::
 
   In [4]: pix = PixTable('PIXTABLE-MUSE.2014-07-26T04:37:08.541.fits')
 
@@ -364,14 +364,14 @@ Self-calibration method for empty fields
 
 .. note::
    The self-calibration method is available in the DRS since version 2.4, with
-   the ``autocalib="deepfield"`` parameter. This should be prefered as it is
+   the ``autocalib="deepfield"`` parameter. This should be preferred as it is
    more efficient (no need to save the Pixtable to read it in MPDAF), includes
-   a few bug fixes, and allows to use the DRS sky-subtraction after the
+   a few bug fixes, and allows one to use the DRS sky-subtraction after the
    autocalib. New DRS versions may also include more features.
 
    **The implementation in MPDAF has been removed in v3.2**.
 
-The self-calibration method works on a pixel table and allows to bring all
+The self-calibration method works on a pixel table and allows one to bring all
 slices to the same median value. This is useful to remove residual IFU and
 slice mean level variations. It was designed to work on sparse fields, where
 objects are small compared to the size of a slice. This is because it needs to

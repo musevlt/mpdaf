@@ -226,17 +226,17 @@ def test_delete_extension(tmpdir, source2):
 def test_comments(source1):
     source1.add_comment('This is a test', 'mpdaf', '2016-09-02')
     assert source1.comment[0] == '[mpdaf 2016-09-02] This is a test'
-    source1.add_comment('an other', 'mpdaf', '2016-09-02')
-    assert source1.comment[1] == '[mpdaf 2016-09-02] an other'
+    source1.add_comment('another', 'mpdaf', '2016-09-02')
+    assert source1.comment[1] == '[mpdaf 2016-09-02] another'
 
 
 def test_history(source1):
     source1.add_history('test_arg unitary test', 'mpdaf')
     assert source1.history[0].find('test_arg unitary test') != -1
-    source1.add_history('an other', 'mpdaf')
-    assert source1.history[1].find('an other') != -1
-    source1.add_history('yet an other', 'mpdaf', '2016-09-02')
-    assert 'yet an other (mpdaf 2016-09-02)' in source1.history[2]
+    source1.add_history('another', 'mpdaf')
+    assert source1.history[1].find('another') != -1
+    source1.add_history('yet another', 'mpdaf', '2016-09-02')
+    assert 'yet another (mpdaf 2016-09-02)' in source1.history[2]
 
 
 def test_line():

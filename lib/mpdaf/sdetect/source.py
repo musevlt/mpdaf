@@ -403,7 +403,7 @@ class ExtLoader(collections.abc.MutableMapping):
     """Handles loading of FITS extensions.
 
     To avoid loading all the extensions of a source FITS file, this class
-    allows to load an extension only when the corresponding object is used.
+    allows one to load an extension only when the corresponding object is used.
 
     """
 
@@ -2002,12 +2002,12 @@ class Source:
         ax : matplotlib.axes._subplots.AxesSubplot
             Matplotlib axis instance (eg ax = fig.add_subplot(2,3,1)).
         names : [str, str, str]
-            List of images coresponding to the blue, green and red filters.
+            List of images corresponding to the blue, green and red filters.
         showcenter : (float, str)
             radius in arcsec and color used to plot a circle around the center
             of the source.
         cuts : [(float, float), (float, float), (float, float)]
-            Minimum and maximum values to use for the scaling coresponding to
+            Minimum and maximum values to use for the scaling corresponding to
             the blue, green and red filters.
         kwargs : matplotlib.artist.Artist
             kwargs can be used to set additional plotting properties.

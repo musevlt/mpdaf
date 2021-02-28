@@ -41,7 +41,7 @@ class Slicer:
     can be found in the *"Global Positioning System"* document
     (*VLT-TRE-MUSE-14670-0657*).
 
-    All the methods are static and thus there is no need to instanciate an
+    All the methods are static and thus there is no need to instantiate an
     object to use this class.
 
     Examples

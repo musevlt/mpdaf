@@ -1388,7 +1388,7 @@ class Cube(ArithmeticMixin, DataArray):
             as aggregation method.
         subtract_off : bool
             If True, subtract off a background image that is estimated
-            from median filtering (if median_filter is not zero) 
+            from median filtering (if median_filter is not zero)
             or by combining some images from both below and above the
             chosen wavelength range. If the number of images between
             lbda1 and lbda2 is denoted, N, then the number of
@@ -1426,7 +1426,7 @@ class Cube(ArithmeticMixin, DataArray):
             must accept the axis=0 parameter and return an image. Example:
             mean, sum, max.
         median_filter : float
-            Size of the median filter for background estimation. 
+            Size of the median filter for background estimation.
             If set to 0, the classical off band images are used.
 
         Returns
@@ -1466,7 +1466,7 @@ class Cube(ArithmeticMixin, DataArray):
                         median_filter / self.wave.get_step(unit=unit_wave)).astype(int)
                 else:
                     fwidth = median_filter
-                fwidth = int(fwidth / 2) 
+                fwidth = int(fwidth / 2)
                 # set limits in wavelength
                 m1 = max(k1 - fwidth, 0)
                 m2 = min(k2 + fwidth, self.shape[0]-1)
@@ -1481,44 +1481,44 @@ class Cube(ArithmeticMixin, DataArray):
                 if unit_wave is not None:
                     margin = np.rint(
                         margin / self.wave.get_step(unit=unit_wave)).astype(int)
-    
+
                 # How many images were combined above?
                 nim = k2 + 1 - k1
-    
+
                 # Calculate the indexes of the last pixel of the lower range
                 # of background images and the first pixel of the upper range
                 # of background images.
                 lower_maxpix = max(k1 - 1 - margin, 0)
                 upper_minpix = min(k2 + 1 + margin, self.shape[0])
-    
+
                 # Calculate the number of images to separately select from
                 # below and above the chosen wavelength range.
                 nhalf = np.ceil(nim * fband / 2.0).astype(int)
-    
+
                 # Start by assuming that we will be combining equal numbers
                 # of images from below and above the chosen wavelength range.
                 nabove = nhalf
                 nbelow = nhalf
-    
+
                 # If the chosen wavelength range is too close to one edge of
                 # the cube's wavelength range, reduce the number to fit.
                 if lower_maxpix - nbelow < 0:
                     nbelow = lower_maxpix
                 elif upper_minpix + nabove > self.shape[0]:
                     nabove = self.shape[0] - upper_minpix
-    
+
                 # If there was too little room both below and above the
                 # chosen wavelength range to compute the background, give up.
                 if(lower_maxpix - nbelow < 0 or
                    upper_minpix + nabove > self.shape[0]):
                     raise ValueError('Insufficient space outside the wavelength '
                                      'range to estimate a background')
-    
+
                 # Calculate slices that select the wavelength pixels below
                 # and above the chosen wavelength range.
                 below = slice(lower_maxpix - nbelow, lower_maxpix)
                 above = slice(upper_minpix, upper_minpix + nabove)
-    
+
                 # The background is the mean of the background below and the
                 # background above (may be different of the mean of above and
                 # below pixels if the number of pixels is different above and
@@ -1603,7 +1603,7 @@ class Cube(ArithmeticMixin, DataArray):
 
             output_image = sum(w[n] * cube_image[n]) / sum(w[n])
 
-        In practice, to accomodate masked pixels, the w[n] array is
+        In practice, to accommodate masked pixels, the w[n] array is
         expanded into a cube w[n,y,x], and the weights of individual
         masked pixels in the cube are zeroed before the above equation
         is applied.
@@ -1755,7 +1755,7 @@ class Cube(ArithmeticMixin, DataArray):
         # Create a sub-cube of the selected channels.
         subcube = self[kmin:kmax + 1, :, :]
 
-        # To accomodate masked pixels, create a cube of the above
+        # To accommodate masked pixels, create a cube of the above
         # weights, but with masked pixels given zero weight.
         if subcube._mask is ma.nomask:
             wcube = w[:, np.newaxis, np.newaxis] * np.ones(subcube.shape)

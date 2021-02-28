@@ -448,7 +448,7 @@ class WCS:
         center of the image.
     crval : float or (float,float)
         The celestial coordinates of the reference pixel
-        (ref_dec,ref_ra). If this paramater is not provided, then
+        (ref_dec,ref_ra). If this parameter is not provided, then
         (0.0,0.0) is substituted.
     cdelt : float or (float,float)
         If the hdr and cd parameters are both None, then this argument
@@ -464,7 +464,7 @@ class WCS:
         If False (the default), the celestial coordinates are linear
         (CTYPE1=CTYPE2='LINEAR').
     rot : float
-        If the hdr and cd paramters are both None, then this argument
+        If the hdr and cd parameters are both None, then this argument
         can be used to specify a value for the rotation angle of the
         image. This is the angle between celestial north and the Y
         axis of the image, in the sense of an eastward rotation of
@@ -574,7 +574,7 @@ class WCS:
                     [cdelt[1] * cos_rho, -cdelt[0] * sin_rho],
                     [cdelt[1] * sin_rho, cdelt[0] * cos_rho]]))
 
-            # Update the wcs object to accomodate the new value of
+            # Update the wcs object to accommodate the new value of
             # the CD matrix.
             self.wcs.wcs.set()
 
@@ -919,7 +919,7 @@ class WCS:
                     imax = self.naxis1
 
             # If a step was provided and it isn't 1, complain
-            # because we can't accomodate gaps between pixels.
+            # because we can't accommodate gaps between pixels.
             if item[1].step is not None and item[1].step != 1:
                 raise ValueError('Index steps are not supported')
 
@@ -956,7 +956,7 @@ class WCS:
                         jmax = self.naxis2
 
             # If an index step was provided and it isn't 1, reject
-            # the call, because we can't accomodate gaps between selected
+            # the call, because we can't accommodate gaps between selected
             # pixels.
             if item[0].step is not None and item[0].step != 1:
                 raise ValueError('Index steps are not supported')
