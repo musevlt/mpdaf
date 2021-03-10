@@ -1490,7 +1490,7 @@ class Source:
                                             median_filter=median_filter,
                                             unit_wave=u.angstrom)
 
-    def add_seg_images(self, tags=None, DIR=None, del_sex=True):
+    def add_seg_images(self, tags=None, DIR=None, del_sex=True, debug=False, save_seg_table=False):
         """Run SExtractor on all images to create segmentation maps.
 
         SExtractor will use the ``default.nnw``, ``default.param``,
@@ -1515,7 +1515,7 @@ class Source:
                 tags = [tag for tag in self.images
                         if tag[0:4] != 'SEG_' and 'MASK' not in tag]
 
-            segmentation(self, tags, DIR, del_sex)
+            segmentation(self, tags, DIR, del_sex, debug=debug, save_seg_table=save_seg_table)
         else:
             self._logger.warning('add_seg_images method use the MUSE_WHITE '
                                  'image computed by add_white_image method')

@@ -56,6 +56,9 @@ import os
 import shutil
 import subprocess
 import warnings
+import re, unicodedata
+
+from astropy.table import Table
 
 from ..obj import Image, Spectrum
 from ..tools import broadcast_to_cube, MpdafWarning
@@ -206,7 +209,7 @@ def findSkyMask(images):
     return mask
 
 
-def segmentation(source, tags, DIR, remove):
+def segmentation(source, tags, DIR, remove, save_seg_table=False, debug=False):
     """segmentation by running sextractor"""
     logger = logging.getLogger(__name__)
     # suppose that MUSE_WHITE image exists
@@ -227,6 +230,7 @@ def segmentation(source, tags, DIR, remove):
     wcs = source.images['MUSE_WHITE'].wcs
 
     maps = {}
+    tabs = {}
     setup_config_files(DIR)
     # size in arcsec
     for tag in tags:
@@ -259,28 +263,49 @@ def segmentation(source, tags, DIR, remove):
 
         command = [cmd_sex, "-CHECKIMAGE_NAME", segFile, '-CATALOG_NAME',
                    catalogFile, fname]
-        subprocess.call(command)
+        logger.debug('Running command %s', command)
+        #subprocess.call(command)
+        command_line_process = subprocess.Popen(
+                    command,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                ) 
+        process_output, _ =  command_line_process.communicate()
+        for p in process_output.splitlines():
+            t = p.decode('utf-8')
+            t = "".join(ch for ch in t if unicodedata.category(ch)[0]!="C")
+            t = ' '.join(w for w in t.split(' ') if not (w.startswith('[1A') or w.startswith('[1M')))
+            logger.log(logging.DEBUG, t)
+
         # remove source file
-        os.remove(fname)
+        if not debug:
+            os.remove(fname)
         try:
             hdul = fits.open(segFile)
             maps[tag] = hdul[0].data
             hdul.close()
+            if save_seg_table:
+                tabs[tag] = Table.read(catalogFile)
         except Exception as e:
             logger.error("Something went wrong with sextractor!")
             raise e
         # remove seg file
-        os.remove(segFile)
+        if not debug:
+            os.remove(segFile)
         # remove catalog file
-        os.remove(catalogFile)
-    if remove:
+        if not debug:
+            os.remove(catalogFile)
+    if remove and (not debug):
         remove_config_files(DIR)
 
-    # Save segmentation maps
+    # Save segmentation maps and tables
     if len(maps) > 0:
         for tag, data in maps.items():
             ima = Image(wcs=wcs, data=data, dtype=np.uint8, copy=False)
             source.images['SEG_' + tag] = ima
+        if save_seg_table:
+            for tag, tab in tabs.items():
+                source.tables['SEG_' + tag] = tab
 
 
 def compute_spectrum(cube, weights):
