@@ -672,7 +672,7 @@ class Catalog(Table):
 
     def match(self, cat2, radius=1, colc1=(None, None), colc2=(None, None),
               full_output=True, **kwargs):
-        """Match elements of the current catalog with an other (in RA, DEC).
+        """Match elements of the current catalog with another (in RA, DEC).
 
         Parameters
         ----------
@@ -828,7 +828,7 @@ class Catalog(Table):
     def match3Dline(self, cat2, linecolc1, linecolc2, spatial_radius=1,
                     spectral_window=5, suffix=('_1', '_2'), full_output=True,
                     colc1=(None, None), colc2=(None, None), **kwargs):
-        """3D Match elements of the current catalog with an other using
+        """3D Match elements of the current catalog with another using
         spatial (RA, DEC) and list of spectral lines location.
 
         Parameters
@@ -1091,7 +1091,7 @@ class Catalog(Table):
             kwargs can be used to set additional plotting properties.
 
         """
-        
+
         ra, dec = self._get_radec_colnames((ra, dec))
         id = id or self.meta.get('idname', self._idname_default)
 

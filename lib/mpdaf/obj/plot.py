@@ -172,12 +172,12 @@ def plot_rgb(images, title=None, scale='linear', vmin=None, vmax=None,
         sqrt:    p = sqrt(nv)
         arcsinh: p = arcsinh(10*nv) / arcsinh(10.0)
     vmin : [float, float, float]
-        Lower limits corresponing to the [blue, green, red] images.
+        Lower limits corresponding to the [blue, green, red] images.
         Pixels that have values <= vmin are assigned a value of 0.
         Pixel values between vmin and vmax are scaled according
         to the mapping algorithm specified by the scale argument.
     vmax : [float, float, float]
-        Upper limits corresponing to the [blue, green, red] images.
+        Upper limits corresponding to the [blue, green, red] images.
         Pixels that have values >= vmax are assigned a value of 1.
         Pixel values between vmin and vmax are scaled according
         to the mapping algorithm specified by the scale argument.

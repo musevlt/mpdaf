@@ -29,7 +29,8 @@ Description of the new release procedure
 7. Create the sdist archive, from a clean tree:
 
     git clean -fxd .
-    python setup.py build sdist
+    pip install build
+    python -m build --sdist
 
 8. Install the sdist archive in a fresh virtualenv and run tests.
 
@@ -47,9 +48,9 @@ Description of the new release procedure
 
 10. Build the binary wheels.
    On https://github.com/musevlt/mpdaf-wheels, edit MPDAF_VERSION in the
-   .travis.yml file, commit and push. Then wheels should be build on
-   https://travis-ci.org/musevlt/mpdaf-wheels and uploaded to
-   https://github.com/musevlt/mpdaf-wheels/releases if it was successful.
+   .github/workflows/build.yml file, commit and push. Then wheels should be 
+   build on https://github.com/musevlt/mpdaf-wheels/actions and available 
+   as artifacts if it was successful.
    Download the wheels, and push them to PyPI with twine.
 
 11. Prepare the next version: add new version header in the changelog.

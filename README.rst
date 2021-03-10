@@ -1,5 +1,5 @@
-.. image:: https://travis-ci.org/musevlt/mpdaf.svg?branch=master
-  :target: https://travis-ci.org/musevlt/mpdaf
+.. image:: https://github.com/musevlt/mpdaf/workflows/Run%20unit%20tests/badge.svg
+  :target: https://github.com/musevlt/mpdaf
 
 .. image:: https://codecov.io/gh/musevlt/mpdaf/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/musevlt/mpdaf

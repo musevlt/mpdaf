@@ -228,7 +228,7 @@ from the AO telemetry information saved in the raw data.
 Methods
 -------
 
-Various methods allow to get the FSF array (2D or 3D, as mpdaf Image or Cube)
+Various methods allow one to get the FSF array (2D or 3D, as mpdaf Image or Cube)
 for given wavelengths, or the FWHM in pixel and in arcseconds.
 
 .. ipython::

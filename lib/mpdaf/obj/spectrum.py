@@ -2027,7 +2027,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         kernel_size : float
             Size of the median filter window.
         unit : `astropy.units.Unit`
-            unit ot the kernel size
+            unit of the kernel size
         inplace : bool
             If False, return a filtered copy of the spectrum (the default).
             If True, filter the original spectrum in-place, and return that.
@@ -2050,7 +2050,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         res._data = data[ks:-ks]
         res._var = None
         return res
-    
+
     def filter(self, kernel = Box1DKernel, **parameters):
         """Perform filtering on the spectrum.
 
@@ -2059,15 +2059,15 @@ class Spectrum(ArithmeticMixin, DataArray):
         Parameters
         ----------
         kernel : `astropy.convolution.Kernel1D`
-            astropy kernel to use 
+            astropy kernel to use
             (see `https://docs.astropy.org/en/stable/convolution/kernels.html#available-kernels`)
-            
+
             - Box1DKernel (default, parameters: width)
             - Gaussan1DKernel (parameters: stddev)
-             
+
         parameters : keywords
             parameters to pass to the kernel
- 
+
 
         Returns
         -------
@@ -2075,11 +2075,10 @@ class Spectrum(ArithmeticMixin, DataArray):
         """
         res = self.copy()
         data = res.data
-        data = convolve(data, kernel(**parameters)) 
+        data = convolve(data, kernel(**parameters))
         res._data = data
         res._var = None
         return res
-    
 
     def convolve(self, other, inplace=False):
         """Convolve a Spectrum with a 1D array or another Spectrum, using

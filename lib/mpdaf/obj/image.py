@@ -1092,7 +1092,7 @@ class Image(ArithmeticMixin, DataArray):
             the pixel area is taken into account.
 
             If 'sum', the flux is normalized to the sum
-            of flux independantly of pixel size.
+            of flux independently of pixel size.
 
             If 'max', the flux is normalized so that
             the maximum of intensity will be 'value'.
@@ -1241,12 +1241,12 @@ class Image(ArithmeticMixin, DataArray):
                   max(0, jc - dpix):jc + dpix + 1] - background)
         ic = imin + max(0, ic - dpix) + di
         jc = jmin + max(0, jc - dpix) + dj
-        
+
         # WIP (to solve problem)
         iic, jjc = int(round(ic)), int(round(jc))
         if (iic < 0) or (jjc < 0) or (iic >= self.data.shape[0]) or (jjc >= self.data.shape[1]):
             return None
-        
+
         [[dec, ra]] = self.wcs.pix2sky([[ic, jc]])
         maxv = self.data[int(round(ic)), int(round(jc))]
         if plot:
@@ -4427,7 +4427,7 @@ def _find_quadratic_peak(y):
 
 class SpatialFrequencyLimits:
 
-    """Allow to keep track of the spatial frequency limits of an image.
+    """Allow one to keep track of the spatial frequency limits of an image.
 
     Such that before resampling an image it can see if anything needs to be
     done to avoid undersampling and generating aliasing artefacts in the output
