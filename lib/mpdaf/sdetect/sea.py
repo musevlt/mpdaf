@@ -58,6 +58,8 @@ import subprocess
 import warnings
 import re, unicodedata
 
+import tempfile
+
 from astropy.table import Table
 
 from ..obj import Image, Spectrum
@@ -70,7 +72,7 @@ DEFAULT_SEX_FILES = ['default.nnw', 'default.param', 'default.sex',
                      'gauss_5.0_9x9.conv']
 
 
-def setup_config_files(DIR=None):
+def setup_config_files(DIR=None, outdir='./'):
     if DIR is None:
         DIR = os.path.dirname(__file__) + '/sea_data/'
         files = DEFAULT_SEX_FILES
@@ -79,13 +81,13 @@ def setup_config_files(DIR=None):
 
     for f in files:
         if not os.path.isfile(f):
-            shutil.copy(DIR + '/' + f, './' + f)
+            shutil.copy(os.path.join(DIR,f), os.path.join(outdir,f))
 
 
-def remove_config_files(DIR=None):
+def remove_config_files(DIR=None, outdir='./'):
     files = DEFAULT_SEX_FILES if DIR is None else os.listdir(DIR)
     for f in files:
-        os.remove(f)
+        os.remove(os.path.join(outdir,f))
 
 
 def findCentralDetection(images, iyc, ixc, tolerance=1):
@@ -209,16 +211,16 @@ def findSkyMask(images):
     return mask
 
 
-def segmentation(source, tags, DIR, remove, save_seg_table=False, debug=False):
+def segmentation(source, tags, DIR, remove, save_seg_table=False, outdir='./', debug=False):
     """segmentation by running sextractor"""
     logger = logging.getLogger(__name__)
     # suppose that MUSE_WHITE image exists
     try:
-        subprocess.check_call(['sex', '-v'])
+        subprocess.check_call(['sex', '-v'], stdin=None, stdout=None, stderr=None)
         cmd_sex = 'sex'
     except OSError:
         try:
-            subprocess.check_call(['sextractor', '-v'])
+            subprocess.check_call(['sextractor', '-v'], stdin=None, stdout=None, stderr=None)
             cmd_sex = 'sextractor'
         except OSError:
             raise OSError('SExtractor not found')
@@ -231,7 +233,15 @@ def segmentation(source, tags, DIR, remove, save_seg_table=False, debug=False):
 
     maps = {}
     tabs = {}
-    setup_config_files(DIR)
+    
+    istemp = False
+    if outdir is None:
+        istemp = True
+        tempdir = tempfile.TemporaryDirectory()
+        outdir = tempdir.name
+        logger.debug('Creating temporary directory: %s', outdir)
+        
+    setup_config_files(DIR, outdir=outdir)
     # size in arcsec
     for tag in tags:
         ima = source.images[tag]
@@ -256,47 +266,49 @@ def segmentation(source, tags, DIR, remove, save_seg_table=False, debug=False):
             ima2 = ima2.resample(dim, start, step, flux=True)
             data_hdu = ima2.get_data_hdu(name='DATA', savemask='nan')
         hdulist.append(data_hdu)
-        hdulist.writeto(fname, overwrite=True, output_verify='fix')
+        hdulist.writeto(os.path.join(outdir,fname), overwrite=True, output_verify='fix')
 
         catalogFile = 'cat-' + fname
         segFile = 'seg-' + fname
 
         command = [cmd_sex, "-CHECKIMAGE_NAME", segFile, '-CATALOG_NAME',
                    catalogFile, fname]
-        logger.debug('Running command %s', command)
-        #subprocess.call(command)
+        if debug:
+            logger.debug('Running command %s', command)
         command_line_process = subprocess.Popen(
                     command,
+                    cwd=outdir,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
                 ) 
         process_output, _ =  command_line_process.communicate()
-        for p in process_output.splitlines():
-            t = p.decode('utf-8')
-            t = "".join(ch for ch in t if unicodedata.category(ch)[0]!="C")
-            t = ' '.join(w for w in t.split(' ') if not (w.startswith('[1A') or w.startswith('[1M')))
-            logger.log(logging.DEBUG, t)
+        if debug:
+            for p in process_output.splitlines():
+                t = p.decode('utf-8')
+                t = "".join(ch for ch in t if unicodedata.category(ch)[0]!="C")
+                t = ' '.join(w for w in t.split(' ') if not (w.startswith('[1A') or w.startswith('[1M')))
+                logger.log(logging.DEBUG, t)
 
         # remove source file
         if not debug:
-            os.remove(fname)
+            os.remove(os.path.join(outdir,fname))
         try:
-            hdul = fits.open(segFile)
+            hdul = fits.open(os.path.join(outdir,segFile))
             maps[tag] = hdul[0].data
             hdul.close()
             if save_seg_table:
-                tabs[tag] = Table.read(catalogFile)
+                tabs[tag] = Table.read(os.path.join(outdir,catalogFile))
         except Exception as e:
             logger.error("Something went wrong with sextractor!")
             raise e
         # remove seg file
         if not debug:
-            os.remove(segFile)
+            os.remove(os.path.join(outdir,segFile))
         # remove catalog file
         if not debug:
-            os.remove(catalogFile)
+            os.remove(os.path.join(outdir,catalogFile))
     if remove and (not debug):
-        remove_config_files(DIR)
+        remove_config_files(DIR, outdir=outdir)
 
     # Save segmentation maps and tables
     if len(maps) > 0:
@@ -306,6 +318,10 @@ def segmentation(source, tags, DIR, remove, save_seg_table=False, debug=False):
         if save_seg_table:
             for tag, tab in tabs.items():
                 source.tables['SEG_' + tag] = tab
+    
+    # remove temporary directory
+    if istemp and (not debug):
+        tempdir.cleanup()
 
 
 def compute_spectrum(cube, weights):

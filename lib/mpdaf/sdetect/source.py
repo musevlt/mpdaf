@@ -1490,7 +1490,8 @@ class Source:
                                             median_filter=median_filter,
                                             unit_wave=u.angstrom)
 
-    def add_seg_images(self, tags=None, DIR=None, del_sex=True, debug=False, save_seg_table=False):
+    def add_seg_images(self, tags=None, DIR=None, del_sex=True,  
+                       save_seg_table=False, outdir='./', debug=False,):
         """Run SExtractor on all images to create segmentation maps.
 
         SExtractor will use the ``default.nnw``, ``default.param``,
@@ -1508,6 +1509,13 @@ class Source:
             Directory that contains the configuration files of sextractor
         del_sex : bool
             If False, configuration files of sextractor are not removed.
+        save_seg_table : bool
+            If True, segmentation table are saved in the source tables dict
+        outdir : str
+            Name of directory where temporary files are copied and SExtractor run
+            if None, a temporary directory with a unique name is created and deleted at the end
+        debug : bool
+            if True, the output of SExtractor is logged as DEBUG and the created and temporary directory files are not deleted
 
         """
         if 'MUSE_WHITE' in self.images:
@@ -1515,7 +1523,7 @@ class Source:
                 tags = [tag for tag in self.images
                         if tag[0:4] != 'SEG_' and 'MASK' not in tag]
 
-            segmentation(self, tags, DIR, del_sex, debug=debug, save_seg_table=save_seg_table)
+            segmentation(self, tags, DIR, del_sex, debug=debug, save_seg_table=save_seg_table, outdir=outdir)
         else:
             self._logger.warning('add_seg_images method use the MUSE_WHITE '
                                  'image computed by add_white_image method')
