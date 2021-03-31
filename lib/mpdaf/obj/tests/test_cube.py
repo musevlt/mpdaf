@@ -131,6 +131,16 @@ def test_get_cube(cube):
     a = cube[2:4, 0:2, 1:4]
     assert_array_equal(a.get_start(), (3.5, 0, 1))
     assert_array_equal(a.get_end(), (6.5, 1, 3))
+    # data_header content
+    hdr = cube.wcs.to_cube_header(cube.wave)
+    hdr['NAXIS'] = cube.ndim
+    for i in range(1, cube.ndim + 1):
+        hdr['NAXIS%d' % i] = cube.shape[-i]
+    cube.data_header = hdr
+    subcub = cube[3:7, 1:2, 2:3]
+    assert subcub.data_header['CRVAL1'] == cube.wcs.pix2sky([subcub.data_header['CRPIX2']-1+1,subcub.data_header['CRPIX1']-1+2])[0][1]
+    assert subcub.data_header['CRVAL2'] == cube.wcs.pix2sky([subcub.data_header['CRPIX2']-1+1,subcub.data_header['CRPIX1']-1+2])[0][0]
+    assert subcub.data_header['CRVAL3'] == cube.wave.coord(subcub.data_header['CRPIX3']-1+3)
 
 
 def test_iter_ima(cube):

@@ -388,6 +388,7 @@ class DataArray:
         # parameters, install them.
         self.set_wcs(wcs=kwargs.pop('wcs', None),
                      wave=kwargs.pop('wave', None))
+        
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -1332,7 +1333,6 @@ class DataArray:
             self is an Image.
 
         """
-
         # Install spatial world-corrdinates?
         # Note that we have to test the length of self.shape in
         # addition to _has_wcs, because of functions like
@@ -1373,6 +1373,16 @@ class DataArray:
             except Exception:
                 self._logger.warning('Unable to install wavelength '
                                      'coordinates', exc_info=True)
+        # update data_header
+        hdr = copy_header(self.data_header, self.get_wcs_header(),
+                          exclude=('CD*', 'PC*', 'CDELT*', 'CRPIX*', 'CRVAL*',
+                                   'CSYER*', 'CTYPE*', 'CUNIT*', 'NAXIS*',
+                                   'RADESYS', 'LATPOLE', 'LONPOLE'),
+                          unit=self.unit)
+        hdr['NAXIS'] = self.ndim
+        for i in range(1, self.ndim + 1):
+            hdr['NAXIS%d' % i] = self.shape[-i]
+        self.data_header =  hdr
 
     def _rebin(self, factor, margin='center', inplace=False):
         """Combine neighboring pixels to reduce the size by integer factors

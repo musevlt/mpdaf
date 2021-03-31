@@ -75,7 +75,7 @@ def test_align_segmap():
 
 def test_cut_header():
     segmap = Segmap(get_data_file('segmap', 'segmap.fits'),
-                    cut_header_after='NAXIS2')
+                    cut_header_after='CRVAL2')
     assert 'RADESYS' not in segmap.img.primary_header
     assert 'RADESYS' not in segmap.img.data_header
 
