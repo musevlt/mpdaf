@@ -80,7 +80,7 @@ def setup_config_files(DIR=None, outdir='./'):
         files = os.listdir(DIR)
 
     for f in files:
-        if not os.path.isfile(f):
+        if not os.path.isfile(os.path.join(outdir,f)):
             shutil.copy(os.path.join(DIR,f), os.path.join(outdir,f))
 
 
