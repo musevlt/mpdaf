@@ -38,9 +38,10 @@ import pytest
 
 from astropy.io import fits
 from mpdaf.obj import Spectrum, Image, Cube, iter_spe, iter_ima, WCS, WaveCoord
+from mpdaf.obj.image import gauss_image
 from numpy import ma
-from numpy.testing import (assert_almost_equal, assert_array_equal,
-                           assert_allclose)
+from numpy.testing import (assert_almost_equal, assert_array_equal, 
+                           assert_allclose, assert_array_almost_equal)
 from operator import add, sub, mul, truediv as div
 
 from mpdaf.tests.utils import (generate_cube, generate_image, generate_spectrum,
@@ -712,10 +713,18 @@ def test_subcube(mask):
                                           unit_center=None, unit_radius=None)
     # masking the subcube should not mask the original cube
     assert ma.count_masked(cube1[0].data) == 0
-    if cube2.mask is not ma.nomask:
-        assert bool(cube2.mask[0, 0, 0]) is True
     assert_array_equal(cube2.get_start(), (1, 2, 2))
     assert_array_equal(cube2.shape, (10, 2, 2))
+    
+    # Check that subcube_circle_aperture masks the region aroung the correct center
+    ima = gauss_image(shape=(10,10), center=(4.5, 4.5), fwhm=(5,5),unit_center=None, unit_fwhm=None)
+    bary = np.sum(np.indices(ima.shape) * ima.data.data, axis=(1, 2)) / ima.data.data.sum()
+    cube1 = generate_cube(data=np.tile(ima.data, (2,1,1)), wave=WaveCoord(crval=1))
+    cube2 = cube1.subcube_circle_aperture(center=bary, radius=2, unit_center=None, unit_radius=None)
+    ima2 = cube2[0,:,:]
+    # the barycentre is the center of cube2
+    bary = np.sum(np.indices(ima2.shape) * ima2.data.data, axis=(1, 2)) / ima2.data.data.sum()
+    assert_array_almost_equal(bary, (np.array(cube2.shape[1:])-1) / 2.0)
 
 
 def test_aperture():

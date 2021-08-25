@@ -1957,7 +1957,7 @@ class Cube(ArithmeticMixin, DataArray):
                               unit_wave=unit_wave).copy()
         # Mask the region outside the circle. Work on a copy to avoid modifying
         # the original cube.
-        center = np.array(subcub.shape[1:]) / 2.0
+        center = (np.array(subcub.shape[1:]) - 1 ) / 2.0
         subcub.mask_region(center, radius, inside=False,
                            unit_center=None, unit_radius=unit_radius)
         return subcub
