@@ -450,7 +450,7 @@ class MoffatModel2(FSFModel):
 
     @classmethod
     def from_starfit(cls, cube, pos, size=5, nslice=20, fwhmdeg=3, betadeg=3,
-                     lbrange=(5000, 9000)):
+                     lbrange=(5000, 9000), factor=1):
         """
         Fit a FSF model on a point source
 
@@ -470,6 +470,8 @@ class MoffatModel2(FSFModel):
             degre for polynomial fit of Beta(lbda)
         lbdarange: tuple of float
             (lbda1,lbda2)  reference wavelengths for normalisation
+        factor: int
+            subsampling factor used in moffat fit
 
         Returns
         -------
@@ -500,7 +502,7 @@ class MoffatModel2(FSFModel):
 
         logger.debug('-- First fit on white light image')
         fit1 = white.moffat_fit(fwhm=(0.8, 0.8), n=2.5, circular=True,
-                                fit_back=True, verbose=False)
+                                fit_back=True, verbose=False, factor=factor)
         logger.debug('RA: %.5f DEC: %.5f FWHM %.2f BETA %.2f PEAK %.1f '
                      'BACK %.1f', fit1.center[1], fit1.center[0], fit1.fwhm[0],
                      fit1.n, fit1.peak, fit1.cont)
@@ -510,7 +512,7 @@ class MoffatModel2(FSFModel):
         for k, ima in enumerate(imalist):
             f2 = ima.moffat_fit(fwhm=fit1.fwhm[0], n=fit1.n,
                                 center=fit1.center, fit_n=True, circular=True,
-                                fit_back=True, verbose=False)
+                                fit_back=True, verbose=False, factor=factor)
             logger.debug('%d RA: %.5f DEC: %.5f FWHM %.2f BETA %.2f PEAK %.1f '
                          'BACK %.1f', k + 1, f2.center[1], f2.center[0],
                          f2.fwhm[0], f2.n, f2.peak, f2.cont)
@@ -525,7 +527,7 @@ class MoffatModel2(FSFModel):
         for k, ima in enumerate(imalist):
             f2 = ima.moffat_fit(fwhm=fit1.fwhm[0], n=beta_pval[k],
                                 center=fit1.center, fit_n=False, circular=True,
-                                fit_back=True, verbose=False)
+                                fit_back=True, verbose=False, factor=factor)
             logger.debug('RA: %.5f DEC: %.5f FWHM %.2f BETA %.2f PEAK %.1f '
                          'BACK %.1f', f2.center[1], f2.center[0], f2.fwhm[0],
                          f2.n, f2.peak, f2.cont)
