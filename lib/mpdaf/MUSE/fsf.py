@@ -450,7 +450,7 @@ class MoffatModel2(FSFModel):
 
     @classmethod
     def from_starfit(cls, cube, pos, size=5, nslice=20, fwhmdeg=3, betadeg=3,
-                     lbrange=(5000, 9000), factor=1):
+                     lbrange=(5000, 9000), factor=1, saveimafit=False):
         """
         Fit a FSF model on a point source
 
@@ -499,6 +499,10 @@ class MoffatModel2(FSFModel):
                     pos[1], pos[0], size, nslice, fwhmdeg, betadeg)
         white, lbda, imalist = get_images(cube, pos, size=size, nslice=nslice)
         lbdanorm = norm_lbda(lbda, lbrange[0], lbrange[1])
+        if saveimafit:
+            logger.debug('Save Ima fit and residuals')
+            imafit = []
+            imares = []
 
         logger.debug('-- First fit on white light image')
         fit1 = white.moffat_fit(fwhm=(0.8, 0.8), n=2.5, circular=True,
@@ -527,20 +531,27 @@ class MoffatModel2(FSFModel):
         for k, ima in enumerate(imalist):
             f2 = ima.moffat_fit(fwhm=fit1.fwhm[0], n=beta_pval[k],
                                 center=fit1.center, fit_n=False, circular=True,
-                                fit_back=True, verbose=False, factor=factor)
+                                fit_back=True, verbose=False, factor=factor,
+                                full_output=saveimafit)
             logger.debug('RA: %.5f DEC: %.5f FWHM %.2f BETA %.2f PEAK %.1f '
                          'BACK %.1f', f2.center[1], f2.center[0], f2.fwhm[0],
                          f2.n, f2.peak, f2.cont)
             fit3.append(f2)
+            if saveimafit:
+                imafit.append(f2.ima)
+                res = f2.ima.copy()
+                res.data[:,:] = ima.data - f2.ima.data
+                imares.append(res)
         fwhm_fit = np.array([f.fwhm[0] for f in fit3])
 
         logger.debug('-- Polynomial fit of FWHM(lbda)')
         fwhm_pol, fwhm_pval, fwhm_err = fit_poly(lbdanorm, fwhm_fit, fwhmdeg)
         logger.debug('FWHM poly {}'.format(fwhm_pol))
 
-        logger.debug('-- return FSF model')
         fsf = cls(lbrange=lbrange, fwhm_pol=fwhm_pol, beta_pol=beta_pol,
-                  pixstep=cube.get_step()[0])
+                  pixstep=cube.get_step()[1]*3600)
+
+        logger.debug('-- return FSF model')
         fsf.fit = {'center': np.array([f.center for f in fit3]),
                    'wave': lbda,
                    'fwhmfit': fwhm_fit,
@@ -553,6 +564,10 @@ class MoffatModel2(FSFModel):
                    'fwhm0': fit1.fwhm[0],
                    'beta0': fit1.n,
                    'ima': imalist}
+        if saveimafit:
+            fsf.fit['imafit'] = imafit
+            fsf.fit['imares'] = imares
+
         return fsf
 
     @classmethod
