@@ -1045,7 +1045,7 @@ class Catalog(Table):
     def plot_symb(self, ax, wcs, label=False, esize=0.8, lsize=None, etype='o',
                   ltype=None, ra=None, dec=None, id=None, ecol='k', lcol=None,
                   alpha=1.0, fill=False, fontsize=8, expand=1.7, tcol='k', ledgecol=None,
-                  lfacecol=None, npolygon=3,  **kwargs):
+                  lfacecol=None, npolygon=3,  extent=None, **kwargs):
         """This function plots the sources location from the catalog.
 
         Parameters
@@ -1057,7 +1057,8 @@ class Catalog(Table):
         label: bool
             If True catalog ID are displayed.
         esize : float
-            symbol size in arcsec (used only if lsize is not set).
+            symbol size in arcsec if extent=None (used only if lsize is not set).
+            if extent is not None, the size unit is in the extent referential
         lsize : str
             Column name containing the size in arcsec.
         etype : str
@@ -1087,6 +1088,10 @@ class Catalog(Table):
             Name of the column that contains the edge color.
         lfacecol: str
             Name of the column that contains the fqce color.
+        npolygon: int
+            Number of polygone to use with etype='p
+        extent: list of float
+            [x1,y1,x2,y2] axis limits used with image.plot(extent=extent), default None (use spaxels)  
         **kwargs
             kwargs can be used to set additional plotting properties.
 
@@ -1119,13 +1124,16 @@ class Catalog(Table):
         step = wcs.get_step(unit=u.arcsec)
         arr = np.vstack([self[dec].data, self[ra].data]).T
         arr = wcs.sky2pix(arr, unit=u.deg)
+        if extent is not None:
+            dl = [(extent[1]-extent[0])/wcs.naxis1,(extent[3]-extent[2])/wcs.naxis2]
+            arr = arr*dl + np.array([extent[0],extent[2]])
 
         for src, cen in zip(self, arr):
             yy, xx = cen
             if (xx < 0) or (yy < 0) or (xx > wcs.naxis1) or (yy > wcs.naxis2):
                 continue
             vsize = esize if lsize is None else src[lsize]
-            pixsize = vsize / step[0]
+            pixsize = vsize / step[0] if extent is None else vsize
             vtype = etype if ltype is None else src[ltype]
             vcol = None
             vedgecol = 'none'
