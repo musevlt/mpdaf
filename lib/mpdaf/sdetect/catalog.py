@@ -1032,15 +1032,16 @@ class Catalog(Table):
                        frame='fk5', unit_pos='deg', unit_radius='arcsec'):
         """Return an `astropy.coordinates.SkyCoord` object."""
         try:
-            from regions import CircleSkyRegion, write_ds9
+            from regions import CircleSkyRegion, Regions
         except ImportError:
             self._logger.error("the 'regions' package is needed for this")
             raise
         ra, dec = self._get_radec_colnames((ra, dec))
         center = self.to_skycoord(ra=ra, dec=dec, frame=frame, unit=unit_pos)
         radius = radius * u.Unit(unit_radius)
-        regions = [CircleSkyRegion(center=c, radius=radius) for c in center]
-        write_ds9(regions, filename=outfile, coordsys=frame)
+        regions = Regions([CircleSkyRegion(center=c, radius=radius)
+                           for c in center])
+        regions.write(outfile, format='ds9')
 
     def plot_symb(self, ax, wcs, label=False, esize=0.8, lsize=None, etype='o',
                   ltype=None, ra=None, dec=None, id=None, ecol='k', lcol=None,
@@ -1091,7 +1092,7 @@ class Catalog(Table):
         npolygon: int
             Number of polygone to use with etype='p
         extent: list of float
-            [x1,y1,x2,y2] axis limits used with image.plot(extent=extent), default None (use spaxels)  
+            [x1,y1,x2,y2] axis limits used with image.plot(extent=extent), default None (use spaxels)
         **kwargs
             kwargs can be used to set additional plotting properties.
 
