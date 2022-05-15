@@ -217,9 +217,9 @@ def test_tods9(tmpdir):
     with open(regfile) as f:
         assert f.readlines()[:4] == [
             '# Region file format: DS9 astropy/regions\n',
-            'fk5\n',
-            'circle(63.356106,10.466166,0.000278)\n',
-            'circle(63.355404,10.464703,0.000278)\n',
+            'j2000\n',
+            'circle(63.35610580,10.46616650,0.00027778)\n',
+            'circle(63.35540390,10.46470260,0.00027778)\n',
         ]
 
 

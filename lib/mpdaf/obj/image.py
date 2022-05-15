@@ -46,7 +46,7 @@ from astropy.io import fits
 from astropy.stats import gaussian_sigma_to_fwhm, gaussian_fwhm_to_sigma
 from scipy import interpolate, signal
 from scipy import ndimage as ndi
-from scipy.ndimage.interpolation import affine_transform
+from scipy.ndimage import affine_transform
 from scipy.optimize import leastsq
 
 from .arithmetic import ArithmeticMixin
@@ -1168,9 +1168,8 @@ class Image(ArithmeticMixin, DataArray):
         selec = ndi.binary_dilation(selec, structure=struct, iterations=niter)
         selec = ndi.binary_fill_holes(selec)
         structure = ndi.generate_binary_structure(2, 2)
-        label = ndi.measurements.label(selec, structure)
-        pos = ndi.measurements.center_of_mass(self.data, label[0],
-                                              np.arange(label[1]) + 1)
+        label = ndi.label(selec, structure)
+        pos = ndi.center_of_mass(self.data, label[0], np.arange(label[1]) + 1)
         return np.array(pos)
 
     def peak(self, center=None, radius=0, unit_center=u.deg,
@@ -1229,14 +1228,14 @@ class Image(ArithmeticMixin, DataArray):
             if np.shape(d)[0] == 0 or np.shape(d)[1] == 0:
                 raise ValueError('Coord area outside image limits')
 
-        ic, jc = ndi.measurements.maximum_position(d)
+        ic, jc = ndi.maximum_position(d)
         if dpix == 0:
             di = 0
             dj = 0
         else:
             if background is None:
                 background = self.background()[0]
-            di, dj = ndi.measurements.center_of_mass(
+            di, dj = ndi.center_of_mass(
                 d[max(0, ic - dpix):ic + dpix + 1,
                   max(0, jc - dpix):jc + dpix + 1] - background)
         ic = imin + max(0, ic - dpix) + di
@@ -3323,8 +3322,8 @@ class Image(ArithmeticMixin, DataArray):
         expanded[expanded < background] = 0
 
         structure = ndi.generate_binary_structure(shape[0], shape[1])
-        labels, nlabels = ndi.measurements.label(expanded, structure)
-        slices = ndi.measurements.find_objects(labels)
+        labels, nlabels = ndi.label(expanded, structure)
+        slices = ndi.find_objects(labels)
 
         return [self[slices[i]] for i in range(nlabels)
                 if minpts is None or len(data[labels == i + 1]) >= minpts]

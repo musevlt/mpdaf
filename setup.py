@@ -44,9 +44,6 @@ from setuptools import setup, find_packages, Extension
 from setuptools.command.build_ext import build_ext
 from setuptools.command.test import test as TestCommand
 
-if sys.version_info[:2] < (3, 6):
-    sys.exit('MPDAF supports Python 3.6+ only')
-
 # Check if Cython is available
 try:
     from Cython.Build import cythonize
