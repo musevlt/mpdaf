@@ -944,7 +944,7 @@ def assign_objects(coord_lines, coord_group, flux_lines, max_dist, n_cpu=1):
     tree_group = cKDTree(coord_group)
 
     dist, ids = tree_group.query(coord_lines, 1, distance_upper_bound=max_dist,
-                        n_jobs=n_cpu)
+                        workers=n_cpu)
 
     mask = ~np.isfinite(dist) #not grouped
     ids[mask] = -1
