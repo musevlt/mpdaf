@@ -9,7 +9,7 @@ before_script:
   - export LC_ALL=C.UTF-8
   - export LANG=C.UTF-8
   - eval "$(pyenv init -)"
-  - pyenv local 3.6.10 3.7.6 3.8.1
+  - pyenv local 3.7.6 3.8.1
   - pwd
 
 # this build is run first, to update tox and run the check on setup
@@ -19,11 +19,6 @@ check-setup:
     - pip install -U tox tox-pyenv
     - tox -v -e check
 
-
-py36:
-  stage: test
-  script:
-    - tox -v -e py36 -- --pyargs mpdaf
 
 py37:
   stage: test

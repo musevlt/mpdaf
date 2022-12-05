@@ -118,8 +118,8 @@ setup_logging(stream=sys.stdout)
 autoclass_content = "both"
 
 gitlab_url = 'https://git-cral.univ-lyon1.fr/MUSE/mpdaf'
-extlinks = {'issue': (gitlab_url + '/issues/%s', '#'),
-            'pull': (gitlab_url + '/merge_requests/%s', '!')}
+extlinks = {'issue': (gitlab_url + '/issues/%s', '#%s'),
+            'pull': (gitlab_url + '/merge_requests/%s', '!%s')}
 
 # Render inheritance diagrams in SVG
 graphviz_output_format = "svg"
@@ -156,7 +156,7 @@ master_doc = 'index'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
