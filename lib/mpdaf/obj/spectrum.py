@@ -44,6 +44,7 @@ from astropy.convolution import convolve, Box1DKernel
 from os.path import join, abspath, dirname
 from scipy import interpolate, signal
 from scipy.optimize import leastsq
+from astropy.constants import c as C
 
 from . import ABmag_filters, wavelet1D
 from .arithmetic import ArithmeticMixin
@@ -1230,6 +1231,22 @@ class Spectrum(ArithmeticMixin, DataArray):
         vflux2 = (vflux * self.unit).to(unit)
         err_flux2 = (err_flux * self.unit).to(unit)
         return flux2mag(vflux2.value, err_flux2.value, l0)
+    
+    def to_abmag(self):
+        """ convert a spectrum in AB magnitude"""
+        cs = C.to('Angstrom/s').value  # speed of light in A/s
+        wave = self.wave.coord(unit='Angstrom')
+        #unit = u.Unit('erg.s-1.cm-2.Angstrom-1')
+        # WIP note that the data and var should be converted to the correct units
+        data = self.data     
+        mag = -48.60 - 2.5 * np.log10(wave ** 2 * data / cs)
+        if self.var is not None:
+            err = np.sqrt(self.var) 
+            var = (2.5 * err / (data * np.log(10)))**2
+        else:
+            var = None
+        spmag = Spectrum(wave=self.wave, data=mag, var=var)
+        return spmag
 
     def wavelet_filter(self, levels=9, sigmaCutoff=5.0, epsilon=0.05,
                        inplace=False):
