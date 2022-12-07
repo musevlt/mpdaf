@@ -19,3 +19,4 @@ lib/mpdaf/_githash.py
 lib/mpdaf/data/extern
 lib/mpdaf/obj/merging.c
 pip-wheel-metadata/
+tox.ini
