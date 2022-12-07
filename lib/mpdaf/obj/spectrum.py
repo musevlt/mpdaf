@@ -1027,6 +1027,7 @@ class Spectrum(ArithmeticMixin, DataArray):
             sig = np.std(err)
             n_p = len(d)
             for it in range(maxiter):
+                err = d - np.polynomial.polynomial.polyval(w, p)
                 ind = np.where((err >= nsig[0] * sig) &
                                (np.abs(err) <= nsig[1] * sig))
                 if len(ind[0]) == n_p:
