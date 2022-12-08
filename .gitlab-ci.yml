@@ -1,46 +1,69 @@
+# Change pip's cache directory to be inside the project directory since we can
+# only cache local items.
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+# Pip's cache doesn't store the python packages
+# https://pip.pypa.io/en/stable/topics/caching/
+#
+# If you want to also cache the installed packages, you have to install
+# them in a virtualenv and cache it as well.
+cache:
+  paths:
+    - .cache/pip
+
 stages:
-  - setup
   - test
   - extra
 
-before_script:
-  - export PYENV_ROOT="$HOME/.pyenv"
-  - export PATH="$PYENV_ROOT/bin:$PATH"
-  - export LC_ALL=C.UTF-8
-  - export LANG=C.UTF-8
-  - eval "$(pyenv init -)"
-  - pyenv local 3.7.6 3.8.1
-  - pwd
-
-# this build is run first, to update tox and run the check on setup
-check-setup:
-  stage: setup
-  script:
-    - pip install -U tox tox-pyenv
-    - tox -v -e check
-
+.tox:
+  tags:
+    - docker
+  before_script:
+    - pip install -U virtualenv
+    - virtualenv venv
+    - source venv/bin/activate
+    - pip install -U tox
 
 py37:
+  extends:
+    - .tox
+  image: python:3.7
   stage: test
   script:
     - tox -v -e py37 -- --pyargs mpdaf
-    
+
 py38:
+  extends:
+    - .tox
+  image: python:3.8
   stage: test
   script:
     - tox -v -e py38 -- --pyargs mpdaf
 
 py37-slow:
-  stage: extra
+  extends:
+    - .tox
+  image: python:3.7
+  stage: test
   script:
     - tox -v -e py37 -- -m 'slow' --pyargs mpdaf
 
 pre:
-  allow_failure: true
+  extends:
+    - .tox
+  image: python:3.7
   stage: extra
+  allow_failure: true
   script:
     - tox --pre -v -e py37 -- --pyargs mpdaf
 
 docs:
+  extends:
+    - .tox
+  image: python:3.7-bullseye
   stage: extra
-  script: tox -v -e docs
+  script:
+    - apt-get update
+    - apt-get install --yes --no-install-recommends graphviz
+    - tox -v -e docs
