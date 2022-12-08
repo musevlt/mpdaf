@@ -66,12 +66,12 @@ _arit_doc = """
 def _check_compatible_coordinates(a, b):
     if a.wave is not None and b.wave is not None and \
             not a.wave.isEqual(b.wave):
-        raise ValueError('Operation forbidden for cubes with different world '
+        raise ValueError('Operation forbidden for data with different world '
                          'coordinates in spectral direction')
 
     if a.wcs is not None and b.wcs is not None and \
             not a.wcs.isEqual(b.wcs):
-        raise ValueError('Operation forbidden for cubes with different world '
+        raise ValueError('Operation forbidden for data with different world '
                          'coordinates in spatial directions')
 
 
