@@ -41,6 +41,22 @@ py38:
   script:
     - tox -v -e py38 -- --pyargs mpdaf
 
+py39:
+  extends:
+    - .tox
+  image: python:3.9
+  stage: test
+  script:
+    - tox -v -e py39 -- --pyargs mpdaf
+
+py310:
+  extends:
+    - .tox
+  image: python:3.10
+  stage: test
+  script:
+    - tox -v -e py310 -- --pyargs mpdaf
+
 py37-slow:
   extends:
     - .tox
