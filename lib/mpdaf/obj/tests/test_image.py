@@ -1,8 +1,8 @@
 """
-Copyright (c) 2010-2018 CNRS / Centre de Recherche Astrophysique de Lyon
+Copyright (c) 2010-2023 CNRS / Centre de Recherche Astrophysique de Lyon
 Copyright (c) 2016-2019 Simon Conseil <simon.conseil@univ-lyon1.fr>
 Copyright (c)      2016 Martin Shepherd <martin.shepherd@univ-lyon1.fr>
-Copyright (c) 2016-2017 Laure Piqueras <laure.piqueras@univ-lyon1.fr>
+Copyright (c) 2016-2023 Laure Piqueras <laure.piqueras@univ-lyon1.fr>
 
 All rights reserved.
 
@@ -726,7 +726,7 @@ def test_peak_detection_and_fwhm():
     peaks = ima.peak_detection(5, 2)
     assert peaks.shape == (1, 2)
     assert_allclose(peaks[0], (np.array(shape) - 1) / 2.0)
-    assert_allclose(ima.fwhm(unit_radius=None), fwhm, rtol=0.1)
+    assert_allclose(ima.fwhm_gauss(unit_radius=None), fwhm, rtol=0.1)
 
 
 def test_get_item():
