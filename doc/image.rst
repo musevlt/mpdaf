@@ -273,7 +273,7 @@ For a first approximation, some simple analysis methods are applied:
 
  - `~mpdaf.obj.Image.background` to estimate the background level,
  - `~mpdaf.obj.Image.peak` to locate the peak of the source,
- - `~mpdaf.obj.Image.fwhm` to estimate the FWHM of the source.
+ - `~mpdaf.obj.Image.fwhm_gauss` to estimate the FWHM of the source.
 
 .. ipython::
 
@@ -284,7 +284,7 @@ For a first approximation, some simple analysis methods are applied:
   In [2]: source.peak()
 
   # fwhm in arcsec
-  In [3]: source.fwhm()
+  In [3]: source.fwhm_gauss()
 
 Then, for greater accuracy we fit a 2D Gaussian to the source, and plot the
 isocontours (`~mpdaf.obj.Image.gauss_fit`):
@@ -340,7 +340,7 @@ Finally we estimate the energy received from the source:
 .. ipython::
 
   # Obtain the encircled flux within a radius of one FWHM of the source
-  In [4]: source.ee(radius=source.fwhm(), cont=source.background()[0])
+  In [4]: source.ee(radius=source.fwhm_gauss(), cont=source.background()[0])
 
   # Get the enclosed energy normalized by the total energy as a function of radius (ERR)
   In [6]: radius, ee = source.eer_curve(cont=source.background()[0])

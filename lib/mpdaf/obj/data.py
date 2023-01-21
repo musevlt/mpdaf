@@ -998,13 +998,13 @@ class DataArray:
                     not np.allclose(self.wave.get_step(),
                                     other.wave.get_step(unit=self.wave.unit),
                                     atol=1E-2, rtol=0):
-                raise ValueError('Operation forbidden for cubes with different'
+                raise ValueError('Operation forbidden for data with different'
                                  ' world coordinates in spectral direction')
             if self._has_wcs and other._has_wcs and \
                     not np.allclose(self.wcs.get_step(),
                                     other.wcs.get_step(unit=self.wcs.unit),
                                     atol=1E-3, rtol=0):
-                raise ValueError('Operation forbidden for cubes with different'
+                raise ValueError('Operation forbidden for data with different'
                                  ' world coordinates in spatial directions')
 
             if self.unit == other.unit:

@@ -1,6 +1,6 @@
 """
-Copyright (c) 2010-2018 CNRS / Centre de Recherche Astrophysique de Lyon
-Copyright (c) 2012-2017 Laure Piqueras <laure.piqueras@univ-lyon1.fr>
+Copyright (c) 2010-2023 CNRS / Centre de Recherche Astrophysique de Lyon
+Copyright (c) 2012-2023 Laure Piqueras <laure.piqueras@univ-lyon1.fr>
 Copyright (c) 2012-2017 Roland Bacon <roland.bacon@univ-lyon1.fr>
 Copyright (c) 2014-2016 Johan Richard <jrichard@univ-lyon1.fr>
 Copyright (c) 2014-2019 Simon Conseil <simon.conseil@univ-lyon1.fr>
@@ -48,6 +48,7 @@ from scipy import interpolate, signal
 from scipy import ndimage as ndi
 from scipy.ndimage import affine_transform
 from scipy.optimize import leastsq
+import warnings
 
 from .arithmetic import ArithmeticMixin
 from .coords import WCS
@@ -55,6 +56,7 @@ from .data import DataArray
 from .fitting import Gauss2D, Moffat2D
 from .objs import is_int, is_number, bounding_box, UnitMaskedArray, UnitArray
 from .plot import FormatCoord, get_plot_norm
+from ..tools import MpdafWarning
 
 __all__ = ('Image', 'gauss_image', 'moffat_image', 'SpatialFrequencyLimits')
 
@@ -1261,7 +1263,13 @@ class Image(ArithmeticMixin, DataArray):
 
     def fwhm(self, center=None, radius=0, unit_center=u.deg,
              unit_radius=u.arcsec):
-        """Compute the fwhm.
+        warnings.warn(
+                "fwhm method is deprecated. Use fwhm_gauss method instead.", MpdafWarning)
+        return self.fwhm_gauss(center, radius, unit_center, unit_radius)
+    
+    def fwhm_gauss(self, center=None, radius=0, unit_center=u.deg,
+             unit_radius=u.arcsec):
+        """Compute the Gaussian fwhm.
 
         Parameters
         ----------
