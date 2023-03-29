@@ -80,8 +80,7 @@ def setup_logging(name='mpdaf', level='DEBUG', color=False, stream=None,
 
     """
     logger = logging.getLogger(name)
-    logger.setLevel(level) 
-    logger.propagate = False # WIP
+    logger.setLevel(level)
     if clear_handlers:
         logger.handlers.clear()
 
