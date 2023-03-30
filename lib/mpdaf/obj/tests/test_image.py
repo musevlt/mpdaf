@@ -37,7 +37,7 @@ import numpy as np
 import pytest
 import scipy.ndimage as ndi
 
-from mpdaf.obj import Image, WCS, gauss_image, moffat_image
+from mpdaf.obj import Image, WCS, gauss_image, moffat_image, DataArray
 from numpy.testing import (assert_array_equal, assert_allclose,
                            assert_almost_equal, assert_equal,
                            assert_array_almost_equal)
@@ -65,6 +65,38 @@ def test_arithmetic_images(image):
             image3._data,
             op(image._data * image.unit, image2._data * image2.unit)
             .to(image3.unit).value)
+
+def test_add_in_images():
+    cube1 = generate_cube(uwave=u.nm)
+    image1 = generate_image(data=6.0, wcs=cube1.wcs, unit=2 * u.ct)
+
+    cube2 = generate_cube(uwave=u.nm)
+    image2 = generate_image(data=2.0, wcs=cube2.wcs, unit=2 * u.ct)
+
+    # Test de l'addition de deux images identiques
+    test = image1 + image1
+    mul = image1 * 2
+    assert_almost_equal(test.data, mul.data)
+
+def test_arithmetic_pow():
+    cube1 = generate_cube(uwave=u.nm)
+    image1 = generate_image(wcs=cube1.wcs, unit=2 * u.ct)
+
+    # Test pow 1
+    test_img = image1 ** 1.0
+    assert_almost_equal(test_img.data, image1.data)
+    assert_almost_equal(test_img.var, image1.var)
+
+    # Test pow 0.5 = sqrt
+    img_sqrt = image1.sqrt()
+    test_img = image1 ** 0.5
+    assert_almost_equal(test_img.data, img_sqrt.data)
+
+    # Test pow 2
+    img_mul = image1 * image1
+    test_img = image1 ** 2.0
+    assert_almost_equal(test_img.data, img_mul.data)
+
 
 def test_arithmetic_scalar(image):
     image += 4.2

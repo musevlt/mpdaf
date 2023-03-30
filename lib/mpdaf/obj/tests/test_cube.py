@@ -40,12 +40,12 @@ from astropy.io import fits
 from mpdaf.obj import Spectrum, Image, Cube, iter_spe, iter_ima, WCS, WaveCoord
 from mpdaf.obj.image import gauss_image
 from numpy import ma
-from numpy.testing import (assert_almost_equal, assert_array_equal, 
+from numpy.testing import (assert_almost_equal, assert_array_equal,
                            assert_allclose, assert_array_almost_equal)
 from operator import add, sub, mul, truediv as div
 
 from mpdaf.tests.utils import (generate_cube, generate_image, generate_spectrum,
-                            assert_masked_allclose, get_data_file)
+                               assert_masked_allclose, get_data_file)
 
 
 def test_copy(cube):
@@ -65,6 +65,7 @@ def test_arithmetic():
     spectrum1 = generate_spectrum(data=2.3, cdelt=30.0, crval=5)
     cube2 = image1 + cube1
 
+    # with cube
     for op in (add, sub, mul, div):
         cube3 = op(cube1, cube2)
         assert_almost_equal(cube3.data, op(cube1.data, cube2.data))
@@ -74,6 +75,7 @@ def test_arithmetic():
     for op in (add, sub, mul, div):
         cube3 = op(cube1, spectrum1)
         assert_almost_equal(cube3.data, op(cube1.data, sp1))
+
 
     # with image
     im1 = image1.data.data[np.newaxis, :, :] * image1.unit
@@ -86,6 +88,35 @@ def test_arithmetic():
     cube2 = cube1 / 25.3
     assert_almost_equal(cube2.data, cube1.data / 25.3)
 
+def test_arithmetic_pow():
+    cube1 = generate_cube(uwave=u.nm)
+    cube1.data[0, 0, 0] = 5.0
+
+    # Test pow 1
+    test_cube = cube1 ** 1.0
+    assert_almost_equal(test_cube.data, cube1.data)
+    assert_almost_equal(test_cube.var, cube1.var)
+
+    # Test pow 0.5 = sqrt
+    cube_sqrt = cube1.sqrt()
+    test_cube = cube1 ** 0.5
+    assert_almost_equal(test_cube.data, cube_sqrt.data)
+    assert_almost_equal(test_cube.var, cube_sqrt.var)
+
+    # Test pow 2 test
+    cube_mul = cube1 * cube1
+    test_cube = cube1 ** 2
+    assert_almost_equal(test_cube.data, cube_mul.data)
+
+    test_cube = cube1 ** -1
+    inverse_cube = 1 / cube1
+    assert_almost_equal(test_cube.data, inverse_cube.data)
+    assert_almost_equal(test_cube.var, inverse_cube.var)
+
+    # Testez si l'exponentiation à un nombre fractionnaire est correcte
+    cube_sqrt = cube1 ** 0.5
+    test_cube = cube1 ** 1.5
+    assert_almost_equal(test_cube.data, cube1.data * cube_sqrt.data)
 
 def test_arithmetic_errors(cube):
     cube = generate_cube()
@@ -110,6 +141,9 @@ def test_arithmetic_variance(cube):
     image1 = generate_image(wcs=cube.wcs, var=None)
     cube2 = image1 + cube
     assert_almost_equal(cube.var, cube2.var)
+
+    test_cube = cube2 ** 1.0
+    assert_almost_equal(test_cube.var, cube2.var)
 
     cube2 = image1 * cube
     assert_almost_equal(cube2.var, cube.var * image1.data * image1.data)
@@ -139,9 +173,11 @@ def test_get_cube(cube):
         hdr['NAXIS%d' % i] = cube.shape[-i]
     cube.data_header = hdr
     subcub = cube[3:7, 1:2, 2:3]
-    assert subcub.data_header['CRVAL1'] == cube.wcs.pix2sky([subcub.data_header['CRPIX2']-1+1,subcub.data_header['CRPIX1']-1+2])[0][1]
-    assert subcub.data_header['CRVAL2'] == cube.wcs.pix2sky([subcub.data_header['CRPIX2']-1+1,subcub.data_header['CRPIX1']-1+2])[0][0]
-    assert subcub.data_header['CRVAL3'] == cube.wave.coord(subcub.data_header['CRPIX3']-1+3)
+    assert subcub.data_header['CRVAL1'] == \
+           cube.wcs.pix2sky([subcub.data_header['CRPIX2'] - 1 + 1, subcub.data_header['CRPIX1'] - 1 + 2])[0][1]
+    assert subcub.data_header['CRVAL2'] == \
+           cube.wcs.pix2sky([subcub.data_header['CRPIX2'] - 1 + 1, subcub.data_header['CRPIX1'] - 1 + 2])[0][0]
+    assert subcub.data_header['CRVAL3'] == cube.wave.coord(subcub.data_header['CRPIX3'] - 1 + 3)
 
 
 def test_iter_ima(cube):
@@ -391,7 +427,7 @@ def test_mean():
         # specifies the weights argument of cube.mean(), and a masked
         # array of the weights that are expected to be used.
         for weights, w in [(None, np.ones(shape, dtype=float)),  # Unweighted
-                           (np.sqrt(d), np.sqrt(d))]:           # Weighted
+                           (np.sqrt(d), np.sqrt(d))]:  # Weighted
 
             # Compute the mean.
             mean = cube.mean(axis=axis, weights=weights)
@@ -402,8 +438,8 @@ def test_mean():
             # Compute the expected values of the mean and its variance,
             # using a different implementation to cube.mean().
             expected_data = np.sum(data * w, axis=axis) / np.sum(w, axis=axis)
-            expected_var = (np.sum(var * w**2, axis=axis) /
-                            np.sum(w, axis=axis)**2)
+            expected_var = (np.sum(var * w ** 2, axis=axis) /
+                            np.sum(w, axis=axis) ** 2)
 
             # In the case any of the following tests fail, provide an
             # error message that indicates which arguments were passed
@@ -487,9 +523,9 @@ def test_rebin():
     wave = WaveCoord(crval=0.0, crpix=1.0, cdelt=1.0)
 
     # Create a cube with even valued dimensions, filled with ones.
-    data = ma.ones((4, 6, 8))       # Start with all pixels 1.0
-    data.reshape(4 * 6 * 8)[::2] = 0.0   # Set every second pixel to 0.0
-    data.mask = data < -1            # Unmask all pixels.
+    data = ma.ones((4, 6, 8))  # Start with all pixels 1.0
+    data.reshape(4 * 6 * 8)[::2] = 0.0  # Set every second pixel to 0.0
+    data.mask = data < -1  # Unmask all pixels.
     cube1 = generate_cube(data=data.data, mask=data.mask, wcs=wcs, wave=wave)
 
     # Rebin each of the axes such as to leave only 2 pixels along each
@@ -505,9 +541,9 @@ def test_rebin():
     assert_masked_allclose(cube2.data, expected)
 
     # Do the same experiment but with the zero valued pixels all masked.
-    data = ma.ones((4, 6, 8))       # Start with all pixels 1.0
-    data.reshape(4 * 6 * 8)[::2] = 0.0   # Set every second pixel to 0.0
-    data.mask = data < 0.1           # Mask the pixels that are 0.0
+    data = ma.ones((4, 6, 8))  # Start with all pixels 1.0
+    data.reshape(4 * 6 * 8)[::2] = 0.0  # Set every second pixel to 0.0
+    data.mask = data < 0.1  # Mask the pixels that are 0.0
     cube1 = generate_cube(data=data.data, mask=data.mask, wcs=wcs, wave=wave)
 
     # Rebin each of the axes such as to leave only 2 pixels along each
@@ -536,9 +572,9 @@ def test_rebin():
     # by a number whose remainder is large enough to test selection
     # of the truncated part of the cube.
     shape = np.array([4, 17, 15])
-    data = ma.ones(shape)                # Start with all pixels 1.0
-    data.reshape(shape.prod())[::2] = 0.0   # Set every second pixel to 0.0
-    data.mask = data < -1                   # Unmask all pixels.
+    data = ma.ones(shape)  # Start with all pixels 1.0
+    data.reshape(shape.prod())[::2] = 0.0  # Set every second pixel to 0.0
+    data.mask = data < -1  # Unmask all pixels.
     cube1 = generate_cube(data=data.data, mask=data.mask, wcs=wcs, wave=wave)
 
     # Choose the rebinning factors such that there is a significant
@@ -650,12 +686,12 @@ def test_get_image():
     assert ima[0, 0] == 0
     assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].sum()[0] -
                         cube1[lslice, 0, 0].sum()[0], 3)
-    
+
     # repeat with median filter method
     ima = cube1.get_image(wave=lrange, method='sum', subtract_off=True, median_filter=200)
     assert ima[0, 0] == 0
     assert_almost_equal(ima[2, 2], cube1[lslice, 2, 2].sum()[0] -
-                        cube1[lslice, 0, 0].sum()[0], 3)    
+                        cube1[lslice, 0, 0].sum()[0], 3)
 
     # Finally, perform a sum of the chosen wavelength range without
     # subtracting a background image. This is easy to test by doing
@@ -715,16 +751,16 @@ def test_subcube(mask):
     assert ma.count_masked(cube1[0].data) == 0
     assert_array_equal(cube2.get_start(), (1, 2, 2))
     assert_array_equal(cube2.shape, (10, 2, 2))
-    
+
     # Check that subcube_circle_aperture masks the region aroung the correct center
-    ima = gauss_image(shape=(10,10), center=(4.5, 4.5), fwhm=(5,5),unit_center=None, unit_fwhm=None)
+    ima = gauss_image(shape=(10, 10), center=(4.5, 4.5), fwhm=(5, 5), unit_center=None, unit_fwhm=None)
     bary = np.sum(np.indices(ima.shape) * ima.data.data, axis=(1, 2)) / ima.data.data.sum()
-    cube1 = generate_cube(data=np.tile(ima.data, (2,1,1)), wave=WaveCoord(crval=1))
+    cube1 = generate_cube(data=np.tile(ima.data, (2, 1, 1)), wave=WaveCoord(crval=1))
     cube2 = cube1.subcube_circle_aperture(center=bary, radius=2, unit_center=None, unit_radius=None)
-    ima2 = cube2[0,:,:]
+    ima2 = cube2[0, :, :]
     # the barycentre is the center of cube2
     bary = np.sum(np.indices(ima2.shape) * ima2.data.data, axis=(1, 2)) / ima2.data.data.sum()
-    assert_array_almost_equal(bary, (np.array(cube2.shape[1:])-1) / 2.0)
+    assert_array_almost_equal(bary, (np.array(cube2.shape[1:]) - 1) / 2.0)
 
 
 def test_aperture():
@@ -772,7 +808,7 @@ def test_get_item():
     """Cube class: testing __getitem__"""
     # Set the shape and contents of the cube's data array.
     shape = (3, 4, 5)
-    data = np.arange(shape[0] * shape[1] * shape[2])\
+    data = np.arange(shape[0] * shape[1] * shape[2]) \
         .reshape(shape[0], shape[1], shape[2])
 
     # Create a test cube with the above data array.
@@ -853,7 +889,7 @@ def test_get_item():
 
     # Select the spectrum of a single spatial pixel.
     r = c[:, 2, 2]
-    assert_array_equal(r.shape, (c.shape[0], ))
+    assert_array_equal(r.shape, (c.shape[0],))
     assert_allclose(r.data.ravel(), c.data[:, 2, 2].ravel())
     assert r.primary_header['KEY'] == c.primary_header['KEY']
     assert r.data_header['KEY'] == c.data_header['KEY']
@@ -916,10 +952,10 @@ def test_bandpass_image():
 
     # Compute the expected variances of the unmasked and masked means.
 
-    unmasked_var = (weights**2 * spectral_vars).sum() / weights.sum()**2
-    masked_var = (((weights**2 * spectral_vars).sum() -
-                   weights[masked_pixel]**2 * spectral_vars[masked_pixel]) /
-                  (weights.sum() - weights[masked_pixel])**2)
+    unmasked_var = (weights ** 2 * spectral_vars).sum() / weights.sum() ** 2
+    masked_var = (((weights ** 2 * spectral_vars).sum() -
+                   weights[masked_pixel] ** 2 * spectral_vars[masked_pixel]) /
+                  (weights.sum() - weights[masked_pixel]) ** 2)
 
     # Create the data array of the cube, giving all map pixels the
     # same data and variance spectrums.
@@ -972,7 +1008,6 @@ def test_bandpass_image():
 
 
 def test_convolve():
-
     shape = (3, 12, 25)
     data = np.zeros(shape)
     data[:, 7, 5] = 1.0

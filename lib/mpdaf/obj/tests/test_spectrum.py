@@ -128,6 +128,23 @@ def test_arithmetric():
     assert_array_almost_equal(cube2.data,
                               sp1data * image1.data[np.newaxis, :, :])
 
+def test_arithmetic_pow():
+    spectrum1 = generate_spectrum(data=2.3, cdelt=30.0, crval=5)
+
+    # Test pow 1
+    test_sp = spectrum1 ** 1.0
+    assert_almost_equal(test_sp.data, spectrum1.data)
+    assert_almost_equal(test_sp.var, spectrum1.var)
+
+    # Test pow 0.5 = sqrt
+    sp_sqrt = spectrum1.sqrt()
+    test_sp = spectrum1 ** 0.5
+    assert_almost_equal(test_sp.data, sp_sqrt.data)
+
+    # Test pow 2
+    sp_mul = spectrum1 * spectrum1
+    test_sp = spectrum1 ** 2
+    assert_almost_equal(test_sp.data, sp_mul.data)
 
 def test_get_Spectrum(spec_var):
     """Spectrum class: testing getters"""
