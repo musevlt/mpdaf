@@ -57,13 +57,13 @@ py310:
   script:
     - tox -v -e py310 -- --pyargs mpdaf
 
-py37-slow:
+py39-slow:
   extends:
     - .tox
-  image: python:3.7
+  image: python:3.9
   stage: test
   script:
-    - tox -v -e py37 -- -m 'slow' --pyargs mpdaf
+    - tox -v -e py39 -- -m 'slow' --pyargs mpdaf
 
 pre:
   extends:
