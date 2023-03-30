@@ -65,6 +65,15 @@ py39-slow:
   script:
     - tox -v -e py39 -- -m 'slow' --pyargs mpdaf
 
+py311:
+  extends:
+    - .tox
+  image: python:3.11
+  stage: test
+  script:
+    - tox -v -e py311 -- --pyargs mpdaf
+
+
 pre:
   extends:
     - .tox
