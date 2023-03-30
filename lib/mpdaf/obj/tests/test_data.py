@@ -1105,11 +1105,11 @@ def test_shared_masks():
     # Create a masked array with values that are chosen to be distinct
     # from the current spectrum data, and a mask that doesn't flag any
     # values. Then add an Inf and a Nan at indexes that are not masked
-    # in the original spectrum, along with a single masked value.
+    # in the original spectrum.
     new_data = np.array(np.arange(n) * 0.3, copy=True)
     new_data[30] = np.inf
     new_data[31] = np.nan
-    new_data[32] = ma.masked
+    new_data[32] = np.nan
 
     # What should the shared mask of the spectrum be after we assign
     # the above array to the .data property? When a masked array is
