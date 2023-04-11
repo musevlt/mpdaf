@@ -49,6 +49,7 @@ from scipy import ndimage as ndi
 from scipy.ndimage import affine_transform
 from scipy.optimize import leastsq
 import warnings
+from datetime import datetime
 
 from .arithmetic import ArithmeticMixin
 from .coords import WCS
@@ -62,7 +63,6 @@ __all__ = ('Image', 'gauss_image', 'moffat_image', 'SpatialFrequencyLimits')
 
 
 class Image(ArithmeticMixin, DataArray):
-
     """Manage image, optionally including a variance and a bad pixel mask.
 
     Parameters
@@ -151,6 +151,31 @@ class Image(ArithmeticMixin, DataArray):
 
         if self.wcs is not None:
             return self.wcs.get_step(unit)
+
+    def write_mask_file(self, filename, invert=False):
+        """
+        Save the image mask as a FITS file with a primary header containing WCS information.
+        The mask values are interpreted such that:
+        - a pixel value of 0 indicates that the pixel is not masked
+        - a pixel value of 1 indicates that the pixel is masked
+
+        Parameters
+        ----------
+        filename : str
+            The name of the output FITS file.
+        invert : bool, optional
+            If True, invert the values of the mask (i.e. set masked pixels to 0 instead of 1).
+        """
+        hdu = fits.PrimaryHDU()
+        hdu.header.update(self.wcs.to_header())
+        hdu.header['date'] = (str(datetime.now()), 'creation date')
+        hdu.header['author'] = ('MPDAF', 'origin of the file')
+
+        data = (self.mask ^ invert).astype(int)
+
+        hdu.data = data
+
+        hdu.writeto(filename, overwrite=True)
 
     def get_axis_increments(self, unit=None):
         """Return the displacements on the sky that result from
@@ -325,7 +350,7 @@ class Image(ArithmeticMixin, DataArray):
 
         # Get the pixel sizes in the units of the radius argument.
         if unit_radius is None:
-            step = np.array([1.0, 1.0])     # Pixel counts
+            step = np.array([1.0, 1.0])  # Pixel counts
         else:
             step = self.wcs.get_step(unit=unit_radius)
 
@@ -390,7 +415,7 @@ class Image(ArithmeticMixin, DataArray):
 
         # Get the pixel sizes in the units of the radius argument.
         if unit_radius is None:
-            step = np.array([1.0, 1.0])     # Pixel counts
+            step = np.array([1.0, 1.0])  # Pixel counts
         else:
             step = self.wcs.get_step(unit=unit_radius)
 
@@ -631,9 +656,9 @@ class Image(ArithmeticMixin, DataArray):
         if size[0] <= 0 or size[1] <= 0:
             raise ValueError('Size must be positive')
 
-#         # Require the center to be within the parent image.
-#         if not self.inside(center, unit_center):
-#             raise ValueError('The center must be within the image')
+        #         # Require the center to be within the parent image.
+        #         if not self.inside(center, unit_center):
+        #             raise ValueError('The center must be within the image')
 
         # Convert the center position from world-coordinates to pixel indexes.
         center = np.asarray(center)
@@ -642,7 +667,7 @@ class Image(ArithmeticMixin, DataArray):
 
         # Get the pixel sizes in the units of the size argument.
         if unit_size is None:
-            step = np.array([1.0, 1.0])     # Pixel counts
+            step = np.array([1.0, 1.0])  # Pixel counts
         else:
             step = self.wcs.get_step(unit=unit_size)
 
@@ -669,7 +694,7 @@ class Image(ArithmeticMixin, DataArray):
 
         # Require that the image be at least minsize x minsize pixels.
         if (sy.stop - sy.start + 1) < minsize[0] or \
-           (sx.stop - sx.start + 1) < minsize[1]:
+                (sx.stop - sx.start + 1) < minsize[1]:
             # Should we raise an exception instead ?
             self.logger.warning('extracted image is too small')
             return
@@ -961,7 +986,7 @@ class Image(ArithmeticMixin, DataArray):
                 # by resampling. Scaling the pixel values by n, however,
                 # increases the variances by n**2.
                 if newvar is not None:
-                    newvar *= n**2
+                    newvar *= n ** 2
 
         # Install the rotated data array, mask and variances.
         self._data = newdata
@@ -1239,7 +1264,7 @@ class Image(ArithmeticMixin, DataArray):
                 background = self.background()[0]
             di, dj = ndi.center_of_mass(
                 d[max(0, ic - dpix):ic + dpix + 1,
-                  max(0, jc - dpix):jc + dpix + 1] - background)
+                max(0, jc - dpix):jc + dpix + 1] - background)
         ic = imin + max(0, ic - dpix) + di
         jc = jmin + max(0, jc - dpix) + dj
 
@@ -1254,7 +1279,7 @@ class Image(ArithmeticMixin, DataArray):
             self._ax.plot(jc, ic, 'r+')
             try:
                 _str = 'center (%g,%g) radius (%g,%g) dpix %i peak: %g %g' % \
-                    (center[0], center[1], radius[0], radius[1], dpix, jc, ic)
+                       (center[0], center[1], radius[0], radius[1], dpix, jc, ic)
             except Exception:
                 _str = 'dpix %i peak: %g %g' % (dpix, ic, jc)
             self._ax.title(_str)
@@ -1264,11 +1289,11 @@ class Image(ArithmeticMixin, DataArray):
     def fwhm(self, center=None, radius=0, unit_center=u.deg,
              unit_radius=u.arcsec):
         warnings.warn(
-                "fwhm method is deprecated. Use fwhm_gauss method instead.", MpdafWarning)
+            "fwhm method is deprecated. Use fwhm_gauss method instead.", MpdafWarning)
         return self.fwhm_gauss(center, radius, unit_center, unit_radius)
-    
+
     def fwhm_gauss(self, center=None, radius=0, unit_center=u.deg,
-             unit_radius=u.arcsec):
+                   unit_radius=u.arcsec):
         """Compute the Gaussian fwhm.
 
         Parameters
@@ -1359,9 +1384,9 @@ class Image(ArithmeticMixin, DataArray):
 
             if circular:
                 xaxis = np.arange(ima.shape[0], dtype=float) \
-                    - ima.shape[0] / 2.
+                        - ima.shape[0] / 2.
                 yaxis = np.arange(ima.shape[1], dtype=float) \
-                    - ima.shape[1] / 2.
+                        - ima.shape[1] / 2.
                 gridx = np.empty(ima.shape, dtype=float)
                 gridy = np.empty(ima.shape, dtype=float)
                 for j in range(ima.shape[1]):
@@ -1769,7 +1794,7 @@ class Image(ArithmeticMixin, DataArray):
         N = len(p)
         width = fwhm * gaussian_fwhm_to_sigma
         flux = peak * np.sqrt(2 * np.pi * (width[0] ** 2)) \
-            * np.sqrt(2 * np.pi * (width[1] ** 2))
+               * np.sqrt(2 * np.pi * (width[1] ** 2))
 
         if circular:
             rot = None
@@ -1849,8 +1874,8 @@ class Image(ArithmeticMixin, DataArray):
         if factor > 1:
             factor = int(factor)
             deci = np.ones((factor, factor)) \
-                * np.arange(factor)[:, np.newaxis] \
-                / float(factor) + 1. / float(factor * 2) - 0.5
+                   * np.arange(factor)[:, np.newaxis] \
+                   / float(factor) + 1. / float(factor * 2) - 0.5
             fp = (p[:, np.newaxis] + deci.ravel()[np.newaxis, :]).ravel()
             fq = (q[:, np.newaxis] + deci.T.ravel()[np.newaxis, :]).ravel()
             pixcrd = np.array(list(zip(fp, fq)))
@@ -1928,7 +1953,7 @@ class Image(ArithmeticMixin, DataArray):
         p_fwhm = p_width * gaussian_sigma_to_fwhm
         q_fwhm = q_width * gaussian_sigma_to_fwhm
         peak = flux / np.sqrt(2 * np.pi * (p_width ** 2)) \
-            / np.sqrt(2 * np.pi * (q_width ** 2))
+               / np.sqrt(2 * np.pi * (q_width ** 2))
         # error
         if err is not None:
             err_flux = err[0]
@@ -1966,7 +1991,7 @@ class Image(ArithmeticMixin, DataArray):
             err_q_fwhm = err_q_width * gaussian_sigma_to_fwhm
             err_peak = (err_flux * p_width * q_width - flux
                         * (err_p_width * q_width + err_q_width * p_width)) \
-                / (2 * np.pi * p_width * p_width * q_width * q_width)
+                       / (2 * np.pi * p_width * p_width * q_width * q_width)
         else:
             err_flux = np.NAN
             err_p_peak = np.NAN
@@ -1984,7 +2009,7 @@ class Image(ArithmeticMixin, DataArray):
             center = self.wcs.pix2sky([p_peak, q_peak], unit=unit_center)[0]
 
             err_center = np.array([err_p_peak, err_q_peak]) * \
-                self.wcs.get_step(unit=unit_center)
+                         self.wcs.get_step(unit=unit_center)
         else:
             center = (p_peak, q_peak)
             err_center = (err_p_peak, err_q_peak)
@@ -2145,19 +2170,19 @@ class Image(ArithmeticMixin, DataArray):
                     if fit_n:
                         # 2d moffat function
                         moffatfit = lambda v, p, q: cont + v[0] \
-                            * (1 + (((p - v[1]) * np.cos(v[6]) - (q - v[2])
-                                     * np.sin(v[6])) / v[3]) ** 2
-                               + (((p - v[1]) * np.sin(v[6]) + (q - v[2])
-                                   * np.cos(v[6])) / v[3] / v[5]) ** 2) ** (-v[4])
+                                                    * (1 + (((p - v[1]) * np.cos(v[6]) - (q - v[2])
+                                                             * np.sin(v[6])) / v[3]) ** 2
+                                                       + (((p - v[1]) * np.sin(v[6]) + (q - v[2])
+                                                           * np.cos(v[6])) / v[3] / v[5]) ** 2) ** (-v[4])
                         # inital guesses
                         v0 = [I, center[0], center[1], a, n, e, rot]
                     else:
                         # 2d moffat function
                         moffatfit = lambda v, p, q: cont + v[0] \
-                            * (1 + (((p - v[1]) * np.cos(v[5]) - (q - v[2])
-                                     * np.sin(v[5])) / v[3]) ** 2
-                               + (((p - v[1]) * np.sin(v[5]) + (q - v[2])
-                                   * np.cos(v[5])) / v[3] / v[4]) ** 2) ** (-n)
+                                                    * (1 + (((p - v[1]) * np.cos(v[5]) - (q - v[2])
+                                                             * np.sin(v[5])) / v[3]) ** 2
+                                                       + (((p - v[1]) * np.sin(v[5]) + (q - v[2])
+                                                           * np.cos(v[5])) / v[3] / v[4]) ** 2) ** (-n)
                         # inital guesses
                         v0 = [I, center[0], center[1], a, e, rot]
             else:
@@ -2176,19 +2201,19 @@ class Image(ArithmeticMixin, DataArray):
                     if fit_n:
                         # 2d moffat function
                         moffatfit = lambda v, p, q: v[7] + v[0] \
-                            * (1 + (((p - v[1]) * np.cos(v[6])
-                                     - (q - v[2]) * np.sin(v[6])) / v[3]) ** 2
-                               + (((p - v[1]) * np.sin(v[6])
-                                   + (q - v[2]) * np.cos(v[6])) / v[3] / v[5]) ** 2) ** (-v[4])
+                                                    * (1 + (((p - v[1]) * np.cos(v[6])
+                                                             - (q - v[2]) * np.sin(v[6])) / v[3]) ** 2
+                                                       + (((p - v[1]) * np.sin(v[6])
+                                                           + (q - v[2]) * np.cos(v[6])) / v[3] / v[5]) ** 2) ** (-v[4])
                         # inital guesses
                         v0 = [I, center[0], center[1], a, n, e, rot, cont]
                     else:
                         # 2d moffat function
                         moffatfit = lambda v, p, q: v[6] + v[0] \
-                            * (1 + (((p - v[1]) * np.cos(v[5])
-                                     - (q - v[2]) * np.sin(v[5])) / v[3]) ** 2
-                               + (((p - v[1]) * np.sin(v[5])
-                                   + (q - v[2]) * np.cos(v[5])) / v[3] / v[4]) ** 2) ** (-n)
+                                                    * (1 + (((p - v[1]) * np.cos(v[5])
+                                                             - (q - v[2]) * np.sin(v[5])) / v[3]) ** 2
+                                                       + (((p - v[1]) * np.sin(v[5])
+                                                           + (q - v[2]) * np.cos(v[5])) / v[3] / v[4]) ** 2) ** (-n)
                         # inital guesses
                         v0 = [I, center[0], center[1], a, e, rot, cont]
 
@@ -2196,8 +2221,8 @@ class Image(ArithmeticMixin, DataArray):
         if factor > 1:
             factor = int(factor)
             deci = np.ones((factor, factor)) \
-                * np.arange(factor)[:, np.newaxis] / float(factor) \
-                + 1 / float(factor * 2)
+                   * np.arange(factor)[:, np.newaxis] / float(factor) \
+                   + 1 / float(factor * 2)
             fp = (p[:, np.newaxis] + deci.ravel()[np.newaxis, :]).ravel()
             fq = (q[:, np.newaxis] + deci.T.ravel()[np.newaxis, :]).ravel()
             pixcrd = np.array(list(zip(fp, fq)))
@@ -2361,7 +2386,7 @@ class Image(ArithmeticMixin, DataArray):
             # Gauss2D object in degrees/arcseconds
             center = self.wcs.pix2sky([p_peak, q_peak], unit=unit_center)[0]
             err_center = np.array([err_p_peak, err_q_peak]) * \
-                self.wcs.get_step(unit=unit_center)
+                         self.wcs.get_step(unit=unit_center)
 
         fwhm = np.array(fwhm)
 
@@ -2911,8 +2936,8 @@ class Image(ArithmeticMixin, DataArray):
             if var is not None:
                 # Scale the variance according to the prescription described
                 # above.
-                var *= ((xs if xs > 1.0 and antialias else xs**2) *
-                        (ys if ys > 1.0 and antialias else ys**2))
+                var *= ((xs if xs > 1.0 and antialias else xs ** 2) *
+                        (ys if ys > 1.0 and antialias else ys ** 2))
 
         # If we haven't been asked to scale the fluxes by the increase
         # in the area of a pixel, the effect on the variances are as
@@ -4064,9 +4089,9 @@ def gauss_image(shape=(101, 101), wcs=None, factor=1, gauss=None,
         xdiff = p - center[0]
         ydiff = q - center[1]
         return (
-            norm / (2 * np.pi * p_width * q_width) *
-            np.exp(-(xdiff * cost - ydiff * sint) ** 2 / (2 * p_width ** 2)) *
-            np.exp(-(xdiff * sint + ydiff * cost) ** 2 / (2 * q_width ** 2))
+                norm / (2 * np.pi * p_width * q_width) *
+                np.exp(-(xdiff * cost - ydiff * sint) ** 2 / (2 * p_width ** 2)) *
+                np.exp(-(xdiff * sint + ydiff * cost) ** 2 / (2 * q_width ** 2))
         )
 
     if factor > 1:
@@ -4087,8 +4112,8 @@ def gauss_image(shape=(101, 101), wcs=None, factor=1, gauss=None,
             dx = pixcrd_max[:, 1] - pixcrd_min[:, 1]
             dy = pixcrd_max[:, 0] - pixcrd_min[:, 0]
             data = norm * 0.25 / dx / dy \
-                * (special.erf(xmax) - special.erf(xmin)) \
-                * (special.erf(ymax) - special.erf(ymin))
+                   * (special.erf(xmax) - special.erf(xmin)) \
+                   * (special.erf(ymax) - special.erf(ymin))
             data = np.reshape(data, (shape[1], shape[0])).T
         else:
             yy, xx = np.mgrid[:shape[0] * factor, :shape[1] * factor] / factor
@@ -4203,9 +4228,9 @@ def moffat_image(shape=(101, 101), wcs=None, factor=1, moffat=None,
         xdiff = p - center[0]
         ydiff = q - center[1]
         return (
-            norm * (1 +
-                    ((xdiff * cost - ydiff * sint) / a) ** 2 +
-                    ((xdiff * sint + ydiff * cost) / a / e) ** 2) ** (-n)
+                norm * (1 +
+                        ((xdiff * cost - ydiff * sint) / a) ** 2 +
+                        ((xdiff * sint + ydiff * cost) / a / e) ** 2) ** (-n)
         )
 
     if factor > 1:
@@ -4325,8 +4350,8 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
     # is to copy the image into a new array whose dimensions
     # are powers of 2, and fill the extra pixels with zeros.
 
-    shape = 2**(np.ceil(np.log(np.asarray(data.shape)) /
-                        np.log(2.0))).astype(int)
+    shape = 2 ** (np.ceil(np.log(np.asarray(data.shape)) /
+                          np.log(2.0))).astype(int)
     if data.shape[0] != shape[0] or data.shape[1] != shape[1]:
         tmp = np.zeros(shape)
         tmp[image_slice] = data
@@ -4350,8 +4375,8 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
     # the cutoff frequency. These values will later be used to index
     # the 1D window-function.
 
-    wr = np.sqrt((np.fft.rfftfreq(nx, oldstep[1]) / fxcut)**2 +
-                 (np.fft.fftfreq(ny, oldstep[0]) / fycut)[np.newaxis, :].T**2)
+    wr = np.sqrt((np.fft.rfftfreq(nx, oldstep[1]) / fxcut) ** 2 +
+                 (np.fft.fftfreq(ny, oldstep[0]) / fycut)[np.newaxis, :].T ** 2)
 
     # Get the requested window function as a function of frequency
     # divided by its cutoff frequency.
@@ -4369,7 +4394,7 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
 
     elif window == "gaussian":
         sigma = 0.44
-        winfn = lambda r: np.exp(-0.5 * (r / sigma)**2)
+        winfn = lambda r: np.exp(-0.5 * (r / sigma) ** 2)
 
     # For the rectangular window, just multiply all pixels below the
     # cutoff frequency by one, and the rest by zero.
@@ -4433,7 +4458,6 @@ def _find_quadratic_peak(y):
 
 
 class SpatialFrequencyLimits:
-
     """Allow one to keep track of the spatial frequency limits of an image.
 
     Such that before resampling an image it can see if anything needs to be
