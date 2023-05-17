@@ -79,10 +79,12 @@ def _check_compatible_shapes(a, b, dims=slice(None)):
         raise ValueError('Operation forbidden for arrays with different '
                          'shapes')
 
+
 def _check_uncorrelated_data(a, b, newshape, tol=1e-5):
     if newshape is not None:
         return True
     return _check_proportionality(a, b, tol) or _check_power(a, b, tol)
+
 
 def _check_proportionality(a, b, tol=1e-5):
     """
@@ -102,14 +104,14 @@ def _check_proportionality(a, b, tol=1e-5):
     std_dev = np.nanstd(quotient)
 
     # Check if the standard deviation is different from zero with the specified tol
-    if abs(std_dev) > tol:
+    if abs(np.std(quotient)) > tol * np.median(quotient) :
         # If the arrays have different pixels when divided, return 0 to indicate True
         return False
     else:
         # If the arrays do not have different pixels when divided, return the constant factor to indicate False
         logging.warning("a = {} * b. "
-                         "Propagation of correlated errors in not supported,"
-                         " so variances will not be propagated.".format(quotient[0]))
+                        "Propagation of correlated errors in not supported,"
+                        " so variances will not be propagated.".format(quotient[0]))
         return True
 
 
@@ -123,8 +125,9 @@ def _check_power(a, b, tol=1e-5):
     :return: If the data arrays have different pixels when divided by each other, returns 0 to indicate True.
              Otherwise, returns the exponent as a float to indicate False.
     """
-    # Create a boolean mask to exclude pixels where the value is zero
-    sel = (a != 0) & (b != 0)
+
+    # Create a boolean mask to exclude pixels where the value > 1
+    sel = (a > 1) & (b > 1)
     # Compute the power of each pixel
     power = np.divide(np.log((np.abs(a[sel]))), np.log(np.abs(b[sel])))
 
@@ -138,8 +141,8 @@ def _check_power(a, b, tol=1e-5):
     else:
         # If the arrays do not have different pixels, return the constant exponent to indicate False
         logging.warning("a = b **{}. "
-                         "Propagation of correlated errors in not supported,"
-                         " so variances will not be propagated.".format(power[0]))
+                        "Propagation of correlated errors in not supported,"
+                        " so variances will not be propagated.".format(power[0]))
         return True
 
 

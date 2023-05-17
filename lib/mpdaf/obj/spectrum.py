@@ -93,7 +93,7 @@ def airtovac(airwl):
     https://idlastro.gsfc.nasa.gov/ftp/pro/astro/airtovac.pro
 
     """
-    sigma2 = (1e4 / airwl)**2.        # Convert to wavenumber squared
+    sigma2 = (1e4 / airwl) ** 2.  # Convert to wavenumber squared
     n = 1.0 + (6.4328e-5 + 2.94981e-2 / (146. - sigma2) +
                2.5540e-4 / (41. - sigma2))
 
@@ -108,7 +108,6 @@ def airtovac(airwl):
 
 
 class Spectrum(ArithmeticMixin, DataArray):
-
     """Spectrum objects contain 1D arrays of numbers, optionally
     accompanied by corresponding variances. These numbers represent
     sample fluxes along a regularly spaced grid of wavelengths.
@@ -541,7 +540,7 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         """
         # Convert the attenuation from dB to a linear scale factor.
-        gcut = 10.0**(-atten / 20.0)
+        gcut = 10.0 ** (-atten / 20.0)
 
         # Calculate the Nyquist folding frequency of the new pixel size.
         nyquist_folding_freq = 0.5 / newstep
@@ -572,7 +571,7 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         # Sample the gaussian filter symmetrically around the central pixel.
         gx = np.arange(gshape, dtype=float) - gshape // 2
-        gy = np.exp(-0.5 * (gx / sigma)**2)
+        gy = np.exp(-0.5 * (gx / sigma) ** 2)
 
         # Area-normalize the gaussian profile.
         gy /= gy.sum()
@@ -650,14 +649,14 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         # Get the data, mask (and variance) arrays, and replace bad pixels with
         # zeros.
-        if out._mask is not None:         # Is out.data a masked array?
+        if out._mask is not None:  # Is out.data a masked array?
             data = out.data.filled(0.0)
             if out._var is not None:
                 var = out.var.filled(0.0)
             else:
                 var = None
             mask = out._mask
-        else:                             # Is out.data just a numpy array?
+        else:  # Is out.data just a numpy array?
             mask = ~np.isfinite(out._data)
             data = out._data.copy()
             data[mask] = 0.0
@@ -758,7 +757,7 @@ class Spectrum(ArithmeticMixin, DataArray):
                                        weights=weights, returned=True)
             if self.var is not None:
                 err_flux = np.sqrt(
-                    np.ma.sum(self.var[lambda_slice] * weights**2) / wsum**2)
+                    np.ma.sum(self.var[lambda_slice] * weights ** 2) / wsum ** 2)
             else:
                 err_flux = np.inf
         else:
@@ -814,8 +813,8 @@ class Spectrum(ArithmeticMixin, DataArray):
 
             if self.var is not None:
                 err_flux = np.sqrt(
-                    np.ma.sum(self.var[lambda_slice] * weights**2) /
-                    wsum**2 * nsum**2)
+                    np.ma.sum(self.var[lambda_slice] * weights ** 2) /
+                    wsum ** 2 * nsum ** 2)
             else:
                 err_flux = np.inf
         else:
@@ -943,7 +942,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         # will have inconvenient units. In such cases attempt to
         # convert the units of the wavelength axis to match the flux
         # units.
-        if unit in self.unit.bases:      # The wavelength units already agree.
+        if unit in self.unit.bases:  # The wavelength units already agree.
             out_unit = self.unit * unit
         else:
             try:
@@ -969,7 +968,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         if self.var is None:
             err_flux = np.inf
         else:
-            err_flux = np.sqrt((self.var[i1:i2] * np.diff(d)**2).sum())
+            err_flux = np.sqrt((self.var[i1:i2] * np.diff(d) ** 2).sum())
         return (flux, err_flux * out_unit)
 
     def poly_fit(self, deg, weight=True, maxiter=0,
@@ -1223,8 +1222,8 @@ class Spectrum(ArithmeticMixin, DataArray):
         vflux, wsum = np.ma.average(self.data[lambda_slice], weights=w,
                                     returned=True)
         if self.var is not None:
-            err_flux = np.sqrt(np.ma.sum(self.var[lambda_slice] * w**2) /
-                               wsum**2)
+            err_flux = np.sqrt(np.ma.sum(self.var[lambda_slice] * w ** 2) /
+                               wsum ** 2)
         else:
             err_flux = np.inf
 
@@ -1232,18 +1231,18 @@ class Spectrum(ArithmeticMixin, DataArray):
         vflux2 = (vflux * self.unit).to(unit)
         err_flux2 = (err_flux * self.unit).to(unit)
         return flux2mag(vflux2.value, err_flux2.value, l0)
-    
+
     def to_abmag(self):
         """ convert a spectrum in AB magnitude"""
         cs = C.to('Angstrom/s').value  # speed of light in A/s
         wave = self.wave.coord(unit='Angstrom')
-        #unit = u.Unit('erg.s-1.cm-2.Angstrom-1')
+        # unit = u.Unit('erg.s-1.cm-2.Angstrom-1')
         # WIP note that the data and var should be converted to the correct units
-        data = self.data     
+        data = self.data
         mag = -48.60 - 2.5 * np.log10(wave ** 2 * data / cs)
         if self.var is not None:
-            err = np.sqrt(self.var) 
-            var = (2.5 * err / (data * np.log(10)))**2
+            err = np.sqrt(self.var)
+            var = (2.5 * err / (data * np.log(10))) ** 2
         else:
             var = None
         spmag = Spectrum(wave=self.wave, data=mag, var=var)
@@ -1564,8 +1563,8 @@ class Spectrum(ArithmeticMixin, DataArray):
             Type of the wavelength coordinates. If None, inputs are in pixels.
         """
         gauss = lambda p, x: cont \
-            + p[0] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) \
-            * np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2))
+                             + p[0] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) \
+                             * np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2))
 
         sigma = fwhm * gaussian_fwhm_to_sigma
 
@@ -1711,10 +1710,10 @@ class Spectrum(ArithmeticMixin, DataArray):
         # 1d gaussian function
         # p[0]: flux 1, p[1]:center 1, p[2]: fwhm, p[3] = peak 2
         gaussfit = lambda p, x: cont0 + \
-            p[0] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) * \
-            np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2)) + \
-            p[3] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) * \
-            np.exp(-(x - (p[1] * wratio)) ** 2 / (2 * p[2] ** 2))
+                                p[0] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) * \
+                                np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2)) + \
+                                p[3] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) * \
+                                np.exp(-(x - (p[1] * wratio)) ** 2 / (2 * p[2] ** 2))
 
         # 1d gaussian fit
         if spec.var is not None and weight:
@@ -2010,10 +2009,10 @@ class Spectrum(ArithmeticMixin, DataArray):
         sigma_left = fwhm_left * gaussian_fwhm_to_sigma
         sigma_right = fwhm_right * gaussian_fwhm_to_sigma
 
-#         if peak is True:
-#             right_norm = flux * np.sqrt(2. * np.pi * sigma_right ** 2)
-#         else:
-#             right_norm = 2. * flux / (1. + sigma_left / sigma_right)
+        #         if peak is True:
+        #             right_norm = flux * np.sqrt(2. * np.pi * sigma_right ** 2)
+        #         else:
+        #             right_norm = 2. * flux / (1. + sigma_left / sigma_right)
 
         lmin = lpeak - 5 * sigma_left
         lmax = lpeak + 5 * sigma_right
@@ -2069,7 +2068,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         res._var = None
         return res
 
-    def filter(self, kernel = Box1DKernel, **parameters):
+    def filter(self, kernel=Box1DKernel, **parameters):
         """Perform filtering on the spectrum.
 
         Uses `astropy.convolution` kernels and convolution.
@@ -2289,7 +2288,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         n = int(n / 2) * 2
         data = np.arange(-n, n + 1)
         kernel = special.erf((1 + 2 * data) / (2 * np.sqrt(2) * s)) \
-            + special.erf((1 - 2 * data) / (2 * np.sqrt(2) * s))
+                 + special.erf((1 - 2 * data) / (2 * np.sqrt(2) * s))
         kernel /= kernel.sum()
 
         res._data = signal.correlate(res._data, kernel, mode='same')
