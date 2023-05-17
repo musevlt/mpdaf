@@ -63,13 +63,20 @@ Arithmetic Operations between objects
 
 Arithmetic operations can be performed between MPDAF objects and
 scalar numbers, numpy arrays, masked arrays or other MPDAF
-objects. When an operation is performed between two MPDAF objects or
-between an MPDAF object and an array, their dimensions must either
-match, or be broadcastable to the same dimensions via the usual numpy
-rules. The broadcasting rules make it possible to perform arithmetic
+objects. When an operation is performed between an MPDAF object 
+and an array, their dimensions must either match, or be broadcastable 
+to the same dimensions via the usual numpy rules. 
+When an operation is performed between two MPDAF objects, it requires the 
+objects to have identical WCS properties, equivalent units, and identical shapes.
+Variances are propagated, although correlated errors are not supported.
+If data are detected to be correlated, a warning is issued. Values masked in 
+either object before the operation are masked in the resulting object.
+The broadcasting rules make it possible to perform arithmetic
 operations between a `~mpdaf.obj.Cube` and an `~mpdaf.obj.Image` or a
 `~mpdaf.obj.Spectrum`, assuming that they have compatible spatial and
-spectral world-coordinates. The following demonstration shows a cube
+spectral world-coordinates. 
+
+The following demonstration shows a cube
 being multiplied by an image that has the same spatial dimensions and
 world-coordinates as the cube, and also being divided by a spectrum
 that has the same spectral dimensions and wavelengths as the spectral
