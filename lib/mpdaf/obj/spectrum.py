@@ -39,20 +39,22 @@ import types
 
 import astropy.units as u
 from astropy.io import fits
+from astropy.nddata import StdDevUncertainty
 from astropy.stats import gaussian_sigma_to_fwhm, gaussian_fwhm_to_sigma
 from astropy.convolution import convolve, Box1DKernel
 from os.path import join, abspath, dirname
 from scipy import interpolate, signal
 from scipy.optimize import leastsq
 from astropy.constants import c as C
+from specutils import Spectrum1D
 
-from . import ABmag_filters, wavelet1D
+from . import ABmag_filters, wavelet1D, WaveCoord
 from .arithmetic import ArithmeticMixin
 from .data import DataArray
 from .fitting import Gauss1D
 from .objs import flux2mag
 
-__all__ = ('Spectrum', 'vactoair', 'airtovac')
+__all__ = ('Spectrum', 'vactoair', 'airtovac', 'Spectrum1D_MPDAF')
 
 
 def vactoair(vacwl):
@@ -2522,16 +2524,101 @@ class Spectrum(ArithmeticMixin, DataArray):
         plt.connect('motion_notify_event', _on_move)
         self._plot_id = len(ax.lines) - 1
 
-    def to_spectrum1d(self, unit_wave=u.angstrom):
-        """Return a ``specutils.Spectrum1D`` object."""
-        from astropy.nddata import StdDevUncertainty
-        try:
-            from specutils import Spectrum1D
-        except ImportError:
-            self._logger.error('specutils package not found')
-            raise
 
-        flux = u.Quantity(self._data, unit=self.unit, copy=False)
-        std = StdDevUncertainty(np.sqrt(self._var), unit=self.unit, copy=False)
-        return Spectrum1D(flux=flux, uncertainty=std, mask=self._mask,
-                          wcs=self.wave.wcs, copy=False)
+class Spectrum1D_MPDAF(Spectrum1D):
+    """This class is inherited from the `specutils.Spectrum1D` class. It lets the user to easily do the relationship between `Spectrum` object from mpdaf, and `Spectrum1D` objects from specutils.
+    """
+    def __init__(self, flux=None, spectral_axis=None, wcs=None,
+                 velocity_convention=None, rest_value=None, redshift=None,
+                 radial_velocity=None, bin_specification=None, filename=None, hdulist=None, copy=True,
+                 primary_header=None, data_header=None,
+                 data_ext=None, var_ext=None, dq_ext=None, convert_float64=True,
+                 **kwargs):
+        super().__init__(flux=flux, spectral_axis=spectral_axis, wcs=wcs,
+                         velocity_convention=velocity_convention, rest_value=rest_value, redshift=redshift,
+                         radial_velocity=radial_velocity, bin_specification=bin_specification, **kwargs)
+        
+        self._data_ext = data_ext
+        self._var_ext = var_ext
+        self._dq_ext = dq_ext
+        self._convert_float64 = convert_float64
+        self._data_header = data_header
+        self._filename = filename
+        self._primary_header = primary_header
+
+    @classmethod
+    def new_obj_from_mpdaf_spectrum(cls, spec_mpdaf):
+        """
+            Return a ``Spectrum1D_MPDAF`` object.
+
+            Parameters
+            ----------
+            spec_mpdaf : `mpdaf.obj.Spectrum`
+                The input spectrum object from which to create the `specutils.Spectrum1D` object.
+
+            Returns
+            -------
+            `Spectrum1D_MPDAF`
+                A `Spectrum1D_MPDAF` object created from the input `spec_mpdaf` object.
+
+            This method creates a `Spectrum1D_MPDAF` object from an input `mpdaf.obj.Spectrum` object.
+            The `flux` data is converted to an astropy.units.Quantity object with the same units as `spec_mpdaf`. The
+            `uncertainty` is calculated from the `spec_mpdaf.var` data if it exists, otherwise it is set to None. The
+            `spectral_axis` is converted to an astropy.units.Quantity object with the same units as
+            `spec_mpdaf.wave`. The `mask` is copied from the `spec_mpdaf` object to the `specutils.Spectrum1D` object.
+        """
+        flux = u.Quantity(spec_mpdaf.data.data, unit=spec_mpdaf.unit, copy=False)
+        if spec_mpdaf.var is not None:
+            uncertainty = StdDevUncertainty(np.sqrt(spec_mpdaf.var.data), unit=spec_mpdaf.unit)
+        else:
+            uncertainty = None
+
+        spectral_axis = spec_mpdaf.wave.wcs.pixel_to_world_values(np.arange(flux.shape[0])) * spec_mpdaf.wave.unit
+
+        return cls(flux=flux, uncertainty=uncertainty, mask=spec_mpdaf.mask,
+                   spectral_axis=spectral_axis, bin_specification='centers',
+                   data_header=spec_mpdaf.data_header,filename=spec_mpdaf.filename,
+                   primary_header=spec_mpdaf.primary_header,
+                   data_ext=spec_mpdaf._data_ext, var_ext=spec_mpdaf._var_ext, dq_ext=spec_mpdaf._dq_ext,
+                   convert_float64=spec_mpdaf._convert_float64,
+                   copy=False)
+
+    def to_mpdaf_spectrum(self):
+        """
+            Convert a ``Spectrum1D_MPDAF`` object to a ``Spectrum`` object.
+
+            Parameters
+            ----------
+            self : `Spectrum1D_MPDAF`
+            The ``Spectrum1D_MPDAF`` object to convert.
+
+            Returns
+            -------
+            `Spectrum`
+            The converted ``Spectrum`` object.
+
+            This method converts a ``Spectrum1D_MPDAF` object to a ``Spectrum`` object from the MPDAF
+            library. The method checks if the spectral axis is linearly spaced and if so, it creates a
+            ``Spectrum`` object with the same data, variance, mask, unit and spectral axis as the input
+            ``Spectrum1D_MPDAF`` object. If the spectral axis is not linearly spaced, an error is raised.
+        """
+        if len(np.unique(np.diff(self.spectral_axis))) == 1:
+            if self.uncertainty:
+                var = self.uncertainty.array ** 2
+            else:
+                var = None
+            wave = WaveCoord(crpix=1.0, cdelt=np.diff(self.spectral_axis.value)[0],
+                             crval=self.spectral_axis.value[0], cunit=self.spectral_axis.unit)
+            wave.wcs.array_shape = self.shape
+            mpdaf_spectrum = Spectrum(filename=self._filename, data_header=self._data_header,
+                                      primary_header=self._primary_header, data=self.data, var=var, mask=self.mask,
+                                      unit=self.unit, wave=wave,
+                                      shape=self.data.shape[0],
+                                      convert_float64=self._convert_float64)
+            mpdaf_spectrum.wcs = None
+            mpdaf_spectrum._data_ext = self._data_ext
+            mpdaf_spectrum._var_ext = self._var_ext
+            mpdaf_spectrum._dq_ext = self._dq_ext
+            return mpdaf_spectrum
+        else:
+            raise ValueError("The spectral axis is not linearly spaced. Cannot convert Spectrum1D_MPDAF to Spectrum.")

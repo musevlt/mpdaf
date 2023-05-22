@@ -1719,7 +1719,7 @@ class WaveCoord:
 
     def isEqual(self, other):
         """Return True if other and self have the same attributes."""
-        if not isinstance(other, WaveCoord):
+        if not isinstance(other, type(self)):
             return False
 
         l1 = self.coord(0, unit=self.unit)

@@ -37,13 +37,18 @@ import numpy as np
 
 from astropy import units as u
 from astropy.io import ascii, fits
+from astropy.nddata import StdDevUncertainty
+
+
+from mpdaf.obj import Spectrum1D_MPDAF
 from mpdaf.log import setup_logging
 from mpdaf.obj import Spectrum, Image, Cube, WCS, WaveCoord, airtovac, vactoair
-from mpdaf.tools import MpdafWarning
+
 from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_almost_equal, assert_allclose)
 
 from mpdaf.tests.utils import (get_data_file, generate_spectrum)
+from mpdaf.obj.coords import WaveCoord
 
 try:
     import specutils  # noqa
@@ -51,6 +56,25 @@ except ImportError:
     HAS_SPECUTILS = False
 else:
     HAS_SPECUTILS = True
+
+from specutils import Spectrum1D
+from specutils import SpectralRegion
+from specutils.manipulation import noise_region_uncertainty
+
+
+def to_spectrum1d(spec, unit_wave=u.angstrom):
+    """Return a ``specutils.Spectrum1D`` object."""
+    from astropy.nddata import StdDevUncertainty
+    try:
+        from specutils import Spectrum1D
+    except ImportError:
+        spec._logger.error('specutils package not found')
+        raise
+
+    flux = u.Quantity(spec._data, unit=spec.unit, copy=False)
+    std = StdDevUncertainty(np.sqrt(spec._var), unit=spec.unit, copy=False)
+    return Spectrum1D(flux=flux, uncertainty=std, mask=spec._mask,
+                      wcs=spec.wave.wcs, copy=False)
 
 
 def test_copy(spec_var):
@@ -72,6 +96,109 @@ def test_selection(spectrum):
     spectrum2 = spectrum <= 6
     spectrum[:] = spectrum2
     assert_almost_equal(spectrum.sum()[0], 21.5)
+
+def test_new_obj_from_mpdaf_spectrum():
+    # Créer un objet MPDAF Spectrum pour les tests
+    data1 = np.array([1, 2, 3])
+    variance1 = np.array([0.1, 0.2, 0.3])
+
+    # Create Spectrum object with data and variances
+    spec1 = Spectrum(data=data1, var=variance1)
+
+    # Create WaveCoord object with wavelength coordinate
+    wave_coord = WaveCoord(cdelt=1.0, crval=5000.0, cunit=u.AA, shape=spec1.shape[0])
+
+    # Set unit and wavelength coordinate for Spectrum object
+    spec1.unit = u.erg / u.s / u.cm ** 2 / u.AA
+    spec1.wave = wave_coord
+
+    # Appeler la méthode new_obj_from_mpdaf_spectrum
+    spec1d_mpdaf = Spectrum1D_MPDAF.new_obj_from_mpdaf_spectrum(spec1)
+    # Vérifier que les attributs de l'objet Spectrum1D sont correctement initialisés
+    assert np.allclose(spec1d_mpdaf.flux.value, spec1.data.data)
+    assert np.allclose(spec1d_mpdaf.uncertainty.array, np.sqrt(spec1._var))
+    assert np.allclose(spec1d_mpdaf.spectral_axis, spec1.wave.wcs.pixel_to_world_values(
+        np.arange(u.Quantity(spec1._data, unit=spec1.unit, copy=False).shape[0])) * spec1.wave.unit)
+    assert np.allclose(spec1d_mpdaf.mask, spec1.mask)
+    assert spec1d_mpdaf.shape[0] == spec1.shape[0]
+    assert spec1d_mpdaf.unit == spec1.unit
+    assert spec1d_mpdaf.spectral_axis.unit == spec1.wave.unit
+
+def test_to_mpdaf_spectrum():
+    Vega = Spectrum(get_data_file('obj', 'Vega.fits'))
+    # Appeler la méthode new_obj_from_mpdaf_spectrum
+    spec1d_mpdaf = Spectrum1D_MPDAF.new_obj_from_mpdaf_spectrum(Vega)
+
+    Vega2 = spec1d_mpdaf.to_mpdaf_spectrum()
+
+    assert np.allclose(Vega.data.data, Vega2.data.data)
+    assert Vega.data_header.get('BUNIT') == Vega2.data_header.get('BUNIT')
+    assert Vega.data_header.get('CUNIT1') == Vega2.data_header.get('CUNIT1')
+    assert Vega.data_header == Vega2.data_header
+    assert Vega.dtype == Vega2.dtype
+    assert Vega.filename == Vega2.filename
+
+    assert np.allclose(Vega.ndim, Vega2.ndim)
+
+    assert Vega.primary_header == Vega2.primary_header
+    assert Vega.wcs == Vega2.wcs
+    assert np.allclose(Vega.wave.wcs.pixel_to_world_values(
+        np.arange(u.Quantity(Vega._data, unit=Vega.unit, copy=False).shape[0])) * Vega.wave.unit,Vega.wave.wcs.pixel_to_world_values(
+        np.arange(u.Quantity(Vega2._data, unit=Vega2.unit, copy=False).shape[0])) * Vega2.wave.unit )
+    assert np.allclose(Vega.mask, Vega2.mask)
+    assert Vega.shape[0] == Vega2.shape[0]
+    assert Vega.unit == Vega2.unit
+    assert Vega.wave.unit == Vega2.wave.unit
+    assert Vega2.wave.wcs.printwcs() == Vega.wave.wcs.printwcs()
+    assert Vega2.var == Vega.var
+
+def test_axis_world_coords():
+    # Create synthetic data and variances
+    data1 = np.array([1, 2, 3])
+    variance1 = np.array([0.1, 0.2, 0.3])
+
+    # Create Spectrum object with data and variances
+    spec1 = Spectrum(data=data1, var=variance1)
+
+    # Create WaveCoord object with wavelength coordinate
+    wave_coord = WaveCoord(cdelt=1.0, crval=5000.0, cunit=u.AA, shape=spec1.shape)
+
+    # Set unit and wavelength coordinate for Spectrum object
+    spec1.unit = u.erg / u.s / u.cm ** 2 / u.AA
+    spec1.wave = wave_coord
+    spec1d_mpdaf = Spectrum1D_MPDAF.new_obj_from_mpdaf_spectrum(spec1)
+    spec2 = Spectrum(data=data1, var=variance1)
+    spec2.unit = u.erg / u.s / u.cm ** 2 / u.AA
+    spec2.wave = WaveCoord(cdelt=1.0, crval=5000.0, cunit=u.AA, shape=spec1.shape)
+
+    spec2d = to_spectrum1d(spec2)
+    # Use specutils_method to apply the axis_world_coords method to the Spectrum object
+    world_coords = spec1d_mpdaf.axis_world_coords()
+    excepted_world_coords = spec2d.axis_world_coords()
+
+    assert_almost_equal(world_coords, excepted_world_coords)
+
+
+def test_noise_region_uncertainty():
+    # Define test data
+    data = np.array([1, 2, 3, 4, 5])
+    variance = np.array([0.1, 0.2, 0.1, 0.2, 0.1])
+    spec = Spectrum(data=data, var=variance)
+    spec.unit = u.Unit("erg cm^-2 s^-1 AA^-1")
+    spec.wave = WaveCoord(cdelt=1.0, crval=5000.0, cunit=u.AA, shape=spec.shape)
+
+    regions = [(5000.5 * u.AA, 5001.5 * u.AA), (5003.5 * u.AA, 5004.5 * u.AA)]
+    spectral_region = SpectralRegion(regions)
+
+    spec1d_mpdaf = Spectrum1D_MPDAF.new_obj_from_mpdaf_spectrum(spec)
+    # Calculate the noise region uncertainty
+    noise_uncertainty = noise_region_uncertainty(spec1d_mpdaf, spectral_region)
+
+    # Check that the result is a Quantity with the expected value
+    expected_value = [1, 2, 3, 4, 5] * u.Unit("erg cm^-2 s^-1 AA^-1")
+
+    assert isinstance(noise_uncertainty.flux, u.Quantity)
+    np.testing.assert_allclose(noise_uncertainty.flux, expected_value)
 
 
 def test_arithmetric():
@@ -128,6 +255,7 @@ def test_arithmetric():
     assert_array_almost_equal(cube2.data,
                               sp1data * image1.data[np.newaxis, :, :])
 
+
 def test_arithmetic_pow():
     spectrum1 = generate_spectrum(data=2.3, cdelt=30.0, crval=5)
 
@@ -145,6 +273,7 @@ def test_arithmetic_pow():
     sp_mul = spectrum1 * spectrum1
     test_sp = spectrum1 ** 2
     assert_almost_equal(test_sp.data, sp_mul.data)
+
 
 def test_get_Spectrum(spec_var):
     """Spectrum class: testing getters"""
@@ -227,7 +356,7 @@ def test_crop(spec_var):
     spec_var.mask_region(lmin=6500)
     spec_var.crop()
     assert int((6500 - 5000) / spec_var.get_step(unit=spec_var.wave.unit)) == \
-        spec_var.shape[0]
+           spec_var.shape[0]
 
 
 def test_resample():
@@ -268,13 +397,13 @@ def test_resample():
     gaussians = [(0.5, 12.0, 800.0),
                  (0.7, 5.0, 1200.0),
                  (0.4, 700.0, 1600.0),
-                 (1.5, 2.6, 1980.0),             # Peak before resampling
+                 (1.5, 2.6, 1980.0),  # Peak before resampling
                  (1.2, 2.6, 2000.0),
                  (1.3, 15.0, expected_peak_wave),  # Peak if resampled correctly
                  (1.0, 2.0, 3200.0)]
     for amp, sigma, center in gaussians:
         sigma *= oldstep
-        data += amp * np.exp(-0.5 * ((center - w) / sigma)**2)
+        data += amp * np.exp(-0.5 * ((center - w) / sigma) ** 2)
 
     # Fill the variance array with a simple window function.
     var = np.hamming(oldshape)
@@ -363,7 +492,7 @@ def test_rebin(spec_var, spec_novar):
     factor = 4
     s = slice(0, factor * (spec_var.shape[0] // factor))
     flux1 = spec_var[s].sum(weight=False)[0] * \
-        spec_var[s].wave.get_step(unit=unit)
+            spec_var[s].wave.get_step(unit=unit)
     spvar2 = spec_var.rebin(factor, margin='left')
     flux2 = spvar2.sum(weight=False)[0] * spvar2.wave.get_step(unit=unit)
     assert_almost_equal(flux1, flux2, 2)
@@ -596,9 +725,3 @@ H-alpha 6562.801 6564.614
 
     assert_allclose(vactoair(row['vacuum']), row['air'], atol=1e-2)
 
-
-@pytest.mark.skipif(not HAS_SPECUTILS, reason="requires specutils")
-def test_to_spectrum1d(spec_var):
-    sp = spec_var.to_spectrum1d()
-    assert sp.flux.unit == spec_var.unit
-    assert_allclose(sp.flux.value, spec_var._data)
