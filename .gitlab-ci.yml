@@ -25,14 +25,6 @@ stages:
     - source venv/bin/activate
     - pip install -U tox
 
-py37:
-  extends:
-    - .tox
-  image: python:3.7
-  stage: test
-  script:
-    - tox -v -e py37 -- --pyargs mpdaf
-
 py38:
   extends:
     - .tox
@@ -77,16 +69,16 @@ py311:
 pre:
   extends:
     - .tox
-  image: python:3.7
+  image: python:3.9
   stage: extra
   allow_failure: true
   script:
-    - tox --pre -v -e py37 -- --pyargs mpdaf
+    - tox --pre -v -e py39 -- --pyargs mpdaf
 
 docs:
   extends:
     - .tox
-  image: python:3.7-bullseye
+  image: python:3.9-bullseye
   stage: extra
   script:
     - apt-get update
