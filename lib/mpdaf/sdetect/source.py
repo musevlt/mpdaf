@@ -1809,6 +1809,8 @@ class Source:
         if tags_to_try is not None:
             nb_tags = list(set(tags_to_try) & set(self.images))
             ksel = (object_mask != 0)
+            if ksel.sum() == 0:
+                raise ValueError('object mask has 0 valid pixels')
             for tag in nb_tags:
                 if self.images[tag].wcs.isEqual(wcsref):
                     weight = self.images[tag].data.copy()
