@@ -38,8 +38,10 @@ import fnmatch
 import logging
 import numpy as np
 import os
+import warnings
 
 from astropy.io import fits
+from .util import MpdafUnitsWarning
 
 from ..version import __version__
 
@@ -170,6 +172,8 @@ def copy_header(srchdr, dsthdr=None, exclude=(), unit=None):
             dsthdr['BUNIT'] = (unit.to_string('fits'), 'data unit type')
         except u.format.fits.UnitScaleError:
             dsthdr['BUNIT'] = (fix_unit_write(str(unit)), 'data unit type')
+        except Exception as e:
+                warnings.warn('Error parsing the BUNIT: ' + str(e), MpdafUnitsWarning)
 
     return dsthdr
 
