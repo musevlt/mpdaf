@@ -70,7 +70,7 @@ def _compute_expnb(expmap):
     """Estimate the most frequent exposure number."""
     from scipy import stats
     data = expmap[expmap > 0]
-    mode = stats.mode(data)
+    mode = stats.mode(data, keepdims=True)
     return mode.mode[np.argmax(mode.count)]
 
 
