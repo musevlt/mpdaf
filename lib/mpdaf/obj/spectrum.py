@@ -1419,6 +1419,8 @@ class Spectrum(ArithmeticMixin, DataArray):
             lmax = (lmax[0] + lmax[1]) / 2.
 
         spec = self.subspec(lmin, lmax, unit=unit)
+        if not isinstance(spec, Spectrum):
+            raise ValueError('Gaussian fit outside spectrum wavelength range')
         data = spec._interp_data(spline)
         if unit is None:
             l = np.arange(self.shape, dtype=float)
