@@ -47,7 +47,7 @@ from ..tools import LowercaseOrderedDict
 
 INVALID = {
     type(1): -9999, np.int_: -9999, np.int32: -9999,
-    type(1.0): np.nan, np.float_: np.nan,
+    type(1.0): np.nan, np.float64: np.nan,
     type('1'): '', np.str_: '',
     type(False): -9999, np.bool_: -9999
 }

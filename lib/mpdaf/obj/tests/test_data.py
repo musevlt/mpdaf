@@ -1025,8 +1025,8 @@ def test_shared_masks():
 
     # Add infinite values to currently masked elements of the data
     # and var arrays and create a mask that just masks these values.
-    old_data[0] = np.Inf
-    old_var[1] = np.Inf
+    old_data[0] = np.inf
+    old_var[1] = np.inf
 
     # Create a spectrum DataArray with the above contents.
     template_spec = DataArray(data=old_data, var=old_var, mask=old_mask)
@@ -1462,8 +1462,8 @@ def test_non_masked_data():
 
     # Add infinite values to currently masked elements of the data
     # and var arrays and create a mask that just masks these values.
-    old_data[0] = np.Inf
-    old_var[1] = np.Inf
+    old_data[0] = np.inf
+    old_var[1] = np.inf
 
     # Create a spectrum DataArray with the above contents and explicitly
     # ask for no mask to be created.

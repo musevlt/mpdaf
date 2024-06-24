@@ -1993,16 +1993,16 @@ class Image(ArithmeticMixin, DataArray):
                         * (err_p_width * q_width + err_q_width * p_width)) \
                        / (2 * np.pi * p_width * p_width * q_width * q_width)
         else:
-            err_flux = np.NAN
-            err_p_peak = np.NAN
-            err_p_width = np.NAN
-            err_p_fwhm = np.NAN
-            err_q_peak = np.NAN
-            err_q_width = np.NAN
-            err_q_fwhm = np.NAN
-            err_rot = np.NAN
-            err_peak = np.NAN
-            err_cont = np.NAN
+            err_flux = np.nan
+            err_p_peak = np.nan
+            err_p_width = np.nan
+            err_p_fwhm = np.nan
+            err_q_peak = np.nan
+            err_q_width = np.nan
+            err_q_fwhm = np.nan
+            err_rot = np.nan
+            err_peak = np.nan
+            err_cont = np.nan
 
         if unit_center is not None:
             # Gauss2D object in degrees/arcseconds
@@ -2368,16 +2368,16 @@ class Image(ArithmeticMixin, DataArray):
                             err_cont = 0
                     err_flux = err_I * err_n * err_a * err_a * err_e
         else:
-            err_I = np.NAN
-            err_p_peak = np.NAN
-            err_q_peak = np.NAN
-            err_a = np.NAN
-            err_n = np.NAN
-            err_e = np.NAN
-            err_rot = np.NAN
-            err_cont = np.NAN
-            err_fwhm = (np.NAN, np.NAN)
-            err_flux = np.NAN
+            err_I = np.nan
+            err_p_peak = np.nan
+            err_q_peak = np.nan
+            err_a = np.nan
+            err_n = np.nan
+            err_e = np.nan
+            err_rot = np.nan
+            err_cont = np.nan
+            err_fwhm = (np.nan, np.nan)
+            err_flux = np.nan
 
         if unit_center is None:
             center = (p_peak, q_peak)

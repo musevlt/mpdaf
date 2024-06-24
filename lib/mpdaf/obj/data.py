@@ -352,6 +352,15 @@ class DataArray:
             if mask is ma.nomask:
                 self._mask = mask
 
+            # Adapting to changes in the copy keyword
+            if np.__version__ < '2.0':
+                cpy = copy
+            else:
+                if copy:
+                    cpy = True
+                else:
+                    cpy = None
+            
             # Use a specified numpy data array?
             if data is not None:
                 # Force data to be in double instead of float
@@ -361,28 +370,28 @@ class DataArray:
 
                 if isinstance(data, ma.MaskedArray):
                     self._data = np.array(data.data, dtype=self.dtype,
-                                          copy=copy)
+                                          copy=cpy)
                     if data.mask is ma.nomask:
                         self._mask = data.mask
                     else:
-                        self._mask = np.array(data.mask, dtype=bool, copy=copy)
+                        self._mask = np.array(data.mask, dtype=bool, copy=cpy)
                 else:
-                    self._data = np.array(data, dtype=self.dtype, copy=copy)
+                    self._data = np.array(data, dtype=self.dtype, copy=cpy)
                     if mask is None or mask is False:
                         self._mask = ~(np.isfinite(data))
                     elif mask is True:
                         self._mask = np.ones(shape=data.shape, dtype=bool)
                     elif mask is not ma.nomask:
-                        self._mask = np.array(mask, dtype=bool, copy=copy)
+                        self._mask = np.array(mask, dtype=bool, copy=cpy)
 
             # Use a specified variance array?
             if var is not None:
                 if isinstance(var, ma.MaskedArray):
                     self._var = np.array(var.data, dtype=self._var_dtype,
-                                         copy=copy)
+                                         copy=cpy)
                     self._mask |= var.mask
                 else:
-                    self._var = np.array(var, dtype=self._var_dtype, copy=copy)
+                    self._var = np.array(var, dtype=self._var_dtype, copy=cpy)
 
         # Where WCS and/or wavelength objects are specified as optional
         # parameters, install them.

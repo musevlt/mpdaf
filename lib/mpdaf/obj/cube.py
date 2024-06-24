@@ -1696,16 +1696,16 @@ class Cube(ArithmeticMixin, DataArray):
                 stop = indexes.shape[0]
 
             # Integrate the overal bandpass filter curve.
-            total = integrate.trapz(sensitivities, wavelengths)
+            total = integrate.trapezoid(sensitivities, wavelengths)
 
             # Also integrate over just the truncated parts of the curve.
             lost = 0.0
             if start > 0:
                 s = slice(0, start)
-                lost += integrate.trapz(sensitivities[s], wavelengths[s])
+                lost += integrate.trapezoid(sensitivities[s], wavelengths[s])
             if stop < indexes.shape[0]:
                 s = slice(stop, indexes.shape[0])
-                lost += integrate.trapz(sensitivities[s], wavelengths[s])
+                lost += integrate.trapezoid(sensitivities[s], wavelengths[s])
 
             # Compute the fraction of the integrated bandpass response
             # that has been truncated.

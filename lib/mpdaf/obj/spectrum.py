@@ -1774,14 +1774,14 @@ class Spectrum(ArithmeticMixin, DataArray):
                                 (err_flux_2 * sigma - flux_2 * err_sigma) /
                                 sigma / sigma)
         else:
-            err_flux_1 = np.NAN
-            err_flux_2 = np.NAN
-            err_lpeak_1 = np.NAN
-            err_lpeak_2 = np.NAN
-            err_sigma = np.NAN
-            err_fwhm = np.NAN
-            err_peak_1 = np.NAN
-            err_peak_2 = np.NAN
+            err_flux_1 = np.nan
+            err_flux_2 = np.nan
+            err_lpeak_1 = np.nan
+            err_lpeak_2 = np.nan
+            err_sigma = np.nan
+            err_fwhm = np.nan
+            err_peak_1 = np.nan
+            err_peak_2 = np.nan
 
         return (Gauss1D(lpeak_1, peak_1, flux_1, fwhm, cont0, err_lpeak_1,
                         err_peak_1, err_flux_1, err_fwhm, chisq, dof),
@@ -1968,13 +1968,13 @@ class Spectrum(ArithmeticMixin, DataArray):
                 (err_flux * sigma_right - flux * err_sigma_right) /
                 sigma_right / sigma_right)
         else:
-            err_flux = np.NAN
-            err_lpeak = np.NAN
-            err_sigma_right = np.NAN
-            err_sigma_left = np.NAN
-            err_fwhm_right = np.NAN
-            err_fwhm_left = np.NAN
-            err_peak = np.NAN
+            err_flux = np.nan
+            err_lpeak = np.nan
+            err_sigma_right = np.nan
+            err_sigma_left = np.nan
+            err_fwhm_right = np.nan
+            err_fwhm_left = np.nan
+            err_peak = np.nan
 
         return (Gauss1D(lpeak, peak, flux_left, fwhm_left, cont0, err_lpeak,
                         err_peak, err_flux / 2, err_fwhm_left, chisq, dof),

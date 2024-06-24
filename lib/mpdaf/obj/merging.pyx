@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import numpy as np
 cimport numpy as np
+np.import_array()
 cimport cython
 # from cython.parallel cimport prange
 from libc.stdlib cimport malloc, free
