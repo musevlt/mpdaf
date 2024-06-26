@@ -30,10 +30,10 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
+from importlib.metadata import version
 
-from pkg_resources import get_distribution, DistributionNotFound
 try:
-    __version__ = get_distribution('mpdaf').version
-except DistributionNotFound:
+    __version__ = version('mpdaf')
+except:
     # package is not installed
     __version__ = None

@@ -1002,8 +1002,8 @@ class Image(ArithmeticMixin, DataArray):
         # Record the new value of the coordinate reference pixel,
         # being careful to convert from python 0-relative pixel
         # indexes to FITS 1-relative pixel indexes.
-        self.wcs.set_crpix1(newcrpix[1] + 1)
-        self.wcs.set_crpix2(newcrpix[0] + 1)
+        self.wcs.set_crpix1(newcrpix[1][0] + 1)
+        self.wcs.set_crpix2(newcrpix[0][0] + 1)
 
         # If allowed to reshape the array, crop away any entirely
         # masked margins.
@@ -2976,8 +2976,8 @@ class Image(ArithmeticMixin, DataArray):
         # Record the new value of the coordinate reference pixel,
         # being careful to convert from python 0-relative pixel
         # indexes to FITS 1-relative pixel indexes.
-        wcs.set_crpix1(newcrpix[1] + 1)
-        wcs.set_crpix2(newcrpix[0] + 1)
+        wcs.set_crpix1(newcrpix[1][0] + 1)
+        wcs.set_crpix2(newcrpix[0][0] + 1)
 
         # Install the resampled data, mask and variance arrays, either
         # within self, or in a new Image object.

@@ -1034,7 +1034,7 @@ class PixTable:
                 mask |= numexpr.evaluate('col_sli == s')
             return mask
         else:
-            return np.in1d(col_sli, slices)
+            return np.isin(col_sli, slices)
 
     def select_ifus(self, ifus, origin=None):
         """Return a mask corresponding to given ifus.
@@ -1057,7 +1057,7 @@ class PixTable:
                 mask |= numexpr.evaluate('col_ifu == ifu')
             return mask
         else:
-            return np.in1d(col_ifu, ifus)
+            return np.isin(col_ifu, ifus)
 
     def select_exp(self, exp, col_exp):
         """Return a mask corresponding to given exposure numbers.

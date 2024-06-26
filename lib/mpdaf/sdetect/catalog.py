@@ -746,9 +746,9 @@ class Catalog(Table):
                                 dtype=float))
 
         if full_output:
-            id1notmatch = np.in1d(range(len(self)), id1match,
+            id1notmatch = np.isin(range(len(self)), id1match,
                                   assume_unique=True, invert=True)
-            id2notmatch = np.in1d(range(len(cat2)), id2match,
+            id2notmatch = np.isin(range(len(cat2)), id2match,
                                   assume_unique=True, invert=True)
             nomatch2 = cat2[id2notmatch]
             nomatch1 = self[id1notmatch]

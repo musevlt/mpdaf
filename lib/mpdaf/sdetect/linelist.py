@@ -159,7 +159,7 @@ def get_emlines(iden=None, z=0, vac=True, lbrange=None, margin=25, sel=None,
             if len(em) == 0:
                 return None
         elif isinstance(iden, (list, tuple, np.ndarray)):
-            em = em[np.in1d(em['id'], iden)]
+            em = em[np.isin(em['id'], iden)]
 
     kd = np.where(em['d'] > 0)
     if not restframe:
@@ -193,13 +193,16 @@ def get_emlines(iden=None, z=0, vac=True, lbrange=None, margin=25, sel=None,
         em = em[em['f'] == family]
     if doublet:
         em = em[em['d'] > 0]
+        
+    print(em)
 
     if not table:
         return em
     else:
         return Table(
             data=[em['id'], em['c'], em['tp'], em['s'], em['d'],
-                  em['f'], em['v'], np.chararray.encode(em['n'], 'utf8')],
+                  em['f'], em['v'],
+                  np.asarray([str(name).encode('utf8') for name in em['n']], dtype='|S7')],
             names=['LINE', 'LBDA_OBS', 'TYPE', 'MAIN',
                    'DOUBLET', 'FAMILY', 'VDISP', 'DNAME'],
             masked=True
