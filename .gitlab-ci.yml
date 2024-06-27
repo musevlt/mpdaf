@@ -25,14 +25,6 @@ stages:
     - source venv/bin/activate
     - pip install -U tox
 
-py38:
-  extends:
-    - .tox
-  image: python:3.8
-  stage: test
-  script:
-    - tox -v -e py38 -- --pyargs mpdaf
-
 py39:
   extends:
     - .tox
