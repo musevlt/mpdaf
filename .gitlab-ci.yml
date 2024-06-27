@@ -49,14 +49,6 @@ py310:
   script:
     - tox -v -e py310 -- --pyargs mpdaf
 
-py39-slow:
-  extends:
-    - .tox
-  image: python:3.9
-  stage: test
-  script:
-    - tox -v -e py39 -- -m 'slow' --pyargs mpdaf
-
 py311:
   extends:
     - .tox
@@ -65,20 +57,27 @@ py311:
   script:
     - tox -v -e py311 -- --pyargs mpdaf
 
-
+py311-slow:
+  extends:
+    - .tox
+  image: python:3.11
+  stage: test
+  script:
+    - tox -v -e py311 -- -m 'slow' --pyargs mpdaf
+    
 pre:
   extends:
     - .tox
-  image: python:3.9
+  image: python:3.11
   stage: extra
   allow_failure: true
   script:
-    - tox --pre -v -e py39 -- --pyargs mpdaf
+    - tox --pre -v -e py311 -- --pyargs mpdaf
 
 docs:
   extends:
     - .tox
-  image: python:3.9-bullseye
+  image: python:3.11-bullseye
   stage: extra
   script:
     - apt-get update
