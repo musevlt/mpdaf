@@ -179,8 +179,8 @@ setup(
     long_description=README,
     license='BSD',
     url='https://git-cral.univ-lyon1.fr/MUSE/mpdaf',
-    python_requires='>=3.6',
-    install_requires=['numpy>=1.10.0', 'scipy', 'matplotlib', 'astropy>=1.0','specutils'],
+    python_requires='>=3.9',
+    install_requires=['numpy>=1.10.0', 'scipy>=1.11.0', 'matplotlib', 'astropy>=1.0','specutils'],
     extras_require={
         'all': ['numexpr', 'fitsio', 'adjustText', 'joblib', 'tqdm',
                 'specutils'],
@@ -212,9 +212,6 @@ setup(
         'Programming Language :: C',
         'Programming Language :: Cython',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Scientific/Engineering :: Astronomy',
         'Topic :: Scientific/Engineering :: Physics'
