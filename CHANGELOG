@@ -1,5 +1,37 @@
-3.6dev (XX/XX/XXXX)
+3.6 (28/06/2024)
 -------------------
+
+- Compatibility with NumPy 2.0
+
+- Replace the strict check on BUNIT keyword to a warning in case of not FITS standard
+
+- `mpdaf.sdetect.linelist.extract_spectra` raises an error in case of no valid pixels
+
+- Compatibility with SciPy 1.11.0
+
+- Add of superclass `mpdaf.obj.Spectrum1D_MPDAF` to use specutils method with spectrum of mpdaf
+
+- Improve of the check of the possible data correlation before variance calculation
+
+- Add the pow operator to the data arithmetic
+
+- `mpdaf.obj.Image.write_mask_file` saves the image mask as a FITS file with a primary header containing WCS information
+
+- Rename `mpdaf.obj.Image.fwhm` by `mpdaf.obj.Image.fwhm_gauss`
+
+- Add `mpdaf.obj.Spectrum.to_abmag` function
+
+- Correct bug in `mpdaf.obj.Spectrum.poly_fit` for multiple iterations
+
+- Add parameter extent to `mpdaf.sdetect.Catalog.plot_symb`
+
+- Add option to return fit and residula in `mpdaf.MUSE.MoffatModel2.from_starfit`
+
+- Fix a bug in `mpdaf.obj.Cube.subcube_circle_aperture`
+
+- Fix a bug in sextractor initialization
+
+- Add flag to save segmentation table in source (`mpdaf.sdetect.sea`)
 
 
 3.5 (01/02/2021)
