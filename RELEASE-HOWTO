@@ -3,7 +3,7 @@ Description of the new release procedure
 
 1. Merge gitcral and github
 
-    git remote add git@github.com:musevlt/mpdaf.gitcral
+    git remote add github git@github.com:musevlt/mpdaf.git
     git fetch github
     git merge github/master
     in case of conflict: git add + git commit
