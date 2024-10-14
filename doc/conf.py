@@ -1,7 +1,6 @@
 # mpdaf documentation build configuration file, created by
 # sphinx-quickstart on Fri Jun 22 10:03:09 2012.
 
-import os
 import sys
 import warnings
 from astropy.utils import minversion
@@ -40,7 +39,8 @@ extensions = [
     'numpydoc',
     'IPython.sphinxext.ipython_console_highlighting',
     'sphinx_automodapi.automodapi',
-    'sphinx_automodapi.smart_resolver'
+    'sphinx_automodapi.smart_resolver',
+    'sphinx_rtd_theme'
 ]
 if IPYTHON_LT_7_1:
     # before IPython 7.1 we used our own custom version of the extension
@@ -194,13 +194,7 @@ pygments_style = 'sphinx'
 
 
 # -- Options for HTML output --------------------------------------------------
-
-on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
-
-if not on_rtd:  # only import and set the theme if we're building docs locally
-    import sphinx_rtd_theme
-    html_theme = "sphinx_rtd_theme"
-    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+html_theme = "sphinx_rtd_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
