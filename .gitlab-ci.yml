@@ -83,3 +83,7 @@ docs:
     - apt-get update
     - apt-get install --yes --no-install-recommends graphviz
     - tox -v -e docs
+  artifacts:
+    when: always
+    paths:
+     - doc/build/html
