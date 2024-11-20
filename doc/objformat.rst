@@ -111,19 +111,19 @@ demonstrated below:
   In [4]: plt.figure()
 
   @savefig ObjFormatIma1.png width=2.3in
-  In [5]: ima1.plot(colorbar='v', title = '$\lambda$ = %.1f (%s)' %(cube.wave.coord(1000), cube.wave.unit))
+  In [5]: ima1.plot(colorbar='v', title = r'$\lambda$ = %.1f (%s)' %(cube.wave.coord(1000), cube.wave.unit))
 
   In [6]: ima2 = cube[3000, :, :]
 
   In [7]: plt.figure()
 
   @savefig ObjFormatIma2.png width=2.3in
-  In [8]: ima2.plot(colorbar='v', title = '$\lambda$ = %.1f (%s)' %(cube.wave.coord(3000), cube.wave.unit))
+  In [8]: ima2.plot(colorbar='v', title = r'$\lambda$ = %.1f (%s)' %(cube.wave.coord(3000), cube.wave.unit))
 
   In [7]: plt.figure()
 
   @savefig ObjFormatZommIma2.png width=2.3in
-  In [8]: ima2[5:25, 15:35].plot(colorbar='v',title = 'Zoom $\lambda$ = %.1f (%s)' %(cube.wave.coord(3000), cube.wave.unit))
+  In [8]: ima2[5:25, 15:35].plot(colorbar='v',title = r'Zoom $\lambda$ = %.1f (%s)' %(cube.wave.coord(3000), cube.wave.unit))
 
 In the Image objects extracted from the cube, `Image[p1:p2,q1:q2]
 <mpdaf.obj.Image.__getitem__>` returns a sub-image, `Image[p,q]
