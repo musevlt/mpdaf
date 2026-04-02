@@ -1,14 +1,8 @@
 # mpdaf documentation build configuration file, created by
 # sphinx-quickstart on Fri Jun 22 10:03:09 2012.
 
-import sys
+import importlib.metadata
 import warnings
-from astropy.utils import minversion
-from pkg_resources import get_distribution
-
-IPYTHON_LT_7_1 = not minversion('IPython', '7.1.0')
-
-sys.setrecursionlimit(1500)
 
 # -- Project information -----------------------------------------------------
 
@@ -16,7 +10,7 @@ project = 'MPDAF'
 copyright = '2010-2019, CRAL'
 author = 'MPDAF Team'
 
-release = get_distribution('mpdaf').version
+release = importlib.metadata.version("mpdaf")
 # for example take major/minor
 version = '.'.join(release.split('.')[:2])
 
@@ -38,17 +32,11 @@ extensions = [
     'sphinx.ext.viewcode',
     'numpydoc',
     'IPython.sphinxext.ipython_console_highlighting',
+    'IPython.sphinxext.ipython_directive',
     'sphinx_automodapi.automodapi',
     'sphinx_automodapi.smart_resolver',
     'sphinx_rtd_theme'
 ]
-if IPYTHON_LT_7_1:
-    # before IPython 7.1 we used our own custom version of the extension
-    warnings.warn(
-        "IPython 7.1 or later is required to build the code examples"
-    )
-else:
-    extensions.append('IPython.sphinxext.ipython_directive')
 
 try:
     import matplotlib.sphinxext.plot_directive
