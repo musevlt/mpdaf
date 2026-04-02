@@ -186,7 +186,7 @@ setup(
                 'specutils'],
         'docs': ['sphinx', 'sphinx_rtd_theme', 'sphinx_automodapi',
                  'numpydoc', 'ipython', 'psutil','specutils',
-                 'pickleshare'],
+                 'pickleshare', 'pytest-doctestplus'],
     },
     tests_require=['pytest'],
     package_dir={'': 'lib'},
