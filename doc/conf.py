@@ -33,6 +33,7 @@ extensions = [
     'numpydoc',
     'IPython.sphinxext.ipython_console_highlighting',
     'IPython.sphinxext.ipython_directive',
+    'pytest_doctestplus.sphinx.doctestplus',
     'sphinx_automodapi.automodapi',
     'sphinx_automodapi.smart_resolver',
     'sphinx_rtd_theme'
@@ -55,11 +56,11 @@ intersphinx_mapping = {
     'numpy': ('https://numpy.org/doc/stable/', None),
     'scipy': ('https://docs.scipy.org/doc/scipy/', None),
     'matplotlib': ('https://matplotlib.org/stable/', None),
-    'astropy': ('https://docs.astropy.org/en/stable/', None)
+    'astropy': ('https://docs.astropy.org/en/stable/', None),
+    'ndcube': ('https://docs.sunpy.org/projects/ndcube/en/stable/', None),
 }
 
-# autodoc_default_flags = ['members', 'special-members',
-#                          'inherited-members']
+# autodoc_default_flags = ['members', 'special-members', 'inherited-members']
 autodoc_member_order = 'bysource'
 
 autosummary_generate = True
