@@ -2194,7 +2194,8 @@ def _loop_multiprocessing(self, f, loop_type, cpu=None, verbose=True, **kargs):
     if cpu is not None and cpu < cpu_count:
         cpu_count = cpu
 
-    pool = multiprocessing.Pool(processes=cpu_count)
+    ctx = multiprocessing.get_context('fork')
+    pool = ctx.Pool(processes=cpu_count)
 
     # If the provided function is an Image or Spectru method, get its name
     if (loop_type == 'ima' and _is_method(f, Image)) or \
