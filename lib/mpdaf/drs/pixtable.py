@@ -1631,7 +1631,7 @@ class PixTable:
         # xstart, xstop = xpix.min(), xpix.max()
         # ystart, ystop = ypix.min(), ypix.max()
         image = np.zeros((ystop - ystart + 1,
-                          xstop - xstart + 1), dtype='float') * np.NaN
+                          xstop - xstart + 1), dtype='float') * np.nan
         image[ypix - ystart, xpix - xstart] = col_data
 
         wcs = WCS(crval=(ystart, xstart))
