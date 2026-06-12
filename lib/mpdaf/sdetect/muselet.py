@@ -40,11 +40,9 @@ import multiprocessing as mp
 import shutil
 import subprocess
 import sys
-import time
 import warnings
 
 import numpy as np
-from scipy.ndimage import binary_dilation
 from scipy.spatial import cKDTree
 from astropy.io import fits
 from astropy import table
@@ -52,7 +50,7 @@ import astropy.units as u
 
 from ..obj import Cube, Image
 from ..sdetect import Source, Catalog
-from ..tools import chdir, MpdafUnitsWarning
+from ..tools import MpdafUnitsWarning
 
 __version__ = 3.0
 
@@ -130,11 +128,11 @@ def setup_config_files(dir_, nb=False):
         config_files = CONFIG_FILES_NB
     else:
         config_files = CONFIG_FILES
-    
+
     for config_type in ['sex', 'param', 'conv', 'nnw']:
         f1 = DATADIR / config_files[config_type]
         f2 = dir_ / 'default.{}'.format(config_type)
-        
+
         if not f2.exists():
             shutil.copy(str(f1), str(f2))
             logger.debug("creating file: {}".format(f2))
@@ -242,7 +240,7 @@ def write_bb_images(cube, cube_exp, dir_):
     #don't multiprocess this part, because it uses lots of RAM
 
     logger.info("creating broad-band images")
-        
+
 #    t0_create = time.time()
 
     write_white_image(cube, dir_)
@@ -593,7 +591,7 @@ def run_sex_bb(dir_, config):
     # setup config files in work dir
     setup_config_files(dir_)
 
-    logger.info("running SExtractor on white light and RGB images") 
+    logger.info("running SExtractor on white light and RGB images")
 
     sex_opts = get_sex_opts(config)
     for band in ['white', 'b', 'g', 'r']:
@@ -602,7 +600,7 @@ def run_sex_bb(dir_, config):
                 'im_white.fits,im_{}.fits'.format(band)]
         run_sex_cmd(cmd, dir_)
 
-    logger.debug("combining catalogs") 
+    logger.debug("combining catalogs")
     cat_b = table.Table.read(dir_ / 'cat_b.dat', format='ascii.sextractor')
     cat_g = table.Table.read(dir_ / 'cat_g.dat', format='ascii.sextractor')
     cat_r = table.Table.read(dir_ / 'cat_r.dat', format='ascii.sextractor')
@@ -759,11 +757,11 @@ def load_cat(i_nb, dir_):
     #add extra columns
     #new ID unqiue in whole cube, to be filled later
     id_cube = np.full(n_data, -1, dtype=int)
-    c1 = table.Column(id_cube, name='ID_RAW') 
+    c1 = table.Column(id_cube, name='ID_RAW')
 
     #Z index (i.e. slice+1)
     z_image = np.full(n_data, i_nb, dtype=int)
-    c2 = table.Column(z_image, name='I_Z') 
+    c2 = table.Column(z_image, name='I_Z')
 
     #wavelength, to be filled later
     wave = np.full(n_data, np.nan, dtype=float)
@@ -870,10 +868,10 @@ def clean_raw_catalog(cat, dir_, clean):
     cat = cat[~mask]
     msg = "{} detections remain ({} removed)"
     logger.info(msg.format(np.sum(~mask), np.sum(mask)))
-    
+
 
     logger.info("cleaning detections at edge of cube")
-    #clean detections partially (>10%) outside data 
+    #clean detections partially (>10%) outside data
 
     area_tot = cat['ISOAREA_IMAGE'].astype(float)
     area_bad = cat['NIMAFLAGS_ISO'].astype(float)
@@ -918,7 +916,7 @@ def assign_lines(coord_raw, flux_raw, dist_spatial, dist_spectral, n_cpu=1):
 
         #pick brightest ungrouped line
         i = np.where(mask)[0][np.argmax(flux_raw[mask])]
-        
+
         #find other lines close in xy
         idx_xy = tree_raw_xy.query_ball_point(coord_raw_xy[i], dist_spatial)
 
@@ -927,13 +925,13 @@ def assign_lines(coord_raw, flux_raw, dist_spatial, dist_spectral, n_cpu=1):
 
         #find intersection
         idx = np.array(list(set(idx_xy) & set(idx_z)))
-            
+
         idx = idx[mask[idx]] #find only those unassigned
 
         ids[idx] = id_group
         mask[idx] = False
-        
-        id_group +=1 
+
+        id_group +=1
 
     return ids
 
@@ -956,7 +954,7 @@ def assign_objects(coord_lines, coord_group, flux_lines, max_dist, n_cpu=1):
         #pick brightest ungrouped line
         i = np.where(mask)[0][np.argmax(flux_lines[mask])]
         #i = np.where(mask)[0][0]
-        
+
 
         idx = tree_lines.query_ball_point(coord_lines[i], max_dist)
         idx = np.array(idx)
@@ -965,8 +963,8 @@ def assign_objects(coord_lines, coord_group, flux_lines, max_dist, n_cpu=1):
 
         ids[idx] = id_group
         mask[idx] = False
-        
-        id_group +=1 
+
+        id_group +=1
 
     return ids
 
@@ -1003,7 +1001,7 @@ def find_lines(cat, cube, radius, n_cpu=1):
     mask = np.zeros([len(cat)], dtype=bool)
     for id_ in np.unique(ids):
         m = (ids == id_)
-        fluxes = cat['FLUX'][m] 
+        fluxes = cat['FLUX'][m]
         idx = np.argmax(fluxes)
         id_keep = cat['ID_RAW'][m][idx]
         mask |= (cat['ID_RAW'] == id_keep)
@@ -1047,10 +1045,10 @@ def find_objects(cat, dir_, cube, radius, n_cpu=1):
     coord_cont = np.column_stack([x_cont, y_cont])
     coord_group = coord_cont.copy()
 
-    ids = np.full(len(coord_lines), -1, dtype=int) #dummy 
+    ids = np.full(len(coord_lines), -1, dtype=int) #dummy
 
     for i_iter in range(100): #some not too large number of max iterations
-        
+
         ids_old = ids.copy()
         ids = assign_objects(coord_lines, coord_group, flux_lines, max_dist,
                     n_cpu=n_cpu)
@@ -1107,7 +1105,7 @@ def find_objects(cat, dir_, cube, radius, n_cpu=1):
     dec0 = cube.wcs.get_crval2(unit=u.deg)
 
     for id_obj, coord in zip(uniq_ids, coord_group):
-        
+
         match_cont = np.all(np.isclose(coord_cont, coord), axis=1)
 
         x, y = coord
@@ -1118,21 +1116,21 @@ def find_objects(cat, dir_, cube, radius, n_cpu=1):
         m_lines = cat['ID_OBJ'] == id_obj
         ra = np.mean(cat['RA'][m_lines])
         dec = np.mean(cat['DEC'][m_lines])
-    
+
         row = {
             'ID_OBJ': id_obj,
             'RA': ra,
             'DEC': dec,
             }
-        
+
         if np.sum(match_cont) == 1: #is cont source
             row_bgr = cat_bgr[match_cont]
-            row['MAG_APER_B'] = row_bgr['MAG_APER_B'] 
-            row['MAGERR_APER_B'] = row_bgr['MAGERR_APER_B'] 
-            row['MAG_APER_G'] = row_bgr['MAG_APER_G'] 
-            row['MAGERR_APER_G'] = row_bgr['MAGERR_APER_G'] 
-            row['MAG_APER_R'] = row_bgr['MAG_APER_R'] 
-            row['MAGERR_APER_R'] = row_bgr['MAGERR_APER_R'] 
+            row['MAG_APER_B'] = row_bgr['MAG_APER_B']
+            row['MAGERR_APER_B'] = row_bgr['MAGERR_APER_B']
+            row['MAG_APER_G'] = row_bgr['MAG_APER_G']
+            row['MAGERR_APER_G'] = row_bgr['MAGERR_APER_G']
+            row['MAG_APER_R'] = row_bgr['MAG_APER_R']
+            row['MAGERR_APER_R'] = row_bgr['MAGERR_APER_R']
 
         elif np.sum(match_cont) == 0:
             row['MAG_APER_B'] = np.nan
@@ -1143,7 +1141,7 @@ def find_objects(cat, dir_, cube, radius, n_cpu=1):
             row['MAGERR_APER_R'] = np.nan
 
         else: #this really shouldn't have happened, something went very wrong
-            raise Exception 
+            raise Exception
 
         cat_obj.add_row(row)
 
@@ -1160,7 +1158,7 @@ def get_mask_minsize(mask, center):
     max_dist = np.max(np.abs(obj_coord_pix), axis=0)
 
     pix_size = mask.wcs.get_step(unit=u.arcsec)
-    
+
     size = 2. * np.ceil(max_dist) + 1.
     size = np.max(size * pix_size)
 
@@ -1341,7 +1339,7 @@ def write_object_source_single(row_obj, rows_lines, dir_, cube, ima_size,
 
 def write_line_source_multi(row, dir_, file_cube, ima_size):
     """Wrapper for multiprocessing write_line_source_single"""
-    
+
     cube = Cube(str(file_cube))
     write_line_source_single(row, dir_, cube, ima_size)
 
@@ -1349,7 +1347,7 @@ def write_line_source_multi(row, dir_, file_cube, ima_size):
 def write_object_source_multi(row_obj, rows_lines, dir_, file_cube, ima_size,
         nlines_max):
     """Wrapper for multiprocessing write_object_source_single"""
-    
+
     cube = Cube(str(file_cube))
 
     write_object_source_single(row_obj, rows_lines, dir_, cube, ima_size,
@@ -1360,7 +1358,7 @@ def write_object_source_multi(row_obj, rows_lines, dir_, file_cube, ima_size,
 def write_line_sources(cat_lines, dir_, cube, ima_size, n_cpu=1):
 
     logger = logging.getLogger(__name__)
-    
+
     logger.info("creating line source files using {} CPU".format(n_cpu))
 
     #remove any existing files
@@ -1617,7 +1615,7 @@ def muselet(file_cube, file_expmap=None, step=1, delta=20,
                 dir_=workdir, n_cpu=n_cpu)
 
     if step <= 3:
-        step3(file_cube, clean=clean, skyclean=skyclean, radius=radius, 
+        step3(file_cube, clean=clean, skyclean=skyclean, radius=radius,
                 ima_size=ima_size, nlines_max=nlines_max, dir_=workdir,
                 n_cpu=n_cpu)
 

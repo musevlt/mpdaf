@@ -48,16 +48,15 @@ import shutil
 import warnings
 
 from astropy.io import fits as pyfits
-from astropy.table import Table, MaskedColumn, Column, vstack
+from astropy.table import Table, MaskedColumn, vstack
 from functools import partial
 from numpy import ma
-from scipy.optimize import leastsq
 
 from ..obj import Cube, Image, Spectrum, vactoair, airtovac, plot_rgb
 from ..obj.objs import is_int, is_float, bounding_box
 from ..tools import MpdafWarning
 from ..MUSE import FieldsMap, FSFModel, MoffatModel2
-from ..MUSE.PSF import MOFFAT1, create_psf_cube
+from ..MUSE.PSF import create_psf_cube
 from ..sdetect.sea import (segmentation, findCentralDetection,
                            union, intersection, compute_optimal_spectrum)
 
@@ -1490,7 +1489,7 @@ class Source:
                                             median_filter=median_filter,
                                             unit_wave=u.angstrom)
 
-    def add_seg_images(self, tags=None, DIR=None, del_sex=True,  
+    def add_seg_images(self, tags=None, DIR=None, del_sex=True,
                        save_seg_table=False, outdir='./', debug=False,):
         """Run SExtractor on all images to create segmentation maps.
 

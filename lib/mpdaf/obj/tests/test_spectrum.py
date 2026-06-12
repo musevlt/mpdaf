@@ -57,14 +57,12 @@ except ImportError:
 else:
     HAS_SPECUTILS = True
 
-from specutils import Spectrum1D
 from specutils import SpectralRegion
 from specutils.manipulation import noise_region_uncertainty
 
 
 def to_spectrum1d(spec, unit_wave=u.angstrom):
     """Return a ``specutils.Spectrum1D`` object."""
-    from astropy.nddata import StdDevUncertainty
     try:
         from specutils import Spectrum1D
     except ImportError:

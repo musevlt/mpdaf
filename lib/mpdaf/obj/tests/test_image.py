@@ -37,7 +37,7 @@ import numpy as np
 import pytest
 import scipy.ndimage as ndi
 
-from mpdaf.obj import Image, WCS, gauss_image, moffat_image, DataArray
+from mpdaf.obj import Image, WCS, gauss_image, moffat_image
 from numpy.testing import (assert_array_equal, assert_allclose,
                            assert_almost_equal, assert_equal,
                            assert_array_almost_equal)
@@ -169,7 +169,7 @@ def test_write_mask_file(tmpdir):
     header['CDELT2'] = 0.1
     image1.header = header
     image1.wcs = WCS(header)
-    
+
     # Get the mask file
     testfile = str(tmpdir.join('test.fits'))
     for invert in [True, False]:

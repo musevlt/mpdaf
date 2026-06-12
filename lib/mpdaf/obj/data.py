@@ -360,7 +360,7 @@ class DataArray:
                     cpy = True
                 else:
                     cpy = None
-            
+
             # Use a specified numpy data array?
             if data is not None:
                 # Force data to be in double instead of float
@@ -397,7 +397,7 @@ class DataArray:
         # parameters, install them.
         self.set_wcs(wcs=kwargs.pop('wcs', None),
                      wave=kwargs.pop('wave', None))
-        
+
 
     def __getstate__(self):
         state = self.__dict__.copy()

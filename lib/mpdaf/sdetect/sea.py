@@ -56,7 +56,7 @@ import os
 import shutil
 import subprocess
 import warnings
-import re, unicodedata
+import unicodedata
 
 import tempfile
 
@@ -233,14 +233,14 @@ def segmentation(source, tags, DIR, remove, save_seg_table=False, outdir='./', d
 
     maps = {}
     tabs = {}
-    
+
     istemp = False
     if outdir is None:
         istemp = True
         tempdir = tempfile.TemporaryDirectory()
         outdir = tempdir.name
         logger.debug('Creating temporary directory: %s', outdir)
-        
+
     setup_config_files(DIR, outdir=outdir)
     # size in arcsec
     for tag in tags:
@@ -280,7 +280,7 @@ def segmentation(source, tags, DIR, remove, save_seg_table=False, outdir='./', d
                     cwd=outdir,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
-                ) 
+                )
         process_output, _ =  command_line_process.communicate()
         if debug:
             for p in process_output.splitlines():
@@ -318,7 +318,7 @@ def segmentation(source, tags, DIR, remove, save_seg_table=False, outdir='./', d
         if save_seg_table:
             for tag, tab in tabs.items():
                 source.tables['SEG_' + tag] = tab
-    
+
     # remove temporary directory
     if istemp and (not debug):
         tempdir.cleanup()

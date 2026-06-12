@@ -2539,7 +2539,7 @@ class Spectrum1D_MPDAF(Spectrum1D):
         super().__init__(flux=flux, spectral_axis=spectral_axis, wcs=wcs,
                          velocity_convention=velocity_convention, rest_value=rest_value, redshift=redshift,
                          radial_velocity=radial_velocity, bin_specification=bin_specification, **kwargs)
-        
+
         self._data_ext = data_ext
         self._var_ext = var_ext
         self._dq_ext = dq_ext
