@@ -1,6 +1,27 @@
 [build-system]
-requires = ["setuptools",
-            "wheel",
-            "numpy>=2.0.0rc1",
-            "Cython"]
+requires = ["setuptools>=77.0.0", "numpy>=2.0.0", "cython>=3.0.0, <4"]
 build-backend = 'setuptools.build_meta'
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["lib"]
+norecursedirs = [
+    ".*",
+    "docs[\\/]_build",
+    "docs[\\/]generated",
+    "astropy[\\/]extern",
+    "astropy[\\/]_dev",
+]
+addopts = [
+    "--doctest-modules",
+    "--strict-config",
+    "--strict-markers",
+]
+filterwarnings = [
+    # action:message:category:module:lineno
+    # "error",
+    "ignore::astropy.io.fits.verify.VerifyWarning",
+    "ignore::astropy.units.UnitsWarning",
+    "ignore::astropy.wcs.FITSFixedWarning",
+]
+markers = ["slow"]
