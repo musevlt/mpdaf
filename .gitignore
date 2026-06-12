@@ -20,3 +20,4 @@ lib/mpdaf/data/extern
 lib/mpdaf/obj/merging.c
 pip-wheel-metadata/
 tox.ini
+_version.py

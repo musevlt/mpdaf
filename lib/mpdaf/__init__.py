@@ -39,7 +39,7 @@ if sys.version_info[:2] < (3, 5):
 
 from . import drs, MUSE, obj, sdetect, tools  # noqa: F401
 from .log import setup_logging, setup_logfile, clear_loggers  # noqa: F401
-from .version import __version__  # noqa: F401
+from ._version import __version__  # noqa: F401
 
 """The maximum number of processes that should be started by
 multiprocessing MPDAF functions. By default this is zero, which

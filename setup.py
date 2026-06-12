@@ -145,8 +145,6 @@ print('Configuration done, now running setup() ...\n')
 
 setup(
     name='mpdaf',
-    use_scm_version=True,
-    setup_requires=['setuptools_scm', 'numpy>=1.10.0'],
     maintainer='Laure Piqueras',
     maintainer_email='laure.piqueras@univ-lyon1.fr',
     description='MUSE Python Data Analysis Framework is a python framework '
