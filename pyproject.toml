@@ -25,3 +25,18 @@ filterwarnings = [
     "ignore::astropy.wcs.FITSFixedWarning",
 ]
 markers = ["slow"]
+
+[tool.ruff.lint]
+select = [
+  "E", "F", "W", # flake8
+  # "I",           # isort
+  # "UP",          # pyupgrade
+]
+ignore = [
+    "E501", # Line too long
+    "E731", # lambda-assignment
+    "E741", # ambiguous-variable-name
+]
+unfixable = [
+  "F841", # Removes unused variables
+]
