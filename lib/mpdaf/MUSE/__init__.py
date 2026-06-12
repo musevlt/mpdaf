@@ -31,7 +31,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from .fsf import *
-from .PSF import LSF, FSF, get_FSF_from_cube_keywords, create_psf_cube
-from .slicer import Slicer
-from .FieldsMap import FieldsMap
+from .fsf import *  # noqa: F403
+from .PSF import LSF, FSF, get_FSF_from_cube_keywords, create_psf_cube  # noqa: F401
+from .slicer import Slicer  # noqa: F401
+from .FieldsMap import FieldsMap  # noqa: F401

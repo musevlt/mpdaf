@@ -123,17 +123,17 @@ def test_arithmetic_errors(cube):
     image1 = generate_image(wcs=cube.wcs)
     image1.wcs.set_crval1(10)
     with pytest.raises(ValueError):
-        cube2 = image1 + cube
+        _ = image1 + cube
 
     spectrum1 = generate_spectrum(wave=cube.wave)
     spectrum1.wave.set_crval(25)
     with pytest.raises(ValueError):
-        cube2 = spectrum1 + cube
+        _ = spectrum1 + cube
 
     spectrum1 = generate_spectrum(wave=cube.wave)
     spectrum1.wave.shape = 12
     with pytest.raises(ValueError):
-        cube2 = spectrum1 + cube
+        _ = spectrum1 + cube
 
 
 def test_arithmetic_variance(cube):

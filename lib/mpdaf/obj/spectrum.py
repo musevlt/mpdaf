@@ -430,7 +430,7 @@ class Spectrum(ArithmeticMixin, DataArray):
                     weight = np.empty(self.shape + 2, dtype=float)
                     weight[1:-1] = _weight
                 else:
-                    ksel = np.where(self.mask == False)
+                    ksel = np.where(~self.mask)
                     weight = np.empty(np.shape(ksel)[1] + 2)
                     weight[1:-1] = _weight[ksel]
                 weight[0] = weight[1]

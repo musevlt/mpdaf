@@ -70,9 +70,6 @@ def test_add_in_images():
     cube1 = generate_cube(uwave=u.nm)
     image1 = generate_image(data=6.0, wcs=cube1.wcs, unit=2 * u.ct)
 
-    cube2 = generate_cube(uwave=u.nm)
-    image2 = generate_image(data=2.0, wcs=cube2.wcs, unit=2 * u.ct)
-
     # Test de l'addition de deux images identiques
     test = image1 + image1
     mul = image1 * 2

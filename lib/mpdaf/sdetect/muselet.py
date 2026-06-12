@@ -101,7 +101,7 @@ def get_cmd_sex(silent=True):
             res = subprocess.run([cmd, '-v'], stdout=subprocess.PIPE,
                     check=True)
             version = res.stdout.decode('utf-8', errors='ignore').strip()
-        except:
+        except Exception:
             pass
         else:
             break
@@ -113,7 +113,7 @@ def get_cmd_sex(silent=True):
             res = subprocess.run(['which', cmd], stdout=subprocess.PIPE)
             which = res.stdout.decode('utf-8', errors='ignore').strip()
             logger.debug('[{}] {}'.format(which, version))
-        except:
+        except Exception:
             logger.debug('{}'.format(version))
 
     return cmd
@@ -1109,8 +1109,8 @@ def find_objects(cat, dir_, cube, radius, n_cpu=1):
         match_cont = np.all(np.isclose(coord_cont, coord), axis=1)
 
         x, y = coord
-        ra_old = x / 3600. / np.cos(np.radians(dec0)) + ra0
-        dec_old = y / 3600. + dec0
+        # ra_old = x / 3600. / np.cos(np.radians(dec0)) + ra0
+        # dec_old = y / 3600. + dec0
 
         #get mean from mean of lines
         m_lines = cat['ID_OBJ'] == id_obj

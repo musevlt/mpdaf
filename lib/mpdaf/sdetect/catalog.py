@@ -345,12 +345,12 @@ class Catalog(Table):
             keys = list(h.keys())
             row = []
             for key, typ in zip(names_hdr, dtype_hdr):
-                if typ == type('1'):
+                if typ is type('1'):
                     row += [('%s' % h[key]).replace('\n', ' ')
                             if key in keys else INVALID[typ]]
                 else:
                     k = [h[key] if key in keys else INVALID[typ]]
-                    if type(k[0]) == type('1'):
+                    if type(k[0]) is type('1'):
                         raise ValueError('column %s: could not convert string to %s' % (key, typ))
                     row += k
 

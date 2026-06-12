@@ -1513,9 +1513,9 @@ class PixTable:
         yc = self.yc  # NOQA
         if self.projection == 'projected':  # spheric coordinates
             phi = xpos  # NOQA
-            theta = numexpr.evaluate("ypos + pi/2")
-            dp = numexpr.evaluate("yc * pi / 180")
-            ra = numexpr.evaluate("arctan2(cos(theta) * sin(phi), sin(theta) * cos(dp) + cos(theta) * sin(dp) * cos(phi)) * 180 / pi")
+            theta = numexpr.evaluate("ypos + pi/2") # noqa: F841
+            dp = numexpr.evaluate("yc * pi / 180") # noqa: F841
+            ra = numexpr.evaluate("arctan2(cos(theta) * sin(phi), sin(theta) * cos(dp) + cos(theta) * sin(dp) * cos(phi)) * 180 / pi") # noqa: F841
             xpos_sky = numexpr.evaluate("xc + ra")
             ypos_sky = numexpr.evaluate("arcsin(sin(theta) * sin(dp) - cos(theta) * cos(dp) * cos(phi)) * 180 / pi")
         else:

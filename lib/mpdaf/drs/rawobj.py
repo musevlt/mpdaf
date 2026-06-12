@@ -202,7 +202,7 @@ class Channel:
         out : float
         """
         ima = self.get_image_just_overscan(det_out)
-        ksel = np.where(ima.data.mask == False)
+        ksel = np.where(~ima.data.mask)
         return np.median(ima.data.data[ksel])
 
     def get_trimmed_image(self, det_out=None, bias=False):
@@ -226,7 +226,7 @@ class Channel:
             det_list = [det_out] if isinstance(det_out, int) else range(1, 5)
             for det in det_list:
                 sy, sx = self._get_detector_indices(det, with_prescan=True)
-                ksel = np.where(self.mask[sy, sx] == True)
+                ksel = np.where(self.mask[sy, sx])
                 bias_level = np.median(work.data[sy, sx][ksel])
                 work[sy, sx] = work[sy, sx] - bias_level
 

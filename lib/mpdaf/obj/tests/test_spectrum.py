@@ -48,7 +48,6 @@ from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_almost_equal, assert_allclose)
 
 from mpdaf.tests.utils import (get_data_file, generate_spectrum)
-from mpdaf.obj.coords import WaveCoord
 
 try:
     import specutils  # noqa

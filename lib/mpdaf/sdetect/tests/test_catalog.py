@@ -131,7 +131,7 @@ def test_match():
     assert len(match) == 4
     assert len(nomatch1) == 6
     assert len(nomatch2) == 16
-    assert type(nomatch2) == type(c2)
+    assert type(nomatch2) is type(c2)
 
 
 def test_match3Dline():
@@ -240,7 +240,7 @@ def test_meta():
 
     match, nomatch1, nomatch2 = c1.match(c2, full_output=True)
     assert len(match) == 10
-    assert type(match.meta) == type(c1.meta)
+    assert type(match.meta) is type(c1.meta)
 
     assert match.meta['idname'] == 'ID'
     assert match.meta['idname_1'] == 'ID'
@@ -271,7 +271,7 @@ def test_join_meta():
 
     join = c1.join(c2, keys=['ID'])  # join on id
     assert len(join) == 10
-    assert type(join.meta) == type(c1.meta)
+    assert type(join.meta) is type(c1.meta)
 
     assert join.meta['idname'] == 'ID'
     assert join.meta['raname'] == 'RA_1'

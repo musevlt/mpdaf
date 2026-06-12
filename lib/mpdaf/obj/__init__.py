@@ -31,14 +31,14 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from .coords import *
-from .cube import *
-from .cubelist import *
-from .data import *
-from .fitting import *
-from .image import *
-from .masking import *
-from .objs import *
-from .plot import *
-from .spectrum import *
-from .wavelet1D import *
+from .coords import *  # noqa: F403
+from .cube import *  # noqa: F403
+from .cubelist import *  # noqa: F403
+from .data import *  # noqa: F403
+from .fitting import *  # noqa: F403
+from .image import *  # noqa: F403
+from .masking import *  # noqa: F403
+from .objs import *  # noqa: F403
+from .plot import *  # noqa: F403
+from .spectrum import *  # noqa: F403
+from .wavelet1D import *  # noqa: F403

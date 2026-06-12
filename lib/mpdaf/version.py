@@ -34,6 +34,6 @@ from importlib.metadata import version
 
 try:
     __version__ = version('mpdaf')
-except:
+except Exception:
     # package is not installed
     __version__ = None
