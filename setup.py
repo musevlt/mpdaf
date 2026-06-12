@@ -42,7 +42,6 @@ import sys
 
 from setuptools import setup, find_packages, Extension
 from setuptools.command.build_ext import build_ext
-from setuptools.command.test import test as TestCommand
 
 # Check if Cython is available
 try:
@@ -69,20 +68,6 @@ else:
     print('Found pkg-config {}'.format(out.strip('\n')))
     del out
     HAVE_PKG_CONFIG = True
-
-
-class PyTest(TestCommand):
-    user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
-
-    def initialize_options(self):
-        TestCommand.initialize_options(self)
-        self.pytest_args = []
-
-    def run_tests(self):
-        # import here, cause outside the eggs aren't loaded
-        import pytest
-        errno = pytest.main(self.pytest_args)
-        sys.exit(errno)
 
 
 def use_openmp():
@@ -194,7 +179,7 @@ setup(
     zip_safe=False,
     include_package_data=True,
     platforms='any',
-    cmdclass={'test': PyTest, 'build_ext': build_ext},
+    cmdclass={'build_ext': build_ext},
     entry_points={
         'console_scripts': [
             'make_white_image = mpdaf.scripts.make_white_image:main',
