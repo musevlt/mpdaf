@@ -40,17 +40,9 @@ import os
 import subprocess
 import sys
 
+from Cython.Build import cythonize
 from setuptools import setup, find_packages, Extension
 from setuptools.command.build_ext import build_ext
-
-# Check if Cython is available
-try:
-    from Cython.Build import cythonize
-except ImportError:
-    HAVE_CYTHON = False
-else:
-    HAVE_CYTHON = True
-    print('Cython detected, building from sources.')
 
 # Check if pkg-config is available
 try:
@@ -130,10 +122,9 @@ def options(*packages, **kw):
 with open('README.rst') as f:
     README = f.read()
 
-ext = '.pyx' if HAVE_CYTHON else '.c'
 ext_modules = [
     Extension('obj.merging',
-              ['src/tools.c', './lib/mpdaf/obj/merging' + ext],
+              ['src/tools.c', './lib/mpdaf/obj/merging.pyx'],
               include_dirs=[numpy.get_include()]),
 ]
 
@@ -147,9 +138,8 @@ if HAVE_PKG_CONFIG:
     except Exception:
         pass
 
-if HAVE_CYTHON:
-    ext_modules = cythonize(ext_modules,
-                            compiler_directives={'language_level': 3})
+ext_modules = cythonize(ext_modules,
+                        compiler_directives={'language_level': 3})
 
 print('Configuration done, now running setup() ...\n')
 
