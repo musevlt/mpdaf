@@ -46,7 +46,7 @@ from os.path import join, abspath, dirname
 from scipy import interpolate, signal
 from scipy.optimize import leastsq
 from astropy.constants import c as C
-from specutils import Spectrum1D
+from specutils import Spectrum as Spectrum1D
 
 from . import ABmag_filters, wavelet1D, WaveCoord
 from .arithmetic import ArithmeticMixin
