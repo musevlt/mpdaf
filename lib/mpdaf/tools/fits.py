@@ -43,7 +43,7 @@ import warnings
 from astropy.io import fits
 from .util import MpdafUnitsWarning
 
-from ..version import __version__
+from .._version import __version__
 
 __all__ = ('add_mpdaf_method_keywords', 'add_mpdaf_keywords_to_file',
            'fix_unit_read', 'fix_unit_write', 'copy_header', 'copy_keywords',

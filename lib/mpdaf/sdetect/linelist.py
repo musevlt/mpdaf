@@ -43,12 +43,12 @@ from ..obj import airtovac  # noqa - for backward compatibility
 __all__ = ['get_emlines', 'z_from_linepos']
 
 # list of useful emission lines
-# name (id), vacuum wave A (c), line type (em/is) (tp), 
+# name (id), vacuum wave A (c), line type (em/is) (tp),
 # main line(1/0) (s), doublet (average/0) (d)
 # line family (0=abs, 1=Balmer, 2=Forbidden, 3=Resonant) (f)
 # vdisp (0/1) (v), display name (n)
 emlines = np.array([
-    ('LYALPHA',  1215.67, 'em', 1,      0, 3, 0, "Lyα"),   
+    ('LYALPHA',  1215.67, 'em', 1,      0, 3, 0, "Lyα"),
     ('NV1238',  1238.82, 'em', 0, 1240.8, 2, 0, None), # NV
     ('NV1243',  1242.80, 'em', 0, 1240.8, 2, 0, "NV"),
     ('SiII1260', 1260.42, 'is', 0,      0, 0, 0, "Siɪɪ"),
@@ -69,8 +69,8 @@ emlines = np.array([
     ('AL1862',   1862.17, 'is', 0,      0, 0, 0, "Alɪɪɪ"),
     ('CIII1907', 1906.68, 'em', 1, 1907.7, 2, 0, None), #CIII]
     ('CIII1909', 1908.73, 'em', 1, 1907.7, 2, 0, "Cɪɪɪ]"),
-    ('CII2324',  2324.21, 'em', 0, 2326.0, 2, 0, None), #CII 
-    ('CII2326',  2326.11, 'em', 0, 2326.0, 2, 0, "Cɪɪ]"), 
+    ('CII2324',  2324.21, 'em', 0, 2326.0, 2, 0, None), #CII
+    ('CII2326',  2326.11, 'em', 0, 2326.0, 2, 0, "Cɪɪ]"),
     ('CII2328',  2327.64, 'em', 0, 2326.0, 2, 0, None), # CII
     ('CII2329',  2328.84, 'em', 0, 2326.0, 2, 0, None), # CII
     ('FEII2344', 2344.21, 'is', 0,      0, 0, 0, None), #FeII
@@ -184,7 +184,7 @@ def get_emlines(iden=None, z=0, vac=True, lbrange=None, margin=25, sel=None,
             em = em[(em['c']*(1+z) < exlbrange[0]) | (em['c']*(1+z) > exlbrange[1])]
         else:
             em = em[(em['c'] < exlbrange[0]) | (em['c'] > exlbrange[1])]
-        
+
     if sel is not None:
         em = em[em['s'] == sel]
     if ltype is not None:
@@ -193,7 +193,7 @@ def get_emlines(iden=None, z=0, vac=True, lbrange=None, margin=25, sel=None,
         em = em[em['f'] == family]
     if doublet:
         em = em[em['d'] > 0]
-        
+
     print(em)
 
     if not table:

@@ -101,7 +101,7 @@ def _check_proportionality(a, b, tol=1e-5):
     # Divide the image arrays
     quotient = np.divide(a[sel], b[sel])
     # Calculate the standard deviation of the division
-    std_dev = np.nanstd(quotient)
+    # std_dev = np.nanstd(quotient)
 
     # Check if the standard deviation is different from zero with the specified tol
     if abs(np.std(quotient)) > tol * np.median(quotient) :

@@ -1,6 +1,138 @@
 [build-system]
-requires = ["setuptools",
-            "wheel",
-            "numpy>=2.0.0rc1",
-            "Cython"]
+requires = [
+    "setuptools>=77.0.0",
+    "setuptools_scm>=8.0.0",
+    "extension-helpers==1.*",
+    "numpy>=2.0.0",
+    "cython>=3.0.0, <4"
+]
 build-backend = 'setuptools.build_meta'
+
+[project]
+name = "mpdaf"
+authors = [
+    {name = "Laure Piqueras", email = "laure.piqueras@univ-lyon1.fr"},
+    {name = "Simon Conseil", email = "simon.conseil@univ-lyon1.fr"},
+]
+description = "Framework for MUSE data analysis"
+readme = "README.rst"
+requires-python = ">=3.11"
+keywords = ["astronomy", "astrophysics", "science", "muse", "vlt", "cube",
+            "image", "spectrum"]
+license = "BSD-3-Clause"
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: Physics"
+]
+dependencies = [
+    "astropy",
+    "matplotlib",
+    "numpy>=2.0",
+    "scipy>=1.13",
+    "specutils>=2.0.0",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+all = ["adjustText", "fitsio", "joblib", "numexpr", "regions", "tqdm"]
+docs = [
+    "ipython",
+    "numpydoc",
+    "pickleshare",
+    "psutil",
+    "pytest-doctestplus",
+    "sphinx",
+    "sphinx_automodapi",
+    "sphinx_rtd_theme",
+]
+tests = ["pytest", "pytest-cov", "pytest-remotedata"]
+
+[project.scripts]
+make_white_image = "mpdaf.scripts.make_white_image:main"
+
+[project.urls]
+documentation = "https://mpdaf.readthedocs.io"
+gitlab = "https://git-cral.univ-lyon1.fr/MUSE/mpdaf"
+github = "https://github.com/musevlt/mpdaf"
+
+[tool.setuptools.packages.find]
+where = ["lib"]
+
+[tool.setuptools.package-data]
+mpdaf = ["data/**"]
+"mpdaf.drs" = ["mumdatMask_1x1/PAE_July2013.fits.gz"]
+"mpdaf.obj" = ["filters/filter_list.fits"]
+"mpdaf.sdetect" = ["muselet_data/*", "sea_data/*"]
+
+[tool.setuptools_scm]
+version_file = "lib/mpdaf/_version.py"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["lib"]
+norecursedirs = [
+    ".*",
+    "docs[\\/]_build",
+    "docs[\\/]generated",
+    "astropy[\\/]extern",
+    "astropy[\\/]_dev",
+]
+addopts = [
+    "--doctest-modules",
+    "--strict-config",
+    "--strict-markers",
+]
+filterwarnings = [
+    # action:message:category:module:lineno
+    # "error",
+    "ignore::astropy.io.fits.verify.VerifyWarning",
+    "ignore::astropy.units.UnitsWarning",
+    "ignore::astropy.wcs.FITSFixedWarning",
+]
+markers = ["slow"]
+
+[tool.ruff.lint]
+select = [
+  "E", "F", "W", # flake8
+  # "I",           # isort
+  # "UP",          # pyupgrade
+]
+ignore = [
+    "E501", # Line too long
+    "E731", # lambda-assignment
+    "E741", # ambiguous-variable-name
+]
+unfixable = [
+  "F841", # Removes unused variables
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["mpdaf"]
+
+[tool.coverage.run]
+source = ["mpdaf"]
+omit = [
+    "*/mpdaf/__init__*",
+    "*/mpdaf/**/conftest.py",
+    "*/mpdaf/**/setup*",
+    "*/mpdaf/**/tests/*",
+    "*/mpdaf/_version*",
+    "*/mpdaf/scripts/update_license.py",
+]
+
+[tool.coverage.paths]
+source = ["lib", "*/site-packages"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "except KeyboardInterrupt",
+    "except ImportError",
+]

@@ -46,7 +46,7 @@ from os.path import join, abspath, dirname
 from scipy import interpolate, signal
 from scipy.optimize import leastsq
 from astropy.constants import c as C
-from specutils import Spectrum1D
+from specutils import Spectrum as Spectrum1D
 
 from . import ABmag_filters, wavelet1D, WaveCoord
 from .arithmetic import ArithmeticMixin
@@ -430,7 +430,7 @@ class Spectrum(ArithmeticMixin, DataArray):
                     weight = np.empty(self.shape + 2, dtype=float)
                     weight[1:-1] = _weight
                 else:
-                    ksel = np.where(self.mask == False)
+                    ksel = np.where(~self.mask)
                     weight = np.empty(np.shape(ksel)[1] + 2)
                     weight[1:-1] = _weight[ksel]
                 weight[0] = weight[1]
@@ -2539,7 +2539,7 @@ class Spectrum1D_MPDAF(Spectrum1D):
         super().__init__(flux=flux, spectral_axis=spectral_axis, wcs=wcs,
                          velocity_convention=velocity_convention, rest_value=rest_value, redshift=redshift,
                          radial_velocity=radial_velocity, bin_specification=bin_specification, **kwargs)
-        
+
         self._data_ext = data_ext
         self._var_ext = var_ext
         self._dq_ext = dq_ext

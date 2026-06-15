@@ -38,7 +38,7 @@ from mpdaf.tests.utils import get_data_file
 
 from mpdaf.tools.fits import (copy_header, add_mpdaf_method_keywords,
                               add_mpdaf_keywords_to_file)
-from mpdaf.version import __version__
+from mpdaf._version import __version__
 
 REFHDR = """\
 HIERARCH MPDAF METH1 VERSION = '{0}\\s*' / MPDAF version

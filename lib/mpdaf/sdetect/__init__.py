@@ -31,9 +31,9 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from .catalog import Catalog
-from .source import *
-from .linelist import *
-from .muselet import muselet
-from .sea import *
-from .segmap import *
+from .catalog import Catalog  # noqa: F401
+from .source import *  # noqa: F403
+from .linelist import *  # noqa: F403
+from .muselet import muselet  # noqa: F401
+from .sea import *  # noqa: F403
+from .segmap import *  # noqa: F403
