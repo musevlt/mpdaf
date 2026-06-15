@@ -45,7 +45,7 @@ jobs:
     - name: Install SExtractor
       run: |
         sudo apt update
-        sudo apt-get install sextractor
+        sudo apt-get install source-extractor
     - name: Install Tox
       run: python -m pip install tox coverage
     - name: Run Tox
