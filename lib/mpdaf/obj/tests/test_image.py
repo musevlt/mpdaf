@@ -625,7 +625,7 @@ def test_inside(a370II):
     assert not a370II.inside((39.951088, -1.4977398), unit=a370II.wcs.unit)
 
 
-def test_subimage(a370II):
+def test_subimage(a370II, caplog):
     """Image class: testing sub-image extraction."""
     subima = a370II.subimage(center=(790, 875), size=40, unit_center=None,
                              unit_size=None)
@@ -636,6 +636,10 @@ def test_subimage(a370II):
     assert subima.peak()['data'] == 2042
     assert subima.data.dtype == a370II.data.dtype
 
+    caplog.clear()
+    subima = a370II.subimage(center=(5, 5), size=40, unit_center=None,
+                             unit_size=None, minsize=30)
+    assert caplog.records[0].message == "extracted image is too small"
 
 def test_ee():
     """Image class: testing ensquared energy."""

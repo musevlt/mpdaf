@@ -696,7 +696,7 @@ class Image(ArithmeticMixin, DataArray):
         if (sy.stop - sy.start + 1) < minsize[0] or \
                 (sx.stop - sx.start + 1) < minsize[1]:
             # Should we raise an exception instead ?
-            self.logger.warning('extracted image is too small')
+            self._logger.warning('extracted image is too small')
             return
 
         # Extract the requested part of the image.
