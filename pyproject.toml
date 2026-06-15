@@ -37,7 +37,7 @@ dependencies = [
 dynamic = ["version"]
 
 [project.optional-dependencies]
-all = ["adjustText", "fitsio", "joblib", "numexpr", "tqdm"]
+all = ["adjustText", "fitsio", "joblib", "numexpr", "regions", "tqdm"]
 docs = [
     "ipython",
     "numpydoc",
@@ -48,7 +48,7 @@ docs = [
     "sphinx_automodapi",
     "sphinx_rtd_theme",
 ]
-tests = ["pytest"]
+tests = ["pytest", "pytest-cov", "pytest-remotedata"]
 
 [project.scripts]
 make_white_image = "mpdaf.scripts.make_white_image:main"
@@ -111,3 +111,28 @@ unfixable = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["mpdaf"]
+
+[tool.coverage.run]
+source = ["mpdaf"]
+omit = [
+    "*/mpdaf/__init__*",
+    "*/mpdaf/**/conftest.py",
+    "*/mpdaf/**/setup*",
+    "*/mpdaf/**/tests/*",
+    "*/mpdaf/_version*",
+    "*/mpdaf/scripts/update_license.py",
+]
+
+[tool.coverage.paths]
+source = ["lib", "*/site-packages"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "except KeyboardInterrupt",
+    "except ImportError",
+]
