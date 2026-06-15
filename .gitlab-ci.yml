@@ -41,14 +41,6 @@ py312:
   script:
     - tox -v -e py312 -- --pyargs mpdaf
 
-py311-slow:
-  extends:
-    - .tox
-  image: python:3.11
-  stage: test
-  script:
-    - tox -v -e py311 -- -m 'slow' --pyargs mpdaf
-
 py313:
   extends:
     - .tox
@@ -65,10 +57,18 @@ py314:
   script:
     - tox -v -e py314 -- --pyargs mpdaf
 
-pre:
+slow:
   extends:
     - .tox
   image: python:3.11
+  stage: extra
+  script:
+    - tox -v -e py311 -- --run-slow -m 'slow' --pyargs mpdaf
+
+pre:
+  extends:
+    - .tox
+  image: python:3.14
   stage: extra
   allow_failure: true
   script:

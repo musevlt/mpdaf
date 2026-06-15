@@ -48,7 +48,7 @@ docs = [
     "sphinx_automodapi",
     "sphinx_rtd_theme",
 ]
-tests = ["pytest", "pytest-cov", "pytest-remotedata"]
+tests = ["pytest", "pytest-astropy", "pytest-cov", "pytest-remotedata"]
 
 [project.scripts]
 make_white_image = "mpdaf.scripts.make_white_image:main"
