@@ -41,8 +41,7 @@ import subprocess
 import sys
 
 from Cython.Build import cythonize
-from setuptools import setup, find_packages, Extension
-from setuptools.command.build_ext import build_ext
+from setuptools import setup, Extension
 
 # Check if pkg-config is available
 try:
@@ -120,9 +119,11 @@ def options(*packages, **kw):
 
 
 ext_modules = [
-    Extension('mpdaf.obj.merging',
-              ['src/tools.c', './lib/mpdaf/obj/merging.pyx'],
-              include_dirs=[numpy.get_include()]),
+    Extension(
+        'mpdaf.obj.merging',
+        ['src/tools.c', './lib/mpdaf/obj/merging.pyx'],
+        include_dirs=[numpy.get_include()],
+    ),
 ]
 
 if HAVE_PKG_CONFIG:
@@ -140,7 +141,4 @@ ext_modules = cythonize(ext_modules,
 
 print('Configuration done, now running setup() ...\n')
 
-setup(
-    cmdclass={'build_ext': build_ext},
-    ext_modules=ext_modules,
-)
+setup(ext_modules=ext_modules)

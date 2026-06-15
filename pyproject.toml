@@ -60,6 +60,12 @@ github = "https://github.com/musevlt/mpdaf"
 [tool.setuptools.packages.find]
 where = ["lib"]
 
+[tool.setuptools.package-data]
+mpdaf = ["data/**"]
+"mpdaf.drs" = ["mumdatMask_1x1/PAE_July2013.fits.gz"]
+"mpdaf.obj" = ["filters/filter_list.fits"]
+"mpdaf.sdetect" = ["muselet_data/*", "sea_data/*"]
+
 [tool.setuptools_scm]
 version_file = "lib/mpdaf/_version.py"
 
@@ -101,3 +107,6 @@ ignore = [
 unfixable = [
   "F841", # Removes unused variables
 ]
+
+[tool.ruff.lint.isort]
+known-first-party = ["mpdaf"]
