@@ -37,28 +37,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import numpy
 import os
-import subprocess
 import sys
 
 from Cython.Build import cythonize
 from setuptools import setup, Extension
-
-# Check if pkg-config is available
-try:
-    out = subprocess.check_output(['pkg-config', '--version'])
-except subprocess.CalledProcessError as e:
-    sys.exit(e.output)
-except OSError:
-    print('pkg-config is required to build C extensions for some MPDAF '
-          'features (cube combination). Continuing the installation without '
-          'building these extensions. Please check if pkg-config is installed '
-          'and in your $PATH and rebuild MPDAF if you need them.')
-    HAVE_PKG_CONFIG = False
-else:
-    out = out.decode(encoding='utf-8', errors='replace')
-    print('Found pkg-config {}'.format(out.strip('\n')))
-    del out
-    HAVE_PKG_CONFIG = True
+from extension_helpers import add_openmp_flags_if_available, pkg_config
 
 
 def use_openmp():
@@ -84,40 +67,6 @@ def use_openmp():
         return True
 
 
-def options(*packages, **kw):
-    flag_map = {'-I': 'include_dirs', '-L': 'library_dirs', '-l': 'libraries'}
-
-    for package in packages:
-        try:
-            out = subprocess.check_output(['pkg-config', '--modversion',
-                                           package])
-        except subprocess.CalledProcessError:
-            msg = "package '{}' not found.".format(package)
-            print(msg)
-            raise Exception(msg)
-        else:
-            out = out.decode('utf8')
-            print('Found {} {}'.format(package, out.strip('\n')))
-
-    for token in subprocess.check_output(["pkg-config", "--libs", "--cflags",
-                                          ' '.join(packages)]).split():
-        token = token.decode('utf8')
-        if token[:2] in flag_map:
-            kw.setdefault(flag_map.get(token[:2]), []).append(token[2:])
-        else:  # throw others to extra_link_args
-            kw.setdefault('extra_link_args', []).append(token)
-
-    kw.setdefault('libraries', []).append('m')
-
-    if use_openmp():
-        kw.setdefault('extra_link_args', []).append('-lgomp')
-        kw.setdefault('extra_compile_args', []).append('-fopenmp')
-
-    for k, v in kw.items():  # remove duplicated
-        kw[k] = list(set(v))
-    return kw
-
-
 ext_modules = [
     Extension(
         'mpdaf.obj.merging',
@@ -126,18 +75,22 @@ ext_modules = [
     ),
 ]
 
-if HAVE_PKG_CONFIG:
-    try:
-        ext_modules.append(
-            Extension('mpdaf.tools._ctools',
-                      ['src/tools.c', 'src/merging.c'],
-                      **options('cfitsio')),
-        )
-    except Exception:
-        pass
+try:
+    options = pkg_config(['cfitsio'], [])
+    if options["libraries"]:
+        ext = Extension('mpdaf.tools._ctools',
+                        ['src/tools.c', 'src/merging.c'],
+                        **options)
+        if use_openmp():
+            add_openmp_flags_if_available(ext)
+        ext_modules.append(ext)
+    else:
+        print("cfitsio is missing, the cube combination extension will not be built")
+except Exception as e:
+    print("problem while building the cube merging extension:")
+    print(e)
 
-ext_modules = cythonize(ext_modules,
-                        compiler_directives={'language_level': 3})
+ext_modules = cythonize(ext_modules, compiler_directives={'language_level': 3})
 
 print('Configuration done, now running setup() ...\n')
 
