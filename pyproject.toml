@@ -7,6 +7,59 @@ requires = [
 ]
 build-backend = 'setuptools.build_meta'
 
+[project]
+name = "mpdaf"
+authors = [
+    {name = "Laure Piqueras", email = "laure.piqueras@univ-lyon1.fr"},
+    {name = "Simon Conseil", email = "simon.conseil@univ-lyon1.fr"},
+]
+description = "Framework for MUSE data analysis"
+readme = "README.rst"
+requires-python = ">=3.11"
+keywords = ["astronomy", "astrophysics", "science", "muse", "vlt", "cube",
+            "image", "spectrum"]
+license = "BSD-3-Clause"
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: Physics"
+]
+dependencies = [
+    "astropy",
+    "matplotlib",
+    "numpy>=2.0",
+    "scipy>=1.13",
+    "specutils",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+all = ["adjustText", "fitsio", "joblib", "numexpr", "tqdm"]
+docs = [
+    "ipython",
+    "numpydoc",
+    "pickleshare",
+    "psutil",
+    "pytest-doctestplus",
+    "sphinx",
+    "sphinx_automodapi",
+    "sphinx_rtd_theme",
+]
+tests = ["pytest"]
+
+[project.scripts]
+make_white_image = "mpdaf.scripts.make_white_image:main"
+
+[project.urls]
+documentation = "https://mpdaf.readthedocs.io"
+gitlab = "https://git-cral.univ-lyon1.fr/MUSE/mpdaf"
+github = "https://github.com/musevlt/mpdaf"
+
+[tool.setuptools.packages.find]
+where = ["lib"]
+
 [tool.setuptools_scm]
 version_file = "lib/mpdaf/_version.py"
 

@@ -119,11 +119,8 @@ def options(*packages, **kw):
     return kw
 
 
-with open('README.rst') as f:
-    README = f.read()
-
 ext_modules = [
-    Extension('obj.merging',
+    Extension('mpdaf.obj.merging',
               ['src/tools.c', './lib/mpdaf/obj/merging.pyx'],
               include_dirs=[numpy.get_include()]),
 ]
@@ -131,7 +128,7 @@ ext_modules = [
 if HAVE_PKG_CONFIG:
     try:
         ext_modules.append(
-            Extension('tools._ctools',
+            Extension('mpdaf.tools._ctools',
                       ['src/tools.c', 'src/merging.c'],
                       **options('cfitsio')),
         )
@@ -144,50 +141,6 @@ ext_modules = cythonize(ext_modules,
 print('Configuration done, now running setup() ...\n')
 
 setup(
-    name='mpdaf',
-    maintainer='Laure Piqueras',
-    maintainer_email='laure.piqueras@univ-lyon1.fr',
-    description='MUSE Python Data Analysis Framework is a python framework '
-    'in view of the analysis of MUSE data in the context of the GTO.',
-    long_description=README,
-    license='BSD',
-    url='https://git-cral.univ-lyon1.fr/MUSE/mpdaf',
-    python_requires='>=3.9',
-    install_requires=['numpy>=1.10.0', 'scipy>=1.11.0', 'matplotlib', 'astropy>=1.0','specutils'],
-    extras_require={
-        'all': ['numexpr', 'fitsio', 'adjustText', 'joblib', 'tqdm',
-                'specutils'],
-        'docs': ['sphinx', 'sphinx_rtd_theme', 'sphinx_automodapi',
-                 'numpydoc', 'ipython', 'psutil','specutils',
-                 'pickleshare', 'pytest-doctestplus'],
-    },
-    tests_require=['pytest'],
-    package_dir={'': 'lib'},
-    packages=find_packages('lib'),
-    zip_safe=False,
-    include_package_data=True,
-    platforms='any',
     cmdclass={'build_ext': build_ext},
-    entry_points={
-        'console_scripts': [
-            'make_white_image = mpdaf.scripts.make_white_image:main',
-        ],
-    },
-    scripts=['lib/mpdaf/scripts/topcat_show_ds9'],
-    ext_package='mpdaf',
     ext_modules=ext_modules,
-    keywords=['astronomy', 'astrophysics', 'science', 'muse', 'vlt', 'cube',
-              'image', 'spectrum'],
-    classifiers=[
-        'Development Status :: 5 - Production/Stable',
-        'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: BSD License',
-        'Operating System :: OS Independent',
-        'Programming Language :: C',
-        'Programming Language :: Cython',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: Implementation :: CPython',
-        'Topic :: Scientific/Engineering :: Astronomy',
-        'Topic :: Scientific/Engineering :: Physics'
-    ],
 )
