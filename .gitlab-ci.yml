@@ -16,75 +16,67 @@ stages:
   - test
   - extra
 
-.tox:
+.nox:
   tags:
     - docker
   before_script:
+    - apt-get update
+    - apt-get install --yes --no-install-recommends libcfitsio-dev source-extractor
     - pip install -U virtualenv
     - virtualenv venv
     - source venv/bin/activate
-    - pip install -U tox
+    - pip install -U nox
 
 py311:
   extends:
-    - .tox
+    - .nox
   image: python:3.11
   stage: test
   script:
-    - tox -v -e py311 -- --pyargs mpdaf
+    - nox -s coverage
 
 py312:
   extends:
-    - .tox
+    - .nox
   image: python:3.12
   stage: test
   script:
-    - tox -v -e py312 -- --pyargs mpdaf
+    - nox -s coverage
 
 py313:
   extends:
-    - .tox
+    - .nox
   image: python:3.13
   stage: test
   script:
-    - tox -v -e py313 -- --pyargs mpdaf
+    - nox -s coverage -- --run-slow
 
 py314:
   extends:
-    - .tox
+    - .nox
   image: python:3.14
   stage: test
   script:
-    - tox -v -e py314 -- --pyargs mpdaf --remote-data=any
-
-slow:
-  extends:
-    - .tox
-  image: python:3.11
-  stage: extra
-  script:
-    - apt-get update
-    - apt-get install --yes --no-install-recommends source-extractor
-    - tox -v -e py311 -- --run-slow -m 'slow' --pyargs mpdaf
+    - nox -s coverage -- --remote-data=any
 
 pre:
   extends:
-    - .tox
+    - .nox
   image: python:3.14
   stage: extra
   allow_failure: true
   script:
-    - tox --pre -v -e py314 -- --pyargs mpdaf
+    - PIP_PRE=1 nox -s coverage
 
 docs:
   extends:
-    - .tox
-  image: python:3.11-bullseye
+    - .nox
+  image: python:3.14
   stage: extra
   script:
     - apt-get update
     - apt-get install --yes --no-install-recommends graphviz
-    - tox -v -e docs
+    - nox -s docs
   artifacts:
     when: always
     paths:
