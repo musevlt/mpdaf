@@ -55,7 +55,7 @@ py314:
   image: python:3.14
   stage: test
   script:
-    - tox -v -e py314 -- --pyargs mpdaf
+    - tox -v -e py314 -- --pyargs mpdaf --remote-data=any
 
 slow:
   extends:

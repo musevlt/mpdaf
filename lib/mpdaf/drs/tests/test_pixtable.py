@@ -38,9 +38,9 @@ import tempfile
 import unittest
 
 from astropy.io import fits
-from astropy.utils.data import download_file
 from contextlib import contextmanager
 from mpdaf.drs import PixTable, pixtable
+from mpdaf.tests.utils import download_test_file
 from numpy.testing import assert_array_equal, assert_allclose
 from os.path import join
 
@@ -278,17 +278,14 @@ class TestBasicPixTable(unittest.TestCase):
 
 
 @pytest.fixture
-def pixfile():
-    return download_file(
-        'http://data.muse-vlt.eu/mpdaf/testpix-small.fits.gz',
-        cache=True, show_progress=True, timeout=None
-    )
+def pix():
+    pixfile = download_test_file("testpix-small.fits.gz")
+    return PixTable(pixfile)
 
 
 @pytest.mark.remote_data
 @pytest.mark.parametrize('numexpr', (True, False))
-def test_select(numexpr, pixfile):
-    pix = PixTable(pixfile)
+def test_select(numexpr, pix):
     with toggle_numexpr(numexpr):
         pix2 = pix.extract(xpix=[(1000, 2000)], ypix=[(1000, 2000)])
         origin = pix2.get_origin()
@@ -303,8 +300,7 @@ def test_select(numexpr, pixfile):
 @pytest.mark.remote_data
 @pytest.mark.parametrize('numexpr', (True, False))
 @pytest.mark.parametrize('shape', ('C', 'S'))
-def test_select_sky(numexpr, shape, pixfile):
-    pix = PixTable(pixfile)
+def test_select_sky(numexpr, shape, pix):
     with toggle_numexpr(numexpr):
         x, y = pix.get_pos_sky()
         cx = (x.min() + x.max()) / 2
@@ -314,8 +310,8 @@ def test_select_sky(numexpr, shape, pixfile):
 
 
 @pytest.mark.remote_data
-def test_reconstruct(pixfile):
-    pix = PixTable(pixfile).extract(ifu=1)
+def test_reconstruct(pix):
+    pix = pix.extract(ifu=1)
 
     im = pix.reconstruct_det_image()
     assert im.shape == (1101, 1920)

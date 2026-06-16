@@ -29,7 +29,7 @@ jobs:
             tox_args: '--pyargs mpdaf'
           - python-version: '3.14'
             tox_env: 'py314'
-            tox_args: '--pyargs mpdaf'
+            tox_args: '--pyargs mpdaf --remote-data=any'
           - python-version: '3.13'
             tox_env: 'py313'
             tox_args: '-sv --run-slow -m slow'

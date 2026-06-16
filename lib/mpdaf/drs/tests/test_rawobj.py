@@ -32,15 +32,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import numpy as np
 import pytest
-from astropy.utils.data import download_file
 from mpdaf.drs import RawFile
+from mpdaf.tests.utils import download_test_file
 from numpy.testing import assert_array_equal
 
 
 @pytest.fixture
 def rawobj():
-    filename = download_file('http://data.muse-vlt.eu/mpdaf/raw.fits.gz',
-                             cache=True, show_progress=True, timeout=None)
+    filename = download_test_file("raw.fits.gz")
     return RawFile(filename)
 
 

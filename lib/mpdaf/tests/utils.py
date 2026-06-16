@@ -35,16 +35,23 @@ import astropy.units as u
 import numpy as np
 import os
 
+from astropy.utils.data import download_file
 from mpdaf.obj import Image, Cube, WCS, WaveCoord, Spectrum
 from numpy.testing import assert_array_equal, assert_allclose
 from os.path import join
 
 DEFAULT_SHAPE = (10, 6, 5)
 DATADIR = join(os.path.abspath(os.path.dirname(__file__)), '..', 'data')
+REMOTE_URL = "https://git-cral.univ-lyon1.fr/MUSE/mpdaf-data/-/raw/main"
 
 
 def get_data_file(*paths):
     return join(DATADIR, *paths)
+
+
+def download_test_file(*paths):
+    url = join(REMOTE_URL, *paths)
+    return download_file(url, cache=True, show_progress=True, timeout=10)
 
 
 def assert_image_equal(ima, shape=None, start=None, end=None, step=None):
