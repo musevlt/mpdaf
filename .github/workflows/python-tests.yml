@@ -11,6 +11,13 @@ on:
     # Run every Sunday at 03:53 UTC
     - cron: 13 3 * * 0
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   tests:
     name: ${{ matrix.tox_env }}
@@ -37,6 +44,7 @@ jobs:
       uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
+        cache: 'pip'
     - name: Install SExtractor
       run: |
         sudo apt update
