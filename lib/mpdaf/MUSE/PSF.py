@@ -33,12 +33,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import astropy.units as u
 import numpy as np
-
 from astropy.stats import gaussian_fwhm_to_sigma
 from scipy import special
 
-from .fsf import Moffat2D, FSFModel
 from ..tools import deprecated
+from .fsf import FSFModel, Moffat2D
 
 
 class LSF:
@@ -366,7 +365,7 @@ def create_psf_cube(shape, fwhm, beta=None, wcs=None, unit_fwhm=u.arcsec):
     if unit_fwhm is not None:
         fwhm = fwhm / wcs.get_step(unit=unit_fwhm)[0]
 
-    from astropy.modeling.models import Moffat2D, Gaussian2D
+    from astropy.modeling.models import Gaussian2D, Moffat2D
     if beta is None:
         # a Gaussian expected.
         stddev = fwhm * gaussian_fwhm_to_sigma

@@ -31,22 +31,26 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-import astropy.units as u
-import numpy as np
 import pickle
-import pytest
 import warnings
 
+import astropy.units as u
+import numpy as np
+import pytest
 from astropy.io import fits
 from astropy.utils.exceptions import AstropyUserWarning
 from numpy import ma
-from mpdaf.obj import DataArray, WaveCoord, WCS, Cube, Image, Spectrum
-from numpy.testing import assert_array_equal, assert_allclose
+from numpy.testing import assert_allclose, assert_array_equal
 
+from mpdaf.obj import WCS, Cube, DataArray, Image, Spectrum, WaveCoord
 from mpdaf.obj.arithmetic import _check_proportionality
 from mpdaf.tests.utils import (
-    generate_image, generate_cube, generate_spectrum, assert_masked_allclose,
-    get_data_file)
+    assert_masked_allclose,
+    generate_cube,
+    generate_image,
+    generate_spectrum,
+    get_data_file,
+)
 
 
 def test_fits_img():

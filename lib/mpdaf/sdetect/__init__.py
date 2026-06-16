@@ -32,8 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 from .catalog import Catalog  # noqa: F401
-from .source import *  # noqa: F403
 from .linelist import *  # noqa: F403
 from .muselet import muselet  # noqa: F401
 from .sea import *  # noqa: F403
 from .segmap import *  # noqa: F403
+from .source import *  # noqa: F403

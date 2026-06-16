@@ -33,18 +33,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import logging
-import numpy as np
 import os
+from ctypes import c_char_p
+from datetime import datetime
 
+import numpy as np
 from astropy import units as u
 from astropy.table import Table
 from astropy.utils.console import ProgressBar
-from ctypes import c_char_p
-from datetime import datetime
 from numpy import allclose, array_equal
 
-from .cube import Cube
 from ..tools.fits import add_mpdaf_method_keywords, copy_keywords
+from .cube import Cube
 
 __all__ = ('CubeList', 'CubeMosaic')
 

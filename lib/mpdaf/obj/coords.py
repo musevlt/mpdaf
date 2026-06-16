@@ -33,16 +33,16 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-import astropy.units as u
-import astropy.wcs as pywcs
 import logging
 import numbers
-import numpy as np
 
+import astropy.units as u
+import astropy.wcs as pywcs
+import numpy as np
 from astropy.io import fits
 
-from .objs import UnitArray
 from ..tools import fix_unit_read
+from .objs import UnitArray
 
 __all__ = ('deg2sexa', 'sexa2deg', 'deg2hms', 'hms2deg', 'deg2dms', 'dms2deg',
            'image_angle_from_cd', 'axis_increments_from_cd',

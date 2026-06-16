@@ -32,12 +32,13 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from glob import glob
 import os
-import pytest
 import subprocess
-from mpdaf.sdetect import muselet, Catalog
+from glob import glob
 
+import pytest
+
+from mpdaf.sdetect import Catalog, muselet
 
 try:
     subprocess.check_call(['sex', '-v'])

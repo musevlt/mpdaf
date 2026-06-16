@@ -35,13 +35,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import glob
 import logging
-import numpy as np
 import os
 import sys
 
-from astropy.coordinates import SkyCoord
-from astropy.table import Table, Column, MaskedColumn, hstack, vstack, join
+import numpy as np
 from astropy import units as u
+from astropy.coordinates import SkyCoord
+from astropy.table import Column, MaskedColumn, Table, hstack, join, vstack
 
 from ..tools import LowercaseOrderedDict
 

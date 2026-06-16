@@ -35,11 +35,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import numpy as np
 import pytest
-from astropy.table import Table
 from astropy.coordinates import SkyCoord
-from mpdaf.sdetect import Catalog
-from numpy.testing import assert_array_equal, assert_almost_equal
+from astropy.table import Table
+from numpy.testing import assert_almost_equal, assert_array_equal
 
+from mpdaf.sdetect import Catalog
 from mpdaf.tests.utils import get_data_file
 
 try:

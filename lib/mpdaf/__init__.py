@@ -32,9 +32,9 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from . import drs, MUSE, obj, sdetect, tools  # noqa: F401
-from .log import setup_logging, setup_logfile, clear_loggers  # noqa: F401
+from . import MUSE, drs, obj, sdetect, tools  # noqa: F401
 from ._version import __version__  # noqa: F401
+from .log import clear_loggers, setup_logfile, setup_logging  # noqa: F401
 
 """The maximum number of processes that should be started by
 multiprocessing MPDAF functions. By default this is zero, which

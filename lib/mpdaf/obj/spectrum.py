@@ -34,21 +34,21 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-import numpy as np
 import types
+from os.path import abspath, dirname, join
 
 import astropy.units as u
+import numpy as np
+from astropy.constants import c as C
+from astropy.convolution import Box1DKernel, convolve
 from astropy.io import fits
 from astropy.nddata import StdDevUncertainty
-from astropy.stats import gaussian_sigma_to_fwhm, gaussian_fwhm_to_sigma
-from astropy.convolution import convolve, Box1DKernel
-from os.path import join, abspath, dirname
+from astropy.stats import gaussian_fwhm_to_sigma, gaussian_sigma_to_fwhm
 from scipy import interpolate, signal
 from scipy.optimize import leastsq
-from astropy.constants import c as C
 from specutils import Spectrum as Spectrum1D
 
-from . import ABmag_filters, wavelet1D, WaveCoord
+from . import ABmag_filters, WaveCoord, wavelet1D
 from .arithmetic import ArithmeticMixin
 from .data import DataArray
 from .fitting import Gauss1D

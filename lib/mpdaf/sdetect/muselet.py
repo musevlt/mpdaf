@@ -33,24 +33,25 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from ctypes import c_float, c_bool
 import logging
-from pathlib import Path
 import multiprocessing as mp
 import shutil
 import subprocess
 import sys
 import warnings
+from ctypes import c_bool, c_float
+from pathlib import Path
 
-import numpy as np
-from scipy.spatial import cKDTree
-from astropy.io import fits
-from astropy import table
 import astropy.units as u
+import numpy as np
+from astropy import table
+from astropy.io import fits
+from scipy.spatial import cKDTree
 
 from ..obj import Cube, Image
-from ..sdetect import Source, Catalog
 from ..tools import MpdafUnitsWarning
+from .catalog import Catalog
+from .source import Source
 
 __version__ = 3.0
 

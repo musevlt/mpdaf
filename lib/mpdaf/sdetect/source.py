@@ -36,30 +36,34 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-import astropy.units as u
 import collections.abc
 import datetime
 import glob
 import logging
-import numpy as np
 import os
 import re
 import shutil
 import warnings
-
-from astropy.io import fits as pyfits
-from astropy.table import Table, MaskedColumn, vstack
 from functools import partial
+
+import astropy.units as u
+import numpy as np
+from astropy.io import fits as pyfits
+from astropy.table import MaskedColumn, Table, vstack
 from numpy import ma
 
-from ..obj import Cube, Image, Spectrum, vactoair, airtovac, plot_rgb
-from ..obj.objs import is_int, is_float, bounding_box
-from ..tools import MpdafWarning
 from ..MUSE import FieldsMap, FSFModel, MoffatModel2
 from ..MUSE.PSF import create_psf_cube
-from ..sdetect.sea import (segmentation, findCentralDetection,
-                           union, intersection, compute_optimal_spectrum)
-
+from ..obj import Cube, Image, Spectrum, airtovac, plot_rgb, vactoair
+from ..obj.objs import bounding_box, is_float, is_int
+from ..sdetect.sea import (
+    compute_optimal_spectrum,
+    findCentralDetection,
+    intersection,
+    segmentation,
+    union,
+)
+from ..tools import MpdafWarning
 
 __all__ = ('Source', 'SourceList', 'matchlines', 'crackz')
 

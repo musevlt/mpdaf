@@ -33,17 +33,17 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-import astropy.units as u
 import fnmatch
 import logging
-import numpy as np
 import os
 import warnings
 
+import astropy.units as u
+import numpy as np
 from astropy.io import fits
-from .util import MpdafUnitsWarning
 
 from .._version import __version__
+from .util import MpdafUnitsWarning
 
 __all__ = ('add_mpdaf_method_keywords', 'add_mpdaf_keywords_to_file',
            'fix_unit_read', 'fix_unit_write', 'copy_header', 'copy_keywords',

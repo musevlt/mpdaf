@@ -33,8 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import numbers
-import numpy as np
 
+import numpy as np
 from astropy.constants import c
 from astropy.units import Quantity
 

@@ -31,14 +31,15 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
+import os
+from os.path import join
+
 import astropy.units as u
 import numpy as np
-import os
-
 from astropy.utils.data import download_file
-from mpdaf.obj import Image, Cube, WCS, WaveCoord, Spectrum
-from numpy.testing import assert_array_equal, assert_allclose
-from os.path import join
+from numpy.testing import assert_allclose, assert_array_equal
+
+from mpdaf.obj import WCS, Cube, Image, Spectrum, WaveCoord
 
 DEFAULT_SHAPE = (10, 6, 5)
 DATADIR = join(os.path.abspath(os.path.dirname(__file__)), '..', 'data')

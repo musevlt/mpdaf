@@ -33,14 +33,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import astropy.units as u
 import numpy as np
-
+import pytest
 from astropy import wcs as pywcs
 from astropy.io import fits
-from mpdaf.obj import WCS, WaveCoord, deg2sexa, sexa2deg, determine_refframe
-from mpdaf.obj.spectrum import airtovac, vactoair
 from numpy.testing import assert_allclose, assert_array_equal
-import pytest
 
+from mpdaf.obj import WCS, WaveCoord, deg2sexa, determine_refframe, sexa2deg
+from mpdaf.obj.spectrum import airtovac, vactoair
 from mpdaf.tests.utils import get_data_file
 
 

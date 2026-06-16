@@ -36,14 +36,12 @@ import matplotlib
 import numpy as np
 import pytest
 import scipy
-
 from astropy.table import Table
-from mpdaf.obj import Image, Cube, Spectrum
+
+from mpdaf.obj import Cube, Image, Spectrum
 from mpdaf.sdetect import Source
 
-from .tests.utils import (get_data_file, generate_cube, generate_image,
-                          generate_spectrum)
-
+from .tests.utils import generate_cube, generate_image, generate_spectrum, get_data_file
 
 # Show versions if installed package in pytest's header
 

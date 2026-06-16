@@ -33,10 +33,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import numpy as np
 import pytest
-from mpdaf.obj import Image, Cube
-from mpdaf.sdetect import Source
-from mpdaf.MUSE import create_psf_cube, get_FSF_from_cube_keywords
 from numpy.testing import assert_almost_equal
+
+from mpdaf.MUSE import create_psf_cube, get_FSF_from_cube_keywords
+from mpdaf.obj import Cube, Image
+from mpdaf.sdetect import Source
 from mpdaf.tests.utils import get_data_file
 
 

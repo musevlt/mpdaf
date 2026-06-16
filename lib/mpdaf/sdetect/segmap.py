@@ -29,11 +29,12 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-import astropy.units as u
 import logging
-import numpy as np
 from collections import defaultdict
 from os.path import exists
+
+import astropy.units as u
+import numpy as np
 from scipy import ndimage as ndi
 
 from ..obj import Image, moffat_image
@@ -285,7 +286,7 @@ def create_masks_from_segmap(
         Verbosity level for joblib.Parallel.
 
     """
-    from joblib import delayed, Parallel
+    from joblib import Parallel, delayed
 
     logger = logging.getLogger(__name__)
 

@@ -32,13 +32,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import re
+
 from astropy.io import fits
 
-from mpdaf.tests.utils import get_data_file
-
-from mpdaf.tools.fits import (copy_header, add_mpdaf_method_keywords,
-                              add_mpdaf_keywords_to_file)
 from mpdaf._version import __version__
+from mpdaf.tests.utils import get_data_file
+from mpdaf.tools.fits import (
+    add_mpdaf_keywords_to_file,
+    add_mpdaf_method_keywords,
+    copy_header,
+)
 
 REFHDR = """\
 HIERARCH MPDAF METH1 VERSION = '{0}\\s*' / MPDAF version

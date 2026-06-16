@@ -31,15 +31,23 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-import numpy as np
 import os
-import pytest
 import re
 import time
 import warnings
 
-from mpdaf.tools.util import (chdir, deprecated, broadcast_to_cube, timeit,
-                              timer, isiter, progressbar)
+import numpy as np
+import pytest
+
+from mpdaf.tools.util import (
+    broadcast_to_cube,
+    chdir,
+    deprecated,
+    isiter,
+    progressbar,
+    timeit,
+    timer,
+)
 
 try:
     import tqdm

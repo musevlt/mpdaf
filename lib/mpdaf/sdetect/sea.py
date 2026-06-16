@@ -47,23 +47,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # Please contact Jarle for more info at jarle@strw.leidenuniv.nl
 
-from astropy.io import fits
-import astropy.units as u
-
 import logging
-import numpy as np
 import os
 import shutil
 import subprocess
-import warnings
-import unicodedata
-
 import tempfile
+import unicodedata
+import warnings
 
+import astropy.units as u
+import numpy as np
+from astropy.io import fits
 from astropy.table import Table
 
 from ..obj import Image, Spectrum
-from ..tools import broadcast_to_cube, MpdafWarning
+from ..tools import MpdafWarning, broadcast_to_cube
 
 __all__ = ('findCentralDetection', 'union', 'intersection', 'findSkyMask',
            'segmentation', 'compute_spectrum', 'compute_optimal_spectrum')

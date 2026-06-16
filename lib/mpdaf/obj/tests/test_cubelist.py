@@ -30,15 +30,16 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-import numpy as np
 import os
-import pytest
 import shutil
 import tempfile
 import unittest
 
-from mpdaf.obj import CubeList, CubeMosaic
+import numpy as np
+import pytest
 from numpy.testing import assert_array_equal
+
+from mpdaf.obj import CubeList, CubeMosaic
 from mpdaf.tests.utils import generate_cube
 
 try:

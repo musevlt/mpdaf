@@ -33,19 +33,19 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-import astropy.units as u
 import datetime
 import logging
-import numpy as np
 import warnings
+from os.path import basename
 
+import astropy.units as u
+import numpy as np
 from astropy.io import fits
 from astropy.io.fits import Column, ImageHDU
 from astropy.stats import sigma_clip
 from astropy.table import Table
-from os.path import basename
 
-from ..obj import Image, WCS
+from ..obj import WCS, Image
 from ..tools import add_mpdaf_method_keywords, copy_header
 
 try:

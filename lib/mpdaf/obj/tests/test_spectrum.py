@@ -32,26 +32,33 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-import pytest
 import numpy as np
-
+import pytest
 from astropy import units as u
 from astropy.io import ascii, fits
 from astropy.nddata import StdDevUncertainty
-
-
-from mpdaf.obj import Spectrum1D_MPDAF
-from mpdaf.log import setup_logging
-from mpdaf.obj import Spectrum, Image, Cube, WCS, WaveCoord, airtovac, vactoair
-
-from numpy.testing import (assert_array_almost_equal, assert_array_equal,
-                           assert_almost_equal, assert_allclose)
-
-from mpdaf.tests.utils import (get_data_file, generate_spectrum)
-
-from specutils import Spectrum as Spectrum1D
+from numpy.testing import (
+    assert_allclose,
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_array_equal,
+)
 from specutils import SpectralRegion
+from specutils import Spectrum as Spectrum1D
 from specutils.manipulation import noise_region_uncertainty
+
+from mpdaf.log import setup_logging
+from mpdaf.obj import (
+    WCS,
+    Cube,
+    Image,
+    Spectrum,
+    Spectrum1D_MPDAF,
+    WaveCoord,
+    airtovac,
+    vactoair,
+)
+from mpdaf.tests.utils import generate_spectrum, get_data_file
 
 
 def to_spectrum1d(spec, unit_wave=u.angstrom):

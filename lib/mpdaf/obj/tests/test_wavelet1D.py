@@ -32,7 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import numpy as np
-from mpdaf.obj import wavelet_transform, wavelet_backTransform, cleanSignal
+
+from mpdaf.obj import cleanSignal, wavelet_backTransform, wavelet_transform
 
 
 def test_wavelet1D():

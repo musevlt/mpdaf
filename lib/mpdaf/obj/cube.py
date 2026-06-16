@@ -34,25 +34,26 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-import astropy.units as u
 import multiprocessing
-import numpy as np
 import os.path
 import sys
 import time
 import types
 import warnings
 
+import astropy.units as u
+import numpy as np
 from astropy.io import fits
 from numpy import ma
-from scipy import interpolate, signal, ndimage as ndi
+from scipy import interpolate, signal
+from scipy import ndimage as ndi
 
+from ..tools import MpdafWarning, add_mpdaf_method_keywords
 from .arithmetic import ArithmeticMixin
 from .data import DataArray
 from .image import Image
 from .objs import bounding_box, is_number
 from .spectrum import Spectrum
-from ..tools import add_mpdaf_method_keywords, MpdafWarning
 
 __all__ = ('iter_spe', 'iter_ima', 'Cube')
 

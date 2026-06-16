@@ -33,18 +33,23 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import logging
-import numpy as np
 import warnings
+from datetime import datetime
 
+import numpy as np
 from astropy import units as u
 from astropy.io import fits
-from datetime import datetime
 from numpy import ma
 
+from ..tools import (
+    MpdafUnitsWarning,
+    copy_header,
+    fix_unit_read,
+    is_valid_fits_file,
+    read_slice_from_fits,
+)
 from .coords import WCS, WaveCoord, determine_refframe
-from .objs import UnitMaskedArray, UnitArray, is_int
-from ..tools import (MpdafUnitsWarning, fix_unit_read, is_valid_fits_file,
-                     copy_header, read_slice_from_fits)
+from .objs import UnitArray, UnitMaskedArray, is_int
 
 __all__ = ('DataArray', )
 

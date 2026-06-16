@@ -30,16 +30,17 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-import astropy.units as u
 import logging
-import numpy as np
 import warnings
+
+import astropy.units as u
+import numpy as np
 from astropy.io import fits
-from astropy.table import Table
 from astropy.modeling.models import Moffat2D as astMoffat2D
 from astropy.stats import sigma_clip
+from astropy.table import Table
 
-from ..obj import Cube, WCS, Image, iter_ima
+from ..obj import WCS, Cube, Image, iter_ima
 from ..tools import all_subclasses
 
 __all__ = ['Moffat2D', 'FSFModel', 'MoffatModel2', 'combine_fsf']

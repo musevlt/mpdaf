@@ -32,19 +32,19 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from collections import OrderedDict
-from collections.abc import MutableMapping
 import functools
 import inspect
 import logging
-import numpy as np
 import os
 import warnings
-
-from astropy.units import UnitsWarning
+from collections import OrderedDict
+from collections.abc import MutableMapping
 from contextlib import contextmanager
 from functools import wraps
 from time import time
+
+import numpy as np
+from astropy.units import UnitsWarning
 
 __all__ = ('MpdafWarning', 'MpdafUnitsWarning', 'deprecated', 'chdir',
            'timeit', 'timer', 'broadcast_to_cube', 'LowercaseOrderedDict',

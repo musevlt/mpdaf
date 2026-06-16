@@ -32,9 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import numpy as np
 import pytest
+from numpy.testing import assert_array_equal
+
 from mpdaf.drs import RawFile
 from mpdaf.tests.utils import download_test_file
-from numpy.testing import assert_array_equal
 
 
 @pytest.fixture

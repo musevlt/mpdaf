@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import pytest
 from numpy.testing import assert_allclose
+
 from mpdaf.sdetect import get_emlines, z_from_linepos
 
 

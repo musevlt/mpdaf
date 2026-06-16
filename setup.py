@@ -35,13 +35,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # See README.rst for details on how to install MPDAF.
 
-import numpy
 import os
 import sys
 
+import numpy
 from Cython.Build import cythonize
-from setuptools import setup, Extension
 from extension_helpers import add_openmp_flags_if_available, pkg_config
+from setuptools import Extension, setup
 
 
 def use_openmp():

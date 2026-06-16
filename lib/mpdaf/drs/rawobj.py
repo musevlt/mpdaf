@@ -33,12 +33,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import logging
-import numpy as np
 import os
 
+import numpy as np
 from astropy.io import fits
 
-from ..obj import Image, WCS
+from ..obj import WCS, Image
 
 __all__ = ('RawFile', 'Channel')
 

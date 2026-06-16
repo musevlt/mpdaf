@@ -47,8 +47,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import ctypes
 import logging
 import os
-from numpy.ctypeslib import ndpointer, load_library
 
+from numpy.ctypeslib import load_library, ndpointer
 
 LIBRARY_PATH = os.path.dirname(__file__)
 

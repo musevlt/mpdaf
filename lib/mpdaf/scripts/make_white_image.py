@@ -34,8 +34,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import argparse
 import sys
-from mpdaf.obj import Cube
 from time import time
+
+from mpdaf.obj import Cube
 
 
 def make_white_image(inputfile, outputfile, verbose=False):

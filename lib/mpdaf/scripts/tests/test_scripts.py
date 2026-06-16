@@ -32,8 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import os
-import pytest
 import shutil
+
+import pytest
+
 from mpdaf.scripts.make_white_image import main
 from mpdaf.tests.utils import get_data_file
 

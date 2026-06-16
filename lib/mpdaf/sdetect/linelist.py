@@ -36,9 +36,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import numpy as np
 from astropy.table import Table
 
-from ..obj import vactoair
-from ..obj import airtovac  # noqa - for backward compatibility
-
+from ..obj import (
+    airtovac,  # noqa - for backward compatibility
+    vactoair,
+)
 
 __all__ = ['get_emlines', 'z_from_linepos']
 

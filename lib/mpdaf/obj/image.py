@@ -38,26 +38,26 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-import numpy as np
-from numpy import ma
+import warnings
+from datetime import datetime
 
 import astropy.units as u
+import numpy as np
 from astropy.io import fits
-from astropy.stats import gaussian_sigma_to_fwhm, gaussian_fwhm_to_sigma
+from astropy.stats import gaussian_fwhm_to_sigma, gaussian_sigma_to_fwhm
+from numpy import ma
 from scipy import interpolate, signal
 from scipy import ndimage as ndi
 from scipy.ndimage import affine_transform
 from scipy.optimize import leastsq
-import warnings
-from datetime import datetime
 
+from ..tools import MpdafWarning
 from .arithmetic import ArithmeticMixin
 from .coords import WCS
 from .data import DataArray
 from .fitting import Gauss2D, Moffat2D
-from .objs import is_int, is_number, bounding_box, UnitMaskedArray, UnitArray
+from .objs import UnitArray, UnitMaskedArray, bounding_box, is_int, is_number
 from .plot import FormatCoord, get_plot_norm
-from ..tools import MpdafWarning
 
 __all__ = ('Image', 'gauss_image', 'moffat_image', 'SpatialFrequencyLimits')
 

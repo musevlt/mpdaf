@@ -33,13 +33,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import numpy as np
 import pytest
 from astropy.io import fits
-from mpdaf.obj import Cube
-from mpdaf.MUSE import get_FSF_from_cube_keywords, FSFModel
-from mpdaf.MUSE.fsf import find_model_cls, MoffatModel2
-from mpdaf.MUSE.fsf import combine_fsf
-from mpdaf.tools import MpdafWarning
-from mpdaf.tests.utils import get_data_file
 from numpy.testing import assert_allclose
+
+from mpdaf.MUSE import FSFModel, get_FSF_from_cube_keywords
+from mpdaf.MUSE.fsf import MoffatModel2, combine_fsf, find_model_cls
+from mpdaf.obj import Cube
+from mpdaf.tests.utils import get_data_file
+from mpdaf.tools import MpdafWarning
 
 
 def test_fsf_model_errors():

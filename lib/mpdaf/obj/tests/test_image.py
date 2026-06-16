@@ -31,20 +31,29 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-from astropy.io import fits
+from operator import add, mul, sub
+from operator import truediv as div
+
 import astropy.units as u
 import numpy as np
 import pytest
 import scipy.ndimage as ndi
+from astropy.io import fits
+from numpy.testing import (
+    assert_allclose,
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_array_equal,
+    assert_equal,
+)
 
-from mpdaf.obj import Image, WCS, gauss_image, moffat_image
-from numpy.testing import (assert_array_equal, assert_allclose,
-                           assert_almost_equal, assert_equal,
-                           assert_array_almost_equal)
-from operator import add, sub, mul, truediv as div
-
-from mpdaf.tests.utils import (assert_image_equal, generate_image,
-                               generate_cube, assert_masked_allclose)
+from mpdaf.obj import WCS, Image, gauss_image, moffat_image
+from mpdaf.tests.utils import (
+    assert_image_equal,
+    assert_masked_allclose,
+    generate_cube,
+    generate_image,
+)
 
 
 def test_copy(image):

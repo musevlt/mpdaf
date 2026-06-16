@@ -31,22 +31,22 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-import astropy.units as u
-import numpy as np
 import os
 import pickle
-import pytest
 import subprocess
 import warnings
 
+import astropy.units as u
+import numpy as np
+import pytest
 from astropy.io import fits
 from astropy.table import Table
+from numpy.testing import assert_almost_equal, assert_array_equal
+
 from mpdaf.obj import Cube, Image
 from mpdaf.sdetect import Source
+from mpdaf.tests.utils import assert_masked_allclose, get_data_file
 from mpdaf.tools import MpdafWarning
-from numpy.testing import assert_array_equal, assert_almost_equal
-
-from mpdaf.tests.utils import get_data_file, assert_masked_allclose
 
 try:
     subprocess.check_call(['sex', '-v'])

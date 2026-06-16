@@ -32,20 +32,30 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
+from operator import add, mul, sub
+from operator import truediv as div
+
 import astropy.units as u
 import numpy as np
 import pytest
-
 from astropy.io import fits
-from mpdaf.obj import Spectrum, Image, Cube, iter_spe, iter_ima, WCS, WaveCoord
-from mpdaf.obj.image import gauss_image
 from numpy import ma
-from numpy.testing import (assert_almost_equal, assert_array_equal,
-                           assert_allclose, assert_array_almost_equal)
-from operator import add, sub, mul, truediv as div
+from numpy.testing import (
+    assert_allclose,
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_array_equal,
+)
 
-from mpdaf.tests.utils import (generate_cube, generate_image, generate_spectrum,
-                               assert_masked_allclose, get_data_file)
+from mpdaf.obj import WCS, Cube, Image, Spectrum, WaveCoord, iter_ima, iter_spe
+from mpdaf.obj.image import gauss_image
+from mpdaf.tests.utils import (
+    assert_masked_allclose,
+    generate_cube,
+    generate_image,
+    generate_spectrum,
+    get_data_file,
+)
 
 
 def test_copy(cube):

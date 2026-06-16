@@ -97,7 +97,7 @@ markers = ["slow"]
 [tool.ruff.lint]
 select = [
   "E", "F", "W", # flake8
-  # "I",           # isort
+  "I",           # isort
   # "UP",          # pyupgrade
 ]
 ignore = [
