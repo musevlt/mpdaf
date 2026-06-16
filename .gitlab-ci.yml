@@ -63,6 +63,8 @@ slow:
   image: python:3.11
   stage: extra
   script:
+    - apt-get update
+    - apt-get install --yes --no-install-recommends source-extractor
     - tox -v -e py311 -- --run-slow -m 'slow' --pyargs mpdaf
 
 pre:

@@ -20,19 +20,14 @@ jobs:
         include:
           - python-version: '3.11'
             tox_env: 'py311'
-            tox_args: '--pyargs mpdaf'
           - python-version: '3.12'
             tox_env: 'py312'
-            tox_args: '--pyargs mpdaf'
           - python-version: '3.13'
             tox_env: 'py313'
-            tox_args: '--pyargs mpdaf'
+            tox_args: '-sv --run-slow'
           - python-version: '3.14'
             tox_env: 'py314'
-            tox_args: '--pyargs mpdaf --remote-data=any'
-          - python-version: '3.13'
-            tox_env: 'py313'
-            tox_args: '-sv --run-slow -m slow'
+            tox_args: '--remote-data=any'
 
     steps:
     - uses: actions/checkout@v6
@@ -49,7 +44,7 @@ jobs:
     - name: Install Tox
       run: python -m pip install tox coverage
     - name: Run Tox
-      run: tox -e ${{ matrix.tox_env }} -- ${{ matrix.tox_args }}
+      run: tox -e ${{ matrix.tox_env }} -- --pyargs mpdaf ${{ matrix.tox_args }}
     - name: Convert coverage
       run: python -m coverage xml
     - name: Upload coverage to Codecov
