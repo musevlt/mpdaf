@@ -20,21 +20,17 @@ permissions:
 
 jobs:
   tests:
-    name: ${{ matrix.tox_env }}
+    name: ${{ matrix.python_version }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
           - python-version: '3.11'
-            tox_env: 'py311'
           - python-version: '3.12'
-            tox_env: 'py312'
           - python-version: '3.13'
-            tox_env: 'py313'
-            tox_args: '--run-slow'
+            nox_args: '--run-slow'
           - python-version: '3.14'
-            tox_env: 'py314'
-            tox_args: '--remote-data=any'
+            nox_args: '--remote-data=any'
 
     steps:
     - uses: actions/checkout@v6
@@ -45,14 +41,14 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip'
-    - name: Install SExtractor
+    - name: Install packages
       run: |
         sudo apt update
         sudo apt-get install source-extractor
-    - name: Install Tox
-      run: python -m pip install tox coverage
-    - name: Run Tox
-      run: tox -v -e ${{ matrix.tox_env }} -- --pyargs mpdaf ${{ matrix.tox_args }}
+    - name: Install Nox
+      run: python -m pip install nox coverage
+    - name: Run tests
+      run: nox -s coverage -v -- -v ${{ matrix.nox_args }}
     - name: Convert coverage
       run: python -m coverage xml
     - name: Upload coverage to Codecov
