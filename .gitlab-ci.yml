@@ -72,7 +72,7 @@ pre:
   stage: extra
   allow_failure: true
   script:
-    - tox --pre -v -e py311 -- --pyargs mpdaf
+    - tox --pre -v -e py314 -- --pyargs mpdaf
 
 docs:
   extends:
