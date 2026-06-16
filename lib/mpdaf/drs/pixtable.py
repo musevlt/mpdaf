@@ -1009,7 +1009,7 @@ class PixTable:
         assert min(stacks) > 0
         assert max(stacks) < 5
         sl = sorted([Slicer.sky2ccd(i) for st in stacks
-                     for i in range(1 + 12 * (st - 1), 12 * st - 1)])
+                     for i in range(1 + 12 * (st - 1), 12 * st + 1)])
         self._logger.debug('Extract stack %s -> slices %s', stacks, sl)
         return self.select_slices(sl, origin=origin)
 

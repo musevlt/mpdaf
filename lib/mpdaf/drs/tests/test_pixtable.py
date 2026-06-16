@@ -253,9 +253,17 @@ class TestBasicPixTable(unittest.TestCase):
                 ksel = (self.aifu == 1)
                 assert_array_equal(self.data[ksel], pix.get_data())
 
+                pix = self.pix.extract(sl=1)
+                ksel = self.aslice == 1
+                assert_array_equal(self.data[ksel], pix.get_data())
+
                 pix = self.pix.extract(sl=(1, 2, 3))
                 ksel = ((self.aslice == 1) | (self.aslice == 2) |
                         (self.aslice == 3))
+                assert_array_equal(self.data[ksel], pix.get_data())
+
+                pix = self.pix.extract(stack=1)
+                ksel = (self.aslice >= 1) & (self.aslice <= 12)
                 assert_array_equal(self.data[ksel], pix.get_data())
 
     def test_write(self):
