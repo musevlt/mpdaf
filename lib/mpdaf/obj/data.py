@@ -332,6 +332,8 @@ class DataArray:
 
             if (self._ndim_required is not None and
                     self._ndim_required != self.data_header['NAXIS']):
+                if close_hdu:
+                    hdulist.close()
                 raise ValueError('{} class cannot manage data with {} axes'
                                  .format(self.__class__.__name__,
                                          self.data_header['NAXIS']))

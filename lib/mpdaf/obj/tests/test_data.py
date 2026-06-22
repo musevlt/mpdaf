@@ -118,9 +118,9 @@ def test_fits_spectrum():
 
     # Check that it can be read as Spectrum but not with other classes
     assert Spectrum(testspe, ext=0).ndim == 1
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Cube class cannot manage data with 1 axes"):
         Cube(testspe, ext=0)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Image class cannot manage data with 1 axes"):
         Image(testspe, ext=0)
 
 

@@ -40,6 +40,7 @@ import numpy as np
 import pytest
 
 from mpdaf.tools.util import (
+    MpdafWarning,
     broadcast_to_cube,
     chdir,
     deprecated,
@@ -73,10 +74,8 @@ def test_deprecated():
     def func():
         pass
 
-    with warnings.catch_warnings(record=True) as w:
+    with pytest.warns(MpdafWarning, match="Call to deprecated function `func`. " + msg):
         func()
-        assert (w[0].message.args[0] ==
-                'Call to deprecated function `func`. ' + msg)
 
 
 def test_broadcast_to_cube():

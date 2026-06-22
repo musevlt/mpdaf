@@ -233,30 +233,36 @@ def test_multiprocess():
     assert_allclose(spe.data, cube1.get_rot())
 
     # Test image processing using a normal function.
-    spe = cube1.loop_ima_multiprocessing(_multiproc_func, cpu=2, verbose=False)
+    with pytest.warns(DeprecationWarning, match="may lead to deadlocks"):
+        spe = cube1.loop_ima_multiprocessing(_multiproc_func, cpu=2, verbose=False)
     assert_allclose(spe.data, data_value * 10.0)
 
     # Test spectrum processing using a Spectrum method.
-    im = cube1.loop_spe_multiprocessing(Spectrum.mean, cpu=2, verbose=False)
+    with pytest.warns(DeprecationWarning, match="may lead to deadlocks"):
+        im = cube1.loop_spe_multiprocessing(Spectrum.mean, cpu=2, verbose=False)
     assert_allclose(im[2, 3], cube1[:, 2, 3].mean())
 
     # Test spectrum processing using a normal function.
-    im = cube1.loop_spe_multiprocessing(_multiproc_func, cpu=2, verbose=False)
+    with pytest.warns(DeprecationWarning, match="may lead to deadlocks"):
+        im = cube1.loop_spe_multiprocessing(_multiproc_func, cpu=2, verbose=False)
     assert_allclose(im.data, data_value * 10.0)
 
 
 def test_multiprocess2(cube):
     """Cube class: more tests for multiprocess"""
     f = Image.ee
-    ee = cube.loop_ima_multiprocessing(f, cpu=2, verbose=False)
+    with pytest.warns(DeprecationWarning, match="may lead to deadlocks"):
+        ee = cube.loop_ima_multiprocessing(f, cpu=2, verbose=False)
     assert ee[1] == cube[1, :, :].ee()
 
     f = Image.rotate
-    cub2 = cube.loop_ima_multiprocessing(f, cpu=2, verbose=False, theta=20)
+    with pytest.warns(DeprecationWarning, match="may lead to deadlocks"):
+        cub2 = cube.loop_ima_multiprocessing(f, cpu=2, verbose=False, theta=20)
     assert cub2[4, 3, 2] == cube[4, :, :].rotate(20)[3, 2]
 
     f = Spectrum.resample
-    out = cube.loop_spe_multiprocessing(f, cpu=2, verbose=False, step=1)
+    with pytest.warns(DeprecationWarning, match="may lead to deadlocks"):
+        out = cube.loop_spe_multiprocessing(f, cpu=2, verbose=False, step=1)
     assert out[8, 3, 2] == cube[:, 3, 2].resample(step=1)[8]
 
 

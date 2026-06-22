@@ -218,9 +218,10 @@ def test_delete_extension(tmpdir, source2):
     assert list(src.tables.keys()) == ['TEST2']
     assert list(src.images.keys()) == ['MUSE_WHITE']
 
-    assert [h.name for h in fits.open(filename)] == [
-        'PRIMARY', 'LINES', 'IMA_MUSE_WHITE_DATA', 'IMA_MUSE_WHITE_STAT',
-        'TAB_TEST2']
+    with fits.open(filename) as hdul:
+        assert [h.name for h in hdul] == [
+            'PRIMARY', 'LINES', 'IMA_MUSE_WHITE_DATA', 'IMA_MUSE_WHITE_STAT',
+            'TAB_TEST2']
 
 
 def test_comments(source1):

@@ -70,16 +70,9 @@ mpdaf = ["data/**"]
 [tool.setuptools_scm]
 version_file = "lib/mpdaf/_version.py"
 
-[tool.pytest.ini_options]
-minversion = "8.0"
+[tool.pytest]
+minversion = "9.0"
 testpaths = ["lib"]
-norecursedirs = [
-    ".*",
-    "docs[\\/]_build",
-    "docs[\\/]generated",
-    "astropy[\\/]extern",
-    "astropy[\\/]_dev",
-]
 addopts = [
     "--doctest-modules",
     "--strict-config",
@@ -87,7 +80,7 @@ addopts = [
 ]
 filterwarnings = [
     # action:message:category:module:lineno
-    # "error",
+    "error",
     "ignore::astropy.io.fits.verify.VerifyWarning",
     "ignore::astropy.units.UnitsWarning",
     "ignore::astropy.wcs.FITSFixedWarning",
