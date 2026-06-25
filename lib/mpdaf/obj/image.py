@@ -111,13 +111,13 @@ class Image(ArithmeticMixin, DataArray):
                  **kwargs):
         self._spflims = None
 
-        super(Image, self).__init__(
+        super().__init__(
             filename=filename, ext=ext, wcs=wcs, unit=unit, data=data, var=var,
             copy=copy, dtype=dtype, **kwargs)
 
     def copy(self):
         """Return a new copy of an Image object."""
-        obj = super(Image, self).copy()
+        obj = super().copy()
 
         # Make a deep copy of the spatial-frequency limits.
         if self._spflims is not None:
@@ -689,8 +689,8 @@ class Image(ArithmeticMixin, DataArray):
                 sy.stop < 0 or
                 sy.start == sy.stop):
             raise ValueError('Sub-image boundaries are outside the cube: '
-                             'center: {}, shape: {}, size: {}'
-                             .format(center, self.shape, size))
+                             f'center: {center}, shape: {self.shape}, size: {size}'
+                             )
 
         # Require that the image be at least minsize x minsize pixels.
         if (sy.stop - sy.start + 1) < minsize[0] or \
@@ -1800,56 +1800,56 @@ class Image(ArithmeticMixin, DataArray):
             rot = None
             if not fit_back:
                 # 2d gaussian function
-                gaussfit = lambda v, p, q: \
-                    cont + v[0] * (1 / np.sqrt(2 * np.pi * (v[2] ** 2))) \
-                    * np.exp(-(p - v[1]) ** 2 / (2 * v[2] ** 2)) \
-                    * (1 / np.sqrt(2 * np.pi * (v[2] ** 2))) \
-                    * np.exp(-(q - v[3]) ** 2 / (2 * v[2] ** 2))
+                def gaussfit(v, p, q):
+                    return cont + v[0] * (1 / np.sqrt(2 * np.pi * (v[2] ** 2))) \
+                                    * np.exp(-(p - v[1]) ** 2 / (2 * v[2] ** 2)) \
+                                    * (1 / np.sqrt(2 * np.pi * (v[2] ** 2))) \
+                                    * np.exp(-(q - v[3]) ** 2 / (2 * v[2] ** 2))
                 # inital guesses for Gaussian Fit
                 v0 = [flux, center[0], width[0], center[1]]
             else:
                 # 2d gaussian function
-                gaussfit = lambda v, p, q: \
-                    v[4] + v[0] * (1 / np.sqrt(2 * np.pi * (v[2] ** 2))) \
-                    * np.exp(-(p - v[1]) ** 2 / (2 * v[2] ** 2)) \
-                    * (1 / np.sqrt(2 * np.pi * (v[2] ** 2))) \
-                    * np.exp(-(q - v[3]) ** 2 / (2 * v[2] ** 2))
+                def gaussfit(v, p, q):
+                    return v[4] + v[0] * (1 / np.sqrt(2 * np.pi * (v[2] ** 2))) \
+                                    * np.exp(-(p - v[1]) ** 2 / (2 * v[2] ** 2)) \
+                                    * (1 / np.sqrt(2 * np.pi * (v[2] ** 2))) \
+                                    * np.exp(-(q - v[3]) ** 2 / (2 * v[2] ** 2))
                 # inital guesses for Gaussian Fit
                 v0 = [flux, center[0], width[0], center[1], cont]
         else:
             if not fit_back:
                 if rot is None:
                     # 2d gaussian function
-                    gaussfit = lambda v, p, q: \
-                        cont + v[0] * (1 / np.sqrt(2 * np.pi * (v[2] ** 2))) \
-                        * np.exp(-(p - v[1]) ** 2 / (2 * v[2] ** 2)) \
-                        * (1 / np.sqrt(2 * np.pi * (v[4] ** 2))) \
-                        * np.exp(-(q - v[3]) ** 2 / (2 * v[4] ** 2))
+                    def gaussfit(v, p, q):
+                        return cont + v[0] * (1 / np.sqrt(2 * np.pi * (v[2] ** 2))) \
+                                            * np.exp(-(p - v[1]) ** 2 / (2 * v[2] ** 2)) \
+                                            * (1 / np.sqrt(2 * np.pi * (v[4] ** 2))) \
+                                            * np.exp(-(q - v[3]) ** 2 / (2 * v[4] ** 2))
                     # inital guesses for Gaussian Fit
                     v0 = [flux, center[0], width[0], center[1], width[1]]
                 else:
                     # rotation angle in rad
                     rot = np.pi * rot / 180.0
                     # 2d gaussian function
-                    gaussfit = lambda v, p, q: \
-                        cont + v[0] * (1 / np.sqrt(2 * np.pi * (v[2] ** 2))) \
-                        * np.exp(-((p - v[1]) * np.cos(v[5])
-                                   - (q - v[3]) * np.sin(v[5])) ** 2
-                                 / (2 * v[2] ** 2)) \
-                        * (1 / np.sqrt(2 * np.pi * (v[4] ** 2))) \
-                        * np.exp(-((p - v[1]) * np.sin(v[5])
-                                   + (q - v[3]) * np.cos(v[5])) ** 2
-                                 / (2 * v[4] ** 2))
+                    def gaussfit(v, p, q):
+                        return cont + v[0] * (1 / np.sqrt(2 * np.pi * (v[2] ** 2))) \
+                                            * np.exp(-((p - v[1]) * np.cos(v[5])
+                                                       - (q - v[3]) * np.sin(v[5])) ** 2
+                                                     / (2 * v[2] ** 2)) \
+                                            * (1 / np.sqrt(2 * np.pi * (v[4] ** 2))) \
+                                            * np.exp(-((p - v[1]) * np.sin(v[5])
+                                                       + (q - v[3]) * np.cos(v[5])) ** 2
+                                                     / (2 * v[4] ** 2))
                     # inital guesses for Gaussian Fit
                     v0 = [flux, center[0], width[0], center[1], width[1], rot]
             else:
                 if rot is None:
                     # 2d gaussian function
-                    gaussfit = lambda v, p, q: \
-                        v[5] + v[0] * (1 / np.sqrt(2 * np.pi * (v[2] ** 2))) \
-                        * np.exp(-(p - v[1]) ** 2 / (2 * v[2] ** 2)) \
-                        * (1 / np.sqrt(2 * np.pi * (v[4] ** 2))) \
-                        * np.exp(-(q - v[3]) ** 2 / (2 * v[4] ** 2))
+                    def gaussfit(v, p, q):
+                        return v[5] + v[0] * (1 / np.sqrt(2 * np.pi * (v[2] ** 2))) \
+                                            * np.exp(-(p - v[1]) ** 2 / (2 * v[2] ** 2)) \
+                                            * (1 / np.sqrt(2 * np.pi * (v[4] ** 2))) \
+                                            * np.exp(-(q - v[3]) ** 2 / (2 * v[4] ** 2))
                     # inital guesses for Gaussian Fit
                     v0 = [flux, center[0], width[0], center[1],
                           width[1], cont]
@@ -1857,15 +1857,15 @@ class Image(ArithmeticMixin, DataArray):
                     # r otation angle in rad
                     rot = np.pi * rot / 180.0
                     # 2d gaussian function
-                    gaussfit = lambda v, p, q: \
-                        v[6] + v[0] * (1 / np.sqrt(2 * np.pi * (v[2] ** 2))) \
-                        * np.exp(-((p - v[1]) * np.cos(v[5])
-                                   - (q - v[3]) * np.sin(v[5])) ** 2
-                                 / (2 * v[2] ** 2)) \
-                        * (1 / np.sqrt(2 * np.pi * (v[4] ** 2))) \
-                        * np.exp(-((p - v[1]) * np.sin(v[5])
-                                   + (q - v[3]) * np.cos(v[5])) ** 2
-                                 / (2 * v[4] ** 2))
+                    def gaussfit(v, p, q):
+                        return v[6] + v[0] * (1 / np.sqrt(2 * np.pi * (v[2] ** 2))) \
+                                            * np.exp(-((p - v[1]) * np.cos(v[5])
+                                                       - (q - v[3]) * np.sin(v[5])) ** 2
+                                                     / (2 * v[2] ** 2)) \
+                                            * (1 / np.sqrt(2 * np.pi * (v[4] ** 2))) \
+                                            * np.exp(-((p - v[1]) * np.sin(v[5])
+                                                       + (q - v[3]) * np.cos(v[5])) ** 2
+                                                     / (2 * v[4] ** 2))
                     # inital guesses for Gaussian Fit
                     v0 = [flux, center[0], width[0], center[1],
                           width[1], rot, cont]
@@ -1880,16 +1880,16 @@ class Image(ArithmeticMixin, DataArray):
             fq = (q[:, np.newaxis] + deci.T.ravel()[np.newaxis, :]).ravel()
             pixcrd = np.array(list(zip(fp, fq)))
 
-            e_gauss_fit = lambda v, p, q, data, w: \
-                w * (((gaussfit(v, p, q)).reshape(N, factor * factor).sum(1)
-                      / factor / factor).T.ravel() - data)
+            def e_gauss_fit(v, p, q, data, w):
+                return w * (((gaussfit(v, p, q)).reshape(N, factor * factor).sum(1)
+                                  / factor / factor).T.ravel() - data)
             v, covar, info, mesg, success = \
                 leastsq(e_gauss_fit, v0[:],
                         args=(pixcrd[:, 0], pixcrd[:, 1], data, wght),
                         maxfev=maxiter, full_output=1)
         else:
-            e_gauss_fit = lambda v, p, q, data, w: \
-                w * (gaussfit(v, p, q) - data)
+            def e_gauss_fit(v, p, q, data, w):
+                return w * (gaussfit(v, p, q) - data)
             v, covar, info, mesg, success = \
                 leastsq(e_gauss_fit, v0[:], args=(p, q, data, wght),
                         maxfev=maxiter, full_output=1)
@@ -2136,84 +2136,88 @@ class Image(ArithmeticMixin, DataArray):
             rot = None
             if not fit_back:
                 if fit_n:
-                    moffatfit = lambda v, p, q: moffat(
-                        cont, p, q, v[0], v[1], v[2], v[3], v[4], 1)
+                    def moffatfit(v, p, q):
+                        return moffat(cont, p, q, v[0], v[1], v[2], v[3], v[4], 1)
                     v0 = [I, center[0], center[1], a, n]
                 else:
-                    moffatfit = lambda v, p, q: moffat(
-                        cont, p, q, v[0], v[1], v[2], v[3], n, 1)
+                    def moffatfit(v, p, q):
+                        return moffat(cont, p, q, v[0], v[1], v[2], v[3], n, 1)
                     v0 = [I, center[0], center[1], a]
             else:
                 # 2d moffat function
                 if fit_n:
-                    moffatfit = lambda v, p, q: moffat(
-                        v[5], p, q, v[0], v[1], v[2], v[3], v[4], 1)
+                    def moffatfit(v, p, q):
+                        return moffat(v[5], p, q, v[0], v[1], v[2], v[3], v[4], 1)
                     v0 = [I, center[0], center[1], a, n, cont]
                 else:
-                    moffatfit = lambda v, p, q: moffat(
-                        v[4], p, q, v[0], v[1], v[2], v[3], n, 1)
+                    def moffatfit(v, p, q):
+                        return moffat(v[4], p, q, v[0], v[1], v[2], v[3], n, 1)
                     v0 = [I, center[0], center[1], a, cont]
         else:
             if not fit_back:
                 if rot is None:
                     if fit_n:
-                        moffatfit = lambda v, p, q: moffat(
-                            cont, p, q, v[0], v[1], v[2], v[3], v[4], v[5])
+                        def moffatfit(v, p, q):
+                            return moffat(cont, p, q, v[0], v[1], v[2], v[3], v[4], v[5])
                         v0 = [I, center[0], center[1], a, n, e]
                     else:
-                        moffatfit = lambda v, p, q: moffat(
-                            cont, p, q, v[0], v[1], v[2], v[3], n, v[5])
+                        def moffatfit(v, p, q):
+                            return moffat(cont, p, q, v[0], v[1], v[2], v[3], n, v[5])
                         v0 = [I, center[0], center[1], a, e]
                 else:
                     # rotation angle in rad
                     rot = np.pi * rot / 180.0
                     if fit_n:
                         # 2d moffat function
-                        moffatfit = lambda v, p, q: cont + v[0] \
-                                                    * (1 + (((p - v[1]) * np.cos(v[6]) - (q - v[2])
-                                                             * np.sin(v[6])) / v[3]) ** 2
-                                                       + (((p - v[1]) * np.sin(v[6]) + (q - v[2])
-                                                           * np.cos(v[6])) / v[3] / v[5]) ** 2) ** (-v[4])
+                        def moffatfit(v, p, q):
+                            return cont + v[0] \
+                                    * (1 + (((p - v[1]) * np.cos(v[6]) - (q - v[2])
+                                                * np.sin(v[6])) / v[3]) ** 2
+                                        + (((p - v[1]) * np.sin(v[6]) + (q - v[2])
+                                            * np.cos(v[6])) / v[3] / v[5]) ** 2) ** (-v[4])
                         # inital guesses
                         v0 = [I, center[0], center[1], a, n, e, rot]
                     else:
                         # 2d moffat function
-                        moffatfit = lambda v, p, q: cont + v[0] \
-                                                    * (1 + (((p - v[1]) * np.cos(v[5]) - (q - v[2])
-                                                             * np.sin(v[5])) / v[3]) ** 2
-                                                       + (((p - v[1]) * np.sin(v[5]) + (q - v[2])
-                                                           * np.cos(v[5])) / v[3] / v[4]) ** 2) ** (-n)
+                        def moffatfit(v, p, q):
+                            return cont + v[0] \
+                                    * (1 + (((p - v[1]) * np.cos(v[5]) - (q - v[2])
+                                                * np.sin(v[5])) / v[3]) ** 2
+                                        + (((p - v[1]) * np.sin(v[5]) + (q - v[2])
+                                            * np.cos(v[5])) / v[3] / v[4]) ** 2) ** (-n)
                         # inital guesses
                         v0 = [I, center[0], center[1], a, e, rot]
             else:
                 if rot is None:
                     if fit_n:
-                        moffatfit = lambda v, p, q: moffat(
-                            v[6], p, q, v[0], v[1], v[2], v[3], v[4], v[5])
+                        def moffatfit(v, p, q):
+                            return moffat(v[6], p, q, v[0], v[1], v[2], v[3], v[4], v[5])
                         v0 = [I, center[0], center[1], a, n, e, cont]
                     else:
-                        moffatfit = lambda v, p, q: moffat(
-                            v[5], p, q, v[0], v[1], v[2], v[3], n, v[4])
+                        def moffatfit(v, p, q):
+                            return moffat(v[5], p, q, v[0], v[1], v[2], v[3], n, v[4])
                         v0 = [I, center[0], center[1], a, e, cont]
                 else:
                     # rotation angle in rad
                     rot = np.pi * rot / 180.0
                     if fit_n:
                         # 2d moffat function
-                        moffatfit = lambda v, p, q: v[7] + v[0] \
-                                                    * (1 + (((p - v[1]) * np.cos(v[6])
-                                                             - (q - v[2]) * np.sin(v[6])) / v[3]) ** 2
-                                                       + (((p - v[1]) * np.sin(v[6])
-                                                           + (q - v[2]) * np.cos(v[6])) / v[3] / v[5]) ** 2) ** (-v[4])
+                        def moffatfit(v, p, q):
+                            return v[7] + v[0] \
+                                    * (1 + (((p - v[1]) * np.cos(v[6])
+                                                - (q - v[2]) * np.sin(v[6])) / v[3]) ** 2
+                                        + (((p - v[1]) * np.sin(v[6])
+                                            + (q - v[2]) * np.cos(v[6])) / v[3] / v[5]) ** 2) ** (-v[4])
                         # inital guesses
                         v0 = [I, center[0], center[1], a, n, e, rot, cont]
                     else:
                         # 2d moffat function
-                        moffatfit = lambda v, p, q: v[6] + v[0] \
-                                                    * (1 + (((p - v[1]) * np.cos(v[5])
-                                                             - (q - v[2]) * np.sin(v[5])) / v[3]) ** 2
-                                                       + (((p - v[1]) * np.sin(v[5])
-                                                           + (q - v[2]) * np.cos(v[5])) / v[3] / v[4]) ** 2) ** (-n)
+                        def moffatfit(v, p, q):
+                            return v[6] + v[0] \
+                                    * (1 + (((p - v[1]) * np.cos(v[5])
+                                                - (q - v[2]) * np.sin(v[5])) / v[3]) ** 2
+                                        + (((p - v[1]) * np.sin(v[5])
+                                            + (q - v[2]) * np.cos(v[5])) / v[3] / v[4]) ** 2) ** (-n)
                         # inital guesses
                         v0 = [I, center[0], center[1], a, e, rot, cont]
 
@@ -2227,16 +2231,16 @@ class Image(ArithmeticMixin, DataArray):
             fq = (q[:, np.newaxis] + deci.T.ravel()[np.newaxis, :]).ravel()
             pixcrd = np.array(list(zip(fp, fq)))
 
-            e_moffat_fit = lambda v, p, q, data, w: \
-                w * (((moffatfit(v, p, q)).reshape(N, factor * factor).sum(1)
-                      / factor / factor).T.ravel() - data)
+            def e_moffat_fit(v, p, q, data, w):
+                return w * (((moffatfit(v, p, q)).reshape(N, factor * factor).sum(1)
+                                  / factor / factor).T.ravel() - data)
             v, covar, info, mesg, success = \
                 leastsq(e_moffat_fit, v0[:], args=(pixcrd[:, 0], pixcrd[:, 1],
                                                    data, wght),
                         maxfev=maxiter, full_output=1)
         else:
-            e_moffat_fit = lambda v, p, q, data, w: \
-                w * (moffatfit(v, p, q) - data)
+            def e_moffat_fit(v, p, q, data, w):
+                return w * (moffatfit(v, p, q) - data)
             v, covar, info, mesg, success = \
                 leastsq(e_moffat_fit, v0[:],
                         args=(p, q, data, wght),
@@ -3378,7 +3382,7 @@ class Image(ArithmeticMixin, DataArray):
         self._data = np.random.normal(data, sigma)
 
         if self._var is None:
-            self._var = np.ones((self.shape)) * sigma * sigma
+            self._var = np.ones(self.shape) * sigma * sigma
         else:
             self._var *= (sigma * sigma)
 
@@ -3661,7 +3665,7 @@ class Image(ArithmeticMixin, DataArray):
                                               mode='same')
             return res
         else:
-            raise IOError('Operation forbidden')
+            raise OSError('Operation forbidden')
 
     def plot(self, title=None, scale='linear', vmin=None, vmax=None,
              zscale=False, colorbar=None, var=False, show_xlabel=False,
@@ -4382,10 +4386,11 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
     # divided by its cutoff frequency.
 
     if window is None or window == "blackman":
-        winfn = lambda r: np.where(r <= 1.0,
-                                   0.42 + 0.5 * np.cos(np.pi * r) +
-                                   0.08 * np.cos(2 * np.pi * r),
-                                   0.0)
+        def winfn(r):
+            return np.where(r <= 1.0,
+                                           0.42 + 0.5 * np.cos(np.pi * r) +
+                                           0.08 * np.cos(2 * np.pi * r),
+                                           0.0)
 
     # For the gaussian window the standard deviation, sigma, is
     # as a fraction of the normalized cutoff frequency. Note that
@@ -4394,13 +4399,15 @@ def _antialias_filter_image(data, oldstep, newstep, oldfmax=None,
 
     elif window == "gaussian":
         sigma = 0.44
-        winfn = lambda r: np.exp(-0.5 * (r / sigma) ** 2)
+        def winfn(r):
+            return np.exp(-0.5 * (r / sigma) ** 2)
 
     # For the rectangular window, just multiply all pixels below the
     # cutoff frequency by one, and the rest by zero.
 
     elif window == "rectangle":
-        winfn = lambda r: np.where(r <= 1.0, 1.0, 0.0)
+        def winfn(r):
+            return np.where(r <= 1.0, 1.0, 0.0)
 
     # Apply the window function to the FFT to remove frequencies above the
     # cutoff frequencies.

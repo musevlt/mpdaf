@@ -89,10 +89,12 @@ class LSF:
 
         """
         if self.typ == "qsim_v1":
-            T = lambda x: np.exp((-x ** 2) / 2.0) + np.sqrt(2.0 * np.pi) \
-                * x * special.erf(x / np.sqrt(2.0)) / 2.0
+            def T(x):
+                return np.exp((-x ** 2) / 2.0) + np.sqrt(2.0 * np.pi) \
+                            * x * special.erf(x / np.sqrt(2.0)) / 2.0
             c = np.array([-0.09876662, 0.44410609, -0.03166038, 0.46285363])
-            sigma = lambda x: c[3] + c[2] * x + c[1] * x ** 2 + c[0] * x ** 3
+            def sigma(x):
+                return c[3] + c[2] * x + c[1] * x ** 2 + c[0] * x ** 3
 
             x = (lbda - 6975.0) / 4650.0
             h_2 = 2.09 / 2.0
@@ -107,7 +109,7 @@ class LSF:
 
             lsf = T(y2 + dy_2) - T(y2 - dy_2) - T(y1 + dy_2) + T(y1 - dy_2)
         else:
-            raise IOError('Invalid LSF type')
+            raise OSError('Invalid LSF type')
 
         lsf /= lsf.sum()
         return lsf
@@ -258,7 +260,7 @@ class FSF:
         if self.typ == "MOFFAT1":
             return MOFFAT1(lbda, step, size, **kwargs)
         else:
-            raise IOError('Invalid FSF type')
+            raise OSError('Invalid FSF type')
 
     def get_FSF_cube(self, cube, size, **kargs):
         """Return a cube of FSFs corresponding to the MUSE data cube
@@ -291,7 +293,7 @@ class FSF:
         if self.typ == "MOFFAT1":
             return MOFFAT1(lbda, step, size, **kargs)
         else:
-            raise IOError('Invalid FSF type')
+            raise OSError('Invalid FSF type')
 
 
 @deprecated('deprecated in favor of mpdaf.MUSE.FSFModel')
@@ -354,8 +356,9 @@ def create_psf_cube(shape, fwhm, beta=None, wcs=None, unit_fwhm=u.arcsec):
 
     """
     if len(fwhm) != shape[0]:
-        raise ValueError('fwhm length ({}) and input shape ({}) do not match'
-                         .format(len(fwhm), shape[0]))
+        raise ValueError(
+            f'fwhm length ({len(fwhm)}) and input shape ({shape[0]}) do not match'
+        )
 
     nl = shape[0]
     y0, x0 = (np.array(shape[1:]) - 1) / 2.0

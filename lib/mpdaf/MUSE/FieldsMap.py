@@ -66,7 +66,7 @@ def create_fields_map(imglist, refimg, outfile):
         img = Image(f)
         offset = (- img.wcs.wcs.wcs.crpix[::-1]).astype(int)
         sy, sx = list(zip(offset, offset + np.array(img.shape)))
-        print('{:03d}/{}'.format(i, nimg), os.path.basename(f), field, sy, sx)
+        print(f'{i:03d}/{nimg}', os.path.basename(f), field, sy, sx)
         maskim.data[slice(*sy), slice(*sx)] |= (2**field *
                                                 (~img.mask).astype(np.uint))
 
@@ -119,14 +119,14 @@ class FieldsMap:
 
     def get_pixel_fields(self, y, x):
         """Return a list of fields that cover a given pixel (y, x)."""
-        ind = reversed("{0:010b}".format(self.data[y, x])[:-1])
+        ind = reversed(f"{self.data[y, x]:010b}"[:-1])
         fields = ('UDF-%02d' % i for i in range(1, self.nfields + 1))
         return [field for field, i in zip(fields, ind) if i == '1']
 
     def get_pixel_fields_indexes(self, y, x):
         """Return a list of fields indexes (between 0 and nfields)
         that cover a given pixel (y, x)."""
-        ind = reversed("{0:010b}".format(self.data[y, x])[:-1])
+        ind = reversed(f"{self.data[y, x]:010b}"[:-1])
         indexes = (i for i in range(self.nfields))
         return [index for index, i in zip(indexes, ind) if i == '1']
 
@@ -219,10 +219,10 @@ class FieldsMap:
             weights = self.compute_weights()
         # kernels and weights shall have the same length
         if len(kernels) != len(weights):
-            raise IOError('kernels and weights shall have the same length')
+            raise OSError('kernels and weights shall have the same length')
         # img and weights shall have the same shape
         if img.shape != weights[0].shape:
-            raise IOError('img and weights shall have the same shape')
+            raise OSError('img and weights shall have the same shape')
 
         convolved_img = np.zeros_like(img)
 

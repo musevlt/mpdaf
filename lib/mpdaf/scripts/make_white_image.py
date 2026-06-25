@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Copyright (c) 2010-2018 CNRS / Centre de Recherche Astrophysique de Lyon
 Copyright (c) 2015-2018 Simon Conseil <simon.conseil@univ-lyon1.fr>
@@ -46,7 +45,7 @@ def make_white_image(inputfile, outputfile, verbose=False):
     if outputfile == inputfile:
         sys.exit('Input and output files are identical')
 
-    print('Creating white light image {}'.format(outputfile))
+    print(f'Creating white light image {outputfile}')
     cube = Cube(inputfile, convert_float64=False)
     if verbose:
         cube.info()
@@ -54,7 +53,7 @@ def make_white_image(inputfile, outputfile, verbose=False):
     im = cube.mean(axis=0)
     im.write(outputfile, savemask='nan')
     if verbose:
-        print('Execution time {:.3f} seconds.'.format(time() - t0))
+        print(f'Execution time {time() - t0:.3f} seconds.')
 
 
 def main(args=None):

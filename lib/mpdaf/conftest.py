@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Copyright (c) 2010-2018 CNRS / Centre de Recherche Astrophysique de Lyon
 Copyright (c) 2016-2019 Simon Conseil <simon.conseil@univ-lyon1.fr>
@@ -46,9 +45,12 @@ from .tests.utils import generate_cube, generate_image, generate_spectrum, get_d
 # Show versions if installed package in pytest's header
 
 def pytest_report_header(config):
-    return "Deps: Numpy {}, Scipy {}, Matplotlib {}, Astropy {}".format(
-        np.__version__, scipy.__version__, matplotlib.__version__,
-        astropy.__version__)
+    return (
+        f"Deps: Numpy {np.__version__}, "
+        f"Scipy {scipy.__version__}, "
+        f"Matplotlib {matplotlib.__version__}, "
+        f"Astropy {astropy.__version__}"
+    )
 
 
 # Fixtures

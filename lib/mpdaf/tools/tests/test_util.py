@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Copyright (c) 2010-2018 CNRS / Centre de Recherche Astrophysique de Lyon
 Copyright (c) 2016-2019 Simon Conseil <simon.conseil@univ-lyon1.fr>
@@ -34,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
 import re
 import time
-import warnings
 
 import numpy as np
 import pytest

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Copyright (c) 2010-2018 CNRS / Centre de Recherche Astrophysique de Lyon
 Copyright (c) 2016-2019 Simon Conseil <simon.conseil@univ-lyon1.fr>
@@ -110,9 +109,9 @@ def _check_proportionality(a, b, tol=1e-5):
         return False
     else:
         # If the arrays do not have different pixels when divided, return the constant factor to indicate False
-        logging.warning("a = {} * b. "
+        logging.warning(f"a = {quotient[0]} * b. "
                         "Propagation of correlated errors in not supported,"
-                        " so variances will not be propagated.".format(quotient[0]))
+                        " so variances will not be propagated.")
         return True
 
 
@@ -130,7 +129,7 @@ def _check_power(a, b, tol=1e-5):
     # Create a boolean mask to exclude pixels where the value > 1
     sel = (a > 1) & (b > 1)
     # Compute the power of each pixel
-    power = np.divide(np.log((np.abs(a[sel]))), np.log(np.abs(b[sel])))
+    power = np.divide(np.log(np.abs(a[sel])), np.log(np.abs(b[sel])))
 
     # Calculate the standard deviation of exponents
     std_dev = np.nanstd(power)
@@ -141,9 +140,9 @@ def _check_power(a, b, tol=1e-5):
         return False
     else:
         # If the arrays do not have different pixels, return the constant exponent to indicate False
-        logging.warning("a = b **{}. "
+        logging.warning(f"a = b **{power[0]}. "
                         "Propagation of correlated errors in not supported,"
-                        " so variances will not be propagated.".format(power[0]))
+                        " so variances will not be propagated.")
         return True
 
 

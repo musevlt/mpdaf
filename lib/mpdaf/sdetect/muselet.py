@@ -64,7 +64,7 @@ CONFIG_FILES_NB = {'sex': 'nb_default.sex', 'conv': 'nb_default.conv',
 shared_args = {} #global variable storage needed for multiprocessing
 
 
-class ProgressCounter(object):
+class ProgressCounter:
 
     def __init__(self, total, msg='', every=1):
         self.count = 0
@@ -82,8 +82,7 @@ class ProgressCounter(object):
 
     def update_display(self):
        if ((self.count % self.every) == 0) or (self.count == self.total):
-           sys.stdout.write("\r\x1b[K{}{}/{}".format(self.msg, self.count,
-                                                self.total))
+           sys.stdout.write(f"\r\x1b[K{self.msg}{self.count}/{self.total}")
            sys.stdout.flush()
 
     def close(self):
@@ -113,9 +112,9 @@ def get_cmd_sex(silent=True):
         try:
             res = subprocess.run(['which', cmd], stdout=subprocess.PIPE)
             which = res.stdout.decode('utf-8', errors='ignore').strip()
-            logger.debug('[{}] {}'.format(which, version))
+            logger.debug(f'[{which}] {version}')
         except Exception:
-            logger.debug('{}'.format(version))
+            logger.debug(f'{version}')
 
     return cmd
 
@@ -132,11 +131,11 @@ def setup_config_files(dir_, nb=False):
 
     for config_type in ['sex', 'param', 'conv', 'nnw']:
         f1 = DATADIR / config_files[config_type]
-        f2 = dir_ / 'default.{}'.format(config_type)
+        f2 = dir_ / f'default.{config_type}'
 
         if not f2.exists():
             shutil.copy(str(f1), str(f2))
-            logger.debug("creating file: {}".format(f2))
+            logger.debug(f"creating file: {f2}")
 #        else:
 #            logger.debug("using existing file: {}".format(f2))
 
@@ -150,7 +149,7 @@ def setup_emline_files(dir_):
         f2 = dir_ / file
         if not f2.exists():
             shutil.copy(str(f1), str(f2))
-            logger.debug("creating file: {}".format(f2))
+            logger.debug(f"creating file: {f2}")
 #        else:
 #            logger.debug("using existing file: {}".format(f2))
 
@@ -179,7 +178,7 @@ def write_white_image(cube, dir_):
     image = Image(data=data, wcs=cube.wcs, unit=cube.unit, copy=False)
 
     file = dir_ / 'im_white.fits'
-    logger.debug('writing white light image: {}'.format(file))
+    logger.debug(f'writing white light image: {file}')
     image.write(file, savemask='nan')
 
 
@@ -199,7 +198,7 @@ def write_weight_image(cube, cube_exp, dir_):
         image = cube_exp.mean(axis=0)
 
     file = dir_ / 'im_weight.fits'
-    logger.debug("writing weight image: {}".format(file))
+    logger.debug(f"writing weight image: {file}")
     image.write(file, savemask='nan')
 
 
@@ -222,15 +221,15 @@ def write_rgb_images(cube, dir_):
     im_r = Image(data=data_r, wcs=cube.wcs, unit=cube.unit, copy=False)
 
     file = dir_ / 'im_b.fits'
-    logger.debug("writing blue image: {}".format(file))
+    logger.debug(f"writing blue image: {file}")
     im_b.write(file, savemask='nan')
 
     file = dir_ / 'im_g.fits'
-    logger.debug("writing green image: {}".format(file))
+    logger.debug(f"writing green image: {file}")
     im_g.write(file, savemask='nan')
 
     file = dir_ / 'im_r.fits'
-    logger.debug("writing red image: {}".format(file))
+    logger.debug(f"writing red image: {file}")
     im_r.write(file, savemask='nan')
 
 
@@ -273,7 +272,7 @@ def write_nb(i, data, var, left, right, exp, fw, hdr, dir_):
         im_nb = im_center
 
     hdu = fits.ImageHDU(im_nb, header=hdr, name='DATA')
-    file = dir_ / 'nb/nb{:04d}.fits'.format(i)
+    file = dir_ / f'nb/nb{i:04d}.fits'
     hdu.writeto(file, overwrite=True)
 
     #expand mask by two pixels
@@ -281,7 +280,7 @@ def write_nb(i, data, var, left, right, exp, fw, hdr, dir_):
     #im_mask = binary_dilation(im_mask, iterations=2, border_value=1)
 
     hdu = fits.ImageHDU(im_mask.astype(np.uint8), header=hdr, name='DATA')
-    file = dir_ / 'nb/nb{:04d}-mask.fits'.format(i)
+    file = dir_ / f'nb/nb{i:04d}-mask.fits'
     hdu.writeto(file, overwrite=True)
 
     if exp is not None:
@@ -294,7 +293,7 @@ def write_nb(i, data, var, left, right, exp, fw, hdr, dir_):
         im_weight = np.ma.sum(weight, axis=0).filled(0)
         hdu = fits.ImageHDU(im_weight, header=hdr)
 
-    file = dir_ / 'nb/nb{:04d}-weight.fits'.format(i)
+    file = dir_ / f'nb/nb{i:04d}-weight.fits'
     hdu.writeto(file, overwrite=True)
 
     return im_nb
@@ -425,7 +424,7 @@ def write_nb_images(cube, cube_exp, delta, fw, dir_, n_cpu=1):
             progress.increment()
 
     else: #parallel
-        logger.info("creating narrow-band images using {} CPUs".format(n_cpu))
+        logger.info(f"creating narrow-band images using {n_cpu} CPUs")
 
         #setup shared arrays (no locks needed!), this can take some time
         logger.debug("allocating shared arrays for multiprocessing")
@@ -555,7 +554,7 @@ def step1(file_cube, file_expmap=None, delta=20, fw=(0.26, 0.7, 1., 0.7, 0.26),
 
     if write_nbcube:
         file = dir_ / ('NB_' + file_cube.name)
-        logger.debug("writing narrow-band cube: {}".format(file))
+        logger.debug(f"writing narrow-band cube: {file}")
         cube_nb.writeto(file, overwrite=True)
 
 
@@ -577,8 +576,8 @@ def get_sex_opts(config):
 
     cmd = []
     for k, v in config.items():
-        cmd += ['-{}'.format(k.upper()), '{}'.format(v)]
-        logger.debug("Using {} = {}".format(k.upper(), v))
+        cmd += [f'-{k.upper()}', f'{v}']
+        logger.debug(f"Using {k.upper()} = {v}")
 
     return cmd
 
@@ -597,8 +596,8 @@ def run_sex_bb(dir_, config):
     sex_opts = get_sex_opts(config)
     for band in ['white', 'b', 'g', 'r']:
         cmd = [cmd_sex] + sex_opts + [
-                '-CATALOG_NAME', 'cat_{}.dat'.format(band),
-                'im_white.fits,im_{}.fits'.format(band)]
+                '-CATALOG_NAME', f'cat_{band}.dat',
+                f'im_white.fits,im_{band}.fits']
         run_sex_cmd(cmd, dir_)
 
     logger.debug("combining catalogs")
@@ -618,14 +617,14 @@ def run_sex_bb(dir_, config):
                   cat_b['MAG_APER'], cat_b['MAGERR_APER'],
                   cat_g['MAG_APER'], cat_g['MAGERR_APER'],
                   cat_r['MAG_APER'], cat_r['MAGERR_APER']], names=names)
-    logger.info("{} continiuum objects detected".format(len(cat_bgr)))
+    logger.info(f"{len(cat_bgr)} continiuum objects detected")
 
     file = dir_ / 'cat_bgr.dat'
-    logger.debug("writing catalog: {}".format(file))
+    logger.debug(f"writing catalog: {file}")
     cat_bgr.write(str(file), format='ascii.fixed_width_two_line')
 
     for band in ['b', 'g', 'r']:
-        file = dir_ / 'cat_{}.dat'.format(band)
+        file = dir_ / f'cat_{band}.dat'
 #        logger.debug("removing file {}".format(file))
         file.unlink()
 
@@ -646,12 +645,12 @@ def run_sex_nb(dir_, cube, config, n_cpu=1):
     commands = []
     for i in range(2, n_w-3):
         cmd = [cmd_sex] + sex_opts + [
-                '-CATALOG_NAME', 'cat{:04d}.dat'.format(i),
-                '-WEIGHT_IMAGE', 'nb{:04d}-weight.fits'.format(i),
-                '-FLAG_IMAGE', 'nb{:04d}-mask.fits'.format(i),
+                '-CATALOG_NAME', f'cat{i:04d}.dat',
+                '-WEIGHT_IMAGE', f'nb{i:04d}-weight.fits',
+                '-FLAG_IMAGE', f'nb{i:04d}-mask.fits',
                 '-CHECKIMAGE_TYPE', 'SEGMENTATION',
-                '-CHECKIMAGE_NAME', 'seg{:04d}.fits'.format(i),
-                'nb{:04d}.fits'.format(i)]
+                '-CHECKIMAGE_NAME', f'seg{i:04d}.fits',
+                f'nb{i:04d}.fits']
         commands.append(cmd)
 
 #    t0_run = time.time()
@@ -666,7 +665,7 @@ def run_sex_nb(dir_, cube, config, n_cpu=1):
 
     else:
         logger.info("running SExtractor on narrow-band images using "
-                    "{} CPUs".format(n_cpu))
+                    f"{n_cpu} CPUs")
 
         progress = ProgressCounter(len(commands), msg='SExtractor:', every=10)
 
@@ -718,7 +717,7 @@ def load_cat(i_nb, dir_):
 
     logger = logging.getLogger(__name__)
 
-    file_cat = dir_ / 'nb/cat{:04d}.dat'.format(i_nb)
+    file_cat = dir_ / f'nb/cat{i_nb:04d}.dat'
     data = table.Table.read(file_cat, format='ascii.sextractor')
 
     data.rename_column('NUMBER', 'ID_SLICE')
@@ -734,7 +733,7 @@ def load_cat(i_nb, dir_):
     with warnings.catch_warnings():
         warnings.simplefilter('ignore', category=MpdafUnitsWarning)
 
-        file_seg = dir_ / 'nb/seg{:04d}.fits'.format(i_nb)
+        file_seg = dir_ / f'nb/seg{i_nb:04d}.fits'
         im_seg = Image(str(file_seg))
 
     mask = np.zeros(len(data), dtype=bool)
@@ -743,7 +742,7 @@ def load_cat(i_nb, dir_):
         mask[i] = id_exists
 
         if not id_exists:
-            msg = "ID {:d}, not found in seg{:04d}.fits".format(id_, i_nb)
+            msg = f"ID {id_:d}, not found in seg{i_nb:04d}.fits"
             logger.warning(msg)
 
     data = data[mask]
@@ -819,7 +818,7 @@ def load_raw_catalog(dir_, cube, skyclean, n_cpu=1):
             progress.increment()
 
     else:
-        msg = "loading narrow-band catalogs using {} CPUs".format(n_cpu)
+        msg = f"loading narrow-band catalogs using {n_cpu} CPUs"
         logger.info(msg)
         progress = ProgressCounter(len(idx_nb), msg='Loaded:', every=10)
         pool = mp.Pool(n_cpu)
@@ -847,7 +846,7 @@ def load_raw_catalog(dir_, cube, skyclean, n_cpu=1):
 #    t_load = time.time() - t0_load
 #    logger.debug("catalogs loaded in {0:.1f} seconds".format(t_load))
 
-    msg = "{} raw detections found".format(len(cat))
+    msg = f"{len(cat)} raw detections found"
     logger.info(msg)
 
     return cat
@@ -1087,7 +1086,7 @@ def find_objects(cat, dir_, cube, radius, n_cpu=1):
 
     uniq_ids = np.unique(ids)
     n_obj = len(np.unique(ids))
-    logger.info("{} objects found".format(n_obj))
+    logger.info(f"{n_obj} objects found")
 
     #add object id column to line catalog
     c = table.Column(ids, name='ID_OBJ')
@@ -1099,8 +1098,8 @@ def find_objects(cat, dir_, cube, radius, n_cpu=1):
     cat_obj['RA'] = table.Column([], dtype=float)
     cat_obj['DEC'] = table.Column([], dtype=float)
     for band in ['B', 'G', 'R']:
-        cat_obj['MAG_APER_{}'.format(band)] = table.Column([], dtype=float)
-        cat_obj['MAGERR_APER_{}'.format(band)] = table.Column([], dtype=float)
+        cat_obj[f'MAG_APER_{band}'] = table.Column([], dtype=float)
+        cat_obj[f'MAGERR_APER_{band}'] = table.Column([], dtype=float)
 
     ra0 = cube.wcs.get_crval1(unit=u.deg)
     dec0 = cube.wcs.get_crval2(unit=u.deg)
@@ -1221,7 +1220,7 @@ def write_line_source_single(row, dir_, cube, ima_size):
 
     src.add_attr('ID_OBJ', row['ID_OBJ'])
 
-    src.write(dir_ / 'lines/lines-{:04d}.fits'.format(id_))
+    src.write(dir_ / f'lines/lines-{id_:04d}.fits')
 
 
 def write_object_source_single(row_obj, rows_lines, dir_, cube, ima_size,
@@ -1335,7 +1334,7 @@ def write_object_source_single(row_obj, rows_lines, dir_, cube, ima_size,
     src.add_image(im_nb_coadd, 'NB_COADD', size)
     src.add_image(im_seg_union, 'MASK_OBJ', size)
 
-    src.write(dir_ / 'objects/objects-{:04d}.fits'.format(id_))
+    src.write(dir_ / f'objects/objects-{id_:04d}.fits')
 
 
 def write_line_source_multi(row, dir_, file_cube, ima_size):
@@ -1360,7 +1359,7 @@ def write_line_sources(cat_lines, dir_, cube, ima_size, n_cpu=1):
 
     logger = logging.getLogger(__name__)
 
-    logger.info("creating line source files using {} CPU".format(n_cpu))
+    logger.info(f"creating line source files using {n_cpu} CPU")
 
     #remove any existing files
     try:
@@ -1401,7 +1400,7 @@ def write_line_sources(cat_lines, dir_, cube, ima_size, n_cpu=1):
 
     source_cat = Catalog.from_path(str(dir_ / 'lines'), fmt='working')
     file = dir_ / 'lines.fit'
-    logger.debug('writing catalog to: {}'.format(file))
+    logger.debug(f'writing catalog to: {file}')
     source_cat.write(file, format='fits')
 
 
@@ -1410,7 +1409,7 @@ def write_object_sources(cat_objects, cat_lines, dir_, cube, ima_size,
 
     logger = logging.getLogger(__name__)
 
-    logger.info("creating object source files using {} CPU".format(n_cpu))
+    logger.info(f"creating object source files using {n_cpu} CPU")
 
     #remove any existing files
     try:
@@ -1462,7 +1461,7 @@ def write_object_sources(cat_objects, cat_lines, dir_, cube, ima_size,
 
     source_cat = Catalog.from_path(str(dir_ / 'objects'), fmt='working')
     file = dir_ / 'objects.fit'
-    logger.debug('writing catalog to: {}'.format(file))
+    logger.debug(f'writing catalog to: {file}')
     source_cat.write(file, format='fits')
 
 
@@ -1496,19 +1495,19 @@ def step3(file_cube, clean=0.5, skyclean=((5573.5, 5578.8), (6297.0, 6300.5)),
     #write raw catalogues,
     #perhaps useful for debugging / user to do own postprocessing
     file = dir_ / 'cat_raw.fit'
-    logger.debug('writing raw catalog: {}'.format(file))
+    logger.debug(f'writing raw catalog: {file}')
     cat_raw.write(file, overwrite=True)
 
     file = dir_ / 'cat_raw-clean.fit'
-    logger.debug('writing cleaned catalog: {}'.format(file))
+    logger.debug(f'writing cleaned catalog: {file}')
     cat_clean.write(file, overwrite=True)
 
     file = dir_ / 'cat_lines.fit'
-    logger.debug('writing line catalog: {}'.format(file))
+    logger.debug(f'writing line catalog: {file}')
     cat_lines.write(file, overwrite=True)
 
     file = dir_ / 'cat_objects.fit'
-    logger.debug('writing object catalog: {}'.format(file))
+    logger.debug(f'writing object catalog: {file}')
     cat_objects.write(file, overwrite=True)
 
 

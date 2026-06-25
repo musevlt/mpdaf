@@ -40,10 +40,10 @@ def test_levels(signal, levels):
         # + (2**level -1)*(h_length-1) > signalSize must be avoided (the second
         # term = number of 0s in h array)
         levels = int(np.floor(max_level))
-        raise IOError("Attention: The chosen number of levels exceeds the "
+        raise OSError("Attention: The chosen number of levels exceeds the "
                       "number allowed (sampling condition). Thus it was "
-                      "automatically set to the maximum number allowed = {}"
-                      .format(levels))
+                      f"automatically set to the maximum number allowed = {levels}"
+                      )
     return levels
 
 

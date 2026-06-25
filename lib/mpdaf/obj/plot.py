@@ -110,7 +110,7 @@ def get_plot_norm(data, vmin=None, vmax=None, zscale=False, scale='linear'):
     elif scale == 'sqrt':
         stretch = viz.SqrtStretch
     else:
-        raise ValueError('Unknown scale: {}'.format(scale))
+        raise ValueError(f'Unknown scale: {scale}')
 
     # Create an object that will be used to map pixel values
     # in the range vmin..vmax to normalized colormap indexes.

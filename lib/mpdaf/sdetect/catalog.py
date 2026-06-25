@@ -46,10 +46,10 @@ from astropy.table import Column, MaskedColumn, Table, hstack, join, vstack
 from ..tools import LowercaseOrderedDict
 
 INVALID = {
-    type(1): -9999, np.int_: -9999, np.int32: -9999,
-    type(1.0): np.nan, np.float64: np.nan,
-    type('1'): '', np.str_: '',
-    type(False): -9999, np.bool_: -9999
+    int: -9999, np.int_: -9999, np.int32: -9999,
+    float: np.nan, np.float64: np.nan,
+    str: '', np.str_: '',
+    bool: -9999, np.bool_: -9999
 }
 
 # List of required keywords and their type
@@ -91,7 +91,7 @@ class Catalog(Table):
         raname = kwargs.pop('raname', None)
         decname = kwargs.pop('decname', None)
 
-        super(Catalog, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._logger = logging.getLogger(__name__)
         if self.masked:
             self.masked_invalid()
@@ -126,7 +126,7 @@ class Catalog(Table):
         n_cat = len(catalogs)
 
         if suffix is None:
-            suffix = tuple(['_{}'.format(i + 1) for i in range(n_cat)])
+            suffix = tuple([f'_{i + 1}' for i in range(n_cat)])
 
         cat0 = catalogs[0]
         # create output with same type as meta of first catalog
@@ -331,7 +331,7 @@ class Catalog(Table):
                     dtype_lines = [d[key] for key in sorted(d)] * lmax
                     units_lines = [unit[key] for key in sorted(d)] * lmax
             else:
-                raise IOError('Catalog creation: invalid format. It must be '
+                raise OSError('Catalog creation: invalid format. It must be '
                               'default or working.')
 
         ###############################################
@@ -345,12 +345,12 @@ class Catalog(Table):
             keys = list(h.keys())
             row = []
             for key, typ in zip(names_hdr, dtype_hdr):
-                if typ is type('1'):
+                if typ is str:
                     row += [('%s' % h[key]).replace('\n', ' ')
                             if key in keys else INVALID[typ]]
                 else:
                     k = [h[key] if key in keys else INVALID[typ]]
-                    if type(k[0]) is type('1'):
+                    if type(k[0]) is str:
                         raise ValueError('column %s: could not convert string to %s' % (key, typ))
                     row += k
 
@@ -535,7 +535,7 @@ class Catalog(Table):
         logger = logging.getLogger(__name__)
 
         if not os.path.exists(path):
-            raise IOError("Invalid path: {0}".format(path))
+            raise OSError(f"Invalid path: {path}")
 
         from .source import Source
 
@@ -595,7 +595,7 @@ class Catalog(Table):
                 col.description = None
             super(Catalog, t).write(*args, **kwargs)
         else:
-            super(Catalog, self).write(*args, **kwargs)
+            super().write(*args, **kwargs)
 
     def _get_radec_colnames(self, col):
         """Helper method to get the names of ra,dec columns."""
@@ -1102,23 +1102,23 @@ class Catalog(Table):
         id = id or self.meta.get('idname', self._idname_default)
 
         if ltype is None and etype not in ('o', 's', 'p'):
-            raise IOError('Unknown symbol %s' % etype)
+            raise OSError('Unknown symbol %s' % etype)
         if ltype is not None and ltype not in self.colnames:
-            raise IOError('column %s not found in catalog' % ltype)
+            raise OSError('column %s not found in catalog' % ltype)
         if lsize is not None and lsize not in self.colnames:
-            raise IOError('column %s not found in catalog' % lsize)
+            raise OSError('column %s not found in catalog' % lsize)
         if lcol is not None and lcol not in self.colnames:
-            raise IOError('column %s not found in catalog' % lcol)
+            raise OSError('column %s not found in catalog' % lcol)
         if ledgecol is not None and ledgecol not in self.colnames:
-            raise IOError('column %s not found in catalog' % ledgecol)
+            raise OSError('column %s not found in catalog' % ledgecol)
         if lfacecol is not None and lfacecol not in self.colnames:
-            raise IOError('column %s not found in catalog' % lfacecol)
+            raise OSError('column %s not found in catalog' % lfacecol)
         if ra not in self.colnames:
-            raise IOError('column %s not found in catalog' % ra)
+            raise OSError('column %s not found in catalog' % ra)
         if dec not in self.colnames:
-            raise IOError('column %s not found in catalog' % dec)
+            raise OSError('column %s not found in catalog' % dec)
         if label and id not in self.colnames:
-            raise IOError('column %s not found in catalog' % id)
+            raise OSError('column %s not found in catalog' % id)
 
         from matplotlib.patches import Circle, Rectangle, RegularPolygon
         texts = []

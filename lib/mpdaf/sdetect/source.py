@@ -315,7 +315,7 @@ def _read_ext(cls, hdulist, extname, **kwargs):
         else:
             obj = cls(hdulist[extname].data, **kwargs)
     except Exception as e:
-        raise IOError('%s: Impossible to open extension %s as a %s\n%s' % (
+        raise OSError('%s: Impossible to open extension %s as a %s\n%s' % (
             os.path.basename(hdulist.filename()), extname, cls.__name__, e))
     return obj
 
@@ -326,7 +326,7 @@ def _read_mpdaf_obj(cls, hdulist, ext, **kwargs):
     try:
         obj = cls(filename=filename, hdulist=hdulist, ext=ext, **kwargs)
     except Exception as e:
-        raise IOError('%s: Impossible to open extension %s as a %s\n%s' % (
+        raise OSError('%s: Impossible to open extension %s as a %s\n%s' % (
             os.path.basename(filename), ext, cls.__name__, e))
     return obj
 
@@ -359,18 +359,18 @@ def _insert_or_update_hdu(hdulist, name, hdu):
 
 
 def _write_mpdaf_obj(obj, type_, name, hdulist):
-    ext_name = '{}_{}_DATA'.format(type_, name)
+    ext_name = f'{type_}_{name}_DATA'
     savemask = 'nan' if obj.data.dtype.kind == 'f' else 'dq'
     datahdu = obj.get_data_hdu(name=ext_name, savemask=savemask)
     _insert_or_update_hdu(hdulist, ext_name, datahdu)
 
-    ext_name = '{}_{}_STAT'.format(type_, name)
+    ext_name = f'{type_}_{name}_STAT'
     hdu = obj.get_stat_hdu(name=ext_name, header=datahdu.header)
     if hdu is not None:
         _insert_or_update_hdu(hdulist, ext_name, hdu)
 
     if savemask == 'dq':
-        ext_name = '{}_{}_DQ'.format(type_, name)
+        ext_name = f'{type_}_{name}_DQ'
         hdu = obj.get_dq_hdu(name=ext_name, header=datahdu.header)
         if hdu is not None:
             _insert_or_update_hdu(hdulist, ext_name, hdu)
@@ -506,8 +506,8 @@ class Source:
         # Check required keywords in the FITS header
         for key in ('RA', 'DEC', 'ID', 'CUBE', 'CUBE_V', 'FROM', 'FROM_V'):
             if key not in header:
-                raise ValueError('{} keyword is mandatory to create a Source '
-                                 'object'.format(key))
+                raise ValueError(f'{key} keyword is mandatory to create a Source '
+                                 'object')
 
         self._logger = logging.getLogger(__name__)
         self._filename = filename
@@ -546,7 +546,7 @@ class Source:
         self._logger = logging.getLogger(__name__)
 
     def __dir__(self):
-        return list(self.header.keys()) + super(Source, self).__dir__()
+        return list(self.header.keys()) + super().__dir__()
 
     @classmethod
     def from_data(cls, ID, ra, dec, origin, proba=None, confid=None,
@@ -652,7 +652,7 @@ class Source:
             try:
                 extname = hdu.name
                 if not extname:
-                    raise IOError('%s: Extension %d without EXTNAME' % (
+                    raise OSError('%s: Extension %d without EXTNAME' % (
                         os.path.basename(filename), i))
 
                 if extname in extnames:
@@ -774,8 +774,8 @@ class Source:
                     for key in obj.loaded_ext:
                         _write_mpdaf_obj(obj[key], extname, key, hdulist)
                     for key in obj.deleted_ext:
-                        _remove_hdu(hdulist, '{}_{}_DATA'.format(extname, key))
-                        _remove_hdu(hdulist, '{}_{}_STAT'.format(extname, key))
+                        _remove_hdu(hdulist, f'{extname}_{key}_DATA')
+                        _remove_hdu(hdulist, f'{extname}_{key}_STAT')
 
                 # tables
                 for key in self.tables.loaded_ext:
@@ -815,7 +815,7 @@ class Source:
         if item in ('header', 'lines', 'mag', 'z', 'cubes', 'images',
                     'spectra', 'tables', '_logger', '_filename',
                     '_default_size', 'default_size'):
-            super(Source, self).__setattr__(item, value)
+            super().__setattr__(item, value)
         else:
             self.header[item] = value
 
@@ -1552,7 +1552,7 @@ class Source:
             if im.shape == shape:
                 mask &= (~np.asarray(im.data, dtype=bool))
             else:
-                raise IOError('segmentation maps have not the same dimensions')
+                raise OSError('segmentation maps have not the same dimensions')
         self.images[sky_mask] = Image(wcs=wcs, dtype=np.uint8, copy=False,
                                       data=mask)
 
@@ -1829,8 +1829,8 @@ class Source:
                 # dimensions right
                 if not np.array_equal(psf.shape, subcub.shape):
                     raise ValueError('Incorrect dimensions for the PSF cube '
-                                     '({}) (it must be ({})) '
-                                     .format(psf.shape, subcub.shape))
+                                     f'({psf.shape}) (it must be ({subcub.shape})) '
+                                     )
             elif len(psf.shape) == 1:
                 psf = create_psf_cube(subcub.shape, psf, beta=beta, wcs=wcsref)
 
@@ -1889,11 +1889,11 @@ class Source:
             eml = emlines
         col_lbda, col_flux = cols
         if self.lines is None:
-            raise IOError('invalid self.lines table')
+            raise OSError('invalid self.lines table')
         if col_lbda not in self.lines.colnames:
-            raise IOError('invalid colum name %s' % col_lbda)
+            raise OSError('invalid colum name %s' % col_lbda)
         if col_flux not in self.lines.colnames:
-            raise IOError('invalid colum name %s' % col_flux)
+            raise OSError('invalid colum name %s' % col_flux)
 
         try:
             # vacuum wavelengths
@@ -2145,7 +2145,7 @@ class SourceList(list):
             Format of the catalog. The format differs for the LINES table.
         """
         if not os.path.exists(path):
-            raise ValueError("Invalid path: {}".format(path))
+            raise ValueError(f"Invalid path: {path}")
 
         path = os.path.normpath(path)
         path2 = os.path.join(path, name)
@@ -2186,7 +2186,7 @@ class SourceList(list):
 
         """
         if not os.path.exists(path):
-            raise ValueError("Invalid path: {}".format(path))
+            raise ValueError(f"Invalid path: {path}")
 
         slist = cls()
         for f in glob.glob(path + '/*.fits'):

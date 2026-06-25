@@ -517,7 +517,8 @@ class RawFile:
                     spe_slice_75pix = np.empty(NB_SPEC_PER_SLICE,
                                                dtype=float)
 
-                f = lambda x: spe_slice[int(x + 0.5)]
+                def f(x):
+                    return spe_slice[int(x + 0.5)]
                 pix = np.arange(NB_SPEC_PER_SLICE + 1, dtype=float)
                 new_step = float(n) / NB_SPEC_PER_SLICE
                 x = pix * new_step - 0.5 * new_step

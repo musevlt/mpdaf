@@ -77,9 +77,7 @@ def deprecated(instructions):
         """
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            message = 'Call to deprecated function `{}`. {}'.format(
-                func.__name__,
-                instructions)
+            message = f'Call to deprecated function `{func.__name__}`. {instructions}'
 
             frame = inspect.currentframe().f_back
             warnings.warn_explicit(message,
@@ -212,10 +210,10 @@ class LowercaseOrderedDict(MutableMapping, OrderedDict):
         return len(self._d)
 
     def __repr__(self):
-        return "{}({})".format(self.__class__, [i for i in self._d.items()])
+        return f"{self.__class__}({[i for i in self._d.items()]})"
 
     def __str__(self):
-        return "{}({})".format(self.__class__, [i for i in self._d.items()])
+        return f"{self.__class__}({[i for i in self._d.items()]})"
 
     def popitem(self, last=True):
         # MutableMapping pops the first item, whereas OrderedDict pops the last

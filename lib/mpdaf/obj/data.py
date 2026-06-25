@@ -287,7 +287,7 @@ class DataArray:
         if (filename is not None or hdulist is not None) and data is None:
             # Read the data from a FITS file
             if not hdulist and not is_valid_fits_file(filename):
-                raise IOError('Invalid file: %s' % filename)
+                raise OSError('Invalid file: %s' % filename)
 
             if hdulist is None:
                 fits_kwargs = kwargs.pop('fits_kwargs', {})
@@ -311,7 +311,7 @@ class DataArray:
                 elif 'SCI' in hdulist:
                     self._data_ext = 'SCI'
                 else:
-                    raise IOError('No DATA or SCI extension found.\n'
+                    raise OSError('No DATA or SCI extension found.\n'
                                   'Please use the `ext` parameter to specify '
                                   'which extension must be loaded.')
 
@@ -466,8 +466,8 @@ class DataArray:
 
         # Get the wavelength coordinates.
         wave_ext = 1 if self._ndim_required == 1 else 3
-        crpix = 'CRPIX{}'.format(wave_ext)
-        crval = 'CRVAL{}'.format(wave_ext)
+        crpix = f'CRPIX{wave_ext}'
+        crval = f'CRVAL{wave_ext}'
         if self._has_wave and crpix in hdr and crval in hdr:
             self.wave = WaveCoord(hdr)
 
@@ -719,9 +719,9 @@ class DataArray:
             self.filename or 'no name')
 
         data = ('no data' if self._data is None and self._data_ext is None
-                else '.data({})'.format(shape_str))
+                else f'.data({shape_str})')
         noise = ('no noise' if self._var is None and self._var_ext is None
-                 else '.var({})'.format(shape_str))
+                 else f'.var({shape_str})')
         unit = str(self.unit) or 'no unit'
         log('%s (%s), %s', data, unit, noise)
 
@@ -1612,10 +1612,10 @@ class DataArray:
         out = self if inplace else self.copy()
 
         if out.ndim != other.ndim:
-            raise IOError('The other array must have the same rank as self')
+            raise OSError('The other array must have the same rank as self')
 
         if np.any(np.asarray(other.shape) > np.asarray(self.shape)):
-            raise IOError('The other array must be no larger than self')
+            raise OSError('The other array must be no larger than self')
 
         kernel = other.data if isinstance(other, DataArray) else other
 

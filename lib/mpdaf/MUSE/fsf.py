@@ -244,7 +244,7 @@ class FSFModel:
         raise NotImplementedError
 
     def __repr__(self):
-        return "<{}(model={})>".format(self.__class__.__name__, self.model)
+        return f"<{self.__class__.__name__}(model={self.model})>"
 
     def to_header(self, hdr=None):
         """Write FSF parameters to a FITS header"""
@@ -397,15 +397,15 @@ class MoffatModel2(FSFModel):
         hdr['FSFLB1'] = (self.lbrange[0], 'FSF Blue Ref Wave (A)')
         hdr['FSFLB2'] = (self.lbrange[1], 'FSF Red Ref Wave (A)')
         hdr['FSF%02dFNC' % field_idx] = (
-            len(self.fwhm_pol), 'FSF{:02d} FWHM Poly Ncoef'.format(field_idx))
+            len(self.fwhm_pol), f'FSF{field_idx:02d} FWHM Poly Ncoef')
         for k, coef in enumerate(self.fwhm_pol):
             hdr['FSF%02dF%02d' % (field_idx, k)] = (
-                coef, 'FSF{:02d} FWHM Poly C{:02d}'.format(field_idx, k))
+                coef, f'FSF{field_idx:02d} FWHM Poly C{k:02d}')
         hdr['FSF%02dBNC' % field_idx] = (
-            len(self.beta_pol), 'FSF{:02d} BETA Poly Ncoef'.format(field_idx))
+            len(self.beta_pol), f'FSF{field_idx:02d} BETA Poly Ncoef')
         for k, coef in enumerate(self.beta_pol):
             hdr['FSF%02dB%02d' % (field_idx, k)] = (
-                coef, 'FSF{:02d} BETA Poly C{:02d}'.format(field_idx, k))
+                coef, f'FSF{field_idx:02d} BETA Poly C{k:02d}')
         return hdr
 
     @classmethod
@@ -528,7 +528,7 @@ class MoffatModel2(FSFModel):
         beta_fit = np.array([f.n for f in fit2])
         logger.debug('-- Polynomial fit of BETA(lbda)')
         beta_pol, beta_pval, beta_err = fit_poly(lbdanorm, beta_fit, betadeg)
-        logger.debug('BETA poly {}'.format(beta_pol))
+        logger.debug(f'BETA poly {beta_pol}')
         for k, ima in enumerate(imalist):
             f2 = ima.moffat_fit(fwhm=fit1.fwhm[0], n=beta_pval[k],
                                 center=fit1.center, fit_n=False, circular=True,
@@ -547,7 +547,7 @@ class MoffatModel2(FSFModel):
 
         logger.debug('-- Polynomial fit of FWHM(lbda)')
         fwhm_pol, fwhm_pval, fwhm_err = fit_poly(lbdanorm, fwhm_fit, fwhmdeg)
-        logger.debug('FWHM poly {}'.format(fwhm_pol))
+        logger.debug(f'FWHM poly {fwhm_pol}')
 
         fsf = cls(lbrange=lbrange, fwhm_pol=fwhm_pol, beta_pol=beta_pol,
                   pixstep=cube.get_step()[1]*3600)

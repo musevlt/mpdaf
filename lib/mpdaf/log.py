@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Copyright (c) 2010-2018 CNRS / Centre de Recherche Astrophysique de Lyon
 Copyright (c) 2015-2019 Simon Conseil <simon.conseil@univ-lyon1.fr>
@@ -104,7 +103,7 @@ def setup_logging(name='mpdaf', level='DEBUG', color=False, stream=None,
             if (os.isatty(sys.stdout.fileno()) and
                     not sys.platform.startswith('win')):
                 formatter = ColoredFormatter(fmt, datefmt=datefmt)
-        except IOError:
+        except OSError:
             pass
     steam_handler.setFormatter(formatter)
     logger.addHandler(steam_handler)

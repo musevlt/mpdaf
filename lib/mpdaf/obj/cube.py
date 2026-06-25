@@ -599,7 +599,7 @@ class Cube(ArithmeticMixin, DataArray):
         cube[:,p,q] = image
         cube[:,:,:] = sub-cube
         """
-        obj = super(Cube, self).__getitem__(item)
+        obj = super().__getitem__(item)
         if isinstance(obj, DataArray):
             if obj.ndim == 3:
                 return obj
@@ -1570,8 +1570,8 @@ class Cube(ArithmeticMixin, DataArray):
         with fits.open(FILTERS) as hdul:
             if name not in hdul:
                 filter_names = ', '.join(hdu.name for hdu in hdul[1:])
-                raise ValueError("requested filter '{}' not found. Available "
-                                 "filters: {}".format(name, filter_names))
+                raise ValueError(f"requested filter '{name}' not found. Available "
+                                 f"filters: {filter_names}")
             wave = hdul[name].data['lambda']
             throughput = hdul[name].data['throughput']
 
@@ -1738,7 +1738,7 @@ class Cube(ArithmeticMixin, DataArray):
         # Integer pixel indexes refer to the centers of pixels,
         # so for integer pixel index k, we need to integrate from
         # k-0.5 to k+0.5.
-        w = np.empty((kmax + 1 - kmin))
+        w = np.empty(kmax + 1 - kmin)
         for k in range(kmin + 1, kmax):
             w[k - kmin], err = integrate.quad(spline, k - 0.5, k + 0.5)
 
@@ -2179,8 +2179,8 @@ def _multiproc_worker(arglist):
             return pos, getattr(obj, f)(**kwargs)
     except Exception as inst:
         raise inst.__class__(
-            '{}\n The error occurred while processing {} {}'
-            .format(str(inst), obj.__class__.__name__, pos))
+            f'{str(inst)}\n The error occurred while processing {obj.__class__.__name__} {pos}'
+            )
 
 
 def _loop_multiprocessing(self, f, loop_type, cpu=None, verbose=True, **kargs):
