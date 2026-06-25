@@ -599,7 +599,7 @@ class Cube(ArithmeticMixin, DataArray):
         cube[:,p,q] = image
         cube[:,:,:] = sub-cube
         """
-        obj = super(Cube, self).__getitem__(item)
+        obj = super().__getitem__(item)
         if isinstance(obj, DataArray):
             if obj.ndim == 3:
                 return obj
@@ -1738,7 +1738,7 @@ class Cube(ArithmeticMixin, DataArray):
         # Integer pixel indexes refer to the centers of pixels,
         # so for integer pixel index k, we need to integrate from
         # k-0.5 to k+0.5.
-        w = np.empty((kmax + 1 - kmin))
+        w = np.empty(kmax + 1 - kmin)
         for k in range(kmin + 1, kmax):
             w[k - kmin], err = integrate.quad(spline, k - 0.5, k + 0.5)
 

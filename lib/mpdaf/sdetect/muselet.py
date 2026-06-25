@@ -64,7 +64,7 @@ CONFIG_FILES_NB = {'sex': 'nb_default.sex', 'conv': 'nb_default.conv',
 shared_args = {} #global variable storage needed for multiprocessing
 
 
-class ProgressCounter(object):
+class ProgressCounter:
 
     def __init__(self, total, msg='', every=1):
         self.count = 0

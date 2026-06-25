@@ -119,7 +119,7 @@ if __name__ == "__main__":
             print('SKIP')
             continue
 
-        with open(filename, 'r') as f:
+        with open(filename) as f:
             lines = f.readlines()
 
         if len(lines) == 0:

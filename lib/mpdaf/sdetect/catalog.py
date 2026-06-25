@@ -46,10 +46,10 @@ from astropy.table import Column, MaskedColumn, Table, hstack, join, vstack
 from ..tools import LowercaseOrderedDict
 
 INVALID = {
-    type(1): -9999, np.int_: -9999, np.int32: -9999,
-    type(1.0): np.nan, np.float64: np.nan,
-    type('1'): '', np.str_: '',
-    type(False): -9999, np.bool_: -9999
+    int: -9999, np.int_: -9999, np.int32: -9999,
+    float: np.nan, np.float64: np.nan,
+    str: '', np.str_: '',
+    bool: -9999, np.bool_: -9999
 }
 
 # List of required keywords and their type
@@ -91,7 +91,7 @@ class Catalog(Table):
         raname = kwargs.pop('raname', None)
         decname = kwargs.pop('decname', None)
 
-        super(Catalog, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._logger = logging.getLogger(__name__)
         if self.masked:
             self.masked_invalid()
@@ -345,12 +345,12 @@ class Catalog(Table):
             keys = list(h.keys())
             row = []
             for key, typ in zip(names_hdr, dtype_hdr):
-                if typ is type('1'):
+                if typ is str:
                     row += [('%s' % h[key]).replace('\n', ' ')
                             if key in keys else INVALID[typ]]
                 else:
                     k = [h[key] if key in keys else INVALID[typ]]
-                    if type(k[0]) is type('1'):
+                    if type(k[0]) is str:
                         raise ValueError('column %s: could not convert string to %s' % (key, typ))
                     row += k
 
@@ -535,7 +535,7 @@ class Catalog(Table):
         logger = logging.getLogger(__name__)
 
         if not os.path.exists(path):
-            raise IOError("Invalid path: {0}".format(path))
+            raise IOError("Invalid path: {}".format(path))
 
         from .source import Source
 
@@ -595,7 +595,7 @@ class Catalog(Table):
                 col.description = None
             super(Catalog, t).write(*args, **kwargs)
         else:
-            super(Catalog, self).write(*args, **kwargs)
+            super().write(*args, **kwargs)
 
     def _get_radec_colnames(self, col):
         """Helper method to get the names of ra,dec columns."""

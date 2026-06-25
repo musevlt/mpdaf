@@ -91,12 +91,16 @@ markers = ["slow"]
 select = [
   "E", "F", "W", # flake8
   "I",           # isort
-  # "UP",          # pyupgrade
+  "UP",          # pyupgrade
 ]
 ignore = [
     "E501", # Line too long
     "E731", # lambda-assignment
     "E741", # ambiguous-variable-name
+    "UP009", # utf8-encoding-declaration
+    "UP024", # os-error-alias
+    "UP031", # printf-string-formatting
+    "UP032", # f-string
 ]
 unfixable = [
   "F841", # Removes unused variables

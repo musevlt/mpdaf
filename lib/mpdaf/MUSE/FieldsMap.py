@@ -119,14 +119,14 @@ class FieldsMap:
 
     def get_pixel_fields(self, y, x):
         """Return a list of fields that cover a given pixel (y, x)."""
-        ind = reversed("{0:010b}".format(self.data[y, x])[:-1])
+        ind = reversed("{:010b}".format(self.data[y, x])[:-1])
         fields = ('UDF-%02d' % i for i in range(1, self.nfields + 1))
         return [field for field, i in zip(fields, ind) if i == '1']
 
     def get_pixel_fields_indexes(self, y, x):
         """Return a list of fields indexes (between 0 and nfields)
         that cover a given pixel (y, x)."""
-        ind = reversed("{0:010b}".format(self.data[y, x])[:-1])
+        ind = reversed("{:010b}".format(self.data[y, x])[:-1])
         indexes = (i for i in range(self.nfields))
         return [index for index, i in zip(indexes, ind) if i == '1']
 

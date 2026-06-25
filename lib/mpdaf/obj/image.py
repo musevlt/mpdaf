@@ -111,13 +111,13 @@ class Image(ArithmeticMixin, DataArray):
                  **kwargs):
         self._spflims = None
 
-        super(Image, self).__init__(
+        super().__init__(
             filename=filename, ext=ext, wcs=wcs, unit=unit, data=data, var=var,
             copy=copy, dtype=dtype, **kwargs)
 
     def copy(self):
         """Return a new copy of an Image object."""
-        obj = super(Image, self).copy()
+        obj = super().copy()
 
         # Make a deep copy of the spatial-frequency limits.
         if self._spflims is not None:
@@ -3378,7 +3378,7 @@ class Image(ArithmeticMixin, DataArray):
         self._data = np.random.normal(data, sigma)
 
         if self._var is None:
-            self._var = np.ones((self.shape)) * sigma * sigma
+            self._var = np.ones(self.shape) * sigma * sigma
         else:
             self._var *= (sigma * sigma)
 

@@ -130,7 +130,7 @@ def _check_power(a, b, tol=1e-5):
     # Create a boolean mask to exclude pixels where the value > 1
     sel = (a > 1) & (b > 1)
     # Compute the power of each pixel
-    power = np.divide(np.log((np.abs(a[sel]))), np.log(np.abs(b[sel])))
+    power = np.divide(np.log(np.abs(a[sel])), np.log(np.abs(b[sel])))
 
     # Calculate the standard deviation of exponents
     std_dev = np.nanstd(power)

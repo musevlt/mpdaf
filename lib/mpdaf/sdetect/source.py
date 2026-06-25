@@ -546,7 +546,7 @@ class Source:
         self._logger = logging.getLogger(__name__)
 
     def __dir__(self):
-        return list(self.header.keys()) + super(Source, self).__dir__()
+        return list(self.header.keys()) + super().__dir__()
 
     @classmethod
     def from_data(cls, ID, ra, dec, origin, proba=None, confid=None,
@@ -815,7 +815,7 @@ class Source:
         if item in ('header', 'lines', 'mag', 'z', 'cubes', 'images',
                     'spectra', 'tables', '_logger', '_filename',
                     '_default_size', 'default_size'):
-            super(Source, self).__setattr__(item, value)
+            super().__setattr__(item, value)
         else:
             self.header[item] = value
 

@@ -623,13 +623,13 @@ class CubeMosaic(CubeList):
 
     def __init__(self, files, output_wcs, **kwargs):
         self.out = Cube(output_wcs)
-        super(CubeMosaic, self).__init__(files, **kwargs)
+        super().__init__(files, **kwargs)
 
     def __getitem__(self, item):
         raise ValueError('Operation forbidden')
 
     def info(self, verbose=False):
-        super(CubeMosaic, self).info(verbose=verbose)
+        super().info(verbose=verbose)
         self._logger.info('Output WCS:')
         self._logger.info('- shape: %s', 'x'.join(str(s) for s in self.shape))
         self._logger.info('- crpix: %s', self.wcs.wcs.wcs.crpix)
