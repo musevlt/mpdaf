@@ -315,7 +315,7 @@ def _read_ext(cls, hdulist, extname, **kwargs):
         else:
             obj = cls(hdulist[extname].data, **kwargs)
     except Exception as e:
-        raise IOError('%s: Impossible to open extension %s as a %s\n%s' % (
+        raise OSError('%s: Impossible to open extension %s as a %s\n%s' % (
             os.path.basename(hdulist.filename()), extname, cls.__name__, e))
     return obj
 
@@ -326,7 +326,7 @@ def _read_mpdaf_obj(cls, hdulist, ext, **kwargs):
     try:
         obj = cls(filename=filename, hdulist=hdulist, ext=ext, **kwargs)
     except Exception as e:
-        raise IOError('%s: Impossible to open extension %s as a %s\n%s' % (
+        raise OSError('%s: Impossible to open extension %s as a %s\n%s' % (
             os.path.basename(filename), ext, cls.__name__, e))
     return obj
 
@@ -652,7 +652,7 @@ class Source:
             try:
                 extname = hdu.name
                 if not extname:
-                    raise IOError('%s: Extension %d without EXTNAME' % (
+                    raise OSError('%s: Extension %d without EXTNAME' % (
                         os.path.basename(filename), i))
 
                 if extname in extnames:
@@ -1552,7 +1552,7 @@ class Source:
             if im.shape == shape:
                 mask &= (~np.asarray(im.data, dtype=bool))
             else:
-                raise IOError('segmentation maps have not the same dimensions')
+                raise OSError('segmentation maps have not the same dimensions')
         self.images[sky_mask] = Image(wcs=wcs, dtype=np.uint8, copy=False,
                                       data=mask)
 
@@ -1889,11 +1889,11 @@ class Source:
             eml = emlines
         col_lbda, col_flux = cols
         if self.lines is None:
-            raise IOError('invalid self.lines table')
+            raise OSError('invalid self.lines table')
         if col_lbda not in self.lines.colnames:
-            raise IOError('invalid colum name %s' % col_lbda)
+            raise OSError('invalid colum name %s' % col_lbda)
         if col_flux not in self.lines.colnames:
-            raise IOError('invalid colum name %s' % col_flux)
+            raise OSError('invalid colum name %s' % col_flux)
 
         try:
             # vacuum wavelengths

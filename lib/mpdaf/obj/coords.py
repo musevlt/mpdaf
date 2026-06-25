@@ -707,7 +707,7 @@ class WCS:
         if x.shape == (2,):
             x = x.reshape(1, 2)
         elif len(x.shape) != 2 or x.shape[1] != 2:
-            raise IOError('invalid input coordinates for sky2pix')
+            raise OSError('invalid input coordinates for sky2pix')
 
         if unit is not None:
             x[:, 1] = UnitArray(x[:, 1], unit, self.unit)
@@ -816,7 +816,7 @@ class WCS:
         if x.shape == (2,):
             x = x.reshape(1, 2)
         elif len(x.shape) != 2 or x.shape[1] != 2:
-            raise IOError('invalid input coordinates for pix2sky')
+            raise OSError('invalid input coordinates for pix2sky')
 
         # Tell world2pix to treat the pixel indexes as zero relative
         # array indexes.
@@ -1753,7 +1753,7 @@ class WaveCoord:
 
         """
         if pixel is None and self.shape is None:
-            raise IOError("wavelength coordinates without dimension")
+            raise OSError("wavelength coordinates without dimension")
 
         if pixel is None:
             pixelarr = np.arange(self.shape, dtype=float)
@@ -1998,7 +1998,7 @@ class WaveCoord:
 
         """
         if self.shape is None:
-            raise IOError("wavelength coordinates without dimension")
+            raise OSError("wavelength coordinates without dimension")
         else:
             return self.coord(self.shape - 1, unit)
 
@@ -2012,7 +2012,7 @@ class WaveCoord:
 
         """
         if self.shape is None:
-            raise IOError("wavelength coordinates without dimension")
+            raise OSError("wavelength coordinates without dimension")
         else:
             return self.coord([0, self.shape - 1], unit)
 

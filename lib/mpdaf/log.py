@@ -103,7 +103,7 @@ def setup_logging(name='mpdaf', level='DEBUG', color=False, stream=None,
             if (os.isatty(sys.stdout.fileno()) and
                     not sys.platform.startswith('win')):
                 formatter = ColoredFormatter(fmt, datefmt=datefmt)
-        except IOError:
+        except OSError:
             pass
     steam_handler.setFormatter(formatter)
     logger.addHandler(steam_handler)

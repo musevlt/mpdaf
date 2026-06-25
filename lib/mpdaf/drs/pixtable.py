@@ -439,12 +439,12 @@ class PixTable:
                 for attr in (self.ypos, self.lbda, self.data, self.stat,
                              self.dq, self.origin):
                     if attr.shape[0] != self.nrows:
-                        raise IOError('input data with different dimensions')
+                        raise OSError('input data with different dimensions')
 
                 if weight is None or weight.shape[0] == self.nrows:
                     self.weight = weight
                 else:
-                    raise IOError('input data with different dimensions')
+                    raise OSError('input data with different dimensions')
 
         if self.nrows != 0:
             # Merged IFUs that went into this pixel tables

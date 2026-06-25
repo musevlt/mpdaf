@@ -2239,7 +2239,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         try:
             if isinstance(other, Spectrum):
                 if res.shape != other.shape:
-                    raise IOError('Operation forbidden for spectra '
+                    raise OSError('Operation forbidden for spectra '
                                   'with different sizes')
                 else:
                     data = other._data
@@ -2249,7 +2249,7 @@ class Spectrum(ArithmeticMixin, DataArray):
                     if res._var is not None:
                         res._var = signal.correlate(res._var, data,
                                                     mode='same')
-        except IOError as e:
+        except OSError as e:
             raise e
         except Exception:
             try:
@@ -2257,7 +2257,7 @@ class Spectrum(ArithmeticMixin, DataArray):
                 if res._var is not None:
                     res._var = signal.correlate(res._var, other, mode='same')
             except Exception:
-                raise IOError('Operation forbidden')
+                raise OSError('Operation forbidden')
         return res
 
     def fftconvolve_gauss(self, fwhm, nsig=5, unit=u.angstrom, inplace=False):

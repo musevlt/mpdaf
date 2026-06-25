@@ -331,7 +331,7 @@ class Catalog(Table):
                     dtype_lines = [d[key] for key in sorted(d)] * lmax
                     units_lines = [unit[key] for key in sorted(d)] * lmax
             else:
-                raise IOError('Catalog creation: invalid format. It must be '
+                raise OSError('Catalog creation: invalid format. It must be '
                               'default or working.')
 
         ###############################################
@@ -535,7 +535,7 @@ class Catalog(Table):
         logger = logging.getLogger(__name__)
 
         if not os.path.exists(path):
-            raise IOError("Invalid path: {}".format(path))
+            raise OSError("Invalid path: {}".format(path))
 
         from .source import Source
 
@@ -1102,23 +1102,23 @@ class Catalog(Table):
         id = id or self.meta.get('idname', self._idname_default)
 
         if ltype is None and etype not in ('o', 's', 'p'):
-            raise IOError('Unknown symbol %s' % etype)
+            raise OSError('Unknown symbol %s' % etype)
         if ltype is not None and ltype not in self.colnames:
-            raise IOError('column %s not found in catalog' % ltype)
+            raise OSError('column %s not found in catalog' % ltype)
         if lsize is not None and lsize not in self.colnames:
-            raise IOError('column %s not found in catalog' % lsize)
+            raise OSError('column %s not found in catalog' % lsize)
         if lcol is not None and lcol not in self.colnames:
-            raise IOError('column %s not found in catalog' % lcol)
+            raise OSError('column %s not found in catalog' % lcol)
         if ledgecol is not None and ledgecol not in self.colnames:
-            raise IOError('column %s not found in catalog' % ledgecol)
+            raise OSError('column %s not found in catalog' % ledgecol)
         if lfacecol is not None and lfacecol not in self.colnames:
-            raise IOError('column %s not found in catalog' % lfacecol)
+            raise OSError('column %s not found in catalog' % lfacecol)
         if ra not in self.colnames:
-            raise IOError('column %s not found in catalog' % ra)
+            raise OSError('column %s not found in catalog' % ra)
         if dec not in self.colnames:
-            raise IOError('column %s not found in catalog' % dec)
+            raise OSError('column %s not found in catalog' % dec)
         if label and id not in self.colnames:
-            raise IOError('column %s not found in catalog' % id)
+            raise OSError('column %s not found in catalog' % id)
 
         from matplotlib.patches import Circle, Rectangle, RegularPolygon
         texts = []

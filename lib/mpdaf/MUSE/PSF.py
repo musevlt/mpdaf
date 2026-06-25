@@ -107,7 +107,7 @@ class LSF:
 
             lsf = T(y2 + dy_2) - T(y2 - dy_2) - T(y1 + dy_2) + T(y1 - dy_2)
         else:
-            raise IOError('Invalid LSF type')
+            raise OSError('Invalid LSF type')
 
         lsf /= lsf.sum()
         return lsf
@@ -258,7 +258,7 @@ class FSF:
         if self.typ == "MOFFAT1":
             return MOFFAT1(lbda, step, size, **kwargs)
         else:
-            raise IOError('Invalid FSF type')
+            raise OSError('Invalid FSF type')
 
     def get_FSF_cube(self, cube, size, **kargs):
         """Return a cube of FSFs corresponding to the MUSE data cube
@@ -291,7 +291,7 @@ class FSF:
         if self.typ == "MOFFAT1":
             return MOFFAT1(lbda, step, size, **kargs)
         else:
-            raise IOError('Invalid FSF type')
+            raise OSError('Invalid FSF type')
 
 
 @deprecated('deprecated in favor of mpdaf.MUSE.FSFModel')

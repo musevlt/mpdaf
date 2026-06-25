@@ -3661,7 +3661,7 @@ class Image(ArithmeticMixin, DataArray):
                                               mode='same')
             return res
         else:
-            raise IOError('Operation forbidden')
+            raise OSError('Operation forbidden')
 
     def plot(self, title=None, scale='linear', vmin=None, vmax=None,
              zscale=False, colorbar=None, var=False, show_xlabel=False,

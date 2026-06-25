@@ -219,10 +219,10 @@ class FieldsMap:
             weights = self.compute_weights()
         # kernels and weights shall have the same length
         if len(kernels) != len(weights):
-            raise IOError('kernels and weights shall have the same length')
+            raise OSError('kernels and weights shall have the same length')
         # img and weights shall have the same shape
         if img.shape != weights[0].shape:
-            raise IOError('img and weights shall have the same shape')
+            raise OSError('img and weights shall have the same shape')
 
         convolved_img = np.zeros_like(img)
 
