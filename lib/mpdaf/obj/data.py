@@ -466,8 +466,8 @@ class DataArray:
 
         # Get the wavelength coordinates.
         wave_ext = 1 if self._ndim_required == 1 else 3
-        crpix = 'CRPIX{}'.format(wave_ext)
-        crval = 'CRVAL{}'.format(wave_ext)
+        crpix = f'CRPIX{wave_ext}'
+        crval = f'CRVAL{wave_ext}'
         if self._has_wave and crpix in hdr and crval in hdr:
             self.wave = WaveCoord(hdr)
 
@@ -719,9 +719,9 @@ class DataArray:
             self.filename or 'no name')
 
         data = ('no data' if self._data is None and self._data_ext is None
-                else '.data({})'.format(shape_str))
+                else f'.data({shape_str})')
         noise = ('no noise' if self._var is None and self._var_ext is None
-                 else '.var({})'.format(shape_str))
+                 else f'.var({shape_str})')
         unit = str(self.unit) or 'no unit'
         log('%s (%s), %s', data, unit, noise)
 

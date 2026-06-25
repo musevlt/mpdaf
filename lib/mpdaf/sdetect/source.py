@@ -359,18 +359,18 @@ def _insert_or_update_hdu(hdulist, name, hdu):
 
 
 def _write_mpdaf_obj(obj, type_, name, hdulist):
-    ext_name = '{}_{}_DATA'.format(type_, name)
+    ext_name = f'{type_}_{name}_DATA'
     savemask = 'nan' if obj.data.dtype.kind == 'f' else 'dq'
     datahdu = obj.get_data_hdu(name=ext_name, savemask=savemask)
     _insert_or_update_hdu(hdulist, ext_name, datahdu)
 
-    ext_name = '{}_{}_STAT'.format(type_, name)
+    ext_name = f'{type_}_{name}_STAT'
     hdu = obj.get_stat_hdu(name=ext_name, header=datahdu.header)
     if hdu is not None:
         _insert_or_update_hdu(hdulist, ext_name, hdu)
 
     if savemask == 'dq':
-        ext_name = '{}_{}_DQ'.format(type_, name)
+        ext_name = f'{type_}_{name}_DQ'
         hdu = obj.get_dq_hdu(name=ext_name, header=datahdu.header)
         if hdu is not None:
             _insert_or_update_hdu(hdulist, ext_name, hdu)
@@ -506,8 +506,8 @@ class Source:
         # Check required keywords in the FITS header
         for key in ('RA', 'DEC', 'ID', 'CUBE', 'CUBE_V', 'FROM', 'FROM_V'):
             if key not in header:
-                raise ValueError('{} keyword is mandatory to create a Source '
-                                 'object'.format(key))
+                raise ValueError(f'{key} keyword is mandatory to create a Source '
+                                 'object')
 
         self._logger = logging.getLogger(__name__)
         self._filename = filename
@@ -774,8 +774,8 @@ class Source:
                     for key in obj.loaded_ext:
                         _write_mpdaf_obj(obj[key], extname, key, hdulist)
                     for key in obj.deleted_ext:
-                        _remove_hdu(hdulist, '{}_{}_DATA'.format(extname, key))
-                        _remove_hdu(hdulist, '{}_{}_STAT'.format(extname, key))
+                        _remove_hdu(hdulist, f'{extname}_{key}_DATA')
+                        _remove_hdu(hdulist, f'{extname}_{key}_STAT')
 
                 # tables
                 for key in self.tables.loaded_ext:
@@ -1829,8 +1829,8 @@ class Source:
                 # dimensions right
                 if not np.array_equal(psf.shape, subcub.shape):
                     raise ValueError('Incorrect dimensions for the PSF cube '
-                                     '({}) (it must be ({})) '
-                                     .format(psf.shape, subcub.shape))
+                                     f'({psf.shape}) (it must be ({subcub.shape})) '
+                                     )
             elif len(psf.shape) == 1:
                 psf = create_psf_cube(subcub.shape, psf, beta=beta, wcs=wcsref)
 
@@ -2145,7 +2145,7 @@ class SourceList(list):
             Format of the catalog. The format differs for the LINES table.
         """
         if not os.path.exists(path):
-            raise ValueError("Invalid path: {}".format(path))
+            raise ValueError(f"Invalid path: {path}")
 
         path = os.path.normpath(path)
         path2 = os.path.join(path, name)
@@ -2186,7 +2186,7 @@ class SourceList(list):
 
         """
         if not os.path.exists(path):
-            raise ValueError("Invalid path: {}".format(path))
+            raise ValueError(f"Invalid path: {path}")
 
         slist = cls()
         for f in glob.glob(path + '/*.fits'):

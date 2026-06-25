@@ -194,7 +194,7 @@ def _pycombine(self, nmax=2, nclip=5.0, var='propagate', nstop=2, nl=None,
     no_valid_pix = npixels - valid_pix
     rejected_pix = valid_pix - select_pix
     rej = rejected_pix / valid_pix.astype(float) * 100.0
-    rej = " ".join("{:.2f}".format(p) for p in rej)
+    rej = " ".join(f"{p:.2f}" for p in rej)
     info("%% of rejected pixels per files: %s", rej)
     stat_pix = Table([self.files, no_valid_pix, rejected_pix],
                      names=['FILENAME', 'NPIX_NAN', 'NPIX_REJECTED'])
@@ -516,7 +516,7 @@ class CubeList:
 
         # no valid pixels
         rej = (valid_pix - select_pix) / valid_pix.astype(float) * 100.0
-        rej = " ".join("{:.2f}%".format(p) for p in rej)
+        rej = " ".join(f"{p:.2f}%" for p in rej)
         self._logger.info("%% of rejected pixels per files: %s", rej)
         no_valid_pix = npixels - valid_pix
         rejected_pix = valid_pix - select_pix

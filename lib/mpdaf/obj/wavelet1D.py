@@ -42,8 +42,8 @@ def test_levels(signal, levels):
         levels = int(np.floor(max_level))
         raise OSError("Attention: The chosen number of levels exceeds the "
                       "number allowed (sampling condition). Thus it was "
-                      "automatically set to the maximum number allowed = {}"
-                      .format(levels))
+                      f"automatically set to the maximum number allowed = {levels}"
+                      )
     return levels
 
 

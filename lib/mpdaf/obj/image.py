@@ -689,8 +689,8 @@ class Image(ArithmeticMixin, DataArray):
                 sy.stop < 0 or
                 sy.start == sy.stop):
             raise ValueError('Sub-image boundaries are outside the cube: '
-                             'center: {}, shape: {}, size: {}'
-                             .format(center, self.shape, size))
+                             f'center: {center}, shape: {self.shape}, size: {size}'
+                             )
 
         # Require that the image be at least minsize x minsize pixels.
         if (sy.stop - sy.start + 1) < minsize[0] or \

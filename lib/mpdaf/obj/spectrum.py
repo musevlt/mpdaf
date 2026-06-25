@@ -1162,7 +1162,7 @@ class Spectrum(ArithmeticMixin, DataArray):
 
             with fits.open(FILTERS) as hdul:
                 if filtname not in hdul:
-                    raise ValueError("filter '{}' not found".format(filtname))
+                    raise ValueError(f"filter '{filtname}' not found")
                 lbda = hdul[filtname].data['lambda']
                 thr = hdul[filtname].data['throughput']
 
@@ -2485,7 +2485,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         elif stretch == 'log':
             ax.semilogy(x, data, **kwargs)
         else:
-            raise ValueError("Unknow stretch '{}'".format(stretch))
+            raise ValueError(f"Unknow stretch '{stretch}'")
 
         # Plot extensions above and below the points to represent
         # their uncertainties?

@@ -126,7 +126,7 @@ class Catalog(Table):
         n_cat = len(catalogs)
 
         if suffix is None:
-            suffix = tuple(['_{}'.format(i + 1) for i in range(n_cat)])
+            suffix = tuple([f'_{i + 1}' for i in range(n_cat)])
 
         cat0 = catalogs[0]
         # create output with same type as meta of first catalog
@@ -535,7 +535,7 @@ class Catalog(Table):
         logger = logging.getLogger(__name__)
 
         if not os.path.exists(path):
-            raise OSError("Invalid path: {}".format(path))
+            raise OSError(f"Invalid path: {path}")
 
         from .source import Source
 

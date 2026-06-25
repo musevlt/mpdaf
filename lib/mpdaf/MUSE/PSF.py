@@ -354,8 +354,9 @@ def create_psf_cube(shape, fwhm, beta=None, wcs=None, unit_fwhm=u.arcsec):
 
     """
     if len(fwhm) != shape[0]:
-        raise ValueError('fwhm length ({}) and input shape ({}) do not match'
-                         .format(len(fwhm), shape[0]))
+        raise ValueError(
+            f'fwhm length ({len(fwhm)}) and input shape ({shape[0]}) do not match'
+        )
 
     nl = shape[0]
     y0, x0 = (np.array(shape[1:]) - 1) / 2.0

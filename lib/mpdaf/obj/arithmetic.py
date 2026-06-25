@@ -109,9 +109,9 @@ def _check_proportionality(a, b, tol=1e-5):
         return False
     else:
         # If the arrays do not have different pixels when divided, return the constant factor to indicate False
-        logging.warning("a = {} * b. "
+        logging.warning(f"a = {quotient[0]} * b. "
                         "Propagation of correlated errors in not supported,"
-                        " so variances will not be propagated.".format(quotient[0]))
+                        " so variances will not be propagated.")
         return True
 
 
@@ -140,9 +140,9 @@ def _check_power(a, b, tol=1e-5):
         return False
     else:
         # If the arrays do not have different pixels, return the constant exponent to indicate False
-        logging.warning("a = b **{}. "
+        logging.warning(f"a = b **{power[0]}. "
                         "Propagation of correlated errors in not supported,"
-                        " so variances will not be propagated.".format(power[0]))
+                        " so variances will not be propagated.")
         return True
 
 

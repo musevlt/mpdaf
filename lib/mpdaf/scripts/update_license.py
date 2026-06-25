@@ -105,14 +105,14 @@ def insert(lines, license, pos=0):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print('Usage: {} FILES...'.format(os.path.basename(sys.argv[0])))
+        print(f'Usage: {os.path.basename(sys.argv[0])} FILES...')
         print('Insert or update copyright in docstrings')
         sys.exit()
 
     files = sys.argv[1:]
 
     for filename in files:
-        print('- {} : '.format(filename), end='')
+        print(f'- {filename} : ', end='')
 
         if filename in EXCLUDES:
             print('SKIP')
@@ -144,8 +144,8 @@ if __name__ == "__main__":
             if len(years) == 1:
                 year = '     ' + years[0]
             else:
-                year = '{}-{}'.format(years[0], years[-1])
-            authorlist.append('Copyright (c) {} {}\n'.format(year, author))
+                year = f'{years[0]}-{years[-1]}'
+            authorlist.append(f'Copyright (c) {year} {author}\n')
 
         license = LICENSE.splitlines(True)
         license = license[:2] + authorlist + license[2:]

@@ -272,8 +272,8 @@ def plot_autocal_factors(filename, savefig=None, plot_rejected=False,
         ax.grid(True)
 
     title = 'Number of points' if plot_npts else 'Correction factor'
-    fig.suptitle('{} (y) for each wavelength segment (x), each slice (color) '
-                 'and each IFU'.format(title), fontsize=16)
+    fig.suptitle(f'{title} (y) for each wavelength segment (x), each slice (color) '
+                 'and each IFU', fontsize=16)
 
     import matplotlib as mpl
     bounds = np.linspace(0, 48, 49)
@@ -472,8 +472,7 @@ class PixTable:
                     pass
 
     def __repr__(self):
-        msg = "<{}({} rows, {} ifus, {})>".format(
-            self.__class__.__name__, self.nrows, self.nifu, self.projection)
+        msg = f"<{self.__class__.__name__}({self.nrows} rows, {self.nifu} ifus, {self.projection})>"
         if self.skysub:
             msg = msg[:-2] + ", sky-subtracted)>"
         if self.fluxcal:
@@ -1570,7 +1569,7 @@ class PixTable:
 
         """
         try:
-            return self.primary_header['{} {}'.format(KEYWORD, key)]
+            return self.primary_header[f'{KEYWORD} {key}']
         except KeyError:
             if default is not _NOT_SET:
                 return default
@@ -1589,7 +1588,7 @@ class PixTable:
             Value.
 
         """
-        self.primary_header['{} {}'.format(KEYWORD, key)] = val
+        self.primary_header[f'{KEYWORD} {key}'] = val
 
     def reconstruct_det_image(self, xstart=None, ystart=None,
                               xstop=None, ystop=None):
