@@ -109,8 +109,10 @@ def test_create_masks(tmpdir):
         convolve_fwhm=0)
 
     # test convolve_fwhm and callables for mask filenames
-    masksky_func = lambda: str(tmpdir.join('mask2-sky.fits'))
-    maskobj_func = lambda x: str(tmpdir.join('mask2-source-%05d.fits' % x))
+    def masksky_func():
+        return str(tmpdir.join('mask2-sky.fits'))
+    def maskobj_func(x):
+        return str(tmpdir.join('mask2-source-%05d.fits' % x))
     create_masks_from_segmap(
         segfile, catalog, reffile, n_jobs=1, skip_existing=True,
         masksky_name=masksky_func, maskobj_name=maskobj_func,

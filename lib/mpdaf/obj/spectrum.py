@@ -1471,26 +1471,26 @@ class Spectrum(ArithmeticMixin, DataArray):
         # 1d gaussian function: p = (ampl, sigma, center)
         if fix_lpeak:
             if cont is None:
-                gaussfit = lambda p, x: \
-                    ((fmax - fmin) * x + lmax * fmin - lmin * fmax) \
-                    / (lmax - lmin) + np.abs(p[0]) \
-                    * (1 / np.sqrt(2 * np.pi * (p[1] ** 2))) \
-                    * np.exp(-(x - lpeak) ** 2 / (2 * p[1] ** 2))
+                def gaussfit(p, x):
+                    return ((fmax - fmin) * x + lmax * fmin - lmin * fmax) \
+                                    / (lmax - lmin) + np.abs(p[0]) \
+                                    * (1 / np.sqrt(2 * np.pi * (p[1] ** 2))) \
+                                    * np.exp(-(x - lpeak) ** 2 / (2 * p[1] ** 2))
             else:
-                gaussfit = lambda p, x: \
-                    cont + p[0] * (1 / np.sqrt(2 * np.pi * (p[1] ** 2))) \
-                    * np.exp(-(x - lpeak) ** 2 / (2 * p[1] ** 2))
+                def gaussfit(p, x):
+                    return cont + p[0] * (1 / np.sqrt(2 * np.pi * (p[1] ** 2))) \
+                                    * np.exp(-(x - lpeak) ** 2 / (2 * p[1] ** 2))
         else:
             if cont is None:
-                gaussfit = lambda p, x: \
-                    ((fmax - fmin) * x + lmax * fmin - lmin * fmax) \
-                    / (lmax - lmin) + p[0] \
-                    * (1 / np.sqrt(2 * np.pi * (p[1] ** 2))) \
-                    * np.exp(-(x - p[2]) ** 2 / (2 * p[1] ** 2))
+                def gaussfit(p, x):
+                    return ((fmax - fmin) * x + lmax * fmin - lmin * fmax) \
+                                    / (lmax - lmin) + p[0] \
+                                    * (1 / np.sqrt(2 * np.pi * (p[1] ** 2))) \
+                                    * np.exp(-(x - p[2]) ** 2 / (2 * p[1] ** 2))
             else:
-                gaussfit = lambda p, x: \
-                    cont + p[0] * (1 / np.sqrt(2 * np.pi * (p[1] ** 2))) \
-                    * np.exp(-(x - p[2]) ** 2 / (2 * p[1] ** 2))
+                def gaussfit(p, x):
+                    return cont + p[0] * (1 / np.sqrt(2 * np.pi * (p[1] ** 2))) \
+                                    * np.exp(-(x - p[2]) ** 2 / (2 * p[1] ** 2))
 
         if spec.var is not None and weight:
             wght = 1.0 / np.sqrt(np.abs(spec.var))
@@ -1504,7 +1504,8 @@ class Spectrum(ArithmeticMixin, DataArray):
             v0.append(lpeak)
 
         # Minimize the sum of squares
-        e_gauss_fit = lambda p, x, y, w: w * (gaussfit(p, x) - y)
+        def e_gauss_fit(p, x, y, w):
+            return w * (gaussfit(p, x) - y)
         v, covar, info, mesg, success = leastsq(e_gauss_fit, v0[:],
                                                 args=(l, data, wght),
                                                 maxfev=100000, full_output=1)
@@ -1566,9 +1567,10 @@ class Spectrum(ArithmeticMixin, DataArray):
         unit : `astropy.units.Unit`
             Type of the wavelength coordinates. If None, inputs are in pixels.
         """
-        gauss = lambda p, x: cont \
-                             + p[0] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) \
-                             * np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2))
+        def gauss(p, x):
+            return cont \
+                                     + p[0] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) \
+                                     * np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2))
 
         sigma = fwhm * gaussian_fwhm_to_sigma
 
@@ -1713,11 +1715,12 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         # 1d gaussian function
         # p[0]: flux 1, p[1]:center 1, p[2]: fwhm, p[3] = peak 2
-        gaussfit = lambda p, x: cont0 + \
-                                p[0] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) * \
-                                np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2)) + \
-                                p[3] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) * \
-                                np.exp(-(x - (p[1] * wratio)) ** 2 / (2 * p[2] ** 2))
+        def gaussfit(p, x):
+            return cont0 + \
+                                        p[0] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) * \
+                                        np.exp(-(x - p[1]) ** 2 / (2 * p[2] ** 2)) + \
+                                        p[3] * (1 / np.sqrt(2 * np.pi * (p[2] ** 2))) * \
+                                        np.exp(-(x - (p[1] * wratio)) ** 2 / (2 * p[2] ** 2))
 
         # 1d gaussian fit
         if spec.var is not None and weight:
@@ -1726,7 +1729,8 @@ class Spectrum(ArithmeticMixin, DataArray):
         else:
             wght = np.ones(spec.shape)
 
-        e_gauss_fit = lambda p, x, y, w: w * (gaussfit(p, x) - y)
+        def e_gauss_fit(p, x, y, w):
+            return w * (gaussfit(p, x) - y)
 
         # inital guesses for Gaussian Fit
         v0 = [flux_1, lpeak_1, sigma, flux_2]
@@ -1901,13 +1905,14 @@ class Spectrum(ArithmeticMixin, DataArray):
 
         # Asymetric gaussian function (p[0]: flux of the right-hand side if it
         # was full... ; p[1]: lambda peak; p[2]:sigma_right; p[3]: sigma_left)
-        asymfit = lambda p, x: np.where(
-            x > p[1],
-            cont0 + p[0] / np.sqrt(2 * np.pi) / p[2] *
-            np.exp(-(x - p[1]) ** 2 / (2. * p[2] ** 2)),
-            cont0 + p[0] * p[3] / p[2] / np.sqrt(2 * np.pi) / p[3] *
-            np.exp(-(x - p[1]) ** 2 / (2. * p[3] ** 2))
-        )
+        def asymfit(p, x):
+            return np.where(
+                    x > p[1],
+                    cont0 + p[0] / np.sqrt(2 * np.pi) / p[2] *
+                    np.exp(-(x - p[1]) ** 2 / (2. * p[2] ** 2)),
+                    cont0 + p[0] * p[3] / p[2] / np.sqrt(2 * np.pi) / p[3] *
+                    np.exp(-(x - p[1]) ** 2 / (2. * p[3] ** 2))
+                )
 
         # 1d Gaussian fit
         if spec.var is not None and weight:
@@ -1916,7 +1921,8 @@ class Spectrum(ArithmeticMixin, DataArray):
         else:
             wght = np.ones(spec.shape)
 
-        e_asym_fit = lambda p, x, y, w: w * (asymfit(p, x) - y)
+        def e_asym_fit(p, x, y, w):
+            return w * (asymfit(p, x) - y)
 
         # inital guesses for Gaussian Fit
         v0 = [peak, lpeak, sigma, sigma]
@@ -2003,13 +2009,14 @@ class Spectrum(ArithmeticMixin, DataArray):
             Type of the wavelength coordinates. If None, inputs are in pixels.
         """
 
-        asym_gauss = lambda p, x: np.where(
-            x > p[1],
-            cont + p[0] / np.sqrt(2 * np.pi) / p[2] *
-            np.exp(-(x - p[1]) ** 2 / (2. * p[2] ** 2)),
-            cont + p[0] * p[3] / p[2] / np.sqrt(2 * np.pi) / p[3] *
-            np.exp(-(x - p[1]) ** 2 / (2. * p[3] ** 2))
-        )
+        def asym_gauss(p, x):
+            return np.where(
+                    x > p[1],
+                    cont + p[0] / np.sqrt(2 * np.pi) / p[2] *
+                    np.exp(-(x - p[1]) ** 2 / (2. * p[2] ** 2)),
+                    cont + p[0] * p[3] / p[2] / np.sqrt(2 * np.pi) / p[3] *
+                    np.exp(-(x - p[1]) ** 2 / (2. * p[3] ** 2))
+                )
         sigma_left = fwhm_left * gaussian_fwhm_to_sigma
         sigma_right = fwhm_right * gaussian_fwhm_to_sigma
 

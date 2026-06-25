@@ -89,10 +89,12 @@ class LSF:
 
         """
         if self.typ == "qsim_v1":
-            T = lambda x: np.exp((-x ** 2) / 2.0) + np.sqrt(2.0 * np.pi) \
-                * x * special.erf(x / np.sqrt(2.0)) / 2.0
+            def T(x):
+                return np.exp((-x ** 2) / 2.0) + np.sqrt(2.0 * np.pi) \
+                            * x * special.erf(x / np.sqrt(2.0)) / 2.0
             c = np.array([-0.09876662, 0.44410609, -0.03166038, 0.46285363])
-            sigma = lambda x: c[3] + c[2] * x + c[1] * x ** 2 + c[0] * x ** 3
+            def sigma(x):
+                return c[3] + c[2] * x + c[1] * x ** 2 + c[0] * x ** 3
 
             x = (lbda - 6975.0) / 4650.0
             h_2 = 2.09 / 2.0
