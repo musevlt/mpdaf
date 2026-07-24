@@ -2,9 +2,9 @@
 requires = [
     "setuptools>=77.0.0",
     "setuptools_scm>=8.0.0",
-    "extension-helpers==1.*",
+    "extension-helpers>=1.4,<2",
     "numpy>=2.0.0",
-    "cython>=3.0.0, <4"
+    "Cython>=3.1,<4",
 ]
 build-backend = 'setuptools.build_meta'
 
@@ -129,3 +129,17 @@ exclude_lines = [
     "except KeyboardInterrupt",
     "except ImportError",
 ]
+
+[tool.cibuildwheel]
+build-verbosity = 3
+skip = ["*-win32", "*-*linux_i686", "cp3??t-*", "*-musllinux_x86_64"]
+environment = { CFLAGS="-std=c99", PIP_PREFER_BINARY=1 }
+test-command = "pytest {project}/lib"
+test-extras = ["tests"]
+
+[tool.cibuildwheel.linux]
+# manylinux2014 builds occur inside a CentOS container
+before-all = [
+  "yum install cfitsio -y",
+]
+environment = { USEOPENMP=0, CFLAGS="-std=c99", PIP_PREFER_BINARY=1  }
