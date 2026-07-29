@@ -1,9 +1,9 @@
 """
-Copyright (c) 2010-2018 CNRS / Centre de Recherche Astrophysique de Lyon
+Copyright (c) 2010-2026 CNRS / Centre de Recherche Astrophysique de Lyon
 Copyright (c) 2015-2016 Jarle Brinchman <jarle@strw.leidenuniv.nl>
 Copyright (c) 2015-2016 Laure Piqueras <laure.piqueras@univ-lyon1.fr>
-Copyright (c) 2015-2019 Simon Conseil <simon.conseil@univ-lyon1.fr>
-Copyright (c)      2016 Roland Bacon <roland.bacon@univ-lyon1.fr>
+Copyright (c) 2015-2026 Simon Conseil <simon.conseil@univ-lyon1.fr>
+Copyright (c) 2016-2021 Roland Bacon <roland.bacon@univ-lyon1.fr>
 
 All rights reserved.
 

@@ -1,6 +1,6 @@
 """
-Copyright (c) 2010-2018 CNRS / Centre de Recherche Astrophysique de Lyon
-Copyright (c) 2017-2019 Simon Conseil <simon.conseil@univ-lyon1.fr>
+Copyright (c) 2010-2026 CNRS / Centre de Recherche Astrophysique de Lyon
+Copyright (c) 2017-2026 Simon Conseil <simon.conseil@univ-lyon1.fr>
 
 All rights reserved.
 

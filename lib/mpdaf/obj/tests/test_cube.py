@@ -1,8 +1,10 @@
 """
-Copyright (c) 2010-2018 CNRS / Centre de Recherche Astrophysique de Lyon
-Copyright (c) 2016-2018 Simon Conseil <simon.conseil@univ-lyon1.fr>
-Copyright (c) 2016-2017 Laure Piqueras <laure.piqueras@univ-lyon1.fr>
+Copyright (c) 2010-2026 CNRS / Centre de Recherche Astrophysique de Lyon
+Copyright (c) 2016-2026 Simon Conseil <simon.conseil@univ-lyon1.fr>
+Copyright (c) 2016-2021 Laure Piqueras <laure.piqueras@univ-lyon1.fr>
 Copyright (c)      2016 Martin Shepherd <martin.shepherd@univ-lyon1.fr>
+Copyright (c)      2019 Roland Bacon <roland.bacon@univ-lyon1.fr>
+Copyright (c)      2023 Aurelien Ferrari <aurelien.ferrari1904@gmail.com>
 
 All rights reserved.
 

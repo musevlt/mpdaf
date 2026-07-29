@@ -1,6 +1,6 @@
 """
-Copyright (c) 2010-2018 CNRS / Centre de Recherche Astrophysique de Lyon
-Copyright (c) 2016-2019 Simon Conseil <simon.conseil@univ-lyon1.fr>
+Copyright (c) 2010-2026 CNRS / Centre de Recherche Astrophysique de Lyon
+Copyright (c) 2016-2026 Simon Conseil <simon.conseil@univ-lyon1.fr>
 
 All rights reserved.
 
@@ -37,7 +37,7 @@ from subprocess import check_output
 
 LICENSE = """\
 \"\"\"
-Copyright (c) 2010-2018 CNRS / Centre de Recherche Astrophysique de Lyon
+Copyright (c) 2010-2026 CNRS / Centre de Recherche Astrophysique de Lyon
 
 All rights reserved.
 
@@ -73,6 +73,7 @@ GIT_CMD = ("git log --date=format:%Y --format='%ad %aN <%aE>' --date-order "
 
 EXCLUDES = (
     'lib/mpdaf/obj/wavelet1D.py',
+    'lib/mpdaf/_version.py',
 )
 
 ADDITIONAL_COPYRIGHTS = {

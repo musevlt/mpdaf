@@ -1,8 +1,8 @@
 """
-Copyright (c) 2010-2018 CNRS / Centre de Recherche Astrophysique de Lyon
+Copyright (c) 2010-2026 CNRS / Centre de Recherche Astrophysique de Lyon
 Copyright (c) 2012-2015 Laure Piqueras <laure.piqueras@univ-lyon1.fr>
 Copyright (c)      2012 Aurelien Jarno <aurelien.jarno@univ-lyon1.fr>
-Copyright (c) 2015-2018 Simon Conseil <simon.conseil@univ-lyon1.fr>
+Copyright (c) 2015-2026 Simon Conseil <simon.conseil@univ-lyon1.fr>
 
 All rights reserved.
 
