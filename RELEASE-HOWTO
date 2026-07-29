@@ -1,5 +1,5 @@
-Description of the new release procedure
-----------------------------------------
+Description of the release procedure
+------------------------------------
 
 1. Merge gitcral and github
 
@@ -7,7 +7,7 @@ Description of the new release procedure
     git fetch github
     git merge github/master
     in case of conflict: git add + git commit
-    
+
 2. Update changelog, update version number and date (CHANGELOG)
 
 3. Run tests and build documentation to make sure that everything is ok.
@@ -17,43 +17,21 @@ Description of the new release procedure
     git push origin master
     git push github master
 
-5. When Gitlab-CI is happy, tag the version and push tags .
-   The package version is set automatically from the git tag thanks to
-   setuptools_scm.
-   
+5. When CI and readthedocs are happy, tag the version and push.  The package
+   version is set automatically from the git tag thanks to setuptools_scm.
+
    git push --tags
    git push github <tag_name>
-   
+
 6. Activate the new version on https://readthedocs.org/projects/mpdaf/versions/ (Edit/Active)
 
-7. Create the sdist archive, from a clean tree:
+7. Check that the release workflow is running on GitHub and that wheels are
+   uploaded to PyPI.
 
-    git clean -fxd .
-    pip install build
-    python -m build --sdist
+   https://github.com/musevlt/mpdaf/actions/workflows/publish.yml
+   https://pypi.org/project/mpdaf/
 
-8. Install the sdist archive in a fresh virtualenv and run tests.
-
-    virtualenv test-new-version
-    source test-new-version/bin/activate
-    pip install dist/mpdaf-3.0.tar.gz
-    pip install pytest
-    python -c "import mpdaf; print(mpdaf.__file__)"
-    pytest $(dirname $(python -c "import mpdaf; print(mpdaf.__file__)"))
-
-9. Upload the sdist archive to PyPI:
-
-    pip install twine
-    twine upload -u <username> dist/*
-
-10. Build the binary wheels.
-   On https://github.com/musevlt/mpdaf-wheels, edit MPDAF_VERSION in the
-   .github/workflows/build.yml file, commit and push. Then wheels should be 
-   build on https://github.com/musevlt/mpdaf-wheels/actions and available 
-   as artifacts if it was successful.
-   Download the wheels, and push them to PyPI with twine.
-
-11. Prepare the next version: add new version header in the changelog.
+8. Prepare the next version: add new version header in the changelog.
 
 
 

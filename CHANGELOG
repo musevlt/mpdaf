@@ -1,6 +1,14 @@
 3.7dev
 ------
 
+- Use fork by default for `loop_*_multiprocessing`.
+
+- Compatibility fixes for recent Numpy and specutils.
+
+- Fix logger issue in `Image.subimage`.
+
+- Fix bug with `PixTable.select_stacks`.
+
 3.6 (28/06/2024)
 ----------------
 
