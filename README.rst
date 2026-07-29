@@ -1,8 +1,14 @@
 .. image:: https://github.com/musevlt/mpdaf/workflows/Run%20unit%20tests/badge.svg
-  :target: https://github.com/musevlt/mpdaf
+   :target: https://github.com/musevlt/mpdaf
+   :alt: GitHub Actions CI Status
 
 .. image:: https://codecov.io/gh/musevlt/mpdaf/branch/master/graph/badge.svg
-  :target: https://codecov.io/gh/musevlt/mpdaf
+   :target: https://codecov.io/gh/musevlt/mpdaf
+   :alt: Coverage Status
+
+.. image:: https://img.shields.io/pypi/v/mpdaf.svg
+   :target: https://pypi.org/project/mpdaf
+   :alt: PyPI Status
 
 MPDAF, the *MUSE Python Data Analysis Framework*, is an open-source (BSD
 licensed) Python package, developed and maintained by `CRAL
