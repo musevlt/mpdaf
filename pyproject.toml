@@ -132,7 +132,7 @@ exclude_lines = [
 
 [tool.cibuildwheel]
 build-verbosity = 3
-skip = ["*-win32", "*-*linux_i686", "cp3??t-*", "*-musllinux_x86_64"]
+skip = ["*-win32", "*-*linux_i686", "cp3??t-*", "*-musllinux_x86_64", "cp315*"]
 environment = { CFLAGS="-std=c99", PIP_PREFER_BINARY=1 }
 test-command = "pytest {project}/lib"
 test-extras = ["tests"]
