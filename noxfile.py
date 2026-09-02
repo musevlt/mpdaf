@@ -1,11 +1,18 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# dependencies = ["nox"]
+# ///
+
 import nox
 
+nox.needs_version = ">= 2025.10.14"
+nox.options.default_venv_backend = "uv|virtualenv"
 nox.options.reuse_venv = "yes"
 
 pytest_args = ("-rs", "--pyargs", "mpdaf")
 
 
-def install_mpdaf(session):
+def install(session):
     if "-v" in session.posargs:
         session.install(".[tests,all]", "-v")
     else:
@@ -14,13 +21,13 @@ def install_mpdaf(session):
 
 @nox.session()
 def tests(session):
-    install_mpdaf(session)
+    install(session)
     session.run("pytest", *pytest_args, *session.posargs)
 
 
 @nox.session()
 def coverage(session):
-    install_mpdaf(session)
+    install(session)
     session.run("coverage", "run", "-m", "pytest", *pytest_args, *session.posargs)
     session.run("coverage", "report")
 
@@ -40,3 +47,7 @@ def docs(session):
             "_build/html",
         )
         # fmt: on
+
+
+if __name__ == "__main__":
+    nox.main()
