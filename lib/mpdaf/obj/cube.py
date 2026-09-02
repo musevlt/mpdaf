@@ -1252,7 +1252,8 @@ class Cube(ArithmeticMixin, DataArray):
         factor = np.asarray(factor)
         return self._rebin(factor, margin, inplace)
 
-    def loop_spe_multiprocessing(self, f, cpu=None, verbose=True, **kargs):
+    def loop_spe_multiprocessing(self, f, cpu=None, start_method="forkserver",
+                                 verbose=True, **kwargs):
         """Use multiple processes to run a function on each spectrum of a cube.
 
         The provided function must accept a Spectrum object as its first
@@ -1293,9 +1294,11 @@ class Cube(ArithmeticMixin, DataArray):
             computer, minus 1 CPU for the main process. However
             the variable, `mpdaf.CPU` can be assigned a smaller number
             by the user to limit the number that are available to MPDAF.
+        start_method : str
+            Start method for multiprocessing.
         verbose : bool
             If True, a progress report is printed every 5 seconds.
-        kargs : kargs
+        kwargs :
             An optional list of arguments to be passed to the function
             f(). The datatypes of all of the arguments in this list
             must support python pickling.
@@ -1309,9 +1312,11 @@ class Cube(ArithmeticMixin, DataArray):
 
         """
         return _loop_multiprocessing(self, f, 'spe', cpu=cpu,
-                                     verbose=verbose, **kargs)
+                                     start_method=start_method,
+                                     verbose=verbose, **kwargs)
 
-    def loop_ima_multiprocessing(self, f, cpu=None, verbose=True, **kargs):
+    def loop_ima_multiprocessing(self, f, cpu=None, start_method="forkserver",
+                                 verbose=True, **kwargs):
         """Use multiple processes to run a function on each image of a cube.
 
         The provided function must accept an Image object as its first
@@ -1351,9 +1356,11 @@ class Cube(ArithmeticMixin, DataArray):
             computer, minus 1 CPU for the main process. However
             the variable, `mpdaf.CPU` can be assigned a smaller number
             by the user to limit the number that are available to MPDAF.
+        start_method : str
+            Start method for multiprocessing.
         verbose : bool
             If True, a progress report is printed every 5 seconds.
-        kargs : kargs
+        kwargs :
             An optional list of arguments to be passed to the function
             f(). The datatypes of all of the arguments in this list
             must support python pickling.
@@ -1367,7 +1374,8 @@ class Cube(ArithmeticMixin, DataArray):
 
         """
         return _loop_multiprocessing(self, f, 'ima', cpu=cpu,
-                                     verbose=verbose, **kargs)
+                                     start_method=start_method,
+                                     verbose=verbose, **kwargs)
 
     def get_image(self, wave, is_sum=False, subtract_off=False, margin=10.,
                   fband=3., median_filter=0, unit_wave=u.angstrom, method="mean"):
@@ -2183,7 +2191,8 @@ def _multiproc_worker(arglist):
             )
 
 
-def _loop_multiprocessing(self, f, loop_type, cpu=None, verbose=True, **kargs):
+def _loop_multiprocessing(self, f, loop_type, cpu=None, start_method="forkserver",
+                          verbose=True, **kwargs):
     # Determine the number of processes:
     # - default: all CPUs except one.
     # - mpdaf.CPU
@@ -2195,7 +2204,7 @@ def _loop_multiprocessing(self, f, loop_type, cpu=None, verbose=True, **kargs):
     if cpu is not None and cpu < cpu_count:
         cpu_count = cpu
 
-    ctx = multiprocessing.get_context('forkserver')
+    ctx = multiprocessing.get_context(start_method)
     pool = ctx.Pool(processes=cpu_count)
 
     # If the provided function is an Image or Spectru method, get its name
@@ -2205,11 +2214,11 @@ def _loop_multiprocessing(self, f, loop_type, cpu=None, verbose=True, **kargs):
 
     if loop_type == 'ima':
         # There will be one task per image
-        processlist = [(k, f, self[k, :, :], kargs)
+        processlist = [(k, f, self[k, :, :], kwargs)
                        for k in range(self.shape[0])]
     elif loop_type == 'spe':
         # There will be one task per spectrum
-        processlist = [((p, q), f, self[:, p, q], kargs)
+        processlist = [((p, q), f, self[:, p, q], kwargs)
                        for p, q in np.ndindex(self.shape[1:])]
     else:
         raise ValueError('unsupported way to slice the cube')

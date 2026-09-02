@@ -455,53 +455,56 @@ We then plot the results:
   @suppress
   In [5]: cube2 = None
 
-Next we will use the `loop_ima_multiprocessing
-<mpdaf.obj.Cube.loop_ima_multiprocessing>` method to fit and remove a background
-gradient from a simulated datacube.  For each image of the cube, we fit a 2nd
-order polynomial to the background values (selected here by simply applying a
-flux threshold to mask all bright objects). We do so by doing a chi^2
-minimization over the polynomial coefficients using the numpy recipe
-``np.linalg.lstsq()``. For this, we define a function that takes an image as its
-sole parameter and returns a background-subtracted image:
+.. Next we will use the `loop_ima_multiprocessing
+    <mpdaf.obj.Cube.loop_ima_multiprocessing>` method to fit and remove a background
+    gradient from a simulated datacube.  For each image of the cube, we fit a 2nd
+    order polynomial to the background values (selected here by simply applying a
+    flux threshold to mask all bright objects). We do so by doing a chi^2
+    minimization over the polynomial coefficients using the numpy recipe
+    ``np.linalg.lstsq()``. For this, we define a function that takes an image as its
+    sole parameter and returns a background-subtracted image:
+
+    .. ipython::
+
+    In [1]: def remove_background_gradient(ima):
+        ...:     ksel = np.where(ima.data.data<2.5)
+        ...:     pval = ksel[0]
+        ...:     qval = ksel[1]
+        ...:     zval = ima.data.data[ksel]
+        ...:     degree = 2
+        ...:     Ap = np.vander(pval,degree)
+        ...:     Aq = np.vander(qval,degree)
+        ...:     A = np.hstack((Ap,Aq))
+        ...:     (coeffs,residuals,rank,sing_vals) = np.linalg.lstsq(A,zval)
+        ...:     fp = np.poly1d(coeffs[0:degree])
+        ...:     fq = np.poly1d(coeffs[degree:2*degree])
+        ...:     X,Y = np.meshgrid(list(range(ima.shape[0])), list(range(ima.shape[1])))
+        ...:     ima2 = ima - np.array(list(map(lambda q,p: fp(p)+fq(q),Y,X)))
+        ...:     return ima2
+        ...:
+
+    We can then create the background-subtracted cube:
+
+    .. ipython::
+
+    In [1]: cube2 = cube.loop_ima_multiprocessing(f=remove_background_gradient)
+
+    Finally, we compare the results for one of the slices:
+
+    .. ipython::
+
+    In [1]: plt.figure()
+
+    @savefig Cube16.png width=3.5in
+    In [2]: cube[5,:,:].plot(vmin=-1, vmax=4)
+
+    In [1]: plt.figure()
+
+    @savefig Cube17.png width=3.5in
+    In [2]: cube2[5,:,:].plot(vmin=-1, vmax=4)
+
 
 .. ipython::
-
-  In [1]: def remove_background_gradient(ima):
-     ...:     ksel = np.where(ima.data.data<2.5)
-     ...:     pval = ksel[0]
-     ...:     qval = ksel[1]
-     ...:     zval = ima.data.data[ksel]
-     ...:     degree = 2
-     ...:     Ap = np.vander(pval,degree)
-     ...:     Aq = np.vander(qval,degree)
-     ...:     A = np.hstack((Ap,Aq))
-     ...:     (coeffs,residuals,rank,sing_vals) = np.linalg.lstsq(A,zval)
-     ...:     fp = np.poly1d(coeffs[0:degree])
-     ...:     fq = np.poly1d(coeffs[degree:2*degree])
-     ...:     X,Y = np.meshgrid(list(range(ima.shape[0])), list(range(ima.shape[1])))
-     ...:     ima2 = ima - np.array(list(map(lambda q,p: fp(p)+fq(q),Y,X)))
-     ...:     return ima2
-     ...:
-
-We can then create the background-subtracted cube:
-
-.. ipython::
-
-  In [1]: cube2 = cube.loop_ima_multiprocessing(f=remove_background_gradient)
-
-Finally, we compare the results for one of the slices:
-
-.. ipython::
-
-  In [1]: plt.figure()
-
-  @savefig Cube16.png width=3.5in
-  In [2]: cube[5,:,:].plot(vmin=-1, vmax=4)
-
-  In [1]: plt.figure()
-
-  @savefig Cube17.png width=3.5in
-  In [2]: cube2[5,:,:].plot(vmin=-1, vmax=4)
 
   @suppress
   In [5]: cube2 = None ; cube = None
