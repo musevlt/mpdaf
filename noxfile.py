@@ -35,7 +35,7 @@ def coverage(session):
 @nox.session
 def docs(session):
     session.install(".[docs]")
-    with session.chdir("doc"):
+    with session.chdir("docs"):
         # fmt: off
         session.run(
             "python", "-m", "sphinx",
