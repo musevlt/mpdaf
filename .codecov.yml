@@ -1,2 +1,2 @@
 fixes:
-  - ".tox/*/site-packages/mpdaf/::lib/mpdaf/"
+  - "*/site-packages/mpdaf/::src/mpdaf/"

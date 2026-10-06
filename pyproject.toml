@@ -59,7 +59,7 @@ gitlab = "https://git-cral.univ-lyon1.fr/MUSE/mpdaf"
 github = "https://github.com/musevlt/mpdaf"
 
 [tool.setuptools.packages.find]
-where = ["lib"]
+where = ["src"]
 
 [tool.setuptools.package-data]
 mpdaf = ["data/**"]
@@ -68,12 +68,12 @@ mpdaf = ["data/**"]
 "mpdaf.sdetect" = ["muselet_data/*", "sea_data/*"]
 
 [tool.setuptools_scm]
-version_file = "lib/mpdaf/_version.py"
+version_file = "src/mpdaf/_version.py"
 
 [tool.pytest]
 minversion = "9.0"
 log_level = "INFO"
-testpaths = ["lib"]
+testpaths = ["src"]
 strict = true
 addopts = ["-ra", "--doctest-modules"]
 filterwarnings = [
@@ -116,7 +116,7 @@ omit = [
 ]
 
 [tool.coverage.paths]
-source = ["lib", "*/site-packages"]
+source = ["src", "*/site-packages"]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -133,7 +133,7 @@ exclude_lines = [
 build-verbosity = 3
 skip = ["*-win32", "*-*linux_i686", "cp3??t-*", "*-musllinux_x86_64"]
 environment = { CFLAGS="-std=c99", PIP_PREFER_BINARY=1 }
-test-command = "pytest {project}/lib"
+test-command = "pytest {project}/src"
 test-extras = ["tests"]
 
 [tool.cibuildwheel.linux]

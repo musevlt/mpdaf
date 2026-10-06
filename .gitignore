@@ -7,6 +7,7 @@
 .cache/
 .coverage*
 .pytest_cache/
+.nox/
 .tox/
 tags
 build/
@@ -15,9 +16,7 @@ docs/api/
 docs/_build/
 docs/_static/_generated/
 htmlcov/
-lib/mpdaf/_githash.py
-lib/mpdaf/data/extern
-lib/mpdaf/obj/merging.c
-pip-wheel-metadata/
-tox.ini
+src/mpdaf/_githash.py
+src/mpdaf/data/extern
+src/mpdaf/obj/merging.c
 _version.py
