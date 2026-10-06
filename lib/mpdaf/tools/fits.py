@@ -172,7 +172,7 @@ def copy_header(srchdr, dsthdr=None, exclude=(), unit=None):
         except u.format.fits.UnitScaleError:
             dsthdr['BUNIT'] = (fix_unit_write(str(unit)), 'data unit type')
         except Exception as e:
-                warnings.warn('Error parsing the BUNIT: ' + str(e), MpdafUnitsWarning)
+                warnings.warn('Error parsing the BUNIT: ' + str(e), MpdafUnitsWarning, stacklevel=2)
 
     return dsthdr
 

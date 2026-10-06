@@ -208,7 +208,7 @@ class FSFModel:
                 pixstep = wcs.get_step(unit=u.arcsec)[0]
             except u.core.UnitConversionError:
                 warnings.warn('could not find use pixstep from the header',
-                              UserWarning)
+                              UserWarning, stacklevel=2)
                 pixstep = None
 
         if nfields > 1:
@@ -603,7 +603,7 @@ class MoffatModel2(FSFModel):
         lbdanorm = norm_lbda(lbda, lbrange[0], lbrange[1])
 
         fit = []
-        for k, ima in enumerate(imalist):
+        for _k, ima in enumerate(imalist):
             f = ima.moffat_fit(fwhm=fwhm0, n=beta0, fit_n=True, circular=True,
                                fit_back=True, verbose=False)
             fwhm0 = f.fwhm[0]

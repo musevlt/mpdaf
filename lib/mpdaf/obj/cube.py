@@ -1446,7 +1446,7 @@ class Cube(ArithmeticMixin, DataArray):
         if is_sum:
             warnings.warn(
                 "The 'is_sum' parameter is deprecated. Use method='sum' "
-                "instead. Aggregation function set to sum.", MpdafWarning)
+                "instead. Aggregation function set to sum.", MpdafWarning, stacklevel=2)
             method = "sum"
 
         # Convert the wavelength range to pixel indexes.
@@ -2185,10 +2185,10 @@ def _multiproc_worker(arglist):
             return pos, f(obj, **kwargs)
         else:
             return pos, getattr(obj, f)(**kwargs)
-    except Exception as inst:
-        raise inst.__class__(
-            f'{str(inst)}\n The error occurred while processing {obj.__class__.__name__} {pos}'
-            )
+    except Exception as exc:
+        raise exc.__class__(
+            f'The error occurred while processing {obj.__class__.__name__} {pos}'
+        ) from exc
 
 
 def _loop_multiprocessing(self, f, loop_type, cpu=None, start_method="forkserver",

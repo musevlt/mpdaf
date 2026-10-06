@@ -48,7 +48,7 @@ try:
 except (ImportError, AttributeError):
     warnings.warn(
         "matplotlib's plot_directive could not be imported. "
-        "Inline plots will not be included in the output"
+        "Inline plots will not be included in the output", stacklevel=2
     )
 
 intersphinx_mapping = {

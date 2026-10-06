@@ -365,7 +365,7 @@ class CubeList:
 
     def check_wcs(self):
         """Checks if all cubes have same world coordinates."""
-        for f, cube in zip(self.files, self.cubes):
+        for f, cube in zip(self.files, self.cubes, strict=True):
             if not cube.wcs.isEqual(self.wcs) or \
                     not cube.wave.isEqual(self.wave):
                 if not cube.wcs.isEqual(self.wcs):
@@ -416,7 +416,7 @@ class CubeList:
             c.data_header['OBJECT'] = self.cubes[0].data_header['OBJECT']
 
         if keywords is not None:
-            params, values, comments = list(zip(*keywords))
+            params, values, comments = list(zip(*keywords, strict=True))
         else:
             params, values, comments = [], [], []
 
@@ -650,7 +650,7 @@ class CubeMosaic(CubeList):
         rot = wcs.get_rot()
         logger = self._logger
 
-        for f, cube in zip(self.files, self.cubes):
+        for f, cube in zip(self.files, self.cubes, strict=True):
             cw = cube.wcs
             valid = [allclose(wcs.wcs.wcs.crval, cw.wcs.wcs.crval),
                      # allclose(wcs.wcs.wcs.cd, cw.wcs.wcs.cd),
@@ -666,7 +666,7 @@ class CubeMosaic(CubeList):
                 cube.wcs.info()
                 return False
 
-        for f, cube in zip(self.files, self.cubes):
+        for f, cube in zip(self.files, self.cubes, strict=True):
             if not cube.wave.isEqual(self.wave):
                 logger.warning('all cubes have not same spectral coordinates')
                 logger.info(self.files[0])

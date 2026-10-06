@@ -1105,7 +1105,7 @@ def find_objects(cat, dir_, cube, radius, n_cpu=1):
     ra0 = cube.wcs.get_crval1(unit=u.deg)
     dec0 = cube.wcs.get_crval2(unit=u.deg)
 
-    for id_obj, coord in zip(uniq_ids, coord_group):
+    for id_obj, coord in zip(uniq_ids, coord_group, strict=True):
 
         match_cont = np.all(np.isclose(coord_cont, coord), axis=1)
 
@@ -1325,7 +1325,7 @@ def write_object_source_single(row_obj, rows_lines, dir_, cube, ima_size,
     im_nb_coadd = images_nb[0].clone(data_init=np.zeros)
     im_seg_union = images_seg[0].clone(data_init=np.zeros)
 
-    for name, im_nb, im_seg in zip(names, images_nb, images_seg):
+    for name, im_nb, im_seg in zip(names, images_nb, images_seg, strict=True):
         src.add_image(im_nb, name, size)
 
         im_nb_coadd += im_nb

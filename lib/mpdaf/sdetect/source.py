@@ -315,8 +315,8 @@ def _read_ext(cls, hdulist, extname, **kwargs):
         else:
             obj = cls(hdulist[extname].data, **kwargs)
     except Exception as e:
-        raise OSError('%s: Impossible to open extension %s as a %s\n%s' % (
-            os.path.basename(hdulist.filename()), extname, cls.__name__, e))
+        raise OSError('%s: Impossible to open extension %s as a %s' % (
+            os.path.basename(hdulist.filename()), extname, cls.__name__)) from e
     return obj
 
 
@@ -326,8 +326,8 @@ def _read_mpdaf_obj(cls, hdulist, ext, **kwargs):
     try:
         obj = cls(filename=filename, hdulist=hdulist, ext=ext, **kwargs)
     except Exception as e:
-        raise OSError('%s: Impossible to open extension %s as a %s\n%s' % (
-            os.path.basename(filename), ext, cls.__name__, e))
+        raise OSError('%s: Impossible to open extension %s as a %s' % (
+            os.path.basename(filename), ext, cls.__name__)) from e
     return obj
 
 
@@ -706,8 +706,8 @@ class Source:
         if self._default_size is None:
             try:
                 im = self.images['MUSE_WHITE']
-            except KeyError:
-                raise ValueError('Size of the image is required')
+            except KeyError as exc:
+                raise ValueError('Size of the image is required') from exc
             else:
                 self._default_size = (im.shape[0] *
                                       im.wcs.get_step(unit=u.arcsec)[0])
@@ -807,8 +807,8 @@ class Source:
         """Map values to attributes."""
         try:
             return self.header[item]
-        except KeyError:
-            raise AttributeError(item)
+        except KeyError as exc:
+            raise AttributeError(item) from exc
 
     def __setattr__(self, item, value):
         """Map attributes to values."""
@@ -913,8 +913,8 @@ class Source:
         else:
             try:
                 zmin, zmax = errz
-            except Exception:
-                raise ValueError('Wrong type for errz in add_z')
+            except Exception as exc:
+                raise ValueError('Wrong type for errz in add_z') from exc
 
         if self.z is None:
             if z != -9999:
@@ -1002,13 +1002,13 @@ class Source:
             self.lines = Table(rows=[values], names=cols, dtype=types,
                                masked=True)
             if units is not None:
-                for colname, unit in zip(self.lines.colnames, units):
+                for colname, unit in zip(self.lines.colnames, units, strict=True):
                     self.lines[colname].unit = unit
             if desc is not None:
-                for colname, d in zip(self.lines.colnames, desc):
+                for colname, d in zip(self.lines.colnames, desc, strict=True):
                     self.lines[colname].description = d
             if fmt is not None:
-                for colname, f in zip(self.lines.colnames, fmt):
+                for colname, f in zip(self.lines.colnames, fmt, strict=True):
                     self.lines[colname].format = f
         else:
             # add new columns
@@ -1018,7 +1018,7 @@ class Source:
                 desc = [None] * len(cols)
             if fmt is None:
                 fmt = [None] * len(cols)
-            for col, val, unit, d, f in zip(cols, values, units, desc, fmt):
+            for col, val, unit, d, f in zip(cols, values, units, desc, fmt, strict=True):
                 if col not in self.lines.colnames:
                     nlines = len(self.lines)
                     if is_int(val):
@@ -1043,7 +1043,7 @@ class Source:
             if match is not None and matchkey in self.lines.colnames:
                 l = np.argwhere(self.lines[matchkey] == matchval)
                 if len(l) > 0:
-                    for col, val, unit in zip(cols, values, units):
+                    for col, val, unit in zip(cols, values, units, strict=True):
                         if unit is None or unit == self.lines[col].unit:
                             self.lines[col][l] = val
                         else:
@@ -1058,7 +1058,7 @@ class Source:
             ncol = len(self.lines.colnames)
             row = [None] * ncol
             mask = np.ones(ncol)
-            for col, val, unit in zip(cols, values, units):
+            for col, val, unit in zip(cols, values, units, strict=True):
                 i = self.lines.colnames.index(col)
                 if unit is None or unit == self.lines[col].unit:
                     row[i] = val
@@ -1110,9 +1110,9 @@ class Source:
         if rotate:
             try:
                 white_ima = self.images['MUSE_WHITE']
-            except KeyError:
+            except KeyError as exc:
                 raise ValueError('MUSE_WHITE image is required to get the '
-                                 'rotation angle')
+                                 'rotation angle') from exc
             pa_white = white_ima.get_rot()
             pa = image.get_rot()
             if np.abs(pa_white - pa) > 1.e-3:
@@ -1240,9 +1240,9 @@ class Source:
             # load info from the white image
             try:
                 white = self.images['MUSE_WHITE']
-            except KeyError:
+            except KeyError as exc:
                 raise ValueError('Cannot compute FSF if the MUSE_WHITE image '
-                                 'does not exist.')
+                                 'does not exist.') from exc
 
             center = cube.wcs.sky2pix((self.dec, self.ra), unit=u.deg)[0]
             radius = int(white.shape[0] + 0.5) / 2.
@@ -1387,7 +1387,7 @@ class Source:
         if is_sum:
             warnings.warn(
                 "The 'is_sum' parameter is deprecated. Use method='sum' "
-                "instead. Aggregation function set to sum.", MpdafWarning)
+                "instead. Aggregation function set to sum.", MpdafWarning, stacklevel=2)
             method = "sum"
 
         if self.z is None:
@@ -1422,7 +1422,7 @@ class Source:
                 lambda_ranges[1, :] = (1 + z) * all_lines[useful] + width / 2.0
                 tags = all_tags[useful]
                 for l1, l2, tag in zip(lambda_ranges[0, :],
-                                       lambda_ranges[1, :], tags):
+                                       lambda_ranges[1, :], tags, strict=True):
                     # self._logger.debug('Generate narrow band image for NB_%s'
                     #                   ' with z=%s', tag, z[0])
                     self.images['NB_' + tag] = subcub.get_image(
@@ -1474,7 +1474,7 @@ class Source:
         if is_sum:
             warnings.warn(
                 "The 'is_sum' parameter is deprecated. Use method='sum' "
-                "instead. Aggregation function set to sum.", MpdafWarning)
+                "instead. Aggregation function set to sum.", MpdafWarning, stacklevel=2)
             method = "sum"
 
         if size is None:
@@ -1923,7 +1923,7 @@ class Source:
                                        name='LINE', dtype=STR_DTYPE,
                                        description='line name')
                     self.lines.add_column(col)
-                for w, name in zip(wl, lnames):
+                for w, name in zip(wl, lnames, strict=True):
                     self.lines['LINE'][
                         np.where(abs(self.lines[col_lbda] - w) < 0.01)] = name
                 self._logger.info('crack_z: lines')
@@ -2044,7 +2044,7 @@ class Source:
             vmin = [None, None, None]
             vmax = [None, None, None]
         else:
-            vmin, vmax = zip(*cuts)
+            vmin, vmax = zip(*cuts, strict=True)
 
         if 'title' not in kwargs:
             kwargs['title'] = ' '.join(names)

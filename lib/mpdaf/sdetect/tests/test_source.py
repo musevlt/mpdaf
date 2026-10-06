@@ -94,7 +94,7 @@ def test_from_data():
 
         src.remove_attr('test')
         with pytest.raises(AttributeError):
-            src.test
+            _ = src.test
 
 
 def test_from_file():
@@ -356,7 +356,7 @@ def test_add_image(tmpdir, source2, a478hst, a370II):
     assert_masked_allclose(mask.data, src.images['MYMASK'].data)
 
     with fits.open(filename) as hdul:
-        'IMA_MYMASK_DQ' in hdul
+        assert 'IMA_MYMASK_DQ' in hdul
         assert (np.count_nonzero(hdul['IMA_MYMASK_DQ'].data) ==
                 np.count_nonzero(white.mask))
 

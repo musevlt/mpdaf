@@ -342,10 +342,10 @@ class DataArray:
                 self.unit = u.Unit(fix_unit_read(hdr['BUNIT']))
             except KeyError:
                 warnings.warn('No physical unit in the FITS header: missing '
-                              'BUNIT keyword.', MpdafUnitsWarning)
+                              'BUNIT keyword.', MpdafUnitsWarning, stacklevel=2)
             except Exception as e:
                 warnings.warn('Error parsing the BUNIT: ' + str(e),
-                              MpdafUnitsWarning)
+                              MpdafUnitsWarning, stacklevel=2)
 
             if 'FSCALE' in hdr:
                 self.unit *= u.Unit(hdr['FSCALE'])

@@ -1029,7 +1029,7 @@ class PixTable:
         col_sli = self.origin2slice(col_origin)
         if numexpr:
             mask = np.zeros(self.nrows, dtype=bool)
-            for s in slices:
+            for s in slices:  # noqa: B007
                 mask |= numexpr.evaluate('col_sli == s')
             return mask
         else:
@@ -1052,7 +1052,7 @@ class PixTable:
         col_ifu = self.origin2ifu(col_origin)
         if numexpr:
             mask = np.zeros(self.nrows, dtype=bool)
-            for ifu in ifus:
+            for ifu in ifus:  # noqa: B007
                 mask |= numexpr.evaluate('col_ifu == ifu')
             return mask
         else:
@@ -1073,7 +1073,7 @@ class PixTable:
         """
         mask = np.zeros(self.nrows, dtype=bool)
         if numexpr:
-            for iexp in exp:
+            for iexp in exp:  # noqa: B007
                 mask |= numexpr.evaluate('col_exp == iexp')
         else:
             for iexp in exp:
@@ -1098,7 +1098,7 @@ class PixTable:
         if hasattr(xpix, '__iter__'):
             mask = np.zeros(self.nrows, dtype=bool)
             if numexpr:
-                for x1, x2 in xpix:
+                for x1, x2 in xpix:  # noqa: B007
                     mask |= numexpr.evaluate('(col_xpix >= x1) & '
                                              '(col_xpix < x2)')
             else:
@@ -1130,7 +1130,7 @@ class PixTable:
         if hasattr(ypix, '__iter__'):
             mask = np.zeros(self.nrows, dtype=bool)
             if numexpr:
-                for y1, y2 in ypix:
+                for y1, y2 in ypix:  # noqa: B007
                     mask |= numexpr.evaluate('(col_ypix >= y1) & '
                                              '(col_ypix < y2)')
             else:
@@ -1163,8 +1163,8 @@ class PixTable:
         xpos, ypos = self.get_pos_sky()  # in degree or pixel here
         mask = np.zeros(self.nrows, dtype=bool)
         if numexpr:
-            pi = np.pi  # NOQA
-            for y0, x0, size, shape in sky:
+            pi = np.pi  # noqa: F841
+            for y0, x0, size, shape in sky:  # noqa: B007
                 if shape == 'C':
                     if self.wcs == u.deg or self.wcs == u.rad:
                         mask |= numexpr.evaluate(
@@ -1257,7 +1257,7 @@ class PixTable:
             newexp = selfexp[mask]
             numbers_exp = np.unique(newexp)
             hdr["%s COMBINED" % KEYWORD] = len(numbers_exp)
-            for iexp, i in zip(numbers_exp, range(1, len(numbers_exp) + 1)):
+            for iexp, i in zip(numbers_exp, range(1, len(numbers_exp) + 1), strict=True):
                 k = np.where(newexp == iexp)
                 hdr["%s EXP%i FIRST" % (KEYWORD, i)] = k[0][0]
                 hdr["%s EXP%i LAST" % (KEYWORD, i)] = k[0][-1]

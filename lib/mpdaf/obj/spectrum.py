@@ -1213,8 +1213,8 @@ class Spectrum(ArithmeticMixin, DataArray):
         """
         try:
             lambda_slice = self._wavelengths_to_slice(lmin, lmax, u.Angstrom)
-        except ValueError:
-            raise ValueError('Spectrum outside Filter band')
+        except ValueError as exc:
+            raise ValueError('Spectrum outside Filter band') from exc
 
         if lambda_slice.start == (lambda_slice.stop - 1):
             raise ValueError('Filter band smaller than spectrum step')
@@ -1357,8 +1357,8 @@ class Spectrum(ArithmeticMixin, DataArray):
                 i1 = np.interp(f2, d[k1:k1 + 2], [k1, k1 + 1])
                 fwhm = (i2 - i1) * step
                 return fwhm
-            except Exception:
-                raise ValueError('Error in fwhm estimation')
+            except Exception as exc:
+                raise ValueError('Error in fwhm estimation') from exc
 
     def gauss_fit(self, lmin, lmax, lpeak=None, flux=None, fwhm=None,
                   cont=None, peak=False, spline=False, weight=True,
@@ -2265,8 +2265,8 @@ class Spectrum(ArithmeticMixin, DataArray):
                 res._data = signal.correlate(res._data, other, mode='same')
                 if res._var is not None:
                     res._var = signal.correlate(res._var, other, mode='same')
-            except Exception:
-                raise OSError('Operation forbidden')
+            except Exception as exc:
+                raise OSError('Operation forbidden') from exc
         return res
 
     def fftconvolve_gauss(self, fwhm, nsig=5, unit=u.angstrom, inplace=False):
@@ -2348,9 +2348,9 @@ class Spectrum(ArithmeticMixin, DataArray):
             f = lsf
         else:
             try:
-                f = getattr(lsf, 'get_LSF')
-            except Exception:
-                raise ValueError('lsf parameter is not valid')
+                f = lsf.get_LSF
+            except Exception as exc:
+                raise ValueError('lsf parameter is not valid') from exc
 
         data = np.empty(len(self._data) + 2 * k)
         data[k:-k] = self._data
@@ -2390,8 +2390,8 @@ class Spectrum(ArithmeticMixin, DataArray):
         """
         try:
             from pyplatefit import fit_spec
-        except ImportError:
-            raise ImportError("You need to install pyplatefit.")
+        except ImportError as exc:
+            raise ImportError("You need to install pyplatefit.") from exc
 
         return fit_spec(self, z=redshift, **kwargs)
 

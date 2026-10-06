@@ -220,8 +220,8 @@ def segmentation(source, tags, DIR, remove, save_seg_table=False, outdir='./', d
         try:
             subprocess.check_call(['sextractor', '-v'], stdin=None, stdout=None, stderr=None)
             cmd_sex = 'sextractor'
-        except OSError:
-            raise OSError('SExtractor not found')
+        except OSError as exc:
+            raise OSError('SExtractor not found') from exc
 
     dim = source.images['MUSE_WHITE'].shape
     start = source.images['MUSE_WHITE'].wcs.pix2sky([0, 0], unit=u.deg)[0]
@@ -392,7 +392,7 @@ def compute_optimal_spectrum(cube, mask, psf):
         newvar = np.nansum(psf, axis=(1, 2)) / d
     else:
         warnings.warn('Extracting spectrum from a cube without variance',
-                      MpdafWarning)
+                      MpdafWarning, stacklevel=2)
         d = np.nansum(psf**2, axis=(1, 2))
         newdata = np.nansum(psf * data, axis=(1, 2)) / d
         newvar = None

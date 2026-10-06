@@ -1157,7 +1157,7 @@ class Image(ArithmeticMixin, DataArray):
         """
         tab = self.data.compressed()
 
-        for n in range(niter + 1):
+        for _n in range(niter + 1):
             tab = tab[tab <= (tab.mean() + sigma * tab.std())]
         return tab.mean(), tab.std()
 
@@ -1290,7 +1290,7 @@ class Image(ArithmeticMixin, DataArray):
     def fwhm(self, center=None, radius=0, unit_center=u.deg,
              unit_radius=u.arcsec):
         warnings.warn(
-            "fwhm method is deprecated. Use fwhm_gauss method instead.", MpdafWarning)
+            "fwhm method is deprecated. Use fwhm_gauss method instead.", MpdafWarning, stacklevel=2)
         return self.fwhm_gauss(center, radius, unit_center, unit_radius)
 
     def fwhm_gauss(self, center=None, radius=0, unit_center=u.deg,
@@ -1879,7 +1879,7 @@ class Image(ArithmeticMixin, DataArray):
                    / float(factor) + 1. / float(factor * 2) - 0.5
             fp = (p[:, np.newaxis] + deci.ravel()[np.newaxis, :]).ravel()
             fq = (q[:, np.newaxis] + deci.T.ravel()[np.newaxis, :]).ravel()
-            pixcrd = np.array(list(zip(fp, fq)))
+            pixcrd = np.array(list(zip(fp, fq, strict=True)))
 
             def e_gauss_fit(v, p, q, data, w):
                 return w * (((gaussfit(v, p, q)).reshape(N, factor * factor).sum(1)
@@ -2230,7 +2230,7 @@ class Image(ArithmeticMixin, DataArray):
                    + 1 / float(factor * 2)
             fp = (p[:, np.newaxis] + deci.ravel()[np.newaxis, :]).ravel()
             fq = (q[:, np.newaxis] + deci.T.ravel()[np.newaxis, :]).ravel()
-            pixcrd = np.array(list(zip(fp, fq)))
+            pixcrd = np.array(list(zip(fp, fq, strict=True)))
 
             def e_moffat_fit(v, p, q, data, w):
                 return w * (((moffatfit(v, p, q)).reshape(N, factor * factor).sum(1)
@@ -4104,12 +4104,12 @@ def gauss_image(shape=(101, 101), wcs=None, factor=1, gauss=None,
             from scipy import special
 
             X, Y = np.meshgrid(range(shape[0]), range(shape[1]))
-            pixcrd_min = np.array(list(zip(X.ravel(), Y.ravel()))) - 0.5
+            pixcrd_min = np.array(list(zip(X.ravel(), Y.ravel(), strict=True))) - 0.5
             # pixsky_min = wcs.pix2sky(pixcrd)
             xmin = (pixcrd_min[:, 1] - center[1]) / np.sqrt(2.0) / q_width
             ymin = (pixcrd_min[:, 0] - center[0]) / np.sqrt(2.0) / p_width
 
-            pixcrd_max = np.array(list(zip(X.ravel(), Y.ravel()))) + 0.5
+            pixcrd_max = np.array(list(zip(X.ravel(), Y.ravel(), strict=True))) + 0.5
             # pixsky_max = wcs.pix2sky(pixcrd)
             xmax = (pixcrd_max[:, 1] - center[1]) / np.sqrt(2.0) / q_width
             ymax = (pixcrd_max[:, 0] - center[0]) / np.sqrt(2.0) / p_width
@@ -4242,7 +4242,7 @@ def moffat_image(shape=(101, 101), wcs=None, factor=1, moffat=None,
         X, Y = np.meshgrid(range(shape[0] * factor),
                            range(shape[1] * factor))
         factor = float(factor)
-        pixcrd = np.array(list(zip(X.ravel() / factor, Y.ravel() / factor)))
+        pixcrd = np.array(list(zip(X.ravel() / factor, Y.ravel() / factor, strict=True)))
         data = moffat(pixcrd[:, 0], pixcrd[:, 1])
         data = (data.reshape(shape[1], factor, shape[0], factor)
                 .sum(1).sum(2) / factor / factor).T

@@ -344,7 +344,7 @@ class Catalog(Table):
             h = source.header
             keys = list(h.keys())
             row = []
-            for key, typ in zip(names_hdr, dtype_hdr):
+            for key, typ in zip(names_hdr, dtype_hdr, strict=True):
                 if typ is str:
                     row += [('%s' % h[key]).replace('\n', ' ')
                             if key in keys else INVALID[typ]]
@@ -405,7 +405,7 @@ class Catalog(Table):
                             copy = source.lines['LINE'].data.copy()
                             for i in range(len(source.lines)):
                                 source.lines['LINE'][i] = source.lines['LINE'][i].replace('_', '')
-                            for name, typ in zip(names_lines, dtype_lines):
+                            for name, typ in zip(names_lines, dtype_lines, strict=True):
                                 colname = '_'.join(name.split('_')[1:])
                                 line = name.split('_')[0]
                                 if 'LINE' in source.lines.colnames and \
@@ -420,7 +420,7 @@ class Catalog(Table):
                         if lmax == 1:
                             row += [source.lines[key][0] if key in keys
                                     else INVALID[typ.type]
-                                    for key, typ in zip(names_lines, dtype_lines)]
+                                    for key, typ in zip(names_lines, dtype_lines, strict=True)]
                         else:
                             try:
                                 subtab1 = source.lines[source.lines['LINE'] != ""]
@@ -429,7 +429,7 @@ class Catalog(Table):
                             except Exception:
                                 lines = source.lines
                             n = len(lines)
-                            for key, typ in zip(names_lines, dtype_lines):
+                            for key, typ in zip(names_lines, dtype_lines, strict=True):
                                 if key[:-3] in keys and int(key[-3:]) <= n:
                                     row += [lines[key[:-3]][int(key[-3:]) - 1]]
                                 else:
@@ -467,7 +467,7 @@ class Catalog(Table):
 
         # format
         for name, desc, unit, fmt in zip(names_hdr, desc_hdr, unit_hdr,
-                                         format_hdr):
+                                         format_hdr, strict=True):
             t[name].description = desc
             t[name].unit = unit
             t[name].format = fmt
@@ -490,7 +490,7 @@ class Catalog(Table):
             else:
                 t[name].description = 'AB Magnitude'
         if len(llines) != 0:
-            for name, unit in zip(names_lines, units_lines):
+            for name, unit in zip(names_lines, units_lines, strict=True):
                 t[name].unit = unit
                 if 'LBDA' in name or 'EQW' in name:
                     t[name].format = '.2f'
@@ -1129,7 +1129,7 @@ class Catalog(Table):
             dl = [(extent[1]-extent[0])/wcs.naxis1,(extent[3]-extent[2])/wcs.naxis2]
             arr = arr*dl + np.array([extent[0],extent[2]])
 
-        for src, cen in zip(self, arr):
+        for src, cen in zip(self, arr, strict=True):
             yy, xx = cen
             if (xx < 0) or (yy < 0) or (xx > wcs.naxis1) or (yy > wcs.naxis2):
                 continue
@@ -1190,7 +1190,7 @@ class Catalog(Table):
             s.set_clip_box(ax.bbox)
 
         if label and len(texts) > 0:
-            text, x, y = zip(*texts)
+            text, x, y = zip(*texts, strict=True)
             try:
                 from adjustText import adjust_text
             except ImportError:

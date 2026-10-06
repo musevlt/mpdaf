@@ -67,7 +67,7 @@ def test_add_mpdaf_method_keywords():
 
     hdrtxt = hdr.tostring(sep='\n', padding=False)
     hdrlines = hdrtxt.splitlines()
-    for ref, line in zip(REFHDR.splitlines(), [l.strip() for l in hdrlines]):
+    for ref, line in zip(REFHDR.splitlines(), [l.strip() for l in hdrlines], strict=True):
         assert re.match(ref, line) is not None
 
 
@@ -83,7 +83,7 @@ def test_add_mpdaf_keywords_to_file(tmpdir):
     hdr = fits.getheader(testf)
     hdrtxt = hdr[4:].tostring(sep='\n', padding=False)
     hdrlines = hdrtxt.splitlines()
-    for ref, line in zip(REFHDR.splitlines(), [l.strip() for l in hdrlines]):
+    for ref, line in zip(REFHDR.splitlines(), [l.strip() for l in hdrlines], strict=True):
         assert re.match(ref, line) is not None
 
 
@@ -91,6 +91,6 @@ def test_copy_header():
     hdr = fits.getheader(get_data_file('sdetect', 'a478hst-cutout.fits'))[:50]
     hdr2 = copy_header(hdr)
 
-    for c, c2 in zip(hdr.cards, hdr2.cards):
+    for c, c2 in zip(hdr.cards, hdr2.cards, strict=True):
         assert ((c.keyword, c.value, c.comment) ==
                 (c2.keyword, c2.value, c2.comment))
