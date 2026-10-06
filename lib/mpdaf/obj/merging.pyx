@@ -42,7 +42,7 @@ from libc.stdlib cimport malloc, free
 # DTYPE = np.float64
 # ctypedef np.float64_t DTYPE_t
 
-cdef extern from "../../../src/tools.h":
+cdef extern from "../src/tools.h":
     double mpdaf_sum(double* data, int n, int* indx) nogil
     void mpdaf_mean_sigma_clip(double* data, int n, double x[3], int nmax,
                                double nclip_low, double nclip_up, int nstop,

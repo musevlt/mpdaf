@@ -69,7 +69,7 @@ def use_openmp():
 ext_modules = [
     Extension(
         'mpdaf.obj.merging',
-        ['src/tools.c', './lib/mpdaf/obj/merging.pyx'],
+        ['./lib/mpdaf/src/tools.c', './lib/mpdaf/obj/merging.pyx'],
         include_dirs=[numpy.get_include()],
     ),
 ]
@@ -78,7 +78,7 @@ try:
     options = pkg_config(['cfitsio'], [])
     if options["libraries"]:
         ext = Extension('mpdaf.tools._ctools',
-                        ['src/tools.c', 'src/merging.c'],
+                        ['./lib/mpdaf/src/tools.c', './lib/mpdaf/src/merging.c'],
                         **options)
         if use_openmp():
             add_openmp_flags_if_available(ext)
