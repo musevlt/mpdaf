@@ -32,7 +32,3 @@ Description of the release procedure
    https://pypi.org/project/mpdaf/
 
 8. Prepare the next version: add new version header in the changelog.
-
-
-
-

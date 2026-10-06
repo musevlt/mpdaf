@@ -1,7 +1,7 @@
 NUMBER                   Running object number                                  MAG_ISO                  Isophotal magnitude                                       [mag]
 MAGERR_ISO               RMS error for isophotal magnitude                         [mag]
-MAG_APER[2]      
-MAGERR_APER[2]   
+MAG_APER[2]
+MAGERR_APER[2]
 MAG_AUTO                 Kron-like elliptical aperture magnitude                   [mag]
 MAGERR_AUTO              RMS error for AUTO magnitude                              [mag]
 MAG_BEST                 Best of MAG_AUTO and MAG_ISOCOR                           [mag]
@@ -21,4 +21,4 @@ B_WORLD                  Profile RMS along minor axis (world units)             
 THETA_J2000              Position angle (east of north) (J2000)                    [deg]
 FWHM_IMAGE               FWHM assuming a gaussian core                             [pixel]
 FWHM_WORLD               FWHM assuming a gaussian core                             [deg]
-CLASS_STAR               S/G classifier output                                    
+CLASS_STAR               S/G classifier output

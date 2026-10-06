@@ -14,7 +14,7 @@ In order to present the `~mpdaf.sdetect.Catalog` class, we will first run `~mpda
 
   In [1]: from mpdaf.sdetect import muselet
 
-  In [2]: cont, single, raw = muselet('sdetect/minicube.fits',nbcube=False, del_sex=True)                       
+  In [2]: cont, single, raw = muselet('sdetect/minicube.fits',nbcube=False, del_sex=True)
   SExtractor version 2.19.5 (2014-03-21)
   [INFO] muselet - Opening: sdetect/minicube.fits
   [INFO] muselet - STEP 1: creates white light, variance, RGB and narrow-band images
@@ -37,7 +37,7 @@ and in the tables extensions of the sources:
  - several columns per line.
 
 The lines columns depend of the format.
-   
+
 By default the columns names are created around unique LINE name [LINE]_[LINES columns names].
 
 But it is possible to use a working format.
@@ -48,10 +48,10 @@ See the differences between the two format on the single lines detected by musel
   In [3]: from mpdaf.sdetect import Catalog
 
   In [4]: cat = Catalog.from_sources(single, fmt='default')
-  
+
   In [5]: print(cat)
    ID        RA        DEC      ORIGIN ORIGIN_V      CUBE      Z_EMI   Z_EMI_MAX ... [SII]_FLUX_ERR [SII]_LBDA_OBS [SII]_LBDA_OBS_ERR _FLUX _FLUX_ERR _LBDA_OBS _LBDA_OBS_ERR
-  unitless    deg        deg                                    unitless  unitless ...                   Angstrom         Angstrom                       Angstrom    Angstrom  
+  unitless    deg        deg                                    unitless  unitless ...                   Angstrom         Angstrom                       Angstrom    Angstrom
   -------- ---------- ---------- ------- -------- ------------- -------- --------- ... -------------- -------------- ------------------ ----- --------- --------- -------------
          6 63.3561076 10.4661661 muselet      2.1 minicube.fits   0.0856    0.0857 ...           32.5        7289.89               1.25 279.3      25.4   7297.39          1.25
          4 63.3554029 10.4647022 muselet      2.1 minicube.fits   0.0860    0.0860 ...             --             --                 --    --        --        --            --
@@ -63,7 +63,7 @@ See the differences between the two format on the single lines detected by musel
          8 63.3549327 10.4656274 muselet      2.1 minicube.fits       --        -- ...             --             --                 --    --        --        --            --
 
   In [6]: cat.colnames
-  Out[6]: 
+  Out[6]:
   ['ID',
    'RA',
    'DEC',
@@ -96,25 +96,25 @@ See the differences between the two format on the single lines detected by musel
    '_FLUX',
    '_FLUX_ERR',
    '_LBDA_OBS',
-   '_LBDA_OBS_ERR'] 
-  
+   '_LBDA_OBS_ERR']
+
   In [7]: cat = Catalog.from_sources(single, fmt='working')
 
   In [8]: print(cat)
-     ID        RA        DEC      ORIGIN ORIGIN_V      CUBE      Z_EMI   Z_EMI_MAX ... LBDA_OBS005 LBDA_OBS_ERR005 LINE005  FLUX006 FLUX_ERR006 LBDA_OBS006 LBDA_OBS_ERR006 LINE006 
+     ID        RA        DEC      ORIGIN ORIGIN_V      CUBE      Z_EMI   Z_EMI_MAX ... LBDA_OBS005 LBDA_OBS_ERR005 LINE005  FLUX006 FLUX_ERR006 LBDA_OBS006 LBDA_OBS_ERR006 LINE006
   unitless    deg        deg                                    unitless  unitless ...   Angstrom      Angstrom    unitless                       Angstrom      Angstrom    unitless
   -------- ---------- ---------- ------- -------- ------------- -------- --------- ... ----------- --------------- -------- ------- ----------- ----------- --------------- --------
-         6 63.3561076 10.4661661 muselet      2.1 minicube.fits   0.0856    0.0857 ...          --              --               --          --          --              --         
-         4 63.3554029 10.4647022 muselet      2.1 minicube.fits   0.0860    0.0860 ...          --              --               --          --          --              --         
-         1 63.3559249 10.4653691 muselet      2.1 minicube.fits   0.0860    0.0860 ...     6839.89            1.25            442.5        29.6     7121.14            1.25         
-         2 63.3556900 10.4646378 muselet      2.1 minicube.fits   0.0862    0.0862 ...     7111.14            1.25               --          --          --              --         
-         3 63.3552677 10.4657851 muselet      2.1 minicube.fits   0.0864    0.0864 ...     7112.39            1.25            332.9        30.3     6843.64            1.25         
-         5 63.3567159 10.4656965 muselet      2.1 minicube.fits   0.0862    0.0863 ...     7308.64            1.25   [SII]2      --          --          --              --         
-         7 63.3559897 10.4646136 muselet      2.1 minicube.fits       --        -- ...          --              --               --          --          --              --         
-         8 63.3549327 10.4656274 muselet      2.1 minicube.fits       --        -- ...          --              --               --          --          --              --         
+         6 63.3561076 10.4661661 muselet      2.1 minicube.fits   0.0856    0.0857 ...          --              --               --          --          --              --
+         4 63.3554029 10.4647022 muselet      2.1 minicube.fits   0.0860    0.0860 ...          --              --               --          --          --              --
+         1 63.3559249 10.4653691 muselet      2.1 minicube.fits   0.0860    0.0860 ...     6839.89            1.25            442.5        29.6     7121.14            1.25
+         2 63.3556900 10.4646378 muselet      2.1 minicube.fits   0.0862    0.0862 ...     7111.14            1.25               --          --          --              --
+         3 63.3552677 10.4657851 muselet      2.1 minicube.fits   0.0864    0.0864 ...     7112.39            1.25            332.9        30.3     6843.64            1.25
+         5 63.3567159 10.4656965 muselet      2.1 minicube.fits   0.0862    0.0863 ...     7308.64            1.25   [SII]2      --          --          --              --
+         7 63.3559897 10.4646136 muselet      2.1 minicube.fits       --        -- ...          --              --               --          --          --              --
+         8 63.3549327 10.4656274 muselet      2.1 minicube.fits       --        -- ...          --              --               --          --          --              --
 
   In [9]: cat.colnames
-  Out[9]: 
+  Out[9]:
   ['ID',
    'RA',
    'DEC',
@@ -178,10 +178,10 @@ Then, we visualize these sources on our white image by using `~mpdaf.sdetect.Cat
 edge of the WCS of the given image::
 
   In [17]: cat.edgedist(ima.wcs)
-  Out[17]: 
+  Out[17]:
   array([ 2.2983 ,  0.4317 ,  2.83236,  0.2    ,  2.706  ,  0.1674 ,
-          0.11268,  1.52012]) 
-	      
+          0.11268,  1.52012])
+
 `~mpdaf.sdetect.Catalog.select` selects all sources from catalog which are inside the WCS of an image.
 We will test it on the sub-image::
 
@@ -193,13 +193,13 @@ We will test it on the sub-image::
   Out[20]: 1
 
   In [21]: cat2
-  Out[21]: 
+  Out[21]:
   <Catalog masked=True length=1>
-     ID        RA        DEC      ORIGIN ORIGIN_V      CUBE      Z_EMI   Z_EMI_MAX ... LBDA_OBS005 LBDA_OBS_ERR005 LINE005  FLUX006 FLUX_ERR006 LBDA_OBS006 LBDA_OBS_ERR006 LINE006 
+     ID        RA        DEC      ORIGIN ORIGIN_V      CUBE      Z_EMI   Z_EMI_MAX ... LBDA_OBS005 LBDA_OBS_ERR005 LINE005  FLUX006 FLUX_ERR006 LBDA_OBS006 LBDA_OBS_ERR006 LINE006
   unitless    deg        deg                                    unitless  unitless ...   Angstrom      Angstrom    unitless                       Angstrom      Angstrom    unitless
-   int64    float64    float64     str7  float64      str13     float64   float64  ...   float64       float64      str20   float64   float64     float64       float64      str20  
+   int64    float64    float64     str7  float64      str13     float64   float64  ...   float64       float64      str20   float64   float64     float64       float64      str20
   -------- ---------- ---------- ------- -------- ------------- -------- --------- ... ----------- --------------- -------- ------- ----------- ----------- --------------- --------
-         3 63.3552677 10.4657851 muselet      2.1 minicube.fits   0.0864    0.0864 ...     7112.39            1.25            332.9        30.3     6843.64            1.25         
+         3 63.3552677 10.4657851 muselet      2.1 minicube.fits   0.0864    0.0864 ...     7112.39            1.25            332.9        30.3     6843.64            1.25
 
 Of course, if we `~mpdaf.sdetect.Catalog.match` this second catalog with the first, the result is evident::
 

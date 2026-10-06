@@ -13,5 +13,3 @@ xpaset -p ds9 pan to $1 $2 fk5
 xpaset -p ds9 crosshair $1 $2 fk5
 xpaset -p ds9 cube $3 wcs
 xpaset -p ds9 match frames wcs
-
-

@@ -87,4 +87,3 @@ It is also possible to run tests on multiple Python versions with `tox`_::
 .. _tox: http://tox.readthedocs.io/en/stable/
 .. _virtual environment: http://docs.astropy.org/en/latest/development/workflow/virtual_pythons.html
 .. _well-detailed documentation: http://docs.astropy.org/en/latest/development/workflow/development_workflow.html
-

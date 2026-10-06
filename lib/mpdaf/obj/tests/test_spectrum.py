@@ -717,4 +717,3 @@ H-alpha 6562.801 6564.614
         assert_allclose(airtovac(row['air']), row['vacuum'], atol=1e-2)
 
     assert_allclose(vactoair(row['vacuum']), row['air'], atol=1e-2)
-

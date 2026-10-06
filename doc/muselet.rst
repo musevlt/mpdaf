@@ -40,7 +40,7 @@ MUSELET takes as an input a MUSE DATACUBE (fits format), and works in 3 steps:
 - STEP 2: MUSELET will run SExtractor using the ``default.sex``,
   ``default.param``, ``default.conv`` and ``default.nnw`` parameter files in
   the current and ``nb/`` directory. If not present default parameter files are
-  created. These files can be used to control SExtractor.  
+  created. These files can be used to control SExtractor.
   Alternatively, it is possible to supply SExtractor command line options via
   the "sex_config=" and "sex_config_nb" keywords.
 
@@ -89,7 +89,7 @@ each side of the narrow-band images::
 
 The output detection catalogs can be opened as a `mpdaf.sdetect.Catalog`
 object::
-  
+
   >>> from mpdaf.sdetect import Catalog
   >>> cat_lines = Catalog.read('lines.fit')
   >>> cat_objects = Catalog.read('objects.fit')
@@ -112,7 +112,7 @@ Action" menu and put the following custom code:
 
 >>> exec("topcat_show_ds9",toString(RA),toString(DEC),toString(LBDA_OBS))
 for the catalog of lines
-or 
+or
 >>> exec("topcat_show_ds9",toString(RA),toString(DEC),toString(LBDA_OBS001))
 for the catalog of objects
 

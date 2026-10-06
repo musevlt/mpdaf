@@ -1,4 +1,4 @@
-NNW  
+NNW
 # Neural Network Weights for the SExtractor star/galaxy classifier (V1.3)
 # inputs:       9 for profile parameters + 1 for seeing.
 # outputs:      ``Stellarity index'' (0.0 to 1.0)

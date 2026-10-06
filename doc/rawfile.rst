@@ -11,7 +11,7 @@ image of a channel, compute the bias level of channels, mask overscanned pixels.
 Preliminary imports::
 
   In [1]: from mpdaf.drs import RawFile
-  
+
   In [2]: import matplotlib.cm as cm
 
 
@@ -21,7 +21,7 @@ RawFile Creation and display a channel image
 A `~mpdaf.drs.RawFile` object is created from a raw MUSE CCD image ::
 
   In [3]: raw = RawFile('MUSE_IQE_MASK158_0001.fits')
-  
+
   In [4]: raw.info()
   MUSE_IQE_MASK158_0001.fits
   Nb extensions:  24 (loaded:24 ['CHAN19', 'CHAN18', 'CHAN15', 'CHAN14', 'CHAN17', 'CHAN16', 'CHAN11', 'CHAN10', 'CHAN13', 'CHAN12', 'CHAN06', 'CHAN02', 'CHAN21', 'CHAN04', 'CHAN23', 'CHAN08', 'CHAN09', 'CHAN20', 'CHAN07', 'CHAN22', 'CHAN05', 'CHAN24', 'CHAN03', 'CHAN01'])
@@ -31,10 +31,10 @@ A `~mpdaf.drs.RawFile` object is created from a raw MUSE CCD image ::
 Let's extract the channel 12 (using `~mpdaf.drs.RawFile.get_channel` or `~mpdaf.drs.RawFile.__getitem__`), create the corresponding `~mpdaf.obj.Image` with `~mpdaf.drs.Channel.get_image` rand display it::
 
   In [5]: chan = raw.get_channel('CHAN12')
-  
+
   # chan = raw[12] is equivalent
   In [6]: ima = chan.get_image()
-  
+
   In [7]: ima.plot(cmap=cm.copper)
 
 .. figure::  _static/raw/ima.png
@@ -43,7 +43,7 @@ Let's extract the channel 12 (using `~mpdaf.drs.RawFile.get_channel` or `~mpdaf.
 Masking overscanned pixels (`~mpdaf.drs.Channel.get_image_mask_overscan`)::
 
   In [8]: ima = chan.get_image_mask_overscan()
-  
+
   In [9]: ima.plot(cmap=cm.copper)
 
 .. figure::  _static/raw/ima_mask.png
@@ -52,7 +52,7 @@ Masking overscanned pixels (`~mpdaf.drs.Channel.get_image_mask_overscan`)::
 Or displaying only overscan area (`~mpdaf.drs.Channel.get_image_just_overscan`)::
 
   In [10]: ima = chan.get_image_just_overscan()
-  
+
   In [11]: ima.plot(cmap=cm.copper)
 
 .. figure::  _static/raw/ima_overscan.png
@@ -61,7 +61,7 @@ Or displaying only overscan area (`~mpdaf.drs.Channel.get_image_just_overscan`):
 `~mpdaf.drs.Channel.get_trimmed_image` method returns an Image object without over scanned pixels. If bias option is used, median value of the overscanned pixels is subtracted on each detector::
 
   In [12]: ima = chan.get_trimmed_image(bias=True)
-  
+
   In [13]: ima.plot(cmap=cm.copper)
 
 .. figure::  _static/raw/ima_trimmed.png
@@ -74,7 +74,7 @@ White image fast reconstruction
 Let's compute the reconstructed white light image using `~mpdaf.drs.RawFile.reconstruct_white_image` and display it::
 
   In [14]: ima = raw.reconstruct_white_image()
-  
+
   In [15]: ima.info()
 
   In [16]: ima.plot(cmap=cm.copper)

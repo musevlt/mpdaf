@@ -1622,4 +1622,3 @@ def muselet(file_cube, file_expmap=None, step=1, delta=20,
 
     if cleanup:
         remove_files(workdir)
-
