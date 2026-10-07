@@ -28,7 +28,16 @@ def tests(session):
 @nox.session()
 def coverage(session):
     install(session)
-    session.run("coverage", "run", "-m", "pytest", *pytest_args, *session.posargs)
+    session.run(
+        "coverage",
+        "run",
+        "-m",
+        "pytest",
+        "--run-slow",
+        "--remote-data=any",
+        *pytest_args,
+        *session.posargs,
+    )
     session.run("coverage", "report")
 
 

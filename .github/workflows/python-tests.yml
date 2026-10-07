@@ -20,18 +20,22 @@ permissions:
 
 jobs:
   tests:
-    name: ${{ matrix.python-version }}
+    name: ${{ matrix.python-version }} ${{ matrix.nox_session }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
           - python-version: '3.11'
+            nox_session: tests
           - python-version: '3.12'
+            nox_session: tests
           - python-version: '3.13'
-            nox_args: '--run-slow'
-          - python-version: '3.14'
+            nox_session: tests
             nox_args: '--remote-data=any'
+          - python-version: '3.14'
+            nox_session: coverage
           - python-version: '3.15-dev'
+            nox_session: tests
 
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -50,10 +54,12 @@ jobs:
     - name: Install Nox
       run: python -m pip install nox coverage
     - name: Run tests
-      run: nox -s coverage -- ${{ matrix.nox_args }}
+      run: nox -s ${{ matrix.nox_session }} -- ${{ matrix.nox_args }}
     - name: Convert coverage
+      if: ${{ contains(matrix.nox_session, 'coverage') }}
       run: python -m coverage xml
     - name: Upload coverage to Codecov
+      if: ${{ contains(matrix.nox_session, 'coverage') }}
       uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
       with:
         fail_ci_if_error: true
