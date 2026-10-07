@@ -65,7 +65,8 @@ specified via the "workdir" keyword)
 
 Requirements:
 
-- SExtractor ("sex" or "sextractor" binary file in your $PATH).
+- SExtractor ("sex", "sextractor", or "source-extractor" binary file in your
+  ``$PATH``).
 
 Tutorials
 =========

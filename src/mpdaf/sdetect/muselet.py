@@ -95,7 +95,7 @@ def get_cmd_sex(silent=True):
 
     logger = logging.getLogger(__name__)
 
-    commands = ['sex', 'sextractor']
+    commands = ['sex', 'sextractor', 'source-extractor']
     #loop over commands and find first success
     for cmd in commands:
         try:
