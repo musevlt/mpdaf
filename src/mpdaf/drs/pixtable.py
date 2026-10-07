@@ -450,13 +450,10 @@ class PixTable:
             # Merged IFUs that went into this pixel tables
             self.nifu = self.get_keyword("MERGED", 1)
 
-            projection = self.projection
-            if projection == 'projected':  # spheric coordinates
+            if self.projection == 'projected':  # spheric coordinates
                 keyx, keyy = 'RA', 'DEC'
-            elif projection == 'positioned':
+            elif self.projection == 'positioned':
                 keyx, keyy = 'CRVAL1', 'CRVAL2'
-            else:
-                self._logger.warning('Unknown projection: %s', projection)
 
             try:
                 # center in degrees
@@ -968,7 +965,7 @@ class PixTable:
 
         Parameters
         ----------
-        lbda : (float, float)
+        lbda : list of (float, float)
             (min, max) wavelength range in angstrom.
         unit : `astropy.units.Unit`
             Unit of the wavelengths in input.
