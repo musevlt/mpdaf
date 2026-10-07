@@ -60,7 +60,7 @@ github = "https://github.com/musevlt/mpdaf"
 
 [dependency-groups]
 dev = [
-    "mpdaf[all]", "mpdaf[docs]", "mpdaf[test]"
+    "mpdaf[all]", "mpdaf[docs]", "mpdaf[tests]"
 ]
 
 [tool.setuptools.packages.find]
