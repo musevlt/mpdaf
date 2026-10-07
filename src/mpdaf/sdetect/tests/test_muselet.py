@@ -33,22 +33,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import os
-import subprocess
 from glob import glob
 
 import pytest
 
 from mpdaf.sdetect import Catalog, muselet
+from mpdaf.sdetect.muselet import get_cmd_sex
 
 try:
-    subprocess.check_call(['sex', '-v'])
+    get_cmd_sex()
     HAS_SEX = True
 except OSError:
-    try:
-        subprocess.check_call(['sextractor', '-v'])
-        HAS_SEX = True
-    except OSError:
-        HAS_SEX = False
+    HAS_SEX = False
 
 
 @pytest.mark.skipif(not HAS_SEX, reason="requires sextractor")
