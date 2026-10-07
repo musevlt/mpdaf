@@ -58,6 +58,11 @@ documentation = "https://mpdaf.readthedocs.io"
 gitlab = "https://git-cral.univ-lyon1.fr/MUSE/mpdaf"
 github = "https://github.com/musevlt/mpdaf"
 
+[dependency-groups]
+dev = [
+    "mpdaf[all]", "mpdaf[docs]", "mpdaf[test]"
+]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
@@ -84,6 +89,15 @@ filterwarnings = [
     "ignore::astropy.wcs.FITSFixedWarning",
 ]
 markers = ["slow"]
+
+[tool.repo-review]
+ignore = [
+    "MY",    # ignore MyPy
+    "PC110", # Uses black or ruff-format
+    "PC140", # Uses a type checker
+    "PC160", # Uses a spell checker
+    "PC180", # Uses a markdown formatter
+]
 
 [tool.ruff.lint]
 select = [
