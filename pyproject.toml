@@ -157,5 +157,5 @@ test-command = "pytest {project}/src"
 test-extras = ["tests"]
 
 [tool.cibuildwheel.linux]
-before-all = ["yum install cfitsio -y"]
+before-all = ["yum install cfitsio-devel -y"]
 environment.USEOPENMP = 0
