@@ -104,19 +104,19 @@ Unit tests
 
 To run the unit tests, you need to install the Pytest_ package, then run::
 
-    $ pip install pytest
-    $ pytest
+    pip install pytest
+    pytest
 
 To run the unit tests on an installed version of MPDAF::
 
-    $ pytest --pyargs mpdaf
+    pytest --pyargs mpdaf
 
 A more convenient option is to use nox_, which will take care of creating
 a virtual environment dedicated to running tests and run pytest::
 
-    $ pip install nox
-    $ nox -s tests
-    $ nox -s coverage
+    pip install nox
+    nox -s tests
+    nox -s coverage
 
 .. _Python: http://python.org/
 .. _Numpy: http://www.numpy.org/
