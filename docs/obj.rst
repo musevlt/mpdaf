@@ -1,6 +1,6 @@
-*******************************************************
-Interface for spectra, images and cubes (``mpdaf.obj``)
-*******************************************************
+*****************************************
+Spectra, images and cubes (``mpdaf.obj``)
+*****************************************
 
 The ``mpdaf.obj`` package provides a way to load a MUSE cube created by the MUSE
 pipeline (i.e. a 3GB FITS data cube of approximately 300x300x3680 pixels) into a
@@ -36,5 +36,7 @@ Contents:
 Reference/API
 =============
 
-.. automodapi:: mpdaf.obj
-   :no-main-docstr:
+.. toctree::
+   :maxdepth: 2
+
+   api_obj

@@ -299,8 +299,10 @@ for pixels matching a field:
 Reference/API
 =============
 
-.. automodapi:: mpdaf.MUSE
-   :no-main-docstr:
+.. toctree::
+   :maxdepth: 2
+
+   api_muse
 
 .. ipython::
    :suppress:

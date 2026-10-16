@@ -1,6 +1,6 @@
-*******************
-Authors and Credits
-*******************
+*******
+Credits
+*******
 
 MPDAF team at `CRAL <https://cral.osu-lyon.fr/>`_
 -------------------------------------------------

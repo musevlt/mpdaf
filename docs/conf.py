@@ -34,6 +34,7 @@ extensions = [
     'pytest_doctestplus.sphinx.doctestplus',
     'sphinx_automodapi.automodapi',
     'sphinx_automodapi.smart_resolver',
+    'sphinx_copybutton',
     'sphinx_rtd_theme',
 ]
 
@@ -86,6 +87,13 @@ import matplotlib.pyplot as plt
 from mpdaf import setup_logging
 if os.path.relpath(os.curdir, start=os.pardir) != 'data': os.chdir('../src/mpdaf/data')
 setup_logging(stream=sys.stdout)
+plt.rcParams.update({
+    "axes.labelsize": "large",
+    "figure.figsize": (6, 6),
+    "figure.subplot.hspace": 0.5,
+    "savefig.bbox": "tight",
+    "savefig.facecolor": "none",
+})
 """.splitlines()
 
 # Class documentation should contain *both* the class docstring and
@@ -120,16 +128,39 @@ exclude_patterns = ['_build', '_templates']
 default_role = 'obj'
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
-
+# pygments_style = 'sphinx'
 
 # -- Options for HTML output --------------------------------------------------
-html_theme = "sphinx_rtd_theme"
+
+html_theme = "pydata_sphinx_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-# html_theme_options = {}
+html_theme_options = {
+    "collapse_navigation": True,
+    "github_url": "https://github.com/muse/mpdaf",
+    "gitlab_url": "https://git-cral.univ-lyon1.fr/MUSE/mpdaf",
+    "show_nav_level": 3,
+    "show_prev_next": False,
+    "show_toc_level": 2,
+    "use_edit_page_button": True,
+}
+
+html_context = {
+    "github_user": "musevlt",
+    "github_repo": "mpdaf",
+    "github_version": "master",
+    "doc_path": "docs",
+}
+
+html_sidebars = {
+  "changelog": [],
+  "contribute": [],
+  "credits": [],
+  "installation": [],
+  "start": [],
+}
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
@@ -139,12 +170,3 @@ html_logo = '_static/logo/logo_mpdaf_small.png'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
-
-# Add any extra paths that contain custom files (such as robots.txt or
-# .htaccess) here, relative to this directory. These files are copied
-# directly to the root of the documentation.
-# html_extra_path = []
-
-# If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
-# using the given strftime format.
-html_last_updated_fmt = '%d %b %Y'

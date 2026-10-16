@@ -67,24 +67,11 @@ Contents
 ========
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    installation
    start
-   obj
-   drs
-   sdetect
-   muse
-   logging
-   tools
+   index_user
    contribute
    changelog
    credits
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

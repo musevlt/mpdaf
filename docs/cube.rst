@@ -1,8 +1,8 @@
 .. _cube:
 
-***********
-Cube object
-***********
+****
+Cube
+****
 
 MPDAF Cube objects contain a series of images at neighboring wavelengths.  These
 are stored as a 3D array of pixel values. The wavelengths of the images increase

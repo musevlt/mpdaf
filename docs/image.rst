@@ -1,11 +1,11 @@
 .. _image:
 
 
-************
-Image object
-************
+*****
+Image
+*****
 
-Image objects contain a 2D data array of flux values, and a `WCS
+`~mpdaf.obj.Image` objects contain a 2D data array of flux values, and a `WCS
 <mpdaf.obj.WCS>` object that describes the spatial coordinates of the
 image. Optionally, an array of variances can also be provided to give the
 statistical uncertainties of the fluxes. These can be used for weighting the

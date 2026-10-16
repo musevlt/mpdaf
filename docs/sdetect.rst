@@ -17,6 +17,7 @@ Contents:
 Reference/API
 =============
 
-.. automodapi:: mpdaf.sdetect
-   :no-main-docstr:
-   :no-inherited-members:
+.. toctree::
+   :maxdepth: 2
+
+   api_sdetect

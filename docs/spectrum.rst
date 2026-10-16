@@ -1,12 +1,12 @@
 .. _spectrum:
 
 
-***************
-Spectrum object
-***************
+********
+Spectrum
+********
 
-Spectrum objects contain a 1D data array of flux values, and a `WaveCoord
-<mpdaf.obj.WaveCoord>` object that describes the wavelength scale of the
+`~mpdaf.obj.Spectrum` objects contain a 1D data array of flux values, and a
+`~mpdaf.obj.WaveCoord` object that describes the wavelength scale of the
 spectrum. Optionally, an array of variances can also be provided to give the
 statistical uncertainties of the fluxes. These can be used for weighting the
 flux values and for computing the uncertainties of least-squares fits and other

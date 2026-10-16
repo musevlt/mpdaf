@@ -41,12 +41,11 @@ all = ["adjustText", "fitsio", "joblib", "numexpr", "regions", "tqdm"]
 docs = [
     "ipython",
     "numpydoc",
-    "pickleshare",
-    "psutil",
     "pytest-doctestplus",
+    "pydata-sphinx-theme",
     "sphinx",
     "sphinx_automodapi",
-    "sphinx_rtd_theme",
+    "sphinx-copybutton",
 ]
 tests = [
     "pytest",

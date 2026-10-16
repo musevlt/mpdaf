@@ -14,5 +14,7 @@ Contents:
 Reference/API
 =============
 
-.. automodapi:: mpdaf.tools
-   :no-main-docstr:
+.. toctree::
+   :maxdepth: 2
+
+   api_tools
