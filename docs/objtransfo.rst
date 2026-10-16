@@ -27,7 +27,7 @@ sub-image that just contains the unmasked elliptical region:
 
    In [3]: plt.figure()
 
-   @savefig Obj_transfo1.png width=3.5in
+   @savefig Obj_transfo1.png
    In [3]: ima.plot()
 
    In [4]: ima.crop()
@@ -36,7 +36,7 @@ sub-image that just contains the unmasked elliptical region:
 
    In [3]: plt.figure()
 
-   @savefig Obj_transfo2.png width=3.5in
+   @savefig Obj_transfo2.png
    In [3]: ima.plot()
 
 
@@ -62,7 +62,7 @@ and right ascension axes, this effectively truncates the axes of the ellipse.
 
    In [44]: plt.figure()
 
-   @savefig Obj_transfo3.png width=4in
+   @savefig Obj_transfo3.png
    In [1]: ima2.plot()
 
    In [48]: ima2.get_rot()
@@ -92,7 +92,7 @@ the mean of several neighboring pixels of the input object.
 
   In [3]: plt.figure()
 
-  @savefig Obj_transfo4.png width=3.5in
+  @savefig Obj_transfo4.png
   In [3]: ima.plot(zscale=True)
 
   In [4]: ima2 = ima.rebin(factor=10)
@@ -101,7 +101,7 @@ the mean of several neighboring pixels of the input object.
 
   In [6]: plt.figure()
 
-  @savefig Obj_transfo5.png width=3.5in
+  @savefig Obj_transfo5.png
   In [7]: ima2.plot(zscale=True)
 
   @suppress
@@ -122,7 +122,7 @@ center of pixel [0,0]:
 
   In [3]: plt.figure()
 
-  @savefig Obj_transfo6.png width=3.5in
+  @savefig Obj_transfo6.png
   In [3]: ima.plot(zscale=True)
 
   In [4]: newdim = (np.array(ima.shape)/4.5).astype(int)
@@ -139,7 +139,7 @@ center of pixel [0,0]:
 
   In [6]: plt.figure()
 
-  @savefig Obj_transfo7.png width=3.5in
+  @savefig Obj_transfo7.png
   In [7]: ima2.plot(zscale=True)
 
   @suppress

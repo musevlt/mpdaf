@@ -30,7 +30,7 @@ variance or mask arrays. For example:
    # is equivalent to
    In [3]: ima.mask[1000:1500, 800:1800] = True
 
-   @savefig ObjMask1.png width=4in
+   @savefig ObjMask1.png
    In [4]: ima.plot(vmin=1950, vmax=2400, colorbar='v')
 
    @suppress
@@ -54,7 +54,7 @@ if they weren't masked.
 
   In [3]: plt.figure()
 
-  @savefig ObjMask2.png width=4in
+  @savefig ObjMask2.png
   In [4]: ima2.plot(vmin=1950, vmax=2400, colorbar='v')
 
   @suppress
@@ -79,7 +79,7 @@ whose variance exceeds a given threshold value, by using the `mask_variance
 
   In [3]: plt.figure()
 
-  @savefig ObjMask3.png width=4in
+  @savefig ObjMask3.png
   In [4]: ima.plot(vmin=1950, vmax=2400, colorbar='v')
 
 On Image or Cube objects, there are additional methods to mask inside or outside:
@@ -100,7 +100,7 @@ For example:
 
   In [3]: plt.figure()
 
-  @savefig ObjMask4.png width=4in
+  @savefig ObjMask4.png
   In [4]: ima.plot(vmin=1950, vmax=2400, colorbar='v')
 
 .. ipython::

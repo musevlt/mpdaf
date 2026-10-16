@@ -115,7 +115,7 @@ in this examples contains an observation of a single galaxy.
 
   In [2]: plt.figure(figsize=(8, 4))
 
-  @savefig Cube1.png width=4in
+  @savefig Cube1.png
   In [3]: ima1.plot(scale='arcsinh', colorbar='v')
 
 The next example computes the overall spectrum of the cube by taking the cube
@@ -128,7 +128,7 @@ flux per spectral pixel.
 
   In [2]: plt.figure()
 
-  @savefig Cube2.png width=4in
+  @savefig Cube2.png
   In [3]: sp1.plot()
 
 
@@ -155,7 +155,7 @@ spectrum that was obtained in the previous example:
 
   In [3]: sp1.plot()
 
-  @savefig Cube3.png width=4in
+  @savefig Cube3.png
   In [4]: cont1.plot(color='r')
 
 Next we do the same to a single pixel at the edge of the galaxy:
@@ -168,7 +168,7 @@ Next we do the same to a single pixel at the edge of the galaxy:
 
   In [3]: sp1.plot()
 
-  @savefig Cube4.png width=4in
+  @savefig Cube4.png
   In [4]: sp1.poly_spec(5).plot(color='r')
 
 In principle, the above procedure could be performed to each pixel by writing
@@ -238,14 +238,14 @@ white-light images of the continuum:
 
   In [2]: plt.figure()
 
-  @savefig Cube5.png width=3.5in
+  @savefig Cube5.png
   In [3]: rec1.plot(scale='arcsinh', colorbar='v', title='method 1')
 
   In [4]: rec2 = cont2.sum(axis=0)
 
   In [5]: plt.figure()
 
-  @savefig Cube6.png width=3.5in
+  @savefig Cube6.png
   In [6]: rec2.plot(scale='arcsinh', colorbar='v', title='method2')
 
   @suppress
@@ -262,7 +262,7 @@ lines in the cube:
 
   In [2]: plt.figure()
 
-  @savefig Cube7.png width=4in
+  @savefig Cube7.png
   In [3]: line1.sum(axis=0).plot(scale='arcsinh', colorbar='v')
 
 Next we compute the equivalent width of the Hα emission in the galaxy.  First we
@@ -289,7 +289,7 @@ isolate the emission line by truncating the object datacube in wavelength:
   In [8]: sp1 = emi1.sum(axis=(1,2))
 
   # Plot the sub-spectrum in red over the original spectrum.
-  @savefig Cube8.png width=4in
+  @savefig Cube8.png
   In [9]: sp1.plot(color='r')
 
   @suppress
@@ -318,7 +318,7 @@ subtracted:
 
   In [4]: sp1.plot()
 
-  @savefig Cube9a.png width=3.5in
+  @savefig Cube9a.png
   In [4]: cont1.plot(title="Fitted continuum")
 
   In [5]: plt.figure()
@@ -326,7 +326,7 @@ subtracted:
   # Subtract the continuum from the spectrum to leave the line emission.
   In [6]: line1 = sp1 - cont1
 
-  @savefig Cube9.png width=3.5in
+  @savefig Cube9.png
   In [7]: line1.plot(title="Continuum subtracted")
 
 Next we compute the total Hα line flux by simple integration (taking into
@@ -340,7 +340,7 @@ the Hα line and the continuum mean flux at the same location:
   # Find the spectral pixel index of the peak flux.
   In [2]: k = line1.data.argmax()
 
-  @savefig Cube10.png width=4in
+  @savefig Cube10.png
   In [3]: line1[55-10:55+11].plot(color='r')
 
   # Integrate by summing pixels, multiplied by the pixel width.
@@ -390,7 +390,7 @@ spectrum iterator `~mpdaf.obj.iter_spe`:
 
   In [5]: fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 4))
 
-  @savefig Cube11.png width=10in
+  @savefig Cube11.png
   In [6]: cont_flux.plot(ax=ax1, title="continuum mean flux (%s)"%cont_flux.unit, colorbar='v')
      ...: ha_flux.plot(ax=ax2, title="H$\\alpha$ line total flux (%s)"%ha_flux.unit, colorbar='v')
      ...: ha_ew.plot(ax=ax3, title="H$\\alpha$ line ew (%s)"%ha_ew.unit, colorbar='v')
@@ -444,12 +444,12 @@ We then plot the results:
 
   In [1]: plt.figure()
 
-  @savefig Cube14.png width=3.5in
+  @savefig Cube14.png
   In [2]: cube.sum(axis=0).plot(title='before Gaussian filter', scale='log')
 
   In [1]: plt.figure()
 
-  @savefig Cube15.png width=3.5in
+  @savefig Cube15.png
   In [3]: cube2.sum(axis=0).plot(title='after Gaussian filter', scale='log')
 
   @suppress
@@ -495,12 +495,12 @@ We then plot the results:
 
     In [1]: plt.figure()
 
-    @savefig Cube16.png width=3.5in
+    @savefig Cube16.png
     In [2]: cube[5,:,:].plot(vmin=-1, vmax=4)
 
     In [1]: plt.figure()
 
-    @savefig Cube17.png width=3.5in
+    @savefig Cube17.png
     In [2]: cube2[5,:,:].plot(vmin=-1, vmax=4)
 
 
@@ -534,7 +534,7 @@ filters included in MPDAF:
 
    In [5]: fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
 
-   @savefig Cube21.png width=10in
+   @savefig Cube21.png
    In [6]: imV.plot(ax=ax1, title="Johnson_V")
       ...: imR.plot(ax=ax2, title="Cousins_R")
       ...: imI.plot(ax=ax3, title="Cousins_I")
@@ -547,7 +547,7 @@ The filters are taken from the ``filter_list.fits`` file from the MUSE DRS:
 
    In [1]: from astropy.io import fits
 
-   @savefig Cube18.png width=8in
+   @savefig Cube18.png
    In [4]: with fits.open('../obj/filters/filter_list.fits') as hdul:
       ...:     fig, axes = plt.subplots(2, 2, figsize=(12, 12))
       ...:     axes = axes.ravel()

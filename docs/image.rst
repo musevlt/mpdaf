@@ -87,7 +87,7 @@ be specified via the vmin and vmax arguments, as shown below.
 
    In [4]: plt.figure()
 
-   @savefig Image1a.png width=4in
+   @savefig Image1a.png
    In [5]: ima.plot(vmin=0, vmax=10, colorbar='v')
 
 The `~mpdaf.obj.Image.plot` method has many options to customize the plot, for
@@ -97,7 +97,7 @@ instance:
 
    In [4]: plt.figure()
 
-   @savefig Image1b.png width=4in
+   @savefig Image1b.png
    In [5]: ima.plot(zscale=True, colorbar='v', use_wcs=True, scale='sqrt')
 
 The indexing of the image arrays follows the Python conventions for indexing a
@@ -133,7 +133,7 @@ anticlockwise, then re-sampled to change its pixel size from 0.2 arcseconds to
 
   In [3]: ima3 = ima2.resample(newdim=(150,150), newstart=None, newstep=(0.4,0.4), unit_step=u.arcsec, flux=True)
 
-  @savefig Image4.png width=8in
+  @savefig Image4.png
   In [5]: ima3.plot(ax=ax3, colorbar='v')
 
 
@@ -168,12 +168,12 @@ pixels can be adjusted to account for relative pointing errors:
 
   In [5]: plt.figure()
 
-  @savefig Image5.png width=3.5in
+  @savefig Image5.png
   In [6]: ima.plot(colorbar='v', vmin=0.0, vmax=20.0, title='MUSE image')
 
   In [7]: plt.figure()
 
-  @savefig Image6.png width=3.5in
+  @savefig Image6.png
   In [8]: ima2hst.plot(colorbar='v', title='Part of the HST image')
 
 
@@ -202,12 +202,12 @@ images:
 
   In [1]: plt.figure()
 
-  @savefig Image7.png width=3.5in
+  @savefig Image7.png
   In [5]: ima[200:, 30:150].plot(colorbar='v', title='original image')
 
   In [1]: plt.figure()
 
-  @savefig Image8.png width=3.5in
+  @savefig Image8.png
   In [5]: imacomb[200:, 30:150].plot(colorbar='v', title='combined image')
 
 The `~mpdaf.obj.Image.subimage` method can be used to extract a square
@@ -223,7 +223,7 @@ from the center of the HST image.
 
   In [1]: plt.figure()
 
-  @savefig Image9.png width=4in
+  @savefig Image9.png
   In [26]: subima.plot()
 
 The `~mpdaf.obj.Image.inside` method lets the user test whether a given
@@ -263,7 +263,7 @@ analysis:
 
   In [1]: plt.figure()
 
-  @savefig Image10.png width=4in
+  @savefig Image10.png
   In [2]: source.plot(colorbar='v')
 
   @suppress
@@ -293,7 +293,7 @@ isocontours (`~mpdaf.obj.Image.gauss_fit`):
 
   In [1]: gfit = source.gauss_fit(plot=False)
 
-  @savefig Image11.png width=4in
+  @savefig Image11.png
   In [2]: gfit = source.gauss_fit(maxiter=150, plot=True)
 
 In general, Moffat profiles provide a better representation of the point-spread
@@ -323,12 +323,12 @@ functions:
 
   In [1]: plt.figure()
 
-  @savefig Image12.png width=3.5in
+  @savefig Image12.png
   In [1]: mresiduals.plot(colorbar='v', title='Residuals from 2D Moffat profile fitting')
 
   In [1]: plt.figure()
 
-  @savefig Image13.png width=3.5in
+  @savefig Image13.png
   In [1]: gresiduals.plot(colorbar='v', title='Residuals from 2D Gaussian profile fitting')
 
 Finally we estimate the energy received from the source:
@@ -354,7 +354,7 @@ Finally we estimate the energy received from the source:
 
   In [8]: plt.xlabel('radius')
 
-  @savefig Image14.png width=4in
+  @savefig Image14.png
   In [9]: plt.ylabel('ERR')
 
 
