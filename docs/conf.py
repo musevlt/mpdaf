@@ -35,7 +35,7 @@ extensions = [
     'sphinx_automodapi.automodapi',
     'sphinx_automodapi.smart_resolver',
     'sphinx_copybutton',
-    'sphinx_rtd_theme',
+    "sphinxcontrib.globalsubs",
 ]
 
 intersphinx_mapping = {
@@ -170,3 +170,13 @@ html_logo = '_static/logo/logo_mpdaf_small.png'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+global_substitutions: dict[str, str] = {
+    # Table
+    "Column": ":class:`~astropy.table.Column`",
+    "MaskedColumn": ":class:`~astropy.table.MaskedColumn`",
+    "TableColumns": ":class:`~astropy.table.TableColumns`",
+    "Row": ":class:`~astropy.table.Row`",
+    "Table": ":class:`~astropy.table.Table`",
+    "QTable": ":class:`~astropy.table.QTable`",
+}
