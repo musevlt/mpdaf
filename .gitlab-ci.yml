@@ -33,7 +33,7 @@ py311:
   image: python:3.11
   stage: test
   script:
-    - nox -s coverage
+    - nox -s tests
 
 py312:
   extends:
@@ -41,7 +41,7 @@ py312:
   image: python:3.12
   stage: test
   script:
-    - nox -s coverage
+    - nox -s tests
 
 py313:
   extends:
@@ -49,7 +49,7 @@ py313:
   image: python:3.13
   stage: test
   script:
-    - nox -s coverage -- --run-slow
+    - nox -s tests -- --run-slow
 
 py314:
   extends:
@@ -57,7 +57,15 @@ py314:
   image: python:3.14
   stage: test
   script:
-    - nox -s coverage -- --remote-data=any
+    - nox -s coverage
+
+py315:
+  extends:
+    - .nox
+  image: python:3.15
+  stage: test
+  script:
+    - nox -s tests -- --remote-data=any
 
 pre:
   extends:
@@ -66,7 +74,7 @@ pre:
   stage: extra
   allow_failure: true
   script:
-    - PIP_PRE=1 nox -s coverage
+    - PIP_PRE=1 nox -s tests
 
 docs:
   extends:

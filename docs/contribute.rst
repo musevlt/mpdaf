@@ -23,14 +23,14 @@ in your environment::
 
     git clone https://git-cral.univ-lyon1.fr/MUSE/mpdaf.git
 
-There are many options to install, but it is recommended to use a `virtual
-environment`_ (virtualenv, or Conda's environments) to avoid conflicts with
+There are many options to install, but it is recommended to use a virtual
+environment (virtualenv, or Conda's environments) to avoid conflicts with
 your regular install.
 
 Then, you can install MPDAF. Using the development mode makes it easier to test
 changes, without having to reinstall after each change::
 
-    python setup.py develop
+    pip install -e . -v
 
 
 Git workflow
@@ -72,18 +72,19 @@ To run the tests, you need to install `pytest`_::
 
 And run::
 
-    python setup.py test
+    pytest
 
-It is also possible to run tests on multiple Python versions with `tox`_::
+It is also possible to run tests on multiple Python versions with `nox`_::
 
-    pip install tox
-
+    pip install nox
+    nox -s tests
+    nox -s coverage
+    nox -s docs
 
 
 .. _build status: https://git-cral.univ-lyon1.fr/MUSE/mpdaf/builds
 .. _git-cral: https://git-cral.univ-lyon1.fr
 .. _Merge request: https://git-cral.univ-lyon1.fr/MUSE/mpdaf/merge_requests
 .. _pytest: https://pytest.org/
-.. _tox: http://tox.readthedocs.io/en/stable/
-.. _virtual environment: http://docs.astropy.org/en/latest/development/workflow/virtual_pythons.html
-.. _well-detailed documentation: http://docs.astropy.org/en/latest/development/workflow/development_workflow.html
+.. _nox: https://nox.thea.codes/
+.. _well-detailed documentation: https://docs.astropy.org/en/latest/development/quickstart.html

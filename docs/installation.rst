@@ -7,11 +7,10 @@ Requirements
 
 MPDAF has the following strict requirements:
 
-- Python_ version 2.7 or 3.3+
-- Numpy_ version 1.8 or above
-- Scipy_ version 0.14 or above
-- Matplotlib_ version 1.4 or above
-- Astropy_ version 1.0 or above
+- Numpy_ version 2.0 or above
+- Scipy_ version 1.13 or above
+- Matplotlib_ version 3.9.0 or above
+- Astropy_ version 7.0.0 or above
 
 Several additional packages can be installed for optional features:
 
@@ -105,12 +104,19 @@ Unit tests
 
 To run the unit tests, you need to install the Pytest_ package, then run::
 
-    $ python setup.py test
+    pip install pytest
+    pytest
 
 To run the unit tests on an installed version of MPDAF::
 
-    $ pytest $(dirname $(python -c 'import mpdaf; print(mpdaf.__file__)'))
+    pytest --pyargs mpdaf
 
+A more convenient option is to use nox_, which will take care of creating
+a virtual environment dedicated to running tests and run pytest::
+
+    pip install nox
+    nox -s tests
+    nox -s coverage
 
 .. _Python: http://python.org/
 .. _Numpy: http://www.numpy.org/
@@ -127,3 +133,4 @@ To run the unit tests on an installed version of MPDAF::
 .. _OpenAstronomy: https://anaconda.org/openastronomy
 .. _conda: http://conda.pydata.org/docs/
 .. _adjustText: https://github.com/Phlya/adjustText
+.. _nox: https://nox.thea.codes/

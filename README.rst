@@ -20,7 +20,7 @@
 
 MPDAF, the *MUSE Python Data Analysis Framework*, is an open-source (BSD
 licensed) Python package, developed and maintained by `CRAL
-<https://cral.univ-lyon1.fr/>`_ and partially funded by the ERC advanced grant
+<https://cral.osu-lyon.fr/>`_ and partially funded by the ERC advanced grant
 339659-MUSICOS (see `Authors and Credits
 <http://mpdaf.readthedocs.io/en/stable/credits.html>`_ for more details).  It
 has been developed and used in the `MUSE Consortium

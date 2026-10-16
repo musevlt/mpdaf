@@ -2,8 +2,8 @@
 Authors and Credits
 *******************
 
-MPDAF team at `CRAL <https://cral.univ-lyon1.fr/>`_
----------------------------------------------------
+MPDAF team at `CRAL <https://cral.osu-lyon.fr/>`_
+-------------------------------------------------
 
 - Roland Bacon, scientific manager
 - Johan Richard, scientific adviser
