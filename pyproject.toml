@@ -28,8 +28,8 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics"
 ]
 dependencies = [
-    "astropy",
-    "matplotlib",
+    "astropy>7.0.0",
+    "matplotlib>=3.9.0",
     "numpy>=2.0",
     "scipy>=1.13",
     "specutils>=2.0.0",
@@ -48,7 +48,13 @@ docs = [
     "sphinx_automodapi",
     "sphinx_rtd_theme",
 ]
-tests = ["pytest", "pytest-astropy", "pytest-cov", "pytest-remotedata"]
+tests = [
+    "pytest",
+    "pytest-cov",
+    "pytest-doctestplus",
+    "pytest-remotedata",
+    "pytest-skip-slow",
+]
 
 [project.scripts]
 make_white_image = "mpdaf.scripts.make_white_image:main"
