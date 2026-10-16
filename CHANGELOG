@@ -1,9 +1,9 @@
 3.7dev
 ------
 
-- Use fork by default for `loop_*_multiprocessing`.
+- Compatibility fixes for recent versions of Python, Numpy and specutils.
 
-- Compatibility fixes for recent Numpy and specutils.
+- Use fork by default for `loop_*_multiprocessing`.
 
 - Fix logger issue in `Image.subimage`.
 
