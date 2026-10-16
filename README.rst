@@ -6,9 +6,17 @@
    :target: https://codecov.io/gh/musevlt/mpdaf
    :alt: Coverage Status
 
+.. image:: https://app.readthedocs.org/projects/mpdaf/badge/?version=latest
+   :target: http://mpdaf.readthedocs.io/en/stable/
+   :alt: Readthedocs Status
+
 .. image:: https://img.shields.io/pypi/v/mpdaf.svg
    :target: https://pypi.org/project/mpdaf
    :alt: PyPI Status
+
+.. image:: https://img.shields.io/python/required-version-toml?tomlFilePath=https://github.com/musevlt/mpdaf/raw/refs/heads/master/pyproject.toml
+   :target: https://pypi.org/project/mpdaf
+   :alt: Python Version from PEP 621 TOML
 
 MPDAF, the *MUSE Python Data Analysis Framework*, is an open-source (BSD
 licensed) Python package, developed and maintained by `CRAL
@@ -29,10 +37,6 @@ a datacube, and a format to gather all the information on a source in one FITS
 file.
 
 Bug reports, comments, and help with development are very welcome.
-
-MPDAF 3.0 requires Python 3.5 or later.  It is the first version that supports
-only Python 3. `Older versions <https://pypi.org/project/mpdaf/#history>`_ can
-be installed for users that still need Python 2.
 
 Links
 -----
