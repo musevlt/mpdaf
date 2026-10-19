@@ -1,12 +1,12 @@
 .. _spectrum:
 
 
-***************
-Spectrum object
-***************
+********
+Spectrum
+********
 
-Spectrum objects contain a 1D data array of flux values, and a `WaveCoord
-<mpdaf.obj.WaveCoord>` object that describes the wavelength scale of the
+`~mpdaf.obj.Spectrum` objects contain a 1D data array of flux values, and a
+`~mpdaf.obj.WaveCoord` object that describes the wavelength scale of the
 spectrum. Optionally, an array of variances can also be provided to give the
 statistical uncertainties of the fluxes. These can be used for weighting the
 flux values and for computing the uncertainties of least-squares fits and other
@@ -101,7 +101,7 @@ and accepts all matplotlib arguments:
 
    In [4]: plt.figure()
 
-   @savefig Spectrum.png width=4in
+   @savefig Spectrum.png
    In [5]: spe.plot(color='g')
 
 This spectrum could also be plotted with a logarithmic scale on the y-axis
@@ -160,12 +160,12 @@ The results of the interpolations are shown below:
 
   In [7]: plt.figure()
 
-  @savefig Spectrum_before_interp_mask.png width=3.5in
+  @savefig Spectrum_before_interp_mask.png
   In [6]: spvar.plot(lmin=4600, lmax=6200, title='Spectrum before interpolation', unit=u.angstrom)
 
   In [7]: plt.figure()
 
-  @savefig Spectrum_after_interp_mask.png width=3.5in
+  @savefig Spectrum_after_interp_mask.png
   In [6]: spvarcut.plot(lmin=4600, lmax=6200, title='Spectrum after interpolation', unit=u.angstrom)
 
 Spectrum rebinning and resampling
@@ -194,7 +194,7 @@ file are incorrect.
 
   In [7]: spvarcut.plot()
 
-  @savefig Spectrum_rebin.png width=4in
+  @savefig Spectrum_rebin.png
   In [8]: (sprebin1 + 10).plot(noise=True)
 
 Whereas the rebin method is restricted to decreasing the resolution by integer
@@ -214,7 +214,7 @@ remedied in the near future.
 
   In [7]: sp.plot()
 
-  @savefig Spectrum_rebin2.png width=4in
+  @savefig Spectrum_rebin2.png
   In [8]: (sprebin2 + 10).plot(noise=True)
 
 
@@ -246,7 +246,7 @@ automatically weighted by the variances of the spectrum:
 
 .. ipython::
 
-  @savefig Spectrum_specline1.png width=4in
+  @savefig Spectrum_specline1.png
   In [3]: OIII = specline.gauss_fit(lmin=8350, lmax=8420, unit=u.angstrom, plot=True)
 
   In [4]: OIII.print_param()
@@ -262,7 +262,7 @@ to weight the least-squares Gaussian fit:
 
   In [6]: specline.plot(lmin=8090,lmax=8210, unit=u.angstrom, title = 'Hbeta line')
 
-  @savefig Spectrum_specline2.png width=4in
+  @savefig Spectrum_specline2.png
   In [7]: Hbeta = specline.gauss_fit(lmin=8090,lmax=8210, unit=u.angstrom, plot=True)
 
   In [8]: Hbeta.print_param()
@@ -285,7 +285,7 @@ perform an better Gaussian fit on the line by fixing the Gaussian center:
 
   In [6]: specline.plot(lmin=8090,lmax=8210, unit=u.angstrom, title = 'Hbeta line')
 
-  @savefig Spectrum_specline2.png width=4in
+  @savefig Spectrum_specline2.png
   In [7]: Hbeta2 = specline.gauss_fit(lmin=8090,lmax=8210, lpeak=Hbeta.lpeak, unit=u.angstrom, plot=True, fix_lpeak=True)
 
   In [8]: Hbeta2.print_param()
@@ -312,7 +312,7 @@ to a spectrum. This can be used to fit the continuum:
 
   In [3]: spe.plot()
 
-  @savefig Spectrum_cont.png width=4in
+  @savefig Spectrum_cont.png
   In [4]: cont.plot(color='r')
 
 

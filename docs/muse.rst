@@ -78,7 +78,7 @@ Then get the LSF array by using `~mpdaf.MUSE.LSF.get_LSF`:
 
   In [5]: import numpy as np
 
-  @savefig simple_LSF.png width=4in
+  @savefig simple_LSF.png
   In [6]: plt.plot(np.arange(-5,6), lsf_6000, drawstyle='steps-mid')
 
 
@@ -245,12 +245,12 @@ for given wavelengths, or the FWHM in pixel and in arcseconds.
 
   In [27]: plt.figure()
 
-  @savefig FSF1.png width=3.5in
+  @savefig FSF1.png
   In [26]: plt.imshow(im5000)
 
   In [27]: plt.figure()
 
-  @savefig FSF2.png width=3.5in
+  @savefig FSF2.png
   In [28]: plt.imshow(fsfcube[1])
 
 The FSF model can be saved to a FITS header with
@@ -287,20 +287,22 @@ for pixels matching a field:
 
   In [14]: plt.figure()
 
-  @savefig fmap1.png width=3.5in
+  @savefig fmap1.png
   In [15]: plt.imshow(fmap.get_field_mask('UDF-06'), vmin=0, vmax=1)
 
   In [14]: plt.figure()
 
-  @savefig fmap2.png width=3.5in
+  @savefig fmap2.png
   In [13]: plt.imshow(fmap.get_field_mask('UDF-09'), vmin=0, vmax=1)
 
 
 Reference/API
 =============
 
-.. automodapi:: mpdaf.MUSE
-   :no-main-docstr:
+.. toctree::
+   :maxdepth: 2
+
+   api_muse
 
 .. ipython::
    :suppress:

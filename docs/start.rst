@@ -56,7 +56,7 @@ image.
 
   In [2]: plt.figure()
 
-  @savefig Cube1.png width=4in
+  @savefig Cube1.png
   In [3]: ima.plot(scale='arcsinh', colorbar='v')
 
 
@@ -72,7 +72,7 @@ total flux per spectral pixel.
 
   In [2]: plt.figure()
 
-  @savefig Cube2.png width=4in
+  @savefig Cube2.png
   In [3]: sp.plot()
 
 Logging

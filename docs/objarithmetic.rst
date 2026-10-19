@@ -30,7 +30,7 @@ a given axis or axes of the cube:
 
   In [6]: spe.info()
 
-  @savefig Obj_arithm1.png width=3.5in
+  @savefig Obj_arithm1.png
   In [5]: spe.plot()
 
   # white image
@@ -40,7 +40,7 @@ a given axis or axes of the cube:
 
   In [8]: plt.figure()
 
-  @savefig Obj_arithm2.png width=3.5in
+  @savefig Obj_arithm2.png
   In [10]: ima.plot()
 
   In [13]: spe.sum(7100,7200)
@@ -113,7 +113,7 @@ these objects:
 
   In [18]: ima2 = ima.sqrt()
 
-  @savefig Obj_arithm3.png width=3.5in
+  @savefig Obj_arithm3.png
   In [10]: ima2.plot()
 
 .. ipython::

@@ -1,6 +1,6 @@
-****************************************************
-Interface for the MUSE specific data (``mpdaf.drs``)
-****************************************************
+**********************************
+MUSE specific data (``mpdaf.drs``)
+**********************************
 
 The ``mpdaf.drs`` package contains Python interfaces for the MUSE pipeline's
 objects.
@@ -17,5 +17,7 @@ Contents:
 Reference/API
 =============
 
-.. automodapi:: mpdaf.drs
-   :no-main-docstr:
+.. toctree::
+   :maxdepth: 2
+
+   api_drs

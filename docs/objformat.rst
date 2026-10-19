@@ -110,19 +110,19 @@ demonstrated below:
 
   In [4]: plt.figure()
 
-  @savefig ObjFormatIma1.png width=2.3in
+  @savefig ObjFormatIma1.png
   In [5]: ima1.plot(colorbar='v', title = r'$\lambda$ = %.1f (%s)' %(cube.wave.coord(1000), cube.wave.unit))
 
   In [6]: ima2 = cube[3000, :, :]
 
   In [7]: plt.figure()
 
-  @savefig ObjFormatIma2.png width=2.3in
+  @savefig ObjFormatIma2.png
   In [8]: ima2.plot(colorbar='v', title = r'$\lambda$ = %.1f (%s)' %(cube.wave.coord(3000), cube.wave.unit))
 
   In [7]: plt.figure()
 
-  @savefig ObjFormatZommIma2.png width=2.3in
+  @savefig ObjFormatZommIma2.png
   In [8]: ima2[5:25, 15:35].plot(colorbar='v',title = r'Zoom $\lambda$ = %.1f (%s)' %(cube.wave.coord(3000), cube.wave.unit))
 
 In the Image objects extracted from the cube, `Image[p1:p2,q1:q2]
@@ -149,12 +149,12 @@ Finally, `Cube[:,p,q] <mpdaf.obj.Cube.__getitem__>` returns a Spectrum:
 
   In [6]: plt.figure()
 
-  @savefig ObjFormatSpe.png width=3.5in
+  @savefig ObjFormatSpe.png
   In [8]: spe.plot(title = 'Spectrum ra=%s dec=%s' %(ra, dec))
 
   In [6]: plt.figure()
 
-  @savefig ObjFormatZoomSpe.png width=3.5in
+  @savefig ObjFormatZoomSpe.png
   In [8]: spe[1640:2440].plot(title = 'Zoom Spectrum ra=%s dec=%s' %(ra, dec))
 
 
@@ -228,7 +228,7 @@ must be performed using the `set_wcs <mpdaf.obj.Cube.set_wcs>` method:
 
   In [1]: plt.figure()
 
-  @savefig ObjFormatMaskedIma2.png width=4in
+  @savefig ObjFormatMaskedIma2.png
   In [8]: ima2.plot()
 
 .. ipython::
