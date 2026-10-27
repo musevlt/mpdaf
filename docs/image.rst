@@ -77,11 +77,12 @@ As shown in the above example, information about an image can be printed using
 the `~mpdaf.obj.Image.info` method.
 
 Image objects provide a `~mpdaf.obj.Image.plot` method that is based on
-`matplotlib.pyplot.plot <http://matplotlib.org/api/pyplot_api.html>`_ and
-accepts all matplotlib arguments.  The colors used to plot an image are
-distributed between a minimum and a maximum pixel value. By default these are
-the minimum and maximum pixel values in the image, but different thresholds can
-be specified via the vmin and vmax arguments, as shown below.
+`matplotlib.pyplot.plot
+<https://matplotlib.org/stable/api/pyplot_summary.html>`_ and accepts all
+matplotlib arguments.  The colors used to plot an image are distributed between
+a minimum and a maximum pixel value. By default these are the minimum and
+maximum pixel values in the image, but different thresholds can be specified
+via the vmin and vmax arguments, as shown below.
 
 .. ipython::
 

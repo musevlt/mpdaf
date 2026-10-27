@@ -39,7 +39,7 @@ O denotes the name of the object:
 +------------------+-----------------------------------------------------------------------------------+
 
 Masked arrays are arrays that can have missing or invalid entries.  The
-`numpy.ma <http://docs.scipy.org/doc/numpy/reference/maskedarray.html>`_ module
+`numpy.ma <https://numpy.org/doc/stable/reference/maskedarray.html>`_ module
 provides a nearly work-alike replacement for numpy that supports data arrays
 with masks. See the `DataArray <mpdaf.obj.DataArray>` documentation for more
 details.

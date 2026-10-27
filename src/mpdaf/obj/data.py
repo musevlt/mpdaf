@@ -1655,7 +1655,7 @@ class DataArray:
         ds9id : str, optional
             The DS9 session ID.  If 'None', a new one will be created.
             To find your ds9 session ID, open the ds9 menu option
-            File:XPA:Information and look for the XPA_METHOD string, e.g.
+            File > XPA > Information and look for the XPA_METHOD string, e.g.
             ``XPA_METHOD:  86ab2314:60063``.  You would then calll this
             function as ``cube.to_ds9('86ab2314:60063')``
         newframe : bool

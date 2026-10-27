@@ -52,8 +52,21 @@ def docs(session):
             "-b", "html",
             "-d", "_build/doctrees",
             "-j", "auto",
-            ".",
-            "_build/html",
+            ".", "_build/html",
+        )
+        # fmt: on
+
+
+@nox.session
+def linkcheck(session):
+    session.install(".[docs]")
+    with session.chdir("docs"):
+        # fmt: off
+        session.run(
+            "python", "-m", "sphinx",
+            "-b", "linkcheck",
+            "-j", "auto",
+            ".", "_build/html",
         )
         # fmt: on
 

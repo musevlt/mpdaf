@@ -82,9 +82,9 @@ It is also possible to run tests on multiple Python versions with `nox`_::
     nox -s docs
 
 
-.. _build status: https://git-cral.univ-lyon1.fr/MUSE/mpdaf/builds
+.. _build status: https://git-cral.univ-lyon1.fr/MUSE/mpdaf/-/jobs
 .. _git-cral: https://git-cral.univ-lyon1.fr
-.. _Merge request: https://git-cral.univ-lyon1.fr/MUSE/mpdaf/merge_requests
-.. _pytest: https://pytest.org/
-.. _nox: https://nox.thea.codes/
+.. _Merge request: https://git-cral.univ-lyon1.fr/MUSE/mpdaf/-/merge_requests
+.. _pytest: https://docs.pytest.org/en/stable/
+.. _nox: https://nox.thea.codes/en/stable/
 .. _well-detailed documentation: https://docs.astropy.org/en/latest/development/quickstart.html

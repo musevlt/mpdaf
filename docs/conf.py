@@ -101,8 +101,8 @@ plt.rcParams.update({
 autoclass_content = "both"
 
 gitlab_url = 'https://git-cral.univ-lyon1.fr/MUSE/mpdaf'
-extlinks = {'issue': (gitlab_url + '/issues/%s', '#%s'),
-            'pull': (gitlab_url + '/merge_requests/%s', '!%s')}
+extlinks = {'issue': (gitlab_url + '/-/issues/%s', '#%s'),
+            'pull': (gitlab_url + '/-/merge_requests/%s', '!%s')}
 
 # Render inheritance diagrams in SVG
 graphviz_output_format = "svg"
@@ -129,6 +129,10 @@ default_role = 'obj'
 
 # The name of the Pygments (syntax highlighting) style to use.
 # pygments_style = 'sphinx'
+
+linkcheck_ignore = [
+    "https://ui.adsabs.harvard.edu",  # CI blocked by service provider
+]
 
 # -- Options for HTML output --------------------------------------------------
 

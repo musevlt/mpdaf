@@ -7,7 +7,7 @@ Given a Spectrum, Image or Cube object, O, the pixel values and variances of
 this object can be accessed via the O.data and O.var arrays.  These are masked
 arrays, which are arrays that can have missing or invalid entries. Masked
 arrays, which are provided by the `numpy.ma
-<http://docs.scipy.org/doc/numpy/reference/maskedarray.html>`_ module, provide a
+<https://numpy.org/doc/stable/reference/maskedarray.html>`_ module, provide a
 nearly work-alike replacement for numpy arrays.  The O.data and O.var arrays
 share a single array of boolean masking elements. This is a simple boolean
 array, and it can be accessed directly via the O.mask property. The elements of

@@ -3,11 +3,11 @@
    :alt: GitHub Actions CI Status
 
 .. image:: https://codecov.io/gh/musevlt/mpdaf/branch/master/graph/badge.svg
-   :target: https://codecov.io/gh/musevlt/mpdaf
+   :target: https://app.codecov.io/gh/musevlt/mpdaf
    :alt: Coverage Status
 
 .. image:: https://app.readthedocs.org/projects/mpdaf/badge/?version=latest
-   :target: http://mpdaf.readthedocs.io/en/stable/
+   :target: https://mpdaf.readthedocs.io/en/stable/
    :alt: Readthedocs Status
 
 .. image:: https://img.shields.io/pypi/v/mpdaf.svg
@@ -22,7 +22,7 @@ MPDAF, the *MUSE Python Data Analysis Framework*, is an open-source (BSD
 licensed) Python package, developed and maintained by `CRAL
 <https://cral.osu-lyon.fr/>`_ and partially funded by the ERC advanced grant
 339659-MUSICOS (see `Authors and Credits
-<http://mpdaf.readthedocs.io/en/stable/credits.html>`_ for more details).  It
+<https://mpdaf.readthedocs.io/en/stable/credits.html>`_ for more details).  It
 has been developed and used in the `MUSE Consortium
 <http://muse-vlt.eu/science/>`_ for several years, and is available freely for
 the community.
@@ -41,7 +41,7 @@ Bug reports, comments, and help with development are very welcome.
 Links
 -----
 
-- `Documentation <http://mpdaf.readthedocs.io/en/stable/>`_.
+- `Documentation <https://mpdaf.readthedocs.io/en/stable/>`_.
 - Source, issues and pull requests on
   `Github <https://github.com/musevlt/mpdaf/>`_ and on a
   `Gitlab <https://git-cral.univ-lyon1.fr/MUSE/mpdaf>`_ instance.
@@ -53,15 +53,13 @@ Reporting Issues
 ----------------
 
 If you have found a bug in MPDAF please `create an issue on Github
-<https://github.com/musevlt/mpdaf/issues/new>`_.
+<https://github.com/musevlt/mpdaf/issues>`_.
 
 Citing
 ------
 
-MPDAF can be cited with the `ASCL <http://ascl.net/1611.003>`_ reference (`ADS
-<http://adsabs.harvard.edu/abs/2016ascl.soft11003B>`__, `BibTeX
-<http://adsabs.harvard.edu/cgi-bin/nph-bib_query?bibcode=2016ascl.soft11003B&data_type=BIBTEX&db_key=AST&nocookieset=1>`__),
+MPDAF can be cited with the `ASCL <https://ascl.net/1611.003>`_ reference (`ADS
+<https://ui.adsabs.harvard.edu/abs/2016ascl.soft11003B/abstract>`__),
 and was also presented at ADASS XXVI, for which the proceedings is on the
 `arXiv <https://arxiv.org/abs/1710.03554>`_ (`ADS
-<http://adsabs.harvard.edu/abs/2017arXiv171003554P>`__, `BibTeX
-<http://adsabs.harvard.edu/cgi-bin/nph-bib_query?bibcode=2017arXiv171003554P&data_type=BIBTEX&db_key=PRE&nocookieset=1>`__).
+<https://ui.adsabs.harvard.edu/abs/2017arXiv171003554P/abstract>`__).

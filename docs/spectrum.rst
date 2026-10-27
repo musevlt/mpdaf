@@ -94,8 +94,9 @@ Information about a spectrum can be printed using the `info
 <mpdaf.obj.Spectrum.info>` method.
 
 Spectrum objects also have a `plot <mpdaf.obj.Spectrum.plot>` method, which is
-based on `matplotlib.pyplot.plot <http://matplotlib.org/api/pyplot_api.html>`_
-and accepts all matplotlib arguments:
+based on `matplotlib.pyplot.plot
+<https://matplotlib.org/stable/api/pyplot_summary.html>`_ and accepts all
+matplotlib arguments:
 
 .. ipython::
 

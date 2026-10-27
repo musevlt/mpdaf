@@ -2090,7 +2090,7 @@ class Spectrum(ArithmeticMixin, DataArray):
         ----------
         kernel : `astropy.convolution.Kernel1D`
             astropy kernel to use
-            (see `https://docs.astropy.org/en/stable/convolution/kernels.html#available-kernels`)
+            (see `https://docs.astropy.org/en/stable/convolution/kernels.html`)
 
             - Box1DKernel (default, parameters: width)
             - Gaussan1DKernel (parameters: stddev)

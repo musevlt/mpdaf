@@ -13,4 +13,4 @@ Contributing code
 -----------------
 
 If you're interested in contributing code to MPDAF, please have a look at the
-[dedicated documentation](http://mpdaf.readthedocs.io/en/latest/contribute.html).
+[dedicated documentation](https://mpdaf.readthedocs.io/en/latest/contribute.html).

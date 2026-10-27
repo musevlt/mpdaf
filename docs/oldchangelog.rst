@@ -80,7 +80,7 @@ Breaking changes
 
   - `ZAP <https://github.com/ktsoto/zap>`_ is now publicly available.
 
-  - `GALPAK <http://galpak.irap.omp.eu/downloads.html>`_ is also publicly
+  - `GALPAK <https://galpak.irap.omp.eu/downloads.html>`_ is also publicly
     available.
 
 * The `resize` methods of Cube, Image and Spectrum have been renamed
@@ -279,8 +279,7 @@ v1.2 (13/01/2016)
   - Install dependencies automatically.
   - Use optional dependencies.
 
-* Remove unmaintained submodules: *quickViz* and *fsf*. *quickViz* is still
-  available `here <http://lsiit-miv.u-strasbg.fr/paseo/cubevisualization.php>`_
+* Remove unmaintained submodules: *quickViz* and *fsf*.
   but maybe not compatible with the latest Aladin version.
 * Remove the ``displaypixtable`` module.
 * Avoid a huge memory peak when creating masked arrays with ``mask=True``.

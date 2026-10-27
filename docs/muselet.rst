@@ -14,7 +14,7 @@ Richard (johan.richard@univ-lyon1.fr), with help from Johany Martinez (CRAL)
 and Laure Piqueras (CRAL).
 
 MUSELET uses SExtractor (Bertin & Arnouts 1996,
-http://www.astromatic.net/software/sextractor) to detect line emission in
+https://www.astromatic.net/software/sextractor) to detect line emission in
 narrow-band images created from the cube. It then merges all detections in
 a single catalog, separating the emission lines linked with continuum sources
 detected in the white light images from the isolated emission lines. It then

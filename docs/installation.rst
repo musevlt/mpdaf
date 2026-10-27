@@ -88,15 +88,15 @@ Tips for Mac OS users
   recent Mac OS versions, this can be done with ``$ xcode-select --install``.
 
 - A great package manager can be used to install packages like cfitsio or
-  pkg-config: `Homebrew <http://brew.sh/>`_. Then, ``brew install cfitsio
+  pkg-config: `Homebrew <https://brew.sh/>`_. Then, ``brew install cfitsio
   pkgconfig``.
 
 - It is also possible to install and use gcc to compile MPDAF with OpenMP
   support (``brew install gcc --without-multilib``). Otherwise clang is used.
 
-- `Anaconda <http://continuum.io/downloads>`_ is a great scientific python
-  distribution, it comes with up-to-date and pre-compiled versions of Numpy,
-  Scipy, Astropy and more.
+- `conda-forge <https://conda-forge.org/download/>`_ is a great scientific
+  python distribution, it comes with up-to-date and pre-compiled versions of
+  Numpy, Scipy, Astropy and more.
 
 
 Unit tests
@@ -118,19 +118,19 @@ a virtual environment dedicated to running tests and run pytest::
     nox -s tests
     nox -s coverage
 
-.. _Python: http://python.org/
-.. _Numpy: http://www.numpy.org/
-.. _Scipy: http://www.scipy.org/
-.. _Matplotlib: http://matplotlib.org/
-.. _Astropy: http://www.astropy.org/
-.. _Pytest: http://pytest.org/
+.. _Python: https://python.org/
+.. _Numpy: https://numpy.org/
+.. _Scipy: https://scipy.org/
+.. _Matplotlib: https://matplotlib.org/
+.. _Astropy: https://www.astropy.org/
+.. _Pytest: https://docs.pytest.org/en/stable/
 .. _Numexpr: https://pypi.org/project/numexpr/
 .. _fitsio: https://pypi.org/project/fitsio/
-.. _pkg-config: https://pkgconfig.freedesktop.org/
-.. _CFITSIO: http://heasarc.gsfc.nasa.gov/fitsio/
-.. _OpenMP: http://openmp.org
-.. _SExtractor: http://www.astromatic.net/software/sextractor
+.. _pkg-config: https://www.freedesktop.org/wiki/Software/pkg-config/
+.. _CFITSIO: https://heasarc.gsfc.nasa.gov/docs/software/fitsio/
+.. _OpenMP: https://www.openmp.org
+.. _SExtractor: https://www.astromatic.net/software/sextractor
 .. _OpenAstronomy: https://anaconda.org/openastronomy
-.. _conda: http://conda.pydata.org/docs/
+.. _conda: https://docs.conda.io/projects/conda/en/latest/
 .. _adjustText: https://github.com/Phlya/adjustText
-.. _nox: https://nox.thea.codes/
+.. _nox: https://nox.thea.codes/en/stable/

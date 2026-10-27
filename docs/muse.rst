@@ -191,7 +191,8 @@ from the AO telemetry information saved in the raw data.
 
 .. warning::
 
-   The psfrec module must be installed. Check https://muse-psfr.readthedocs.io for information.
+   The psfrec module must be installed. Check
+   https://muse-psfr.readthedocs.io/en/latest/ for information.
 
 .. code::
 
@@ -222,7 +223,8 @@ from the AO telemetry information saved in the raw data.
 
 .. warning::
 
-   The psfrec module must be installed. Check https://muse-psfr.readthedocs.io for information.
+   The psfrec module must be installed. Check
+   https://muse-psfr.readthedocs.io/en/latest/ for information.
 
 
 Methods

@@ -677,7 +677,7 @@ Image
 Cube
 ~~~~
 
-* Fix bug in ``Cube.rebin``. [:pull:`471`]
+* Fix bug in ``Cube.rebin``.
 
 * Improved the method ``bandpass_image``:
 
@@ -731,7 +731,7 @@ Sources
 * Add primary indexes (with unicity constraint) to `mag['BAND']` and
   ``z['Z_DESC']`` for simpler indexing.
 
-* Correct behaviour when trying to add image not overlapping with Source [:pull:`482`].
+* Correct behaviour when trying to add image not overlapping with Source.
 
 
 Catalogs
@@ -746,7 +746,7 @@ Catalogs
 
 * Add comments and histories in catalog generated from a list of Source objects.
 
-* Update Catalog documentation [:pull:`467`]
+* Update Catalog documentation.
 
 * Correct issue #466:
 

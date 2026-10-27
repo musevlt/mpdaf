@@ -363,7 +363,7 @@ def compute_optimal_spectrum(cube, mask, psf):
     """Compute a spectrum for a cube by summing along the spatial axis.
 
     An optimal extraction algorithm for CCD spectroscopy Horne, K. 1986
-    http://adsabs.harvard.edu/abs/1986PASP...98..609H
+    https://ui.adsabs.harvard.edu/abs/1986PASP...98..609H/abstract
 
     Parameters
     ----------
