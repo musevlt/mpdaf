@@ -34,6 +34,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
+import pathlib
 from operator import add, mul, sub
 from operator import truediv as div
 
@@ -784,7 +785,13 @@ def test_aperture():
     assert spe.get_start() == 1
 
 
-def test_write(tmpdir):
+def test_pathlib():
+    filepath = pathlib.Path(get_data_file('obj', 'CUBE.fits'))
+    c = Cube(filepath)
+    assert c.shape == (1595, 10, 20)
+
+
+def test_write(tmp_path):
     """Cube class: testing write"""
     unit = u.Unit('1e-20 erg/s/cm2/Angstrom')
     cube = generate_cube(data=1, wave=WaveCoord(crval=1, cunit=u.angstrom),
@@ -792,7 +799,7 @@ def test_write(tmpdir):
     cube.data[:, 0, 0] = ma.masked
     cube.var = np.ones_like(cube.data)
 
-    testfile = str(tmpdir.join('cube.fits'))
+    testfile = tmp_path / 'cube.fits'
     cube.write(testfile)
 
     hdu = fits.open(testfile)

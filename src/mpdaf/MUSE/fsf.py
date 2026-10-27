@@ -32,6 +32,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 import logging
+import os
 import warnings
 
 import astropy.units as u
@@ -188,8 +189,7 @@ class FSFModel:
             Field number to read, otherwise all models are read.
 
         """
-        if isinstance(cube, str):
-            # filename
+        if isinstance(cube, (str, os.PathLike)):
             cube = Cube(cube)
 
         if isinstance(cube, Cube):

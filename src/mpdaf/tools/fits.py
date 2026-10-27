@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import fnmatch
 import logging
-import os
+import pathlib
 import warnings
 
 import astropy.units as u
@@ -48,7 +48,6 @@ __all__ = ('add_mpdaf_method_keywords', 'add_mpdaf_keywords_to_file',
            'fix_unit_read', 'fix_unit_write', 'copy_header', 'copy_keywords',
            'is_valid_fits_file', 'read_slice_from_fits')
 
-FITS_EXTENSIONS = ("fits", "fits.gz", "fits.fz")
 
 
 def add_mpdaf_method_keywords(header, method, params, values, comments):
@@ -198,7 +197,10 @@ def copy_keywords(srchdr, dsthdr, keys):
 def is_valid_fits_file(filename):
     """Return True is a file exist and is a valid FITS file (based on its
     extension)."""
-    return os.path.isfile(filename) and filename.endswith(FITS_EXTENSIONS)
+    filepath = pathlib.Path(filename)
+    # checking .fits in suffixes allows any supported compression extension
+    # (gz, fz, bz2, etc.)
+    return filepath.is_file() and ".fits" in filepath.suffixes
 
 
 def read_slice_from_fits(filename_or_hdu, item=None, ext='DATA', mask_ext=None,

@@ -627,9 +627,9 @@ def test_integrate():
     assert result.unit == u.ct * u.nm
 
 
-def test_write(tmpdir):
+def test_write(tmp_path):
     """Spectrum class: testing write."""
-    testfile = str(tmpdir.join('spec.fits'))
+    testfile = tmp_path / 'spec.fits'
     sp = Spectrum(data=np.arange(10), wave=WaveCoord(cunit=u.nm))
     sp.write(testfile)
 

@@ -61,7 +61,7 @@ def test_fsf_model_errors():
             MoffatModel2.from_header(hdr, 0)
 
 
-def test_fsf_model(tmpdir):
+def test_fsf_model(tmp_path):
     cubename = get_data_file('sdetect', 'subcub_mosaic.fits')
     cube = Cube(cubename)
 
@@ -100,7 +100,7 @@ def test_fsf_model(tmpdir):
         'FSF00B00=                  2.8 / FSF00 BETA Poly C00'
     ]
 
-    testfile = str(tmpdir.join('test.fits'))
+    testfile = tmp_path / 'test.fits'
     outcube = cube.copy()
     fsf.to_header(hdr=outcube.primary_header)
     outcube.write(testfile)
