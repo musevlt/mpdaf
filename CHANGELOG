@@ -1,5 +1,5 @@
-3.7dev
-------
+3.7 (05/11/2026)
+----------------
 
 - Compatibility fixes for recent versions of Python, Numpy and specutils.
 
@@ -8,6 +8,8 @@
 - Fix logger issue in `Image.subimage`.
 
 - Fix bug with `PixTable.select_stacks`.
+
+- Add support for pathlib.
 
 3.6 (28/06/2024)
 ----------------
