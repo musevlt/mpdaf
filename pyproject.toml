@@ -16,7 +16,7 @@ authors = [
 ]
 description = "Framework for MUSE data analysis"
 readme = "README.rst"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 keywords = ["astronomy", "astrophysics", "science", "muse", "vlt", "cube",
             "image", "spectrum"]
 license = "BSD-3-Clause"
@@ -151,7 +151,13 @@ exclude_lines = [
 
 [tool.cibuildwheel]
 build-verbosity = 3
-skip = ["*-win32", "*-*linux_i686", "cp3??t-*", "*-musllinux_x86_64"]
+skip = [
+    "cp3??t-*",
+    "*-*linux_i686",
+    "*-macosx_x86_64",
+    "*-musllinux_x86_64",
+    "*-win32",
+]
 environment = { CFLAGS="-std=c99", PIP_PREFER_BINARY=1 }
 test-command = "pytest {project}/src"
 test-extras = ["tests"]
