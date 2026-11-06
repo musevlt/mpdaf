@@ -27,14 +27,6 @@ stages:
     - source venv/bin/activate
     - pip install -U nox
 
-py311:
-  extends:
-    - .nox
-  image: python:3.11
-  stage: test
-  script:
-    - nox -s tests
-
 py312:
   extends:
     - .nox

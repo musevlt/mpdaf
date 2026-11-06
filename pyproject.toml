@@ -16,7 +16,7 @@ authors = [
 ]
 description = "Framework for MUSE data analysis"
 readme = "README.rst"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 keywords = ["astronomy", "astrophysics", "science", "muse", "vlt", "cube",
             "image", "spectrum"]
 license = "BSD-3-Clause"
